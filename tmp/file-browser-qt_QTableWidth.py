@@ -1,8 +1,9 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QWidget, QHBoxLayout
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QWidget, QHBoxLayout
 
 # Consts
 WINDOW_TITLE = "File Manager - by dawciobiel"
