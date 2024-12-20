@@ -1,4 +1,5 @@
-Funkcjonalność aplikacji
+
+### **Funkcjonalność aplikacji**
 
 - przeglądanie folderów
 - kopiowanie / kasowanie / przenoszenie / tworzenie folderów lub plików
