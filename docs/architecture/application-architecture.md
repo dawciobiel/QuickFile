@@ -1,3 +1,4 @@
+# Application architecture
 
 ### 1. **Kluczowe aspekty aplikacji**
 
