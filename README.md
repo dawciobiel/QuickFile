@@ -17,7 +17,7 @@ QuickFile is a modern file manager application built using Python and PyQt5, des
 
 ## Requirements
 
-- Python 3.x
+- Python 3.9+
 - PyQt5
 - Additional libraries (listed in `requirements.txt`)
 
