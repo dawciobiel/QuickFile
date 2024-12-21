@@ -2,10 +2,10 @@ import os
 import stat
 
 from PyQt5.QtCore import Qt, QModelIndex
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QMainWindow, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout, QWidget
 
 
-class FileBrowser(QMainWindow):
+class FolderBrowser(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Quick File")
@@ -48,7 +48,7 @@ class FileBrowser(QMainWindow):
         view.setColumnWidth(1, 100)  # Rozmiar
         view.setColumnWidth(2, 150)  # Typ
         view.setColumnWidth(3, 150)  # Data modyfikacji
-        view.setColumnWidth(4, 200)  # Uprawnienia (nasza kolumna)
+        view.setColumnWidth(4, 200)  # Uprawnienia
 
         # Obsługa zdarzeń
         view.selectionModel().currentChanged.connect(self.update_current_selected_path)
@@ -105,11 +105,3 @@ class CustomFileSystemModel(QFileSystemModel):
             return permissions
         except Exception as e:
             return "N/A"
-
-
-if __name__ == "__main__":
-    app = QApplication([])
-    window = FileBrowser()
-    window.resize(800, 600)
-    window.show()
-    app.exec_()
