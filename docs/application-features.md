@@ -1,3 +1,5 @@
+# Application features
+
 Funkcjonalność aplikacji
 
 - przeglądanie folderów
