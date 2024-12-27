@@ -1,15 +1,28 @@
 
 ### **Funkcjonalność aplikacji**
+```diff
+- GUI: Pasek skrótów klawiszowych F3 - F10
 
-- przeglądanie folderów
-- kopiowanie / kasowanie / przenoszenie / tworzenie folderów lub plików
-- batch rename
++ Poruszanie się po folderach/plikach
+- Operacjne na folderach/plikach [ kopiowanie, przenoszenie, kasowanie, tworzenie, zmiana nazwy ]
 
-- podgląd zawartości plików
-- edycja zawartości plików
-- calculate checksum
-- split file
+- Podgląd zawartości plików
+- Edycja zawartości plików
 
-- archiwizacja wybranych plików/folderów
-- przeglądanie archiwów jak zwykłych folderów
+- Wyszukiwanie folderu/pliku po nazwie
+
+- Generowanie sum kontrolonych md5, itp.
+
+- Podział pliku na fragmenty o konkretnej wielkości
+
+- Archiwizacja wybranych plików/folderów
+- Przeglądanie archiwów jak zwykłych folderów
+
+- Folders/files batch rename
+```
+
+
+
+
+
 
