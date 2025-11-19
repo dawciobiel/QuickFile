@@ -1,10 +1,8 @@
 from PyQt5.QtWidgets import QApplication
-
-from folder_browser import FolderBrowser
+from core.main_window import MainWindow
 
 if __name__ == "__main__":
     app = QApplication([])
-    window = FolderBrowser()
-    window.resize(800, 600)
+    window = MainWindow()
     window.show()
     app.exec_()
