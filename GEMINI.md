@@ -38,7 +38,13 @@
 - **Naprawiono ostrzeżenie `QMainWindow::saveState()`**: Ustawiono `objectName` dla paska narzędzi.
 - **Naprawiono ostrzeżenia `SyntaxWarning`**: Poprawiono wyrażenia regularne w `PythonHighlighter`.
 - **Uporządkowano pliki projektu**: Zmieniono nazwy plików dokumentacji na małe litery (`architecture-suggestion.md`, `features.md`, `architecture.md`) i usunięto nieużywane pliki (`main_window.py`, `imports.txt`).
+- **Ulepszono wyszukiwanie plików**: Zaimplementowano dedykowane okno dialogowe (`SearchDialog`) do prezentacji wyników wyszukiwania.
 
 **Kolejne kroki:**
-1. Wyszukiwanie plików: Rozwinąć sposób prezentacji wyników wyszukiwania.
-2. W przyszłości, ponownie zaimplementować autouzupełnianie, dopasowywanie nawiasów i autowcięcie w `FileEditor`, ale z większą ostrożnością i dokładnym testowaniem.
+1. W przyszłości, ponownie zaimplementować autouzupełnianie, dopasowywanie nawiasów i autowcięcie w `FileEditor`, ale z większą ostrożnością i dokładnym testowaniem.
+2. Rozważyć inne funkcje, takie jak:
+    - Porównywanie plików/katalogów.
+    - Obsługa archiwów (ZIP, RAR).
+    - Synchronizacja katalogów.
+    - Konfigurowalne skróty klawiszowe.
+    - Zakładki dla często używanych katalogów.

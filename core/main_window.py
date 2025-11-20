@@ -7,6 +7,7 @@ from panels.menu_panel import MenuPanel
 from panels.function_key_panel import FunctionKeyPanel
 from file_operations.file_manager import FileManager
 from utils.dialogs import show_error_message
+from utils.search_dialog import SearchDialog
 
 
 class MainWindow(QMainWindow):
@@ -75,9 +76,15 @@ class MainWindow(QMainWindow):
         search_text = self.search_input.text()
         if search_text:
             current_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.current_paths[self.folder_browser.active_panel])
-            self.file_manager.search_files(current_path, search_text)
+            results = self.file_manager.search_files(current_path, search_text)
+            self.show_search_results(results)
         else:
             self.status_bar.showMessage("Wprowadź tekst do wyszukania.")
+
+    def show_search_results(self, results):
+        """Wyświetla wyniki wyszukiwania w oknie dialogowym."""
+        dialog = SearchDialog(self, results)
+        dialog.exec_()
 
     def open_file_externally(self, file_path):
         """Otwiera plik za pomocą domyślnego programu systemowego."""
