@@ -3,6 +3,7 @@
 ## Data: 2025-11-20
 
 ### Zaimplementowane funkcje:
+- **Porównywanie plików/katalogów**: Dodano funkcję porównywania plików i katalogów, dostępną z menu "Operacje" oraz pod klawiszem F9. Wyniki porównania katalogów są wyświetlane w dedykowanym oknie dialogowym.
 - **Wskaźnik aktywnego panelu**: Wizualne wyróżnienie aktywnego panelu i ukrywanie zaznaczenia w nieaktywnym.
 - **Poprawka skrótów F6/F7**: Przywrócenie obsługi skrótów klawiszowych dla akcji "Przenieś" i "Utwórz folder".
 - **Skrót odświeżania**: Dodanie skrótu `Ctrl+R` do odświeżania aktywnego panelu.
@@ -12,7 +13,6 @@
 - **Poprawka błędu `NameError`**: Usunięcie błędu `NameError: name 'QDialog' is not defined`.
 
 ### Kolejne kroki:
-- Porównywanie plików/katalogów.
 - Obsługa archiwów (ZIP, RAR).
 - Synchronizacja katalogów.
 - Konfigurowalne skróty klawiszowe.

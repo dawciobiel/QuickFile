@@ -1,15 +1,17 @@
 import os
 import subprocess
 from PyQt5.QtCore import Qt, QSettings, QEvent
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QToolBar, QLineEdit, QToolButton, QDialog
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QToolBar, QLineEdit, QToolButton, QDialog, QMessageBox
 from bookmarks.bookmarks_manager import BookmarksManager
 from browser.folder_browser import FolderBrowser
 from panels.menu_panel import MenuPanel
 from panels.function_key_panel import FunctionKeyPanel
 from file_operations.file_manager import FileManager
+from file_operations.file_comparator import FileComparator
 from utils.dialogs import show_error_message
 from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
+from utils.compare_dialog import CompareDialog
 
 
 class MainWindow(QMainWindow):
@@ -28,6 +30,7 @@ class MainWindow(QMainWindow):
     def _init_ui(self):
         # Inicjalizacja menedżera plików
         self.file_manager = FileManager(self)
+        self.file_comparator = FileComparator()
 
         # Inicjalizacja komponentów, które są potrzebne innym
         self.folder_browser = FolderBrowser()
@@ -49,6 +52,10 @@ class MainWindow(QMainWindow):
         self.add_bookmark_button.setText("⭐") # Użyj emoji jako ikony
         self.add_bookmark_button.setToolTip("Dodaj bieżący katalog do zakładek")
         self.toolbar.addWidget(self.add_bookmark_button)
+
+        # Akcja porównywania
+        self.compare_action = self.menu_panel.file_menu.addAction("Compare")
+        self.compare_action.triggered.connect(self._compare_selected_items)
 
         # Inicjalizacja paska menu i paska stanu
         self.menu_panel = MenuPanel(self)
@@ -133,6 +140,42 @@ class MainWindow(QMainWindow):
             return selected_path
         return None
 
+    def _compare_selected_items(self):
+        left_selected_path = self.folder_browser.left_panel.get_selected_path()
+        right_selected_path = self.folder_browser.right_panel.get_selected_path()
+
+        if not left_selected_path or not right_selected_path:
+            QMessageBox.warning(self, "Comparison Error", "Please select items in both panels to compare.")
+            return
+
+        is_left_dir = os.path.isdir(left_selected_path)
+        is_right_dir = os.path.isdir(right_selected_path)
+
+        if is_left_dir and is_right_dir:
+            # Compare directories
+            self._compare_directories(left_selected_path, right_selected_path)
+        elif not is_left_dir and not is_right_dir:
+            # Compare files
+            self._compare_files(left_selected_path, right_selected_path)
+        else:
+            QMessageBox.warning(self, "Comparison Error", "Cannot compare a file with a directory. Please select two files or two directories.")
+
+    def _compare_files(self, file1_path, file2_path):
+        are_identical = self.file_comparator.compare_files(file1_path, file2_path)
+        if are_identical:
+            QMessageBox.information(self, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are identical.")
+        else:
+            QMessageBox.information(self, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are different.")
+
+    def _compare_directories(self, dir1_path, dir2_path):
+        dircmp_obj = self.file_comparator.compare_directories(dir1_path, dir2_path)
+        if dircmp_obj:
+            report = self.file_comparator.get_directory_comparison_report(dircmp_obj)
+            dialog = CompareDialog(self, report, dir1_path, dir2_path)
+            dialog.exec_()
+        else:
+            QMessageBox.critical(self, "Directory Comparison Error", "Could not compare directories. Ensure both paths are valid directories.")
+
     def eventFilter(self, source, event):
         if event.type() == QEvent.KeyPress:
             # print(f"MainWindow eventFilter: KeyPress event detected. Key: {event.key()} (Qt.Key_F8: {Qt.Key_F8}), Source: {source.objectName() if source.objectName() else source.__class__.__name__}")
@@ -173,7 +216,7 @@ class MainWindow(QMainWindow):
                 self.menu_panel.delete_selected_item()
                 return True
             elif key == Qt.Key_F9:
-                self.status_bar.showMessage("F9: (niezaimplementowana)")
+                self._compare_selected_items()
                 return True
             elif key == Qt.Key_F10:
                 self.close()
