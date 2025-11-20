@@ -16,6 +16,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Quick File")
         self.resize(1200, 800)
 
+        self._init_ui()
+        self._connect_signals()
+        self.load_settings()
+
+    def _init_ui(self):
         # Inicjalizacja menedżera plików
         self.file_manager = FileManager(self)
 
@@ -30,7 +35,6 @@ class MainWindow(QMainWindow):
         # Pole wyszukiwania
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Szukaj plików...")
-        self.search_input.returnPressed.connect(self.start_file_search)
         self.toolbar.addWidget(self.search_input)
 
         # Inicjalizacja paska menu i paska stanu
@@ -41,7 +45,6 @@ class MainWindow(QMainWindow):
         # Pasek adresu
         self.address_bar = QLineEdit()
         self.address_bar.setReadOnly(True)
-        self.address_bar.returnPressed.connect(self.navigate_from_address_bar)
 
         # Panel klawiszy funkcyjnych
         self.function_key_panel = FunctionKeyPanel(self)
@@ -57,13 +60,12 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.folder_browser, 1) # Rozciągnij folder_browser
         layout.addWidget(self.function_key_panel) # function_key_panel zachowa swoją naturalną wysokość
 
-        # Połączenie sygnałów
+    def _connect_signals(self):
+        self.search_input.returnPressed.connect(self.start_file_search)
+        self.address_bar.returnPressed.connect(self.navigate_from_address_bar)
         self.folder_browser.file_selected.connect(self.open_file_externally)
         self.folder_browser.current_directory_changed.connect(self.update_status_bar_path)
         self.folder_browser.current_directory_changed.connect(self.address_bar.setText)
-
-        # Wczytanie ustawień
-        self.load_settings()
 
     def update_status_bar_path(self, path):
         self.status_bar.showMessage(f"Aktualny katalog: {path}")
@@ -103,35 +105,30 @@ class MainWindow(QMainWindow):
         except Exception as e:
             show_error_message(self, "Błąd otwierania pliku", f"Nie można otworzyć pliku '{file_path}': {e}")
 
+    def _get_selected_file_path(self):
+        """Zwraca ścieżkę do zaznaczonego pliku, jeśli jest to plik."""
+        selected_path = self.folder_browser.current_selected_path
+        if selected_path and os.path.isfile(selected_path):
+            return selected_path
+        return None
+
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_F1:
-            self.status_bar.showMessage("F1: Pomoc (niezaimplementowana)")
-        elif event.key() == Qt.Key_F2:
-            self.menu_panel.rename_selected_item()
-        elif event.key() == Qt.Key_F3:
-            selected_path = self.folder_browser.current_selected_path
-            if selected_path and os.path.isfile(selected_path):
-                self.open_file_externally(selected_path)
-            else:
-                self.status_bar.showMessage("Nie wybrano pliku do podglądu.")
-        elif event.key() == Qt.Key_F4:
-            selected_path = self.folder_browser.current_selected_path
-            if selected_path and os.path.isfile(selected_path):
-                self.open_file_externally(selected_path) # Na razie to samo co F3
-            else:
-                self.status_bar.showMessage("Nie wybrano pliku do edycji.")
-        elif event.key() == Qt.Key_F5:
-            self.menu_panel.copy_selected_item()
-        elif event.key() == Qt.Key_F6:
-            self.menu_panel.cut_selected_item()
-        elif event.key() == Qt.Key_F7:
-            self.menu_panel.create_new_directory()
-        elif event.key() == Qt.Key_F8:
-            self.menu_panel.delete_selected_item()
-        elif event.key() == Qt.Key_F9:
-            self.status_bar.showMessage("F9: (niezaimplementowana)")
-        elif event.key() == Qt.Key_F10:
-            self.close()
+        key_actions = {
+            Qt.Key_F1: lambda: self.status_bar.showMessage("F1: Pomoc (niezaimplementowana)"),
+            Qt.Key_F2: self.menu_panel.rename_selected_item,
+            Qt.Key_F3: lambda: self.open_file_externally(self._get_selected_file_path()) if self._get_selected_file_path() else self.status_bar.showMessage("Nie wybrano pliku do podglądu."),
+            Qt.Key_F4: lambda: self.open_file_externally(self._get_selected_file_path()) if self._get_selected_file_path() else self.status_bar.showMessage("Nie wybrano pliku do edycji."),
+            Qt.Key_F5: self.menu_panel.copy_selected_item,
+            Qt.Key_F6: self.menu_panel.cut_selected_item,
+            Qt.Key_F7: self.menu_panel.create_new_directory,
+            Qt.Key_F8: self.menu_panel.delete_selected_item,
+            Qt.Key_F9: lambda: self.status_bar.showMessage("F9: (niezaimplementowana)"),
+            Qt.Key_F10: self.close,
+        }
+
+        action = key_actions.get(event.key())
+        if action:
+            action()
         else:
             super().keyPressEvent(event)
 
