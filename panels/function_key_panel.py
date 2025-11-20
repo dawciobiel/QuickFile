@@ -88,9 +88,12 @@ class FunctionKeyPanel(QWidget):
         btn_f8.clicked.connect(delete_action.trigger)
         self.layout.addWidget(btn_f8)
 
-        # F9 - (placeholder)
-        btn_f9 = QPushButton("F9")
-        btn_f9.clicked.connect(lambda: self.main_window.status_bar.showMessage("F9: (niezaimplementowana)"))
+        # F9 - Compare
+        compare_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileDialogToParent), "F9 Compare", self.main_window)
+        compare_action.setShortcut(QKeySequence("F9"))
+        compare_action.triggered.connect(self.main_window._compare_selected_items)
+        btn_f9 = QPushButton(compare_action.icon(), compare_action.text())
+        btn_f9.clicked.connect(compare_action.trigger)
         self.layout.addWidget(btn_f9)
 
         # F10 - Exit

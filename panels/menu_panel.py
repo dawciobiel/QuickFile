@@ -17,12 +17,12 @@ class MenuPanel:
         self._create_operations_menu()
 
     def _create_file_menu(self):
-        file_menu = self.menu_bar.addMenu("Plik")
+        self.file_menu = self.menu_bar.addMenu("Plik")
 
         exit_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DialogCancelButton), "Wyjdź", self.main_window)
         exit_action.setShortcut(QKeySequence("Ctrl+Q"))
         exit_action.triggered.connect(self.main_window.close)
-        file_menu.addAction(exit_action)
+        self.file_menu.addAction(exit_action)
 
     def _create_operations_menu(self):
         operations_menu = self.menu_bar.addMenu("Operacje")
@@ -95,6 +95,11 @@ class MenuPanel:
         delete_action.triggered.connect(self.delete_selected_item)
         operations_menu.addAction(delete_action)
         self.toolbar.addAction(delete_action)
+
+        compare_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileDialogToParent), "Porównaj", self.main_window)
+        compare_action.triggered.connect(self.main_window._compare_selected_items)
+        operations_menu.addAction(compare_action)
+        self.toolbar.addAction(compare_action)
 
     def create_new_file(self):
         """Tworzy nowy plik w aktywnym panelu."""
