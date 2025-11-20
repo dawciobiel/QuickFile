@@ -178,6 +178,7 @@ class MainWindow(QMainWindow):
             elif key == Qt.Key_F10:
                 self.close()
                 return True
+<<<<<<< HEAD
             elif event.key() == Qt.Key_B and event.modifiers() == Qt.ControlModifier:
                 self.open_bookmark_dialog()
                 return True
