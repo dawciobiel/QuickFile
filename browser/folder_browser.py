@@ -1,11 +1,14 @@
 import os
 import stat
 
-from PyQt5.QtCore import Qt, QModelIndex
+from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout
 
 
 class FolderBrowser(QWidget):
+    file_selected = pyqtSignal(str)
+    current_directory_changed = pyqtSignal(str)
+
     def __init__(self):
         super().__init__()
 
@@ -16,12 +19,12 @@ class FolderBrowser(QWidget):
         self.left_panel = self.create_file_view()
         self.right_panel = self.create_file_view()
 
-        home_path = os.path.expanduser("~")
-        self.current_paths[self.left_panel] = self.left_panel.model().index(home_path)
-        self.current_paths[self.right_panel] = self.right_panel.model().index(home_path)
+        # home_path = os.path.expanduser("~") # Przeniesiono do load_settings w MainWindow
+        # self.current_paths[self.left_panel] = self.left_panel.model().index(home_path)
+        # self.current_paths[self.right_panel] = self.right_panel.model().index(home_path)
 
-        self.left_panel.setRootIndex(self.current_paths[self.left_panel])
-        self.right_panel.setRootIndex(self.current_paths[self.right_panel])
+        # self.left_panel.setRootIndex(self.current_paths[self.left_panel])
+        # self.right_panel.setRootIndex(self.current_paths[self.right_panel])
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.left_panel)
@@ -35,7 +38,7 @@ class FolderBrowser(QWidget):
 
     def create_file_view(self):
         model = CustomFileSystemModel()
-        model.setRootPath(os.path.expanduser("~"))
+        model.setRootPath(os.path.expanduser("~")) # Domyślny root, zostanie nadpisany przez ustawienia
 
         view = QTreeView()
         view.setModel(model)
@@ -53,24 +56,83 @@ class FolderBrowser(QWidget):
         return view
 
     def on_double_clicked(self, index: QModelIndex):
-        """Obsługa podwójnego kliknięcia - nawigacja do folderu."""
+        """Obsługa podwójnego kliknięcia - nawigacja do folderu lub otwarcie pliku."""
         view = self.sender()
+        file_path = view.model().filePath(index)
         if view.model().isDir(index):
-            view.setRootIndex(index)
-            self.current_paths[view] = index
+            self.navigate_to_path(file_path, view)
+        else:
+            self.file_selected.emit(file_path) # Emituj sygnał do otwarcia pliku zewnętrznie
+
+    def go_up_directory(self):
+        """Przechodzi do katalogu nadrzędnego w aktywnym panelu."""
+        if self.active_panel:
+            current_index = self.current_paths.get(self.active_panel)
+            if current_index and current_index.isValid():
+                parent_index = current_index.parent()
+                if parent_index.isValid():
+                    self.navigate_to_path(self.active_panel.model().filePath(parent_index), self.active_panel)
+                else:
+                    root_path = self.active_panel.model().rootPath()
+                    if root_path and os.path.dirname(root_path) != root_path:
+                        new_root_path = os.path.dirname(root_path)
+                        self.navigate_to_path(new_root_path, self.active_panel)
+
+    def refresh_view(self):
+        """Odświeża widok aktywnego panelu."""
+        if self.active_panel:
+            current_index = self.current_paths.get(self.active_panel)
+            if current_index and current_index.isValid():
+                self.navigate_to_path(self.active_panel.model().filePath(current_index), self.active_panel)
+
+    def navigate_to_path(self, path, panel=None):
+        """Nawiguje aktywny panel do podanej ścieżki."""
+        if panel is None:
+            panel = self.active_panel
+
+        if panel and os.path.exists(path) and os.path.isdir(path):
+            index = panel.model().index(path)
+            if index.isValid():
+                panel.setRootIndex(index)
+                self.current_paths[panel] = index
+                self.current_directory_changed.emit(path)
+            else:
+                self.current_directory_changed.emit(f"Błąd: Nie można nawigować do '{path}'")
+        else:
+            self.current_directory_changed.emit(f"Błąd: Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
+
+    def set_panel_path(self, panel, path):
+        """Ustawia ścieżkę dla podanego panelu."""
+        if panel and os.path.exists(path) and os.path.isdir(path):
+            index = panel.model().index(path)
+            if index.isValid():
+                panel.setRootIndex(index)
+                self.current_paths[panel] = index
+                if panel == self.active_panel: # Emituj tylko jeśli to aktywny panel
+                    self.current_directory_changed.emit(path)
+            else:
+                if panel == self.active_panel:
+                    self.current_directory_changed.emit(f"Błąd: Nie można ustawić ścieżki '{path}'")
+        else:
+            if panel == self.active_panel:
+                self.current_directory_changed.emit(f"Błąd: Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
 
     def set_active_panel(self, panel):
         self.active_panel = panel
+        current_index = self.current_paths.get(self.active_panel)
+        if current_index and current_index.isValid():
+            self.current_directory_changed.emit(self.active_panel.model().filePath(current_index))
 
     def update_current_selected_path(self, current: QModelIndex, previous: QModelIndex):
         if current.isValid():
             self.current_selected_path = current.model().filePath(current)
-            print(f"Aktualnie wybrana ścieżka: {self.current_selected_path}")
+            # Nie emitujemy już file_selected tutaj, bo to robi on_double_clicked
+            # if not current.model().isDir(current):
+            #     self.file_selected.emit(self.current_selected_path)
 
     def eventFilter(self, source, event):
         if event.type() == event.FocusIn and (source == self.left_panel or source == self.right_panel):
             self.set_active_panel(source)
-            print(f"Aktywny panel: {'lewy' if source == self.left_panel else 'prawy'}")
         return super().eventFilter(source, event)
 
 

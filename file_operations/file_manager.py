@@ -1,67 +1,62 @@
 import os
 import shutil
+from utils.dialogs import show_error_message
 
 
 class FileManager:
-    def __init__(self):
-        self.clipboard = None  # Przechowuje ścieżkę do skopiowania/wycięcia
+    def __init__(self, main_window):
+        self.main_window = main_window
+        self.clipboard = None
         self.is_cut_operation = False
 
     def copy_item(self, path):
-        """Kopiuje ścieżkę do schowka."""
         if not path or not os.path.exists(path):
-            print(f"Błąd: Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
+            show_error_message(self.main_window, "Błąd kopiowania", f"Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
             return
         self.clipboard = path
         self.is_cut_operation = False
-        print(f"Skopiowano do schowka: {self.clipboard}")
+        self.main_window.status_bar.showMessage(f"Skopiowano: {path}")
 
     def cut_item(self, path):
-        """Kopiuje ścieżkę do schowka w celu jej przeniesienia."""
         if not path or not os.path.exists(path):
-            print(f"Błąd: Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
+            show_error_message(self.main_window, "Błąd wycinania", f"Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
             return
         self.clipboard = path
         self.is_cut_operation = True
-        print(f"Wycięto do schowka: {self.clipboard}")
+        self.main_window.status_bar.showMessage(f"Wycięto: {path}")
 
     def paste_item(self, destination_path):
-        """Wkleja plik/folder ze schowka do nowej lokalizacji."""
         if not self.clipboard:
-            print("Schowek jest pusty.")
+            show_error_message(self.main_window, "Błąd wklejania", "Schowek jest pusty.")
             return
 
         if not os.path.exists(destination_path):
-            print(f"Błąd: Ścieżka docelowa '{destination_path}' nie istnieje.")
+            show_error_message(self.main_window, "Błąd wklejania", f"Ścieżka docelowa '{destination_path}' nie istnieje.")
             return
 
         try:
-            # Budowanie pełnej ścieżki docelowej
             base_name = os.path.basename(self.clipboard)
             destination_full_path = os.path.join(destination_path, base_name)
 
-            # Przenoszenie lub kopiowanie
             if self.is_cut_operation:
                 shutil.move(self.clipboard, destination_full_path)
-                print(f"Przeniesiono '{self.clipboard}' do '{destination_full_path}'")
+                self.main_window.status_bar.showMessage(f"Przeniesiono '{base_name}' do '{destination_full_path}'")
             else:
                 if os.path.isdir(self.clipboard):
                     shutil.copytree(self.clipboard, destination_full_path)
                 else:
                     shutil.copy2(self.clipboard, destination_full_path)
-                print(f"Wklejono '{self.clipboard}' do '{destination_full_path}'")
+                self.main_window.status_bar.showMessage(f"Skopiowano '{base_name}' do '{destination_full_path}'")
 
         except Exception as e:
-            print(f"Błąd podczas wklejania: {e}")
+            show_error_message(self.main_window, "Błąd wklejania", str(e))
         finally:
-            # Wyczyść schowek po operacji
             self.clipboard = None
             self.is_cut_operation = False
 
     def delete_item(self, path):
-        """Usuwa plik lub folder."""
         if not path or not os.path.exists(path):
-            print(f"Błąd: Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
+            show_error_message(self.main_window, "Błąd usuwania", f"Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
             return
 
         try:
@@ -69,24 +64,89 @@ class FileManager:
                 shutil.rmtree(path)
             else:
                 os.remove(path)
-            print(f"Usunięto: {path}")
+            self.main_window.status_bar.showMessage(f"Usunięto: {path}")
         except Exception as e:
-            print(f"Błąd podczas usuwania: {e}")
+            show_error_message(self.main_window, "Błąd usuwania", str(e))
 
     def rename_item(self, old_path, new_name):
-        """Zmienia nazwę pliku lub folderu."""
         if not old_path or not os.path.exists(old_path):
-            print(f"Błąd: Ścieżka '{old_path}' jest nieprawidłowa lub nie istnieje.")
+            show_error_message(self.main_window, "Błąd zmiany nazwy", f"Ścieżka '{old_path}' jest nieprawidłowa lub nie istnieje.")
             return
 
         if not new_name:
-            print("Błąd: Nowa nazwa nie może być pusta.")
+            show_error_message(self.main_window, "Błąd zmiany nazwy", "Nowa nazwa nie może być pusta.")
             return
 
         try:
             directory = os.path.dirname(old_path)
             new_path = os.path.join(directory, new_name)
             os.rename(old_path, new_path)
-            print(f"Zmieniono nazwę z '{old_path}' na '{new_path}'")
+            self.main_window.status_bar.showMessage(f"Zmieniono nazwę na: {new_name}")
         except Exception as e:
-            print(f"Błąd podczas zmiany nazwy: {e}")
+            show_error_message(self.main_window, "Błąd zmiany nazwy", str(e))
+
+    def create_file(self, directory, file_name):
+        """Tworzy nowy, pusty plik."""
+        if not directory or not os.path.exists(directory):
+            show_error_message(self.main_window, "Błąd tworzenia pliku", f"Katalog '{directory}' jest nieprawidłowy lub nie istnieje.")
+            return
+
+        if not file_name:
+            show_error_message(self.main_window, "Błąd tworzenia pliku", "Nazwa pliku nie może być pusta.")
+            return
+
+        file_path = os.path.join(directory, file_name)
+        if os.path.exists(file_path):
+            show_error_message(self.main_window, "Błąd tworzenia pliku", f"Plik '{file_name}' już istnieje.")
+            return
+
+        try:
+            with open(file_path, 'w') as f:
+                pass  # Tworzy pusty plik
+            self.main_window.status_bar.showMessage(f"Utworzono plik: {file_path}")
+        except Exception as e:
+            show_error_message(self.main_window, "Błąd tworzenia pliku", str(e))
+
+    def create_directory(self, parent_directory, directory_name):
+        """Tworzy nowy folder."""
+        if not parent_directory or not os.path.exists(parent_directory):
+            show_error_message(self.main_window, "Błąd tworzenia folderu", f"Katalog nadrzędny '{parent_directory}' jest nieprawidłowy lub nie istnieje.")
+            return
+
+        if not directory_name:
+            show_error_message(self.main_window, "Błąd tworzenia folderu", "Nazwa folderu nie może być pusta.")
+            return
+
+        directory_path = os.path.join(parent_directory, directory_name)
+        if os.path.exists(directory_path):
+            show_error_message(self.main_window, "Błąd tworzenia folderu", f"Folder '{directory_name}' już istnieje.")
+            return
+
+        try:
+            os.makedirs(directory_path)
+            self.main_window.status_bar.showMessage(f"Utworzono folder: {directory_path}")
+        except Exception as e:
+            show_error_message(self.main_window, "Błąd tworzenia folderu", str(e))
+
+    def search_files(self, root_path, pattern):
+        """Wyszukuje pliki i foldery pasujące do wzorca w podanej ścieżce."""
+        if not root_path or not os.path.exists(root_path):
+            show_error_message(self.main_window, "Błąd wyszukiwania", f"Ścieżka początkowa '{root_path}' jest nieprawidłowa lub nie istnieje.")
+            return []
+
+        found_items = []
+        for dirpath, dirnames, filenames in os.walk(root_path):
+            for name in dirnames + filenames:
+                if pattern.lower() in name.lower():
+                    found_items.append(os.path.join(dirpath, name))
+        
+        if found_items:
+            self.main_window.status_bar.showMessage(f"Znaleziono {len(found_items)} elementów dla '{pattern}'.")
+            print("\n--- Wyniki wyszukiwania ---")
+            for item in found_items:
+                print(item)
+            print("--------------------------")
+        else:
+            self.main_window.status_bar.showMessage(f"Nie znaleziono elementów dla '{pattern}'.")
+        
+        return found_items
