@@ -142,10 +142,6 @@ class FileManager:
         
         if found_items:
             self.main_window.status_bar.showMessage(f"Znaleziono {len(found_items)} elementów dla '{pattern}'.")
-            print("\n--- Wyniki wyszukiwania ---")
-            for item in found_items:
-                print(item)
-            print("--------------------------")
         else:
             self.main_window.status_bar.showMessage(f"Nie znaleziono elementów dla '{pattern}'.")
         
