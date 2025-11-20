@@ -1,8 +1,19 @@
 import os
 import stat
 
-from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal
+from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout
+
+
+class CustomTreeView(QTreeView):
+    """Niestandardowy QTreeView, który ignoruje klawisze F1-F10, pozwalając im propagować dalej."""
+    def keyPressEvent(self, event):
+        # print(f"CustomTreeView keyPressEvent: KeyPress event detected. Key: {event.key()}, Source: {self.objectName() if self.objectName() else self.__class__.__name__}")
+        if event.key() >= Qt.Key_F1 and event.key() <= Qt.Key_F12:
+            # print(f"CustomTreeView: Ignoring F-key event {event.key()}")
+            event.ignore() # Ignoruj zdarzenie, aby mogło propagować dalej
+            return
+        super().keyPressEvent(event)
 
 
 class FolderBrowser(QWidget):
@@ -40,7 +51,7 @@ class FolderBrowser(QWidget):
         model = CustomFileSystemModel()
         model.setRootPath(os.path.expanduser("~")) # Domyślny root, zostanie nadpisany przez ustawienia
 
-        view = QTreeView()
+        view = CustomTreeView() # Użyj CustomTreeView
         view.setModel(model)
 
         view.setColumnWidth(0, 250)
@@ -50,6 +61,7 @@ class FolderBrowser(QWidget):
         view.setColumnWidth(4, 200)
 
         view.selectionModel().currentChanged.connect(self.update_current_selected_path)
+        # view.installEventFilter(self) # Filtr zdarzeń nie jest już potrzebny tutaj
         view.installEventFilter(self)
         view.doubleClicked.connect(self.on_double_clicked)
 
@@ -118,7 +130,11 @@ class FolderBrowser(QWidget):
                 self.current_directory_changed.emit(f"Błąd: Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
 
     def set_active_panel(self, panel):
+        if self.active_panel:
+            self.active_panel.setStyleSheet("") # Reset style sheet
+            self.active_panel.clearSelection()
         self.active_panel = panel
+        self.active_panel.setStyleSheet("QTreeView { border: 1px solid blue; }") # Highlight active
         current_index = self.current_paths.get(self.active_panel)
         if current_index and current_index.isValid():
             self.current_directory_changed.emit(self.active_panel.model().filePath(current_index))
@@ -131,8 +147,9 @@ class FolderBrowser(QWidget):
             #     self.file_selected.emit(self.current_selected_path)
 
     def eventFilter(self, source, event):
-        if event.type() == event.FocusIn and (source == self.left_panel or source == self.right_panel):
-            self.set_active_panel(source)
+        if event.type() == QEvent.FocusIn:
+            if source in [self.left_panel, self.right_panel]:
+                self.set_active_panel(source)
         return super().eventFilter(source, event)
 
 

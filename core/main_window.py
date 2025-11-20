@@ -1,6 +1,6 @@
 import os
 import subprocess
-from PyQt5.QtCore import Qt, QSettings
+from PyQt5.QtCore import Qt, QSettings, QEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QToolBar, QLineEdit
 from browser.folder_browser import FolderBrowser
 from panels.menu_panel import MenuPanel
@@ -19,6 +19,9 @@ class MainWindow(QMainWindow):
         self._init_ui()
         self._connect_signals()
         self.load_settings()
+
+        # Usunięto: self.installEventFilter(self) - filtr zdarzeń jest teraz instalowany globalnie w main.py
+        # print(f"Qt.Key_F8 value: {Qt.Key_F8}") # Usunięto komunikat debugujący
 
     def _init_ui(self):
         # Inicjalizacja menedżera plików
@@ -112,25 +115,52 @@ class MainWindow(QMainWindow):
             return selected_path
         return None
 
-    def keyPressEvent(self, event):
-        key_actions = {
-            Qt.Key_F1: lambda: self.status_bar.showMessage("F1: Pomoc (niezaimplementowana)"),
-            Qt.Key_F2: self.menu_panel.rename_selected_item,
-            Qt.Key_F3: lambda: self.open_file_externally(self._get_selected_file_path()) if self._get_selected_file_path() else self.status_bar.showMessage("Nie wybrano pliku do podglądu."),
-            Qt.Key_F4: lambda: self.open_file_externally(self._get_selected_file_path()) if self._get_selected_file_path() else self.status_bar.showMessage("Nie wybrano pliku do edycji."),
-            Qt.Key_F5: self.menu_panel.copy_selected_item,
-            Qt.Key_F6: self.menu_panel.cut_selected_item,
-            Qt.Key_F7: self.menu_panel.create_new_directory,
-            Qt.Key_F8: self.menu_panel.delete_selected_item,
-            Qt.Key_F9: lambda: self.status_bar.showMessage("F9: (niezaimplementowana)"),
-            Qt.Key_F10: self.close,
-        }
-
-        action = key_actions.get(event.key())
-        if action:
-            action()
-        else:
-            super().keyPressEvent(event)
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.KeyPress:
+            # print(f"MainWindow eventFilter: KeyPress event detected. Key: {event.key()} (Qt.Key_F8: {Qt.Key_F8}), Source: {source.objectName() if source.objectName() else source.__class__.__name__}")
+            key = event.key()
+            if key == Qt.Key_F1:
+                self.status_bar.showMessage("F1: Pomoc (niezaimplementowana)")
+                return True
+            elif key == Qt.Key_F2:
+                self.menu_panel.rename_selected_item()
+                return True
+            elif key == Qt.Key_F3:
+                selected_path = self._get_selected_file_path()
+                if selected_path:
+                    self.open_file_externally(selected_path)
+                else:
+                    self.status_bar.showMessage("Nie wybrano pliku do podglądu.")
+                return True
+            elif key == Qt.Key_F4:
+                selected_path = self._get_selected_file_path()
+                if selected_path:
+                    self.open_file_externally(selected_path) # Na razie to samo co F3
+                else:
+                    self.status_bar.showMessage("Nie wybrano pliku do edycji.")
+                return True
+            elif key == Qt.Key_F5:
+                # print("MainWindow eventFilter: Calling copy_selected_item for F5") # Usunięto komunikat debugujący
+                self.menu_panel.copy_selected_item()
+                return True
+            elif key == Qt.Key_F6:
+                # print("MainWindow eventFilter: Calling move_selected_item for F6") # Usunięto komunikat debugujący
+                self.menu_panel.move_selected_item()
+                return True
+            elif key == Qt.Key_F7:
+                self.menu_panel.create_new_directory()
+                return True
+            elif key == Qt.Key_F8:
+                # print(f"MainWindow eventFilter: F8 key ({key}) detected. Calling delete_selected_item.") # Usunięto komunikat debugujący
+                self.menu_panel.delete_selected_item()
+                return True
+            elif key == Qt.Key_F9:
+                self.status_bar.showMessage("F9: (niezaimplementowana)")
+                return True
+            elif key == Qt.Key_F10:
+                self.close()
+                return True
+        return super().eventFilter(source, event)
 
     def load_settings(self):
         settings = QSettings("QuickFile", "QuickFile")

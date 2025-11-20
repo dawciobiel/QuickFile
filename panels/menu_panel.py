@@ -1,6 +1,9 @@
 import os
-from PyQt5.QtWidgets import QAction, QInputDialog, QStyle
+from PyQt5.QtWidgets import QAction, QInputDialog, QStyle, QDialog
 from PyQt5.QtGui import QIcon, QKeySequence
+from utils.copy_dialog import CopyDialog
+from utils.move_dialog import MoveDialog
+from utils.delete_dialog import DeleteDialog # Dodaj import DeleteDialog
 
 
 class MenuPanel:
@@ -16,15 +19,6 @@ class MenuPanel:
     def _create_file_menu(self):
         file_menu = self.menu_bar.addMenu("Plik")
 
-        # Usunięto akcję "Zapisz"
-        # save_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DialogSaveButton), "Zapisz", self.main_window)
-        # save_action.setShortcut(QKeySequence.Save)
-        # save_action.triggered.connect(self.save_current_file)
-        # file_menu.addAction(save_action)
-        # self.toolbar.addAction(save_action)
-
-        # file_menu.addSeparator()
-
         exit_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DialogCancelButton), "Wyjdź", self.main_window)
         exit_action.setShortcut(QKeySequence("Ctrl+Q"))
         exit_action.triggered.connect(self.main_window.close)
@@ -35,13 +29,13 @@ class MenuPanel:
         self.toolbar.addSeparator()
 
         go_up_action = QAction(self.main_window.style().standardIcon(QStyle.SP_ArrowUp), "Idź w górę", self.main_window)
-        go_up_action.setShortcut(QKeySequence("Alt+Up"))
+        # go_up_action.setShortcut(QKeySequence("Alt+Up")) # Usunięto skrót
         go_up_action.triggered.connect(self.main_window.folder_browser.go_up_directory)
         operations_menu.addAction(go_up_action)
         self.toolbar.addAction(go_up_action)
 
         refresh_action = QAction(self.main_window.style().standardIcon(QStyle.SP_BrowserReload), "Odśwież", self.main_window)
-        refresh_action.setShortcut(QKeySequence("F5"))
+        # refresh_action.setShortcut(QKeySequence("F5")) # Usunięto skrót
         refresh_action.triggered.connect(self.main_window.folder_browser.refresh_view)
         operations_menu.addAction(refresh_action)
         self.toolbar.addAction(refresh_action)
@@ -50,13 +44,13 @@ class MenuPanel:
         self.toolbar.addSeparator()
 
         create_file_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileIcon), "Nowy Plik", self.main_window)
-        create_file_action.setShortcut(QKeySequence("Ctrl+N"))
+        # create_file_action.setShortcut(QKeySequence("Ctrl+N")) # Usunięto skrót
         create_file_action.triggered.connect(self.create_new_file)
         operations_menu.addAction(create_file_action)
         self.toolbar.addAction(create_file_action)
 
         create_directory_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DirIcon), "Nowy Folder", self.main_window)
-        create_directory_action.setShortcut(QKeySequence("Ctrl+Shift+N"))
+        # create_directory_action.setShortcut(QKeySequence("Ctrl+Shift+N")) # Usunięto skrót
         create_directory_action.triggered.connect(self.create_new_directory)
         operations_menu.addAction(create_directory_action)
         self.toolbar.addAction(create_directory_action)
@@ -65,7 +59,7 @@ class MenuPanel:
         self.toolbar.addSeparator()
 
         search_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileDialogDetailedView), "Szukaj", self.main_window)
-        search_action.setShortcut(QKeySequence("Ctrl+F"))
+        # search_action.setShortcut(QKeySequence("Ctrl+F")) # Usunięto skrót
         search_action.triggered.connect(self.main_window.search_input.setFocus)
         operations_menu.addAction(search_action)
         self.toolbar.addAction(search_action)
@@ -74,38 +68,33 @@ class MenuPanel:
         self.toolbar.addSeparator()
 
         copy_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileLinkIcon), "Kopiuj", self.main_window)
-        copy_action.setShortcut(QKeySequence.Copy)
+        # copy_action.setShortcut(QKeySequence("F5")) # Usunięto skrót
         copy_action.triggered.connect(self.copy_selected_item)
         operations_menu.addAction(copy_action)
         self.toolbar.addAction(copy_action)
 
         paste_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileIcon), "Wklej", self.main_window)
         paste_action.setShortcut(QKeySequence.Paste)
-        paste_action.triggered.connect(self.paste_item_to_current_dir)
         operations_menu.addAction(paste_action)
         self.toolbar.addAction(paste_action)
 
         move_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DirLinkIcon), "Przenieś", self.main_window)
-        move_action.setShortcut(QKeySequence.Cut)
-        move_action.triggered.connect(self.cut_selected_item)
+        # move_action.setShortcut(QKeySequence.Cut) # Usunięto skrót
+        move_action.triggered.connect(self.move_selected_item) # Zmieniono na move_selected_item
         operations_menu.addAction(move_action)
         self.toolbar.addAction(move_action)
 
         rename_action = QAction(self.main_window.style().standardIcon(QStyle.SP_LineEditClearButton), "Zmień nazwę", self.main_window)
-        rename_action.setShortcut(QKeySequence("F2"))
+        # rename_action.setShortcut(QKeySequence("F2")) # Usunięto skrót
         rename_action.triggered.connect(self.rename_selected_item)
         operations_menu.addAction(rename_action)
         self.toolbar.addAction(rename_action)
 
         delete_action = QAction(self.main_window.style().standardIcon(QStyle.SP_TrashIcon), "Usuń", self.main_window)
-        delete_action.setShortcut(QKeySequence.Delete)
+        # delete_action.setShortcut(QKeySequence("F8")) # Usunięto skrót
         delete_action.triggered.connect(self.delete_selected_item)
         operations_menu.addAction(delete_action)
         self.toolbar.addAction(delete_action)
-
-    def save_current_file(self):
-        # Ta metoda nie jest już potrzebna, ponieważ wewnętrzny edytor został usunięty
-        pass
 
     def create_new_file(self):
         """Tworzy nowy plik w aktywnym panelu."""
@@ -140,12 +129,38 @@ class MenuPanel:
             self.main_window.status_bar.showMessage("Brak aktywnego panelu.")
 
     def copy_selected_item(self):
-        """Kopiuje zaznaczony element z aktywnego panelu."""
-        selected_path = self.main_window.folder_browser.current_selected_path
-        if selected_path:
-            self.file_manager.copy_item(selected_path)
-        else:
+        """Otwiera dialog kopiowania dla zaznaczonego elementu."""
+        source_path = self.main_window.folder_browser.current_selected_path
+        if not source_path:
             self.main_window.status_bar.showMessage("Nie wybrano żadnego pliku/folderu do skopiowania.")
+            return
+
+        # Określenie ścieżki docelowej (nieaktywne panele)
+        active_panel = self.main_window.folder_browser.active_panel
+        inactive_panel = self.main_window.folder_browser.right_panel if active_panel == self.main_window.folder_browser.left_panel else self.main_window.folder_browser.left_panel
+        destination_path = inactive_panel.model().filePath(self.main_window.folder_browser.current_paths[inactive_panel])
+
+        dialog = CopyDialog(self.main_window, source_path, destination_path)
+        if dialog.exec_() == QDialog.Accepted:
+            options = dialog.get_options()
+            self.file_manager.copy_item_with_options(source_path, destination_path, options)
+
+    def move_selected_item(self):
+        """Otwiera dialog przenoszenia dla zaznaczonego elementu."""
+        source_path = self.main_window.folder_browser.current_selected_path
+        if not source_path:
+            self.main_window.status_bar.showMessage("Nie wybrano żadnego pliku/folderu do przeniesienia.")
+            return
+
+        # Określenie ścieżki docelowej (nieaktywne panele)
+        active_panel = self.main_window.folder_browser.active_panel
+        inactive_panel = self.main_window.folder_browser.right_panel if active_panel == self.main_window.folder_browser.left_panel else self.main_window.folder_browser.left_panel
+        destination_path = inactive_panel.model().filePath(self.main_window.folder_browser.current_paths[inactive_panel])
+
+        dialog = MoveDialog(self.main_window, source_path, destination_path)
+        if dialog.exec_() == QDialog.Accepted:
+            options = dialog.get_options()
+            self.file_manager.move_item_with_options(source_path, destination_path, options)
 
     def cut_selected_item(self):
         """Kopiuje zaznaczony element z aktywnego panelu w celu jego przeniesienia."""
@@ -170,11 +185,15 @@ class MenuPanel:
 
     def delete_selected_item(self):
         """Usuwa zaznaczony element z aktywnego panelu."""
+        print("MenuPanel: delete_selected_item called") # Dodano komunikat debugujący
         selected_path = self.main_window.folder_browser.current_selected_path
-        if selected_path:
-            self.file_manager.delete_item(selected_path)
-        else:
+        if not selected_path:
             self.main_window.status_bar.showMessage("Nie wybrano żadnego pliku/folderu do usunięcia.")
+            return
+
+        dialog = DeleteDialog(self.main_window, selected_path)
+        if dialog.exec_() == QDialog.Accepted:
+            self.file_manager.delete_item_with_confirmation(selected_path)
 
     def rename_selected_item(self):
         """Zmienia nazwę zaznaczonego elementu."""
