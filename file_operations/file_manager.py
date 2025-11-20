@@ -9,6 +9,86 @@ class FileManager:
         self.clipboard = None
         self.is_cut_operation = False
 
+    def copy_item_with_options(self, source_path, destination_path, options):
+        """Kopiuje plik/folder z opcjami."""
+        if not source_path or not os.path.exists(source_path):
+            show_error_message(self.main_window, "Błąd kopiowania", f"Ścieżka źródłowa '{source_path}' jest nieprawidłowa lub nie istnieje.")
+            return
+
+        if not destination_path or not os.path.exists(destination_path):
+            show_error_message(self.main_window, "Błąd kopiowania", f"Ścieżka docelowa '{destination_path}' nie istnieje.")
+            return
+
+        try:
+            base_name = os.path.basename(source_path)
+            destination_full_path = os.path.join(destination_path, base_name)
+
+            if os.path.exists(destination_full_path) and not options.get("overwrite"):
+                show_error_message(self.main_window, "Błąd kopiowania", f"Plik '{base_name}' już istnieje w lokalizacji docelowej. Zaznacz opcję 'Nadpisz', aby go zastąpić.")
+                return
+
+            copy_function = shutil.copy2 if options.get("preserve_timestamp") else shutil.copy
+            
+            if os.path.isdir(source_path):
+                if os.path.exists(destination_full_path):
+                    shutil.rmtree(destination_full_path)
+                shutil.copytree(source_path, destination_full_path, copy_function=copy_function)
+            else:
+                copy_function(source_path, destination_full_path)
+
+            self.main_window.status_bar.showMessage(f"Skopiowano '{base_name}' do '{destination_path}'")
+            self.main_window.folder_browser.refresh_view()
+
+        except Exception as e:
+            show_error_message(self.main_window, "Błąd kopiowania", str(e))
+
+    def move_item_with_options(self, source_path, destination_path, options):
+        """Przenosi plik/folder z opcjami."""
+        if not source_path or not os.path.exists(source_path):
+            show_error_message(self.main_window, "Błąd przenoszenia", f"Ścieżka źródłowa '{source_path}' jest nieprawidłowa lub nie istnieje.")
+            return
+
+        if not destination_path or not os.path.exists(destination_path):
+            show_error_message(self.main_window, "Błąd przenoszenia", f"Ścieżka docelowa '{destination_path}' nie istnieje.")
+            return
+
+        try:
+            base_name = os.path.basename(source_path)
+            destination_full_path = os.path.join(destination_path, base_name)
+
+            if os.path.exists(destination_full_path):
+                if not options.get("overwrite"):
+                    show_error_message(self.main_window, "Błąd przenoszenia", f"Plik '{base_name}' już istnieje w lokalizacji docelowej. Zaznacz opcję 'Nadpisz', aby go zastąpić.")
+                    return
+                else:
+                    if os.path.isdir(destination_full_path):
+                        shutil.rmtree(destination_full_path)
+                    else:
+                        os.remove(destination_full_path)
+
+            shutil.move(source_path, destination_full_path)
+            self.main_window.status_bar.showMessage(f"Przeniesiono '{base_name}' do '{destination_full_path}'")
+            self.main_window.folder_browser.refresh_view()
+
+        except Exception as e:
+            show_error_message(self.main_window, "Błąd przenoszenia", str(e))
+
+    def delete_item_with_confirmation(self, item_path):
+        """Usuwa plik/folder po potwierdzeniu."""
+        if not item_path or not os.path.exists(item_path):
+            show_error_message(self.main_window, "Błąd usuwania", f"Ścieżka '{item_path}' jest nieprawidłowa lub nie istnieje.")
+            return
+
+        try:
+            if os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+            else:
+                os.remove(item_path)
+            self.main_window.status_bar.showMessage(f"Usunięto: {item_path}")
+            self.main_window.folder_browser.refresh_view()
+        except Exception as e:
+            show_error_message(self.main_window, "Błąd usuwania", str(e))
+
     def copy_item(self, path):
         if not path or not os.path.exists(path):
             show_error_message(self.main_window, "Błąd kopiowania", f"Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
