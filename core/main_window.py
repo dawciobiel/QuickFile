@@ -8,6 +8,9 @@ from panels.menu_panel import MenuPanel
 from panels.function_key_panel import FunctionKeyPanel
 from file_operations.file_manager import FileManager
 from file_operations.file_comparator import FileComparator
+from file_operations.archive_manager import ArchiveManager
+from file_operations.directory_synchronizer import DirectorySynchronizer
+from core.shortcuts_manager import ShortcutsManager
 from utils.dialogs import show_error_message
 from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
@@ -20,7 +23,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Quick File")
         self.resize(1200, 800)
 
+        self.shortcuts_manager = ShortcutsManager(self)
         self._init_ui()
+        self.shortcuts_manager.apply_shortcuts()
         self._connect_signals()
         self.load_settings()
 
@@ -31,6 +36,8 @@ class MainWindow(QMainWindow):
         # Inicjalizacja menedżera plików
         self.file_manager = FileManager(self)
         self.file_comparator = FileComparator()
+        self.archive_manager = ArchiveManager(self)
+        self.directory_synchronizer = DirectorySynchronizer(self)
 
         # Inicjalizacja komponentów, które są potrzebne innym
         self.folder_browser = FolderBrowser()
@@ -53,12 +60,13 @@ class MainWindow(QMainWindow):
         self.add_bookmark_button.setToolTip("Dodaj bieżący katalog do zakładek")
         self.toolbar.addWidget(self.add_bookmark_button)
 
+        # Inicjalizacja paska menu i paska stanu
+        self.menu_panel = MenuPanel(self)
+
         # Akcja porównywania
         self.compare_action = self.menu_panel.file_menu.addAction("Compare")
         self.compare_action.triggered.connect(self._compare_selected_items)
 
-        # Inicjalizacja paska menu i paska stanu
-        self.menu_panel = MenuPanel(self)
         self.status_bar = self.statusBar()
         self.status_bar.showMessage("Gotowy")
 
