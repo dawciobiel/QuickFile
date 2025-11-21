@@ -18,7 +18,6 @@ class CustomTreeView(QTreeView):
             current_index = self.currentIndex()
             if current_index.isValid():
                 self.selectionModel().select(current_index, QItemSelectionModel.Toggle)
-                self.model().dataChanged.emit(current_index, current_index, [Qt.ForegroundRole]) # Wymuś odświeżenie danych
             event.accept() # Akceptuj zdarzenie, aby zapobiec dalszej propagacji
             return
         super().keyPressEvent(event)
@@ -28,7 +27,6 @@ class CustomTreeView(QTreeView):
             index = self.indexAt(event.pos())
             if index.isValid():
                 self.selectionModel().select(index, QItemSelectionModel.Toggle)
-                self.model().dataChanged.emit(index, index, [Qt.ForegroundRole]) # Wymuś odświeżenie danych
                 return # Przetwarzamy zdarzenie, aby nie otwierać menu kontekstowego domyślnie
         super().mousePressEvent(event)
 
@@ -224,7 +222,7 @@ class CustomFileSystemModel(QFileSystemModel):
 
     def data(self, index, role=Qt.DisplayRole):
         # print(f"data() called for: {index.data(Qt.DisplayRole)}, Role: {role}")
-        if role == Qt.BackgroundRole and self.view:
+        if role == Qt.ForegroundRole and self.view:
             is_selected = self.view.selectionModel().isSelected(index)
             # print(f"  Item: {index.data(Qt.DisplayRole)}, isSelected: {is_selected}")
             if is_selected:
