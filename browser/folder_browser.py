@@ -1,8 +1,9 @@
 import os
 import stat
 
-from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QDir
-from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout
+from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QDir, QItemSelectionModel
+from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout, QAbstractItemView
+from PyQt5.QtGui import QColor, QBrush
 
 
 class CustomTreeView(QTreeView):
@@ -13,7 +14,20 @@ class CustomTreeView(QTreeView):
             # print(f"CustomTreeView: Ignoring F-key event {event.key()}")
             event.ignore() # Ignoruj zdarzenie, aby mogło propagować dalej
             return
+        elif event.key() == Qt.Key_Insert:
+            current_index = self.currentIndex()
+            if current_index.isValid():
+                self.selectionModel().select(current_index, QItemSelectionModel.Toggle)
+            return
         super().keyPressEvent(event)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.RightButton:
+            index = self.indexAt(event.pos())
+            if index.isValid():
+                self.selectionModel().select(index, QItemSelectionModel.Toggle)
+                return # Przetwarzamy zdarzenie, aby nie otwierać menu kontekstowego domyślnie
+        super().mousePressEvent(event)
 
     def get_selected_path(self):
         """Zwraca ścieżkę do zaznaczonego elementu."""
@@ -68,6 +82,8 @@ class FolderBrowser(QWidget):
 
         view = CustomTreeView() # Użyj CustomTreeView
         view.setModel(model)
+        model.set_view(view) # Przekaż referencję do widoku do modelu
+        view.setSelectionMode(QAbstractItemView.ExtendedSelection) # Ustaw tryb selekcji
 
         view.setColumnWidth(0, 250)
         view.setColumnWidth(1, 100)
@@ -193,10 +209,18 @@ class FolderBrowser(QWidget):
 
 
 class CustomFileSystemModel(QFileSystemModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.view = None # Inicjalizuj view jako None
+
+    def set_view(self, view):
+        self.view = view
     def columnCount(self, parent=None):
         return super().columnCount(parent) + 1
 
     def data(self, index, role=Qt.DisplayRole):
+        if role == Qt.ForegroundRole and self.view and self.view.selectionModel().isSelected(index):
+            return QBrush(QColor("orange"))
         if role == Qt.DisplayRole and index.column() == 4:
             file_path = self.filePath(index)
             return self.get_permissions(file_path)
