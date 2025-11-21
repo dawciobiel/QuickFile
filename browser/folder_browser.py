@@ -14,7 +14,7 @@ class CustomTreeView(QTreeView):
             # print(f"CustomTreeView: Ignoring F-key event {event.key()}")
             event.ignore() # Ignoruj zdarzenie, aby mogło propagować dalej
             return
-        elif event.key() == Qt.Key_Insert:
+        elif event.key() == Qt.Key_Space:
             current_index = self.currentIndex()
             if current_index.isValid():
                 self.selectionModel().select(current_index, QItemSelectionModel.Toggle)
