@@ -24,6 +24,7 @@ class CustomTreeView(QTreeView):
             current_index = self.currentIndex()
             if current_index.isValid():
                 self.selectionModel().select(current_index, QItemSelectionModel.Toggle)
+                self.viewport().update() # Wymuś odświeżenie całego widoku
             event.accept() # Akceptuj zdarzenie, aby zapobiec dalszej propagacji
             return
         super().keyPressEvent(event)
