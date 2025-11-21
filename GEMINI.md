@@ -1,8 +1,13 @@
 # Postępy prac z Gemini AI
 
-## Data: 2025-11-20
+## Data: 2025-11-21
 
 ### Zaimplementowane funkcje:
+- **Obsługa archiwów (ZIP, TAR)**: Dodano funkcje do tworzenia i wypakowywania archiwów ZIP i TAR z poziomu menu "Archiwum".
+- **Synchronizacja katalogów**: Dodano funkcję synchronizacji dwóch katalogów (jednokierunkowej i dwukierunkowej) z poziomu menu "Operacje".
+- **Konfigurowalne skróty klawiszowe**: Dodano menedżera skrótów klawiszowych oraz okno dialogowe do ich konfiguracji, dostępne z menu "Ustawienia". Skróty są zapisywane w pliku konfiguracyjnym.
+
+### Wcześniejsze postępy:
 - **Porównywanie plików/katalogów**: Dodano funkcję porównywania plików i katalogów, dostępną z menu "Operacje" oraz pod klawiszem F9. Wyniki porównania katalogów są wyświetlane w dedykowanym oknie dialogowym.
 - **Wskaźnik aktywnego panelu**: Wizualne wyróżnienie aktywnego panelu i ukrywanie zaznaczenia w nieaktywnym.
 - **Poprawka skrótów F6/F7**: Przywrócenie obsługi skrótów klawiszowych dla akcji "Przenieś" i "Utwórz folder".
@@ -11,11 +16,6 @@
     - Dodawanie bieżącego katalogu do zakładek za pomocą ikony gwiazdki.
     - Szybkie przechodzenie do zakładek za pomocą okna dialogowego (`Ctrl+B`).
 - **Poprawka błędu `NameError`**: Usunięcie błędu `NameError: name 'QDialog' is not defined`.
-
-### Kolejne kroki:
-- Obsługa archiwów (ZIP, RAR).
-- Synchronizacja katalogów.
-- Konfigurowalne skróty klawiszowe.
 
 ---
 **Status na 2024-01-27:**

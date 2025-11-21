@@ -15,6 +15,18 @@ class CustomTreeView(QTreeView):
             return
         super().keyPressEvent(event)
 
+    def get_selected_path(self):
+        """Zwraca ścieżkę do zaznaczonego elementu."""
+        selection_model = self.selectionModel()
+        if not selection_model.hasSelection():
+            return None
+        selected_indexes = selection_model.selectedIndexes()
+        if not selected_indexes:
+            return None
+        # We only care about the first selected item, and its path is in the first column
+        first_index = selected_indexes[0]
+        return self.model().filePath(first_index)
+
 
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
