@@ -61,3 +61,8 @@
   KeyError: ''
   ```
   Problem występował, gdy `char_before_cursor` był pustym ciągiem znaków, co nie było obsługiwane przez słownik `parentheses`.
+
+---
+
+### Przyszłe zadania:
+- **Implementacja pozycji ".." w widoku płaskim**: Zaimplementowanie pozycji ".." bezpośrednio na liście plików w trybie widoku płaskiego, umożliwiającej nawigację do katalogu nadrzędnego. Wymaga to ostrożnego podejścia, aby uniknąć problemów ze stabilnością modelu plików.
