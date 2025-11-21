@@ -18,7 +18,7 @@ class CustomTreeView(QTreeView):
             current_index = self.currentIndex()
             if current_index.isValid():
                 self.selectionModel().select(current_index, QItemSelectionModel.Toggle)
-                self.viewport().update() # Wymuś odświeżenie całego widoku
+                self.model().dataChanged.emit(current_index, current_index, [Qt.ForegroundRole]) # Wymuś odświeżenie danych
             event.accept() # Akceptuj zdarzenie, aby zapobiec dalszej propagacji
             return
         super().keyPressEvent(event)
@@ -28,6 +28,7 @@ class CustomTreeView(QTreeView):
             index = self.indexAt(event.pos())
             if index.isValid():
                 self.selectionModel().select(index, QItemSelectionModel.Toggle)
+                self.model().dataChanged.emit(index, index, [Qt.ForegroundRole]) # Wymuś odświeżenie danych
                 return # Przetwarzamy zdarzenie, aby nie otwierać menu kontekstowego domyślnie
         super().mousePressEvent(event)
 
