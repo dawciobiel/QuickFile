@@ -6,6 +6,10 @@
 - **Obsługa archiwów (ZIP, TAR)**: Dodano funkcje do tworzenia i wypakowywania archiwów ZIP i TAR z poziomu menu "Archiwum".
 - **Synchronizacja katalogów**: Dodano funkcję synchronizacji dwóch katalogów (jednokierunkowej i dwukierunkowej) z poziomu menu "Operacje".
 - **Konfigurowalne skróty klawiszowe**: Dodano menedżera skrótów klawiszowych oraz okno dialogowe do ich konfiguracji, dostępne z menu "Ustawienia". Skróty są zapisywane w pliku konfiguracyjnym.
+- **Konfigurowalne tryby widoku folderów**:
+    - Zaimplementowano dwa tryby widoku folderów: "Widok płaski" (z pozycją `..` do nawigacji w górę) oraz "Widok drzewa" (wyświetlający całą partycję w formie rozwijanego drzewa).
+    - Dodano możliwość wyboru trybu widoku w "Ustawieniach Aplikacji".
+    - Zmodyfikowano `FolderBrowser` i `CustomFileSystemModel` (oraz dodano `FlatFileSystemModel`) w celu obsługi obu trybów.
 
 ### Wcześniejsze postępy:
 - **Porównywanie plików/katalogów**: Dodano funkcję porównywania plików i katalogów, dostępną z menu "Operacje" oraz pod klawiszem F9. Wyniki porównania katalogów są wyświetlane w dedykowanym oknie dialogowym.

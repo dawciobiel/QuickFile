@@ -11,6 +11,7 @@ from file_operations.file_comparator import FileComparator
 from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from core.shortcuts_manager import ShortcutsManager
+from core.settings_manager import SettingsManager
 from utils.dialogs import show_error_message
 from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
@@ -24,6 +25,7 @@ class MainWindow(QMainWindow):
         self.resize(1200, 800)
 
         self.shortcuts_manager = ShortcutsManager(self)
+        self.settings_manager = SettingsManager()
         self._init_ui()
         self.shortcuts_manager.apply_shortcuts()
         self._connect_signals()
@@ -40,7 +42,7 @@ class MainWindow(QMainWindow):
         self.directory_synchronizer = DirectorySynchronizer(self)
 
         # Inicjalizacja komponentów, które są potrzebne innym
-        self.folder_browser = FolderBrowser()
+        self.folder_browser = FolderBrowser(view_mode=self.settings_manager.get_setting("view_mode"))
 
         # Inicjalizacja paska narzędzi
         self.toolbar = self.addToolBar("Główne narzędzia")

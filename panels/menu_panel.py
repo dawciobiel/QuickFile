@@ -7,6 +7,7 @@ from utils.move_dialog import MoveDialog
 from utils.delete_dialog import DeleteDialog # Dodaj import DeleteDialog
 from utils.sync_dialog import SyncDialog
 from utils.shortcuts_dialog import ShortcutsDialog
+from utils.settings_dialog import SettingsDialog
 
 
 class MenuPanel:
@@ -26,6 +27,21 @@ class MenuPanel:
         configure_shortcuts_action = QAction("Skonfiguruj skróty", self.main_window)
         configure_shortcuts_action.triggered.connect(self.open_shortcuts_dialog)
         settings_menu.addAction(configure_shortcuts_action)
+
+        general_settings_action = QAction("Ogólne ustawienia", self.main_window)
+        general_settings_action.triggered.connect(self.open_general_settings_dialog)
+        settings_menu.addAction(general_settings_action)
+
+    def open_general_settings_dialog(self):
+        current_view_mode = self.main_window.settings_manager.get_setting("view_mode")
+        dialog = SettingsDialog(self.main_window, current_view_mode)
+        if dialog.exec_() == QDialog.Accepted:
+            new_view_mode = dialog.get_selected_view_mode()
+            if new_view_mode != current_view_mode:
+                self.main_window.settings_manager.set_setting("view_mode", new_view_mode)
+                # Tutaj można dodać logikę do przeładowania FolderBrowser z nowym trybem widoku
+                # Na razie tylko zapisujemy ustawienie.
+                self.main_window.status_bar.showMessage(f"Zmieniono tryb widoku na: {new_view_mode}. Wymagany restart aplikacji.")
 
     def open_shortcuts_dialog(self):
         dialog = ShortcutsDialog(self.main_window, self.main_window.shortcuts_manager.shortcuts)
