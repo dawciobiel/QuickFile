@@ -1,7 +1,7 @@
 import os
 import stat
 
-from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal, QEvent
+from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QDir
 from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout
 
 
@@ -61,10 +61,7 @@ class FolderBrowser(QWidget):
         self.set_active_panel(self.left_panel)
 
     def create_file_view(self):
-        if self.view_mode == "flat":
-            model = FlatFileSystemModel()
-        else:
-            model = CustomFileSystemModel()
+        model = CustomFileSystemModel()
         
         # Ustawienie rootPath dla modelu jest zawsze potrzebne, aby model wiedział, od którego miejsca zaczynać skanowanie
         model.setRootPath(os.path.expanduser("~"))
@@ -95,9 +92,7 @@ class FolderBrowser(QWidget):
         view = self.sender()
         file_path = view.model().filePath(index)
         
-        if self.view_mode == "flat" and index.internalPointer() == "parent_dir":
-            self.go_up_directory()
-        elif view.model().isDir(index):
+        if view.model().isDir(index):
             self.navigate_to_path(file_path, view)
         else:
             self.file_selected.emit(file_path) # Emituj sygnał do otwarcia pliku zewnętrznie
@@ -157,7 +152,12 @@ class FolderBrowser(QWidget):
         if panel and os.path.exists(path) and os.path.isdir(path):
             index = panel.model().index(path)
             if index.isValid():
-                panel.setRootIndex(index)
+                if self.view_mode == "flat":
+                    panel.setRootIndex(index)
+                else: # view_mode == "tree"
+                    panel.expand(index)
+                    panel.scrollTo(index)
+                    panel.setCurrentIndex(index)
                 self.current_paths[panel] = index
                 if panel == self.active_panel: # Emituj tylko jeśli to aktywny panel
                     self.current_directory_changed.emit(path)
@@ -220,51 +220,3 @@ class CustomFileSystemModel(QFileSystemModel):
         except Exception:
             return "N/A"
 
-class FlatFileSystemModel(CustomFileSystemModel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFilter(QFileSystemModel.NoDotAndDotDot | QFileSystemModel.AllEntries)
-
-    def rowCount(self, parent=QModelIndex()):
-        if self.filePath(parent) == '/': # Nie dodawaj ".." w głównym katalogu systemowym ('/')
-            return super().rowCount(parent)
-
-        return super().rowCount(parent) + 1
-
-    def index(self, row, column, parent=QModelIndex()):
-        if self.filePath(parent) == '/': # Nie dodawaj ".." w głównym katalogu systemowym ('/')
-            return super().index(row, column, parent)
-
-        if row == 0:
-            # Tworzymy fałszywy indeks dla ".."
-            # Możemy użyć QModelIndex.child(row, column) z tymczasowym indeksem nadrzędnym
-            # Tutaj na razie zwrócimy specjalny indeks, który rozpoznamy w data()
-            return self.createIndex(0, column, "parent_dir")
-        
-        # Dla pozostałych elementów, przesuwamy wiersz o 1 w dół
-        return super().index(row - 1, column, parent)
-
-    def data(self, index, role=Qt.DisplayRole):
-        if index.internalPointer() == "parent_dir":
-            if role == Qt.DisplayRole:
-                return ".."
-            return None # Nie posiadamy innych danych dla ".."
-        
-        # Dla pozostałych elementów, musimy utworzyć "prawdziwy" indeks
-        # Wewnętrznie QFileSystemModel używa swoich własnych indeksów.
-        # Najprostszym sposobem dla data() jest nie modyfikowanie indeksu,
-        # lecz sprawdzenie czy to nie jest nasz specjalny indeks.
-        # Jest to obsłużone wyżej.
-        return super().data(index, role)
-
-    def filePath(self, index: QModelIndex):
-        if index.internalPointer() == "parent_dir":
-             # Zwróć ścieżkę do katalogu nadrzędnego
-            current_path = self.filePath(index.parent()) # Ścieżka katalogu, w którym teraz jesteśmy
-            return os.path.dirname(current_path)
-        return super().filePath(index)
-
-    def isDir(self, index: QModelIndex):
-        if index.internalPointer() == "parent_dir":
-            return True # ".." to zawsze katalog
-        return super().isDir(index)
