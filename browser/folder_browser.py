@@ -32,12 +32,13 @@ class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, view_mode="flat"):
         super().__init__()
 
         self.active_panel = None
         self.current_selected_path = None
         self.current_paths = {}  # Słownik do śledzenia ścieżek dla paneli
+        self.view_mode = view_mode # Przechowuj tryb widoku
 
         self.left_panel = self.create_file_view()
         self.right_panel = self.create_file_view()
@@ -60,8 +61,13 @@ class FolderBrowser(QWidget):
         self.set_active_panel(self.left_panel)
 
     def create_file_view(self):
-        model = CustomFileSystemModel()
-        model.setRootPath(os.path.expanduser("~")) # Domyślny root, zostanie nadpisany przez ustawienia
+        if self.view_mode == "flat":
+            model = FlatFileSystemModel()
+        else:
+            model = CustomFileSystemModel()
+        
+        # Ustawienie rootPath dla modelu jest zawsze potrzebne, aby model wiedział, od którego miejsca zaczynać skanowanie
+        model.setRootPath(os.path.expanduser("~"))
 
         view = CustomTreeView() # Użyj CustomTreeView
         view.setModel(model)
@@ -71,6 +77,11 @@ class FolderBrowser(QWidget):
         view.setColumnWidth(2, 150)
         view.setColumnWidth(3, 150)
         view.setColumnWidth(4, 200)
+
+        if self.view_mode == "flat":
+            # W trybie płaskim, ustawiamy rootIndex, aby wyświetlać tylko zawartość bieżącego katalogu
+            # Domyślny root, zostanie nadpisany przez ustawienia
+            view.setRootIndex(model.index(os.path.expanduser("~")))
 
         view.selectionModel().currentChanged.connect(self.update_current_selected_path)
         # view.installEventFilter(self) # Filtr zdarzeń nie jest już potrzebny tutaj
@@ -83,7 +94,10 @@ class FolderBrowser(QWidget):
         """Obsługa podwójnego kliknięcia - nawigacja do folderu lub otwarcie pliku."""
         view = self.sender()
         file_path = view.model().filePath(index)
-        if view.model().isDir(index):
+        
+        if self.view_mode == "flat" and index.internalPointer() == "parent_dir":
+            self.go_up_directory()
+        elif view.model().isDir(index):
             self.navigate_to_path(file_path, view)
         else:
             self.file_selected.emit(file_path) # Emituj sygnał do otwarcia pliku zewnętrznie
@@ -93,14 +107,22 @@ class FolderBrowser(QWidget):
         if self.active_panel:
             current_index = self.current_paths.get(self.active_panel)
             if current_index and current_index.isValid():
-                parent_index = current_index.parent()
-                if parent_index.isValid():
-                    self.navigate_to_path(self.active_panel.model().filePath(parent_index), self.active_panel)
-                else:
-                    root_path = self.active_panel.model().rootPath()
-                    if root_path and os.path.dirname(root_path) != root_path:
-                        new_root_path = os.path.dirname(root_path)
-                        self.navigate_to_path(new_root_path, self.active_panel)
+                if self.view_mode == "flat":
+                    parent_index = current_index.parent()
+                    if parent_index.isValid():
+                        self.navigate_to_path(self.active_panel.model().filePath(parent_index), self.active_panel)
+                    else:
+                        root_path = self.active_panel.model().rootPath()
+                        if root_path and os.path.dirname(root_path) != root_path:
+                            new_root_path = os.path.dirname(root_path)
+                            self.navigate_to_path(new_root_path, self.active_panel)
+                else: # view_mode == "tree"
+                    parent_index = current_index.parent()
+                    if parent_index.isValid():
+                        self.active_panel.collapse(current_index)
+                        self.active_panel.setCurrentIndex(parent_index)
+                        self.active_panel.scrollTo(parent_index)
+                        self.current_directory_changed.emit(self.active_panel.model().filePath(parent_index))
 
     def refresh_view(self):
         """Odświeża widok aktywnego panelu."""
@@ -117,7 +139,12 @@ class FolderBrowser(QWidget):
         if panel and os.path.exists(path) and os.path.isdir(path):
             index = panel.model().index(path)
             if index.isValid():
-                panel.setRootIndex(index)
+                if self.view_mode == "flat":
+                    panel.setRootIndex(index)
+                else: # view_mode == "tree"
+                    panel.expand(index)
+                    panel.scrollTo(index)
+                    panel.setCurrentIndex(index) # Ustawienie bieżącego indeksu
                 self.current_paths[panel] = index
                 self.current_directory_changed.emit(path)
             else:
@@ -192,3 +219,52 @@ class CustomFileSystemModel(QFileSystemModel):
             return permissions
         except Exception:
             return "N/A"
+
+class FlatFileSystemModel(CustomFileSystemModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFilter(QFileSystemModel.NoDotAndDotDot | QFileSystemModel.AllEntries)
+
+    def rowCount(self, parent=QModelIndex()):
+        if self.filePath(parent) == '/': # Nie dodawaj ".." w głównym katalogu systemowym ('/')
+            return super().rowCount(parent)
+
+        return super().rowCount(parent) + 1
+
+    def index(self, row, column, parent=QModelIndex()):
+        if self.filePath(parent) == '/': # Nie dodawaj ".." w głównym katalogu systemowym ('/')
+            return super().index(row, column, parent)
+
+        if row == 0:
+            # Tworzymy fałszywy indeks dla ".."
+            # Możemy użyć QModelIndex.child(row, column) z tymczasowym indeksem nadrzędnym
+            # Tutaj na razie zwrócimy specjalny indeks, który rozpoznamy w data()
+            return self.createIndex(0, column, "parent_dir")
+        
+        # Dla pozostałych elementów, przesuwamy wiersz o 1 w dół
+        return super().index(row - 1, column, parent)
+
+    def data(self, index, role=Qt.DisplayRole):
+        if index.internalPointer() == "parent_dir":
+            if role == Qt.DisplayRole:
+                return ".."
+            return None # Nie posiadamy innych danych dla ".."
+        
+        # Dla pozostałych elementów, musimy utworzyć "prawdziwy" indeks
+        # Wewnętrznie QFileSystemModel używa swoich własnych indeksów.
+        # Najprostszym sposobem dla data() jest nie modyfikowanie indeksu,
+        # lecz sprawdzenie czy to nie jest nasz specjalny indeks.
+        # Jest to obsłużone wyżej.
+        return super().data(index, role)
+
+    def filePath(self, index: QModelIndex):
+        if index.internalPointer() == "parent_dir":
+             # Zwróć ścieżkę do katalogu nadrzędnego
+            current_path = self.filePath(index.parent()) # Ścieżka katalogu, w którym teraz jesteśmy
+            return os.path.dirname(current_path)
+        return super().filePath(index)
+
+    def isDir(self, index: QModelIndex):
+        if index.internalPointer() == "parent_dir":
+            return True # ".." to zawsze katalog
+        return super().isDir(index)
