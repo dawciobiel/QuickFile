@@ -223,7 +223,7 @@ class CustomFileSystemModel(QFileSystemModel):
         return super().columnCount(parent) + 1
 
     def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.ForegroundRole and self.view and self.view.selectionModel().isSelected(index):
+        if role == Qt.BackgroundRole and self.view and self.view.selectionModel().isSelected(index):
             return QBrush(QColor("orange"))
         if role == Qt.DisplayRole and index.column() == 4:
             file_path = self.filePath(index)
