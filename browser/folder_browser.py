@@ -86,6 +86,7 @@ class FolderBrowser(QWidget):
         view.setModel(model)
         model.set_view(view) # Przekaż referencję do widoku do modelu
         view.setSelectionMode(QAbstractItemView.ExtendedSelection) # Ustaw tryb selekcji
+        view.setEditTriggers(QAbstractItemView.NoEditTriggers) # Wyłącz edycję komórek
 
         view.setColumnWidth(0, 250)
         view.setColumnWidth(1, 100)
