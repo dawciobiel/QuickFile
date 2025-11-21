@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QDir, QItemSelecti
 
 from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout, QAbstractItemView
 
-from PyQt5.QtGui import QColor, QBrush
+from PyQt5.QtGui import QColor, QBrush, QPalette
 
 
 
@@ -92,7 +92,12 @@ class FolderBrowser(QWidget):
         model.set_view(view) # Przekaż referencję do widoku do modelu
         view.setSelectionMode(QAbstractItemView.ExtendedSelection) # Ustaw tryb selekcji
         view.setEditTriggers(QAbstractItemView.NoEditTriggers) # Wyłącz edycję komórek
-        view.setStyleSheet("QTreeView::item:selected { color: orange !important; background-color: #3399FF !important; }") # Ustaw kolor czcionki i tła dla zaznaczonych elementów
+        
+        # Modyfikacja palety dla zaznaczonych elementów
+        palette = view.palette()
+        palette.setColor(QPalette.Highlight, QColor("#ADD8E6")) # Jasnoniebieskie tło zaznaczenia
+        palette.setColor(QPalette.HighlightedText, QColor("orange")) # Pomarańczowy tekst zaznaczenia
+        view.setPalette(palette)
 
         view.setColumnWidth(0, 250)
         view.setColumnWidth(1, 100)
