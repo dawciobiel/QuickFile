@@ -2,8 +2,23 @@ import os
 import stat
 
 from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QDir, QItemSelectionModel
-from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout, QAbstractItemView
-from PyQt5.QtGui import QColor, QBrush
+
+from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QStyle
+
+from PyQt5.QtGui import QColor, QBrush, QPen
+
+
+class CustomItemDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        if option.state & QStyle.State_Selected:
+            # Ustaw kolor czcionki na pomarańczowy dla zaznaczonych elementów
+            painter.setPen(QPen(QColor("orange")))
+        else:
+            # Użyj domyślnego koloru czcionki dla niezaznaczonych elementów
+            painter.setPen(QPen(option.palette.text().color()))
+        
+        # Wywołaj bazową metodę paint, aby narysować resztę elementu (tło, tekst, ikonę)
+        super().paint(painter, option, index)
 
 
 class CustomTreeView(QTreeView):
@@ -86,6 +101,7 @@ class FolderBrowser(QWidget):
         model.set_view(view) # Przekaż referencję do widoku do modelu
         view.setSelectionMode(QAbstractItemView.ExtendedSelection) # Ustaw tryb selekcji
         view.setEditTriggers(QAbstractItemView.NoEditTriggers) # Wyłącz edycję komórek
+        view.setItemDelegate(CustomItemDelegate()) # Ustaw niestandardowy delegat
 
         view.setColumnWidth(0, 250)
         view.setColumnWidth(1, 100)
@@ -221,12 +237,6 @@ class CustomFileSystemModel(QFileSystemModel):
         return super().columnCount(parent) + 1
 
     def data(self, index, role=Qt.DisplayRole):
-        # print(f"data() called for: {index.data(Qt.DisplayRole)}, Role: {role}")
-        if role == Qt.ForegroundRole and self.view:
-            is_selected = self.view.selectionModel().isSelected(index)
-            # print(f"  Item: {index.data(Qt.DisplayRole)}, isSelected: {is_selected}")
-            if is_selected:
-                return QBrush(QColor("orange"))
         if role == Qt.DisplayRole and index.column() == 4:
             file_path = self.filePath(index)
             return self.get_permissions(file_path)
