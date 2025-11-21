@@ -223,8 +223,12 @@ class CustomFileSystemModel(QFileSystemModel):
         return super().columnCount(parent) + 1
 
     def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.BackgroundRole and self.view and self.view.selectionModel().isSelected(index):
-            return QBrush(QColor("orange"))
+        # print(f"data() called for: {index.data(Qt.DisplayRole)}, Role: {role}")
+        if role == Qt.BackgroundRole and self.view:
+            is_selected = self.view.selectionModel().isSelected(index)
+            # print(f"  Item: {index.data(Qt.DisplayRole)}, isSelected: {is_selected}")
+            if is_selected:
+                return QBrush(QColor("orange"))
         if role == Qt.DisplayRole and index.column() == 4:
             file_path = self.filePath(index)
             return self.get_permissions(file_path)
