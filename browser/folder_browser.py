@@ -3,22 +3,13 @@ import stat
 
 from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QDir, QItemSelectionModel
 
-from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QStyle
+from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout, QAbstractItemView
 
-from PyQt5.QtGui import QColor, QBrush, QPen
+from PyQt5.QtGui import QColor, QBrush
 
 
-class CustomItemDelegate(QStyledItemDelegate):
-    def paint(self, painter, option, index):
-        if option.state & QStyle.State_Selected:
-            # Ustaw kolor czcionki na pomarańczowy dla zaznaczonych elementów
-            painter.setPen(QPen(QColor("orange")))
-        else:
-            # Użyj domyślnego koloru czcionki dla niezaznaczonych elementów
-            painter.setPen(QPen(option.palette.text().color()))
-        
-        # Wywołaj bazową metodę paint, aby narysować resztę elementu (tło, tekst, ikonę)
-        super().paint(painter, option, index)
+
+
 
 
 class CustomTreeView(QTreeView):
@@ -101,7 +92,7 @@ class FolderBrowser(QWidget):
         model.set_view(view) # Przekaż referencję do widoku do modelu
         view.setSelectionMode(QAbstractItemView.ExtendedSelection) # Ustaw tryb selekcji
         view.setEditTriggers(QAbstractItemView.NoEditTriggers) # Wyłącz edycję komórek
-        view.setItemDelegate(CustomItemDelegate()) # Ustaw niestandardowy delegat
+        view.setStyleSheet("QTreeView::item:selected { color: orange; }") # Ustaw kolor czcionki dla zaznaczonych elementów
 
         view.setColumnWidth(0, 250)
         view.setColumnWidth(1, 100)
