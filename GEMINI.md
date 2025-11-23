@@ -1,17 +1,24 @@
 # Postępy prac z Gemini AI
 
-## Data: 2025-11-21
+## Data: 2025-11-23
 
 ### Zaimplementowane funkcje:
+- **Konfigurowalne tryby widoku folderów (poprawione i w pełni funkcjonalne)**:
+    - Zaimplementowano dwa tryby widoku folderów: "Widok płaski" oraz "Widok drzewa".
+    - Tryb "Widok płaski" został całkowicie przeprojektowany i zaimplementowany za pomocą niestandardowego `FlatFileSystemModel` (zamiast problematycznego `FlatViewProxyModel`), co rozwiązało wcześniejsze błędy segmentacji i problemy z wyświetlaniem plików.
+    - Dodano możliwość wyboru trybu widoku w "Ustawieniach Aplikacji".
+    - Zmodyfikowano `FolderBrowser`, `FlatFileSystemModel` (nowy model) oraz `QFileSystemModel` (dla trybu drzewa) w celu obsługi obu trybów.
+- **Naprawiono błędy po migracji do PyQt6**:
+    - `QSplitter.removeWidget` zastąpiono `replaceWidget`.
+    - Poprawiono błędy importu `QTreeView` i warunkowe ustawianie `horizontalHeader`.
+    - Naprawiono `TypeError` w `MenuPanel` związany z pobieraniem bieżących ścieżek katalogów.
+    - Poprawiono import `QFileIconProvider` w nowym `FlatFileSystemModel`.
+    - Zaktualizowano `IconType.FolderUp` na `IconType.Folder` dla wpisu ".." w `FlatFileSystemModel`.
+
+### Wcześniejsze postępy:
 - **Obsługa archiwów (ZIP, TAR)**: Dodano funkcje do tworzenia i wypakowywania archiwów ZIP i TAR z poziomu menu "Archiwum".
 - **Synchronizacja katalogów**: Dodano funkcję synchronizacji dwóch katalogów (jednokierunkowej i dwukierunkowej) z poziomu menu "Operacje".
 - **Konfigurowalne skróty klawiszowe**: Dodano menedżera skrótów klawiszowych oraz okno dialogowe do ich konfiguracji, dostępne z menu "Ustawienia". Skróty są zapisywane w pliku konfiguracyjnym.
-- **Konfigurowalne tryby widoku folderów**:
-    - Zaimplementowano dwa tryby widoku folderów: "Widok płaski" (z pozycją `..` do nawigacji w górę) oraz "Widok drzewa" (wyświetlający całą partycję w formie rozwijanego drzewa).
-    - Dodano możliwość wyboru trybu widoku w "Ustawieniach Aplikacji".
-    - Zmodyfikowano `FolderBrowser` i `CustomFileSystemModel` (oraz dodano `FlatFileSystemModel`) w celu obsługi obu trybów.
-
-### Wcześniejsze postępy:
 - **Porównywanie plików/katalogów**: Dodano funkcję porównywania plików i katalogów, dostępną z menu "Operacje" oraz pod klawiszem F9. Wyniki porównania katalogów są wyświetlane w dedykowanym oknie dialogowym.
 - **Wskaźnik aktywnego panelu**: Wizualne wyróżnienie aktywnego panelu i ukrywanie zaznaczenia w nieaktywnym.
 - **Poprawka skrótów F6/F7**: Przywrócenie obsługi skrótów klawiszowych dla akcji "Przenieś" i "Utwórz folder".
@@ -20,7 +27,6 @@
     - Dodawanie bieżącego katalogu do zakładek za pomocą ikony gwiazdki.
     - Szybkie przechodzenie do zakładek za pomocą okna dialogowego (`Ctrl+B`).
 - **Poprawka błędu `NameError`**: Usunięcie błędu `NameError: name 'QDialog' is not defined`.
-
 ---
 **Status na 2024-01-27:**
 - **Cofnięto zmiany w `file_viewer/file_editor.py`**: Usunięto funkcje autouzupełniania, dopasowywania nawiasów i autowcięcia, aby przywrócić stabilność aplikacji. Edytor plików działa teraz z numerowaniem linii i podświetlaniem składni (Python, Markdown, JSON).
@@ -50,3 +56,8 @@
     - Panel klawiszy funkcyjnych (F1-F10) z obsługą klawiszy i przycisków.
     - Zapamiętywanie ustawień aplikacji (rozmiar/pozycja okna, ścieżki paneli).
     - Otwieranie plików za pomocą zewnętrznych narzędzi systemowych.
+    
+## Data: 2025-11-26
+- The user wants to continue working on the remaining features from GEMINI.md, specifically: comparing files/directories, handling archives (ZIP, RAR), synchronizing directories, configurable keyboard shortcuts, and bookmarks for frequently used directories.
+- The user ended the session. The GEMINI.md file has been updated to reflect the latest progress. The remaining tasks are: comparing files/directories, handling archives (ZIP, RAR), synchronizing directories, and configurable keyboard shortcuts.
+- The current task is to migrate the application from PyQt5 to PyQt6. All identified PyQt5 imports and common API changes (exec_(), enum renames, parenting) have been applied. The application is currently crashing with a 'free(): invalid pointer' or segmentation fault (exit code 134 or 139), even after addressing explicit parenting for some widgets and models. The user will now restart their system, after which I need to recreate and activate a new virtual environment, install only PyQt6 dependencies, and then re-check for errors. User also suggested that system-wide PyQt5 installation might be conflicting with venv PyQt6.

@@ -14,3 +14,10 @@ Bo Python nie jest ponoć wielowątkowy
 
 {style="warning"}
 > some warning message
+
+## Nowe zadania (2025-11-23)
+
+- Niech naciśnięcie klawisza `Backspace` na klawiaturze powoduje przejśćie do katalogu nadrzędnego.
+- Klawisz `End` owszem przechodzi do ostatniej pozycji w panelu plików. Jednak aby klawisz ten zadziałał trzeba go nacisnąć dwa razy.
+- Jest błąd po wejściu do katalogu `/home/dawciobiel/.icons`. To jest pozycja ".." nie jest wyświetlana jako pierwsza. A to z powodu faktu, że najpierw jest wyświetlana pozycja `+OxygenE` - czyli folder zawierający na początku nazwy znak `+`.
+- W trybie `Tree` - nie widać pozycji ".." na liście plików. Zaimplementowanie tej funkcjonalności może być trudne.
