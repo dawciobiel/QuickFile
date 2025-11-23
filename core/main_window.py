@@ -1,7 +1,7 @@
 import os
 import subprocess
-from PyQt5.QtCore import Qt, QSettings, QEvent
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QToolBar, QLineEdit, QToolButton, QDialog, QMessageBox
+from PyQt6.QtCore import Qt, QSettings, QEvent
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QToolBar, QLineEdit, QToolButton, QDialog, QMessageBox
 from bookmarks.bookmarks_manager import BookmarksManager
 from browser.folder_browser import FolderBrowser
 from panels.menu_panel import MenuPanel
@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
         self.directory_synchronizer = DirectorySynchronizer(self)
 
         # Inicjalizacja komponentów, które są potrzebne innym
-        self.folder_browser = FolderBrowser(view_mode=self.settings_manager.get_setting("view_mode"))
+        self.folder_browser = FolderBrowser(view_mode=self.settings_manager.get_setting("view_mode"), parent=self)
 
         # Inicjalizacja paska narzędzi
         self.toolbar = self.addToolBar("Główne narzędzia")
@@ -52,12 +52,12 @@ class MainWindow(QMainWindow):
         self.bookmarks_manager = BookmarksManager(os.path.join(os.path.expanduser("~"), ".quickfile_bookmarks.json"))
 
         # Pole wyszukiwania
-        self.search_input = QLineEdit()
+        self.search_input = QLineEdit(self)
         self.search_input.setPlaceholderText("Szukaj plików...")
         self.toolbar.addWidget(self.search_input)
 
         # Przycisk do zakładek
-        self.add_bookmark_button = QToolButton()
+        self.add_bookmark_button = QToolButton(self)
         self.add_bookmark_button.setText("⭐") # Użyj emoji jako ikony
         self.add_bookmark_button.setToolTip("Dodaj bieżący katalog do zakładek")
         self.toolbar.addWidget(self.add_bookmark_button)
@@ -73,14 +73,14 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("Gotowy")
 
         # Pasek adresu
-        self.address_bar = QLineEdit()
+        self.address_bar = QLineEdit(self)
         self.address_bar.setReadOnly(True)
 
         # Panel klawiszy funkcyjnych
         self.function_key_panel = FunctionKeyPanel(self)
 
         # Ustawienie centralnego widżetu
-        central_widget = QWidget()
+        central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
         layout.setContentsMargins(0, 0, 0, 0) # Usunięcie marginesów
@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
     def add_bookmark(self):
         """Dodaje bieżący katalog aktywnego panelu do zakładek."""
         if self.folder_browser.active_panel:
-            current_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.current_paths[self.folder_browser.active_panel])
+            current_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.active_panel.model().index(self.folder_browser.active_panel.model().rootPath()))
             self.bookmarks_manager.add_bookmark(current_path)
             self.status_bar.showMessage(f"Dodano zakładkę: {current_path}")
 
@@ -115,7 +115,7 @@ class MainWindow(QMainWindow):
     def start_file_search(self):
         search_text = self.search_input.text()
         if search_text:
-            current_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.current_paths[self.folder_browser.active_panel])
+            current_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.active_panel.model().index(self.folder_browser.active_panel.model().rootPath()))
             results = self.file_manager.search_files(current_path, search_text)
             self.show_search_results(results)
         else:
@@ -124,7 +124,7 @@ class MainWindow(QMainWindow):
     def show_search_results(self, results):
         """Wyświetla wyniki wyszukiwania w oknie dialogowym."""
         dialog = SearchDialog(self, results)
-        dialog.exec_()
+        dialog.exec()
 
     def open_file_externally(self, file_path):
         """Otwiera plik za pomocą domyślnego programu systemowego."""
@@ -182,56 +182,56 @@ class MainWindow(QMainWindow):
         if dircmp_obj:
             report = self.file_comparator.get_directory_comparison_report(dircmp_obj)
             dialog = CompareDialog(self, report, dir1_path, dir2_path)
-            dialog.exec_()
+            dialog.exec()
         else:
             QMessageBox.critical(self, "Directory Comparison Error", "Could not compare directories. Ensure both paths are valid directories.")
 
     def eventFilter(self, source, event):
-        if event.type() == QEvent.KeyPress:
-            # print(f"MainWindow eventFilter: KeyPress event detected. Key: {event.key()} (Qt.Key_F8: {Qt.Key_F8}), Source: {source.objectName() if source.objectName() else source.__class__.__name__}")
+        if event.type() == QEvent.Type.KeyPress:
+            # print(f"MainWindow eventFilter: KeyPress event detected. Key: {event.key()}, Source: {source.objectName() if source.objectName() else source.__class__.__name__}")
             key = event.key()
-            if key == Qt.Key_F1:
+            if key == Qt.Key.Key_F1:
                 self.status_bar.showMessage("F1: Pomoc (niezaimplementowana)")
                 return True
-            elif key == Qt.Key_F2:
+            elif key == Qt.Key.Key_F2:
                 self.menu_panel.rename_selected_item()
                 return True
-            elif key == Qt.Key_F3:
+            elif key == Qt.Key.Key_F3:
                 selected_path = self._get_selected_file_path()
                 if selected_path:
                     self.open_file_externally(selected_path)
                 else:
                     self.status_bar.showMessage("Nie wybrano pliku do podglądu.")
                 return True
-            elif key == Qt.Key_F4:
+            elif key == Qt.Key.Key_F4:
                 selected_path = self._get_selected_file_path()
                 if selected_path:
                     self.open_file_externally(selected_path) # Na razie to samo co F3
                 else:
                     self.status_bar.showMessage("Nie wybrano pliku do edycji.")
                 return True
-            elif key == Qt.Key_F5:
+            elif key == Qt.Key.Key_F5:
                 # print("MainWindow eventFilter: Calling copy_selected_item for F5") # Usunięto komunikat debugujący
                 self.menu_panel.copy_selected_item()
                 return True
-            elif key == Qt.Key_F6:
+            elif key == Qt.Key.Key_F6:
                 # print("MainWindow eventFilter: Calling move_selected_item for F6") # Usunięto komunikat debugujący
                 self.menu_panel.move_selected_item()
                 return True
-            elif key == Qt.Key_F7:
+            elif key == Qt.Key.Key_F7:
                 self.menu_panel.create_new_directory()
                 return True
-            elif key == Qt.Key_F8:
+            elif key == Qt.Key.Key_F8:
                 # print(f"MainWindow eventFilter: F8 key ({key}) detected. Calling delete_selected_item.") # Usunięto komunikat debugujący
                 self.menu_panel.delete_selected_item()
                 return True
-            elif key == Qt.Key_F9:
+            elif key == Qt.Key.Key_F9:
                 self._compare_selected_items()
                 return True
-            elif key == Qt.Key_F10:
+            elif key == Qt.Key.Key_F10:
                 self.close()
                 return True
-            elif event.key() == Qt.Key_B and event.modifiers() == Qt.ControlModifier:
+            elif event.key() == Qt.Key.Key_B and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                 self.open_bookmark_dialog()
                 return True
         return super().eventFilter(source, event)
@@ -239,7 +239,7 @@ class MainWindow(QMainWindow):
     def open_bookmark_dialog(self):
         """Otwiera dialog zakładek."""
         dialog = BookmarkDialog(self.bookmarks_manager.bookmarks, self)
-        if dialog.exec_() == QDialog.Accepted and dialog.selected_bookmark:
+        if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_bookmark:
             self.folder_browser.navigate_to_path(dialog.selected_bookmark)
 
     def load_settings(self):
@@ -252,8 +252,8 @@ class MainWindow(QMainWindow):
         # Wczytanie ścieżek dla paneli
         left_panel_path = settings.value("leftPanelPath", os.path.expanduser("~"))
         right_panel_path = settings.value("rightPanelPath", os.path.expanduser("~"))
-        self.folder_browser.set_panel_path(self.folder_browser.left_panel, left_panel_path)
-        self.folder_browser.set_panel_path(self.folder_browser.right_panel, right_panel_path)
+        self.folder_browser.navigate_to_path(left_panel_path, self.folder_browser.left_panel)
+        self.folder_browser.navigate_to_path(right_panel_path, self.folder_browser.right_panel)
 
     def save_settings(self):
         settings = QSettings("QuickFile", "QuickFile")
@@ -261,8 +261,8 @@ class MainWindow(QMainWindow):
         settings.setValue("windowState", self.saveState())
 
         # Zapisanie ścieżek dla paneli
-        left_panel_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.current_paths[self.folder_browser.left_panel])
-        right_panel_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.current_paths[self.folder_browser.right_panel])
+        left_panel_path = self.folder_browser.left_panel.model().filePath(self.folder_browser.left_panel.rootIndex())
+        right_panel_path = self.folder_browser.right_panel.model().filePath(self.folder_browser.right_panel.rootIndex())
         settings.setValue("leftPanelPath", left_panel_path)
         settings.setValue("rightPanelPath", right_panel_path)
 

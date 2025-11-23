@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication
 from core.main_window import MainWindow
 if __name__ == "__main__":
     app = QApplication([])
@@ -6,4 +6,4 @@ if __name__ == "__main__":
     window = MainWindow()
     app.installEventFilter(window)
     window.show()
-    app.exec_()
+    app.exec()

@@ -1,6 +1,4 @@
-# Narzędzia developerskie
-# pip install -r requirements-dev.txt
-ruff
+-r requirements.txt
 pytest
+ruff
 pipreqs
-mypy

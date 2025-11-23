@@ -1,7 +1,7 @@
 import os
 
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QStyle, QAction
-from PyQt5.QtGui import QIcon, QKeySequence
+from PyQt6.QtWidgets import QWidget, QPushButton, QHBoxLayout, QStyle
+from PyQt6.QtGui import QIcon, QKeySequence, QAction
 
 
 class FunctionKeyPanel(QWidget):
@@ -33,7 +33,7 @@ class FunctionKeyPanel(QWidget):
         self.layout.addWidget(btn_f1)
 
         # F2 - Rename
-        rename_action = QAction(self.main_window.style().standardIcon(QStyle.SP_LineEditClearButton), "F2 Rename", self.main_window)
+        rename_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_LineEditClearButton), "F2 Rename", self.main_window)
         rename_action.setShortcut(QKeySequence("F2"))
         rename_action.triggered.connect(self.main_window.menu_panel.rename_selected_item)
         btn_f2 = QPushButton(rename_action.icon(), rename_action.text())
@@ -41,7 +41,7 @@ class FunctionKeyPanel(QWidget):
         self.layout.addWidget(btn_f2)
 
         # F3 - View (Open Externally)
-        view_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileIcon), "F3 View", self.main_window)
+        view_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon), "F3 View", self.main_window)
         view_action.setShortcut(QKeySequence("F3"))
         view_action.triggered.connect(self._open_selected_file_externally)
         btn_f3 = QPushButton(view_action.icon(), view_action.text())
@@ -49,7 +49,7 @@ class FunctionKeyPanel(QWidget):
         self.layout.addWidget(btn_f3)
 
         # F4 - Edit (Open Externally) - na razie to samo co F3
-        edit_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileIcon), "F4 Edit", self.main_window)
+        edit_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon), "F4 Edit", self.main_window)
         edit_action.setShortcut(QKeySequence("F4"))
         edit_action.triggered.connect(self._open_selected_file_externally) # Na razie to samo co F3
         btn_f4 = QPushButton(edit_action.icon(), edit_action.text())
@@ -57,7 +57,7 @@ class FunctionKeyPanel(QWidget):
         self.layout.addWidget(btn_f4)
 
         # F5 - Copy
-        copy_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileLinkIcon), "F5 Copy", self.main_window)
+        copy_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_FileLinkIcon), "F5 Copy", self.main_window)
         copy_action.setShortcut(QKeySequence("F5"))
         copy_action.triggered.connect(self.main_window.menu_panel.copy_selected_item)
         btn_f5 = QPushButton(copy_action.icon(), copy_action.text())
@@ -65,7 +65,7 @@ class FunctionKeyPanel(QWidget):
         self.layout.addWidget(btn_f5)
 
         # F6 - Move
-        move_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DirLinkIcon), "F6 Move", self.main_window)
+        move_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_DirLinkIcon), "F6 Move", self.main_window)
         move_action.setShortcut(QKeySequence("F6"))
         move_action.triggered.connect(self.main_window.menu_panel.cut_selected_item)
         btn_f6 = QPushButton(move_action.icon(), move_action.text())
@@ -73,7 +73,7 @@ class FunctionKeyPanel(QWidget):
         self.layout.addWidget(btn_f6)
 
         # F7 - New Folder
-        new_folder_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DirIcon), "F7 New Folder", self.main_window)
+        new_folder_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon), "F7 New Folder", self.main_window)
         new_folder_action.setShortcut(QKeySequence("F7"))
         new_folder_action.triggered.connect(self.main_window.menu_panel.create_new_directory)
         btn_f7 = QPushButton(new_folder_action.icon(), new_folder_action.text())
@@ -81,7 +81,7 @@ class FunctionKeyPanel(QWidget):
         self.layout.addWidget(btn_f7)
 
         # F8 - Delete
-        delete_action = QAction(self.main_window.style().standardIcon(QStyle.SP_TrashIcon), "F8 Delete", self.main_window)
+        delete_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon), "F8 Delete", self.main_window)
         delete_action.setShortcut(QKeySequence("F8"))
         delete_action.triggered.connect(self.main_window.menu_panel.delete_selected_item)
         btn_f8 = QPushButton(delete_action.icon(), delete_action.text())
@@ -89,7 +89,7 @@ class FunctionKeyPanel(QWidget):
         self.layout.addWidget(btn_f8)
 
         # F9 - Compare
-        compare_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileDialogToParent), "F9 Compare", self.main_window)
+        compare_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogToParent), "F9 Compare", self.main_window)
         compare_action.setShortcut(QKeySequence("F9"))
         compare_action.triggered.connect(self.main_window._compare_selected_items)
         btn_f9 = QPushButton(compare_action.icon(), compare_action.text())
@@ -97,7 +97,7 @@ class FunctionKeyPanel(QWidget):
         self.layout.addWidget(btn_f9)
 
         # F10 - Exit
-        exit_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DialogCancelButton), "F10 Exit", self.main_window)
+        exit_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_DialogCancelButton), "F10 Exit", self.main_window)
         exit_action.setShortcut(QKeySequence("F10"))
         exit_action.triggered.connect(self.main_window.close)
         btn_f10 = QPushButton(exit_action.icon(), exit_action.text())

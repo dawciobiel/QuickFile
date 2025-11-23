@@ -1,259 +1,188 @@
 import os
-import stat
-
-from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QDir, QItemSelectionModel
-
-from PyQt5.QtWidgets import QWidget, QTreeView, QFileSystemModel, QSplitter, QVBoxLayout, QAbstractItemView
-
-from PyQt5.QtGui import QColor, QBrush, QPalette
-
-
-
-
-
-
-class CustomTreeView(QTreeView):
-    """Niestandardowy QTreeView, który ignoruje klawisze F1-F10, pozwalając im propagować dalej."""
-    def keyPressEvent(self, event):
-        # print(f"CustomTreeView keyPressEvent: KeyPress event detected. Key: {event.key()}, Source: {self.objectName() if self.objectName() else self.__class__.__name__}")
-        if event.key() >= Qt.Key_F1 and event.key() <= Qt.Key_F12:
-            # print(f"CustomTreeView: Ignoring F-key event {event.key()}")
-            event.ignore() # Ignoruj zdarzenie, aby mogło propagować dalej
-            return
-        elif event.key() == Qt.Key_Space:
-            current_index = self.currentIndex()
-            if current_index.isValid():
-                self.selectionModel().select(current_index, QItemSelectionModel.Toggle)
-                self.viewport().update() # Wymuś odświeżenie całego widoku
-            event.accept() # Akceptuj zdarzenie, aby zapobiec dalszej propagacji
-            return
-        super().keyPressEvent(event)
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.RightButton:
-            index = self.indexAt(event.pos())
-            if index.isValid():
-                self.selectionModel().select(index, QItemSelectionModel.Toggle)
-                return # Przetwarzamy zdarzenie, aby nie otwierać menu kontekstowego domyślnie
-        super().mousePressEvent(event)
-
-    def get_selected_path(self):
-        """Zwraca ścieżkę do zaznaczonego elementu."""
-        selection_model = self.selectionModel()
-        if not selection_model.hasSelection():
-            return None
-        selected_indexes = selection_model.selectedIndexes()
-        if not selected_indexes:
-            return None
-        # We only care about the first selected item, and its path is in the first column
-        first_index = selected_indexes[0]
-        return self.model().filePath(first_index)
-
+from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent
+from PyQt6.QtWidgets import QWidget, QTableView, QVBoxLayout, QAbstractItemView, QHeaderView, QSplitter, QTreeView
+from PyQt6.QtGui import QFileSystemModel, QColor, QPalette
+# from browser.flat_view_proxy_model import FlatViewProxyModel # Old import
+from browser.flat_file_system_model import FlatFileSystemModel # New import
 
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
-    def __init__(self, view_mode="flat"):
-        super().__init__()
+    def __init__(self, view_mode="flat", parent=None):
+        super().__init__(parent)
 
         self.active_panel = None
         self.current_selected_path = None
-        self.current_paths = {}  # Słownik do śledzenia ścieżek dla paneli
-        self.view_mode = view_mode # Przechowuj tryb widoku
+        self.current_paths = {} # To track paths for each panel
+        self.view_mode = view_mode # Store view mode
 
-        self.left_panel = self.create_file_view()
-        self.right_panel = self.create_file_view()
+        self.left_panel = self.create_file_view(self.view_mode)
+        self.right_panel = self.create_file_view(self.view_mode)
 
-        # home_path = os.path.expanduser("~") # Przeniesiono do load_settings w MainWindow
-        # self.current_paths[self.left_panel] = self.left_panel.model().index(home_path)
-        # self.current_paths[self.right_panel] = self.right_panel.model().index(home_path)
+        # Set initial paths for panels
+        home_path = os.path.expanduser("~")
+        self.current_paths[self.left_panel] = home_path
+        self.current_paths[self.right_panel] = home_path
 
-        # self.left_panel.setRootIndex(self.current_paths[self.left_panel])
-        # self.right_panel.setRootIndex(self.current_paths[self.right_panel])
+        # Initialize models with current paths
+        if self.view_mode == "flat":
+            self.left_panel.model().set_current_path(self.current_paths[self.left_panel])
+            self.right_panel.model().set_current_path(self.current_paths[self.right_panel])
+        else: # tree view (QFileSystemModel)
+            self.left_panel.setRootIndex(self.left_panel.model().index(self.current_paths[self.left_panel]))
+            self.right_panel.setRootIndex(self.right_panel.model().index(self.current_paths[self.right_panel]))
 
-        splitter = QSplitter(Qt.Horizontal)
+
+        splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(self.left_panel)
         splitter.addWidget(self.right_panel)
 
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
-        self.setLayout(layout)
 
         self.set_active_panel(self.left_panel)
 
-    def create_file_view(self):
-        model = CustomFileSystemModel()
-        
-        # Ustawienie rootPath dla modelu jest zawsze potrzebne, aby model wiedział, od którego miejsca zaczynać skanowanie
-        model.setRootPath(os.path.expanduser("~"))
-
-        view = CustomTreeView() # Użyj CustomTreeView
-        view.setModel(model)
-        model.set_view(view) # Przekaż referencję do widoku do modelu
-        view.setSelectionMode(QAbstractItemView.ExtendedSelection) # Ustaw tryb selekcji
-        view.setEditTriggers(QAbstractItemView.NoEditTriggers) # Wyłącz edycję komórek
-        
-        # Modyfikacja palety dla zaznaczonych elementów
-        palette = view.palette()
-        palette.setColor(QPalette.Highlight, QColor("#ADD8E6")) # Jasnoniebieskie tło zaznaczenia
-        palette.setColor(QPalette.HighlightedText, QColor("orange")) # Pomarańczowy tekst zaznaczenia
-        view.setPalette(palette)
-
-        view.setColumnWidth(0, 250)
-        view.setColumnWidth(1, 100)
-        view.setColumnWidth(2, 150)
-        view.setColumnWidth(3, 150)
-        view.setColumnWidth(4, 200)
-
-        if self.view_mode == "flat":
-            # W trybie płaskim, ustawiamy rootIndex, aby wyświetlać tylko zawartość bieżącego katalogu
-            # Domyślny root, zostanie nadpisany przez ustawienia
+    def create_file_view(self, view_mode):
+        if view_mode == "flat":
+            view = QTableView()
+            model = FlatFileSystemModel(self) # New custom model
+            view.setModel(model)
+        else: # view_mode == "tree" (QFileSystemModel)
+            model = QFileSystemModel()
+            model.setRootPath(os.path.expanduser("~"))
+            view = QTreeView() # Use QTreeView for tree mode
+            view.setModel(model)
             view.setRootIndex(model.index(os.path.expanduser("~")))
 
-        view.selectionModel().currentChanged.connect(self.update_current_selected_path)
-        # view.installEventFilter(self) # Filtr zdarzeń nie jest już potrzebny tutaj
-        view.installEventFilter(self)
-        view.doubleClicked.connect(self.on_double_clicked)
+        view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        if isinstance(view, QTableView): # Apply only to QTableView
+            view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        # Modyfikacja palety dla zaznaczonych elementów - zakomentowano, ponieważ powoduje segmentation fault w PyQt6
+        # palette = view.palette()
+        # palette.setColor(QPalette.ColorRole.Highlight, QColor("#ADD8E6")) # Jasnoniebieskie tło zaznaczenia
+        # palette.setColor(QPalette.ColorRole.HighlightedText, QColor("orange")) # Pomarańczowy tekst zaznaczenia
+        # view.setPalette(palette)
+
+        view.doubleClicked.connect(lambda index: self.on_double_clicked(index, view))
+        view.selectionModel().currentChanged.connect(lambda current, previous: self.update_current_selection(current, previous, view))
+        view.setMouseTracking(True) # Enable mouse tracking for focus events
+        view.installEventFilter(self) # Install event filter for focus events
 
         return view
-
-    def on_double_clicked(self, index: QModelIndex):
-        """Obsługa podwójnego kliknięcia - nawigacja do folderu lub otwarcie pliku."""
-        view = self.sender()
-        file_path = view.model().filePath(index)
-        
-        if view.model().isDir(index):
-            self.navigate_to_path(file_path, view)
+    
+    def on_double_clicked(self, index: QModelIndex, view: QTableView):
+        model = view.model()
+        if model.isDir(index):
+            new_path = model.filePath(index)
+            if isinstance(model, FlatFileSystemModel):
+                model.set_current_path(new_path)
+            else: # QFileSystemModel
+                view.setRootIndex(index)
+            self.current_paths[view] = new_path
+            self.current_directory_changed.emit(new_path)
         else:
-            self.file_selected.emit(file_path) # Emituj sygnał do otwarcia pliku zewnętrznie
+            self.file_selected.emit(model.filePath(index))
 
-    def go_up_directory(self):
-        """Przechodzi do katalogu nadrzędnego w aktywnym panelu."""
-        if self.active_panel:
-            current_index = self.current_paths.get(self.active_panel)
-            if current_index and current_index.isValid():
-                if self.view_mode == "flat":
-                    parent_index = current_index.parent()
-                    if parent_index.isValid():
-                        self.navigate_to_path(self.active_panel.model().filePath(parent_index), self.active_panel)
-                    else:
-                        root_path = self.active_panel.model().rootPath()
-                        if root_path and os.path.dirname(root_path) != root_path:
-                            new_root_path = os.path.dirname(root_path)
-                            self.navigate_to_path(new_root_path, self.active_panel)
-                else: # view_mode == "tree"
-                    parent_index = current_index.parent()
-                    if parent_index.isValid():
-                        self.active_panel.collapse(current_index)
-                        self.active_panel.setCurrentIndex(parent_index)
-                        self.active_panel.scrollTo(parent_index)
-                        self.current_directory_changed.emit(self.active_panel.model().filePath(parent_index))
-
-    def refresh_view(self):
-        """Odświeża widok aktywnego panelu."""
-        if self.active_panel:
-            current_index = self.current_paths.get(self.active_panel)
-            if current_index and current_index.isValid():
-                self.navigate_to_path(self.active_panel.model().filePath(current_index), self.active_panel)
-
+    def update_current_selection(self, current: QModelIndex, previous: QModelIndex, view: QTableView):
+        if current.isValid():
+            self.current_selected_path = view.model().filePath(current)
+            # No need to emit current_directory_changed here, it's handled by on_double_clicked
+    
     def navigate_to_path(self, path, panel=None):
-        """Nawiguje aktywny panel do podanej ścieżki."""
         if panel is None:
             panel = self.active_panel
 
         if panel and os.path.exists(path) and os.path.isdir(path):
-            index = panel.model().index(path)
-            if index.isValid():
-                if self.view_mode == "flat":
-                    panel.setRootIndex(index)
-                else: # view_mode == "tree"
-                    panel.expand(index)
-                    panel.scrollTo(index)
-                    panel.setCurrentIndex(index) # Ustawienie bieżącego indeksu
-                self.current_paths[panel] = index
+            model = panel.model()
+            if isinstance(model, FlatFileSystemModel):
+                model.set_current_path(path)
+                self.current_paths[panel] = path
                 self.current_directory_changed.emit(path)
-            else:
-                self.current_directory_changed.emit(f"Błąd: Nie można nawigować do '{path}'")
+            else: # QFileSystemModel
+                index = model.index(path)
+                if index.isValid():
+                    panel.setRootIndex(index)
+                    self.current_paths[panel] = path
+                    self.current_directory_changed.emit(path)
+                else:
+                    self.current_directory_changed.emit(f"Error: Could not set directory to '{path}'.")
         else:
-            self.current_directory_changed.emit(f"Błąd: Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
+            self.current_directory_changed.emit(f"Error: Path '{path}' is invalid or does not exist.")
 
     def set_panel_path(self, panel, path):
-        """Ustawia ścieżkę dla podanego panelu."""
-        if panel and os.path.exists(path) and os.path.isdir(path):
-            index = panel.model().index(path)
-            if index.isValid():
-                if self.view_mode == "flat":
-                    panel.setRootIndex(index)
-                else: # view_mode == "tree"
-                    panel.expand(index)
-                    panel.scrollTo(index)
-                    panel.setCurrentIndex(index)
-                self.current_paths[panel] = index
-                if panel == self.active_panel: # Emituj tylko jeśli to aktywny panel
-                    self.current_directory_changed.emit(path)
-            else:
-                if panel == self.active_panel:
-                    self.current_directory_changed.emit(f"Błąd: Nie można ustawić ścieżki '{path}'")
-        else:
-            if panel == self.active_panel:
-                self.current_directory_changed.emit(f"Błąd: Ścieżka '{path}' jest nieprawidłowa lub nie istnieje.")
+        self.navigate_to_path(path, panel)
 
+    def go_up_directory(self):
+        if self.active_panel:
+            current_path = self.current_paths.get(self.active_panel)
+            if current_path:
+                parent_path = os.path.dirname(current_path)
+                if parent_path and parent_path != current_path:
+                    self.navigate_to_path(parent_path, self.active_panel)
+
+    def refresh_view(self):
+        if self.active_panel:
+            current_path = self.current_paths.get(self.active_panel)
+            if current_path:
+                self.navigate_to_path(current_path, self.active_panel)
+    
     def set_active_panel(self, panel):
         if self.active_panel:
             self.active_panel.setStyleSheet("") # Reset style sheet
             self.active_panel.clearSelection()
         self.active_panel = panel
-        self.active_panel.setStyleSheet("QTreeView { border: 1px solid blue; }") # Highlight active
-        current_index = self.current_paths.get(self.active_panel)
-        if current_index and current_index.isValid():
-            self.current_directory_changed.emit(self.active_panel.model().filePath(current_index))
-
-    def update_current_selected_path(self, current: QModelIndex, previous: QModelIndex):
-        if current.isValid():
-            self.current_selected_path = current.model().filePath(current)
-            # Nie emitujemy już file_selected tutaj, bo to robi on_double_clicked
-            # if not current.model().isDir(current):
-            #     self.file_selected.emit(self.current_selected_path)
+        self.active_panel.setStyleSheet("QTableView { border: 1px solid blue; }") # Highlight active
+        current_path = self.current_paths.get(self.active_panel)
+        if current_path: # current_path is now a string
+            self.current_directory_changed.emit(current_path)
 
     def eventFilter(self, source, event):
-        if event.type() == QEvent.FocusIn:
+        if event.type() == QEvent.Type.FocusIn:
             if source in [self.left_panel, self.right_panel]:
                 self.set_active_panel(source)
         return super().eventFilter(source, event)
 
+    def set_view_mode(self, mode):
+        # Store the new view mode
+        self.view_mode = mode
 
-class CustomFileSystemModel(QFileSystemModel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.view = None # Inicjalizuj view jako None
+        # Need to store current paths before recreating to restore them
+        left_path = self.current_paths.get(self.left_panel) # current_paths already stores strings
+        right_path = self.current_paths.get(self.right_panel) # current_paths already stores strings
+        
+        # Remove old panels from layout and delete them
+        layout = self.layout()
+        splitter = self.findChild(QSplitter)
 
-    def set_view(self, view):
-        self.view = view
-    def columnCount(self, parent=None):
-        return super().columnCount(parent) + 1
+        # Store old panels before creating new ones
+        old_left_panel = self.left_panel
+        old_right_panel = self.right_panel
 
-    def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and index.column() == 4:
-            file_path = self.filePath(index)
-            return self.get_permissions(file_path)
-        return super().data(index, role)
+        # Create new panels
+        self.left_panel = self.create_file_view(self.view_mode)
+        self.right_panel = self.create_file_view(self.view_mode)
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and section == 4:
-            return "Permissions"
-        return super().headerData(section, orientation, role)
+        if splitter:
+            # Replace old panels with new ones in the splitter
+            splitter.replaceWidget(0, self.left_panel) # Assuming left panel is at index 0
+            splitter.replaceWidget(1, self.right_panel) # Assuming right panel is at index 1
+            old_left_panel.deleteLater()
+            old_right_panel.deleteLater()
+        else:
+            # If no splitter, directly replace in the layout (though this case might not be reached with current structure)
+            layout.removeWidget(old_left_panel)
+            layout.removeWidget(old_right_panel)
+            layout.addWidget(self.left_panel)
+            layout.addWidget(self.right_panel)
+            old_left_panel.deleteLater()
+            old_right_panel.deleteLater()
 
-    @staticmethod
-    def get_permissions(file_path):
-        try:
-            mode = os.stat(file_path).st_mode
-            permissions = (("r" if mode & stat.S_IRUSR else "-") + ("w" if mode & stat.S_IWUSR else "-") + (
-                "x" if mode & stat.S_IXUSR else "-") + ("r" if mode & stat.S_IRGRP else "-") + (
-                               "w" if mode & stat.S_IWGRP else "-") + ("x" if mode & stat.S_IXGRP else "-") + (
-                               "r" if mode & stat.S_IROTH else "-") + ("w" if mode & stat.S_IWOTH else "-") + (
-                               "x" if mode & stat.S_IXOTH else "-"))
-            return permissions
-        except Exception:
-            return "N/A"
+        # Restore paths
+        self.navigate_to_path(left_path, self.left_panel)
+        self.navigate_to_path(right_path, self.right_panel)
 
+        self.set_active_panel(self.left_panel)

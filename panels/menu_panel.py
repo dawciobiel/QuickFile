@@ -1,7 +1,7 @@
 import os
 import os
-from PyQt5.QtWidgets import QAction, QInputDialog, QStyle, QDialog
-from PyQt5.QtGui import QIcon, QKeySequence
+from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog
+from PyQt6.QtGui import QIcon, QKeySequence, QAction
 from utils.copy_dialog import CopyDialog
 from utils.move_dialog import MoveDialog
 from utils.delete_dialog import DeleteDialog # Dodaj import DeleteDialog
@@ -20,7 +20,19 @@ class MenuPanel:
         self._create_file_menu()
         self._create_operations_menu()
         self._create_archive_menu()
+        self._create_view_menu() # New menu
         self._create_settings_menu()
+
+    def _create_view_menu(self):
+        view_menu = self.menu_bar.addMenu("Widok")
+
+        flat_view_action = QAction("Widok płaski", self.main_window)
+        flat_view_action.triggered.connect(lambda: self.main_window.folder_browser.set_view_mode("flat"))
+        view_menu.addAction(flat_view_action)
+
+        tree_view_action = QAction("Widok drzewa", self.main_window)
+        tree_view_action.triggered.connect(lambda: self.main_window.folder_browser.set_view_mode("tree"))
+        view_menu.addAction(tree_view_action)
 
     def _create_settings_menu(self):
         settings_menu = self.menu_bar.addMenu("Ustawienia")
@@ -35,24 +47,23 @@ class MenuPanel:
     def open_general_settings_dialog(self):
         current_view_mode = self.main_window.settings_manager.get_setting("view_mode")
         dialog = SettingsDialog(self.main_window, current_view_mode)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             new_view_mode = dialog.get_selected_view_mode()
             if new_view_mode != current_view_mode:
                 self.main_window.settings_manager.set_setting("view_mode", new_view_mode)
-                # Tutaj można dodać logikę do przeładowania FolderBrowser z nowym trybem widoku
-                # Na razie tylko zapisujemy ustawienie.
-                self.main_window.status_bar.showMessage(f"Zmieniono tryb widoku na: {new_view_mode}. Wymagany restart aplikacji.")
+                self.main_window.folder_browser.set_view_mode(new_view_mode)
+                self.main_window.status_bar.showMessage(f"Zmieniono tryb widoku na: {new_view_mode}.")
 
     def open_shortcuts_dialog(self):
         dialog = ShortcutsDialog(self.main_window, self.main_window.shortcuts_manager.shortcuts)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             new_shortcuts = dialog.get_shortcuts()
             self.main_window.shortcuts_manager.save_shortcuts(new_shortcuts)
 
     def _create_file_menu(self):
         self.file_menu = self.menu_bar.addMenu("Plik")
 
-        exit_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DialogCancelButton), "Wyjdź", self.main_window)
+        exit_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_DialogCancelButton), "Wyjdź", self.main_window)
         exit_action.triggered.connect(self.main_window.close)
         self.file_menu.addAction(exit_action)
         self.main_window.shortcuts_manager.register_action("Wyjdź", exit_action)
@@ -104,13 +115,13 @@ class MenuPanel:
         operations_menu = self.menu_bar.addMenu("Operacje")
         self.toolbar.addSeparator()
 
-        go_up_action = QAction(self.main_window.style().standardIcon(QStyle.SP_ArrowUp), "Idź w górę", self.main_window)
+        go_up_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_ArrowUp), "Idź w górę", self.main_window)
         go_up_action.triggered.connect(self.main_window.folder_browser.go_up_directory)
         operations_menu.addAction(go_up_action)
         self.toolbar.addAction(go_up_action)
         self.main_window.shortcuts_manager.register_action("Idź w górę", go_up_action)
 
-        refresh_action = QAction(self.main_window.style().standardIcon(QStyle.SP_BrowserReload), "Odśwież", self.main_window)
+        refresh_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload), "Odśwież", self.main_window)
         refresh_action.triggered.connect(self.main_window.folder_browser.refresh_view)
         operations_menu.addAction(refresh_action)
         self.toolbar.addAction(refresh_action)
@@ -119,13 +130,13 @@ class MenuPanel:
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
-        create_file_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileIcon), "Nowy Plik", self.main_window)
+        create_file_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon), "Nowy Plik", self.main_window)
         create_file_action.triggered.connect(self.create_new_file)
         operations_menu.addAction(create_file_action)
         self.toolbar.addAction(create_file_action)
         self.main_window.shortcuts_manager.register_action("Nowy Plik", create_file_action)
 
-        create_directory_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DirIcon), "Nowy Folder", self.main_window)
+        create_directory_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon), "Nowy Folder", self.main_window)
         create_directory_action.triggered.connect(self.create_new_directory)
         operations_menu.addAction(create_directory_action)
         self.toolbar.addAction(create_directory_action)
@@ -134,7 +145,7 @@ class MenuPanel:
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
-        search_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileDialogDetailedView), "Szukaj", self.main_window)
+        search_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView), "Szukaj", self.main_window)
         search_action.triggered.connect(self.main_window.search_input.setFocus)
         operations_menu.addAction(search_action)
         self.toolbar.addAction(search_action)
@@ -143,42 +154,42 @@ class MenuPanel:
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
-        copy_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileLinkIcon), "Kopiuj", self.main_window)
+        copy_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_FileLinkIcon), "Kopiuj", self.main_window)
         copy_action.triggered.connect(self.copy_selected_item)
         operations_menu.addAction(copy_action)
         self.toolbar.addAction(copy_action)
         self.main_window.shortcuts_manager.register_action("Kopiuj", copy_action)
 
-        paste_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileIcon), "Wklej", self.main_window)
+        paste_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon), "Wklej", self.main_window)
         operations_menu.addAction(paste_action)
         self.toolbar.addAction(paste_action)
         self.main_window.shortcuts_manager.register_action("Wklej", paste_action)
 
-        move_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DirLinkIcon), "Przenieś", self.main_window)
+        move_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_DirLinkIcon), "Przenieś", self.main_window)
         move_action.triggered.connect(self.move_selected_item) # Zmieniono na move_selected_item
         operations_menu.addAction(move_action)
         self.toolbar.addAction(move_action)
         self.main_window.shortcuts_manager.register_action("Przenieś", move_action)
 
-        rename_action = QAction(self.main_window.style().standardIcon(QStyle.SP_LineEditClearButton), "Zmień nazwę", self.main_window)
+        rename_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_LineEditClearButton), "Zmień nazwę", self.main_window)
         rename_action.triggered.connect(self.rename_selected_item)
         operations_menu.addAction(rename_action)
         self.toolbar.addAction(rename_action)
         self.main_window.shortcuts_manager.register_action("Zmień nazwę", rename_action)
 
-        delete_action = QAction(self.main_window.style().standardIcon(QStyle.SP_TrashIcon), "Usuń", self.main_window)
+        delete_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon), "Usuń", self.main_window)
         delete_action.triggered.connect(self.delete_selected_item)
         operations_menu.addAction(delete_action)
         self.toolbar.addAction(delete_action)
         self.main_window.shortcuts_manager.register_action("Usuń", delete_action)
 
-        compare_action = QAction(self.main_window.style().standardIcon(QStyle.SP_FileDialogToParent), "Porównaj", self.main_window)
+        compare_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogToParent), "Porównaj", self.main_window)
         compare_action.triggered.connect(self.main_window._compare_selected_items)
         operations_menu.addAction(compare_action)
         self.toolbar.addAction(compare_action)
         self.main_window.shortcuts_manager.register_action("Porównaj", compare_action)
 
-        synchronize_action = QAction(self.main_window.style().standardIcon(QStyle.SP_DirLinkIcon), "Synchronizuj", self.main_window)
+        synchronize_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_DirLinkIcon), "Synchronizuj", self.main_window)
         synchronize_action.triggered.connect(self.synchronize_directories)
         operations_menu.addAction(synchronize_action)
         self.toolbar.addAction(synchronize_action)
@@ -189,7 +200,7 @@ class MenuPanel:
         right_path = self.main_window.folder_browser.right_panel.model().filePath(self.main_window.folder_browser.current_paths[self.main_window.folder_browser.right_panel])
 
         dialog = SyncDialog(self.main_window, left_path, right_path)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
             self.main_window.directory_synchronizer.synchronize(left_path, right_path, options)
 
@@ -199,7 +210,7 @@ class MenuPanel:
         if active_panel:
             current_root_index = self.main_window.folder_browser.current_paths.get(active_panel)
             if current_root_index:
-                current_dir = active_panel.model().filePath(current_root_index)
+                current_dir = current_root_index
                 file_name, ok = QInputDialog.getText(self.main_window, "Nowy Plik", "Nazwa pliku:")
                 if ok and file_name:
                     self.file_manager.create_file(current_dir, file_name)
@@ -215,7 +226,7 @@ class MenuPanel:
         if active_panel:
             current_root_index = self.main_window.folder_browser.current_paths.get(active_panel)
             if current_root_index:
-                current_dir = active_panel.model().filePath(current_root_index)
+                current_dir = current_root_index
                 directory_name, ok = QInputDialog.getText(self.main_window, "Nowy Folder", "Nazwa folderu:")
                 if ok and directory_name:
                     self.file_manager.create_directory(current_dir, directory_name)
@@ -238,7 +249,7 @@ class MenuPanel:
         destination_path = inactive_panel.model().filePath(self.main_window.folder_browser.current_paths[inactive_panel])
 
         dialog = CopyDialog(self.main_window, source_path, destination_path)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
             self.file_manager.copy_item_with_options(source_path, destination_path, options)
 
@@ -255,7 +266,7 @@ class MenuPanel:
         destination_path = inactive_panel.model().filePath(self.main_window.folder_browser.current_paths[inactive_panel])
 
         dialog = MoveDialog(self.main_window, source_path, destination_path)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
             self.file_manager.move_item_with_options(source_path, destination_path, options)
 
@@ -273,7 +284,7 @@ class MenuPanel:
         if active_panel:
             current_root_index = self.main_window.folder_browser.current_paths.get(active_panel)
             if current_root_index:
-                current_dir = active_panel.model().filePath(current_root_index)
+                current_dir = current_root_index
                 self.file_manager.paste_item(current_dir)
             else:
                 self.main_window.status_bar.showMessage("Nie można określić bieżącego katalogu aktywnego panelu.")
@@ -289,7 +300,7 @@ class MenuPanel:
             return
 
         dialog = DeleteDialog(self.main_window, selected_path)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             self.file_manager.delete_item_with_confirmation(selected_path)
 
     def rename_selected_item(self):

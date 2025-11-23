@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QListWidget, QPushButton, QLabel
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QPushButton, QLabel
+from PyQt6.QtCore import Qt
 
 
 class SearchDialog(QDialog):
@@ -17,7 +17,7 @@ class SearchDialog(QDialog):
 
         if not self.results:
             no_results_label = QLabel("Brak wyników wyszukiwania.")
-            no_results_label.setAlignment(Qt.AlignCenter)
+            no_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(no_results_label)
         else:
             self.results_list_widget = QListWidget()
