@@ -1,7 +1,6 @@
 import json
 import os
-from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QAction
+from PyQt6.QtGui import QKeySequence, QAction
 
 class ShortcutsManager:
     def __init__(self, main_window):
