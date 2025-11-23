@@ -2,6 +2,7 @@ import os
 import subprocess
 from PyQt6.QtCore import Qt, QSettings, QEvent
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QToolBar, QLineEdit, QToolButton, QDialog, QMessageBox
+from PyQt6.QtGui import QFileSystemModel
 from bookmarks.bookmarks_manager import BookmarksManager
 from browser.folder_browser import FolderBrowser
 from panels.menu_panel import MenuPanel
@@ -49,7 +50,7 @@ class MainWindow(QMainWindow):
         self.toolbar.setObjectName("mainToolbar") # Ustawienie objectName
         self.toolbar.setMovable(False)
 
-        self.bookmarks_manager = BookmarksManager(os.path.join(os.path.expanduser("~"), ".quickfile_bookmarks.json"))
+        self.bookmarks_manager = BookmarksManager()
 
         # Pole wyszukiwania
         self.search_input = QLineEdit(self)
@@ -243,28 +244,56 @@ class MainWindow(QMainWindow):
             self.folder_browser.navigate_to_path(dialog.selected_bookmark)
 
     def load_settings(self):
+        # Restore window geometry and state (using QSettings as it's built-in for this)
         settings = QSettings("QuickFile", "QuickFile")
         geometry = settings.value("geometry", self.saveGeometry())
         self.restoreGeometry(geometry)
         window_state = settings.value("windowState", self.saveState())
         self.restoreState(window_state)
 
-        # Wczytanie ścieżek dla paneli
-        left_panel_path = settings.value("leftPanelPath", os.path.expanduser("~"))
-        right_panel_path = settings.value("rightPanelPath", os.path.expanduser("~"))
+        # Load panel paths using SettingsManager
+        default_path = os.path.expanduser("~")
+        
+        left_panel_path = self.settings_manager.get_setting("leftPanelPath", default_path)
+        right_panel_path = self.settings_manager.get_setting("rightPanelPath", default_path)
+            
         self.folder_browser.navigate_to_path(left_panel_path, self.folder_browser.left_panel)
         self.folder_browser.navigate_to_path(right_panel_path, self.folder_browser.right_panel)
 
+        # Load and restore active panel
+        active_panel_id = self.settings_manager.get_setting("activePanel", "left") # Default to 'left'
+        self.folder_browser.set_active_panel_by_id(active_panel_id)
+
+        # Signal that the initial load is complete
+        self.folder_browser.initial_load_done()
+
     def save_settings(self):
+        # Save window geometry and state (using QSettings)
         settings = QSettings("QuickFile", "QuickFile")
         settings.setValue("geometry", self.saveGeometry())
         settings.setValue("windowState", self.saveState())
 
-        # Zapisanie ścieżek dla paneli
-        left_panel_path = self.folder_browser.left_panel.model().filePath(self.folder_browser.left_panel.rootIndex())
-        right_panel_path = self.folder_browser.right_panel.model().filePath(self.folder_browser.right_panel.rootIndex())
-        settings.setValue("leftPanelPath", left_panel_path)
-        settings.setValue("rightPanelPath", right_panel_path)
+        # Save panel paths and active panel using SettingsManager
+        default_path = os.path.expanduser("~")
+        
+        left_panel_model = self.folder_browser.left_panel.model()
+        left_panel_root_index = self.folder_browser.left_panel.rootIndex()
+        if isinstance(left_panel_model, QFileSystemModel): # For tree view
+            left_panel_path = left_panel_model.filePath(left_panel_root_index) if left_panel_root_index.isValid() else default_path
+        else: # For flat view (FlatFileSystemModel)
+            left_panel_path = self.folder_browser.current_paths.get(self.folder_browser.left_panel, default_path)
+        
+        right_panel_model = self.folder_browser.right_panel.model()
+        right_panel_root_index = self.folder_browser.right_panel.rootIndex()
+        if isinstance(right_panel_model, QFileSystemModel): # For tree view
+            right_panel_path = right_panel_model.filePath(right_panel_root_index) if right_panel_root_index.isValid() else default_path
+        else: # For flat view (FlatFileSystemModel)
+            right_panel_path = self.folder_browser.current_paths.get(self.folder_browser.right_panel, default_path)
+
+        # Use SettingsManager to save
+        self.settings_manager.set_setting("leftPanelPath", left_panel_path)
+        self.settings_manager.set_setting("rightPanelPath", right_panel_path)
+        self.settings_manager.set_setting("activePanel", self.folder_browser.get_active_panel_id())
 
     def closeEvent(self, event):
         self.save_settings()
