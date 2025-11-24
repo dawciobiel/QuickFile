@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 from utils.dialogs import show_error_message
@@ -40,6 +41,7 @@ class FileManager:
             self.main_window.folder_browser.refresh_view()
 
         except Exception as e:
+            logging.exception(f"Error copying item from {source_path} to {destination_path}: {e}")
             show_error_message(self.main_window, "Błąd kopiowania", str(e))
 
     def move_item_with_options(self, source_path, destination_path, options):
@@ -71,6 +73,7 @@ class FileManager:
             self.main_window.folder_browser.refresh_view()
 
         except Exception as e:
+            logging.exception(f"Error moving item from {source_path} to {destination_path}: {e}")
             show_error_message(self.main_window, "Błąd przenoszenia", str(e))
 
     def delete_item_with_confirmation(self, item_path):
@@ -87,6 +90,7 @@ class FileManager:
             self.main_window.status_bar.showMessage(f"Usunięto: {item_path}")
             self.main_window.folder_browser.refresh_view()
         except Exception as e:
+            logging.exception(f"Error deleting item {item_path}: {e}")
             show_error_message(self.main_window, "Błąd usuwania", str(e))
 
     def copy_item(self, path):
@@ -129,6 +133,7 @@ class FileManager:
                 self.main_window.status_bar.showMessage(f"Skopiowano '{base_name}' do '{destination_full_path}'")
 
         except Exception as e:
+            logging.exception(f"Error pasting item to {destination_path}: {e}")
             show_error_message(self.main_window, "Błąd wklejania", str(e))
         finally:
             self.clipboard = None
@@ -146,6 +151,7 @@ class FileManager:
                 os.remove(path)
             self.main_window.status_bar.showMessage(f"Usunięto: {path}")
         except Exception as e:
+            logging.exception(f"Error deleting item {path}: {e}")
             show_error_message(self.main_window, "Błąd usuwania", str(e))
 
     def rename_item(self, old_path, new_name):
@@ -163,6 +169,7 @@ class FileManager:
             os.rename(old_path, new_path)
             self.main_window.status_bar.showMessage(f"Zmieniono nazwę na: {new_name}")
         except Exception as e:
+            logging.exception(f"Error renaming item {old_path} to {new_name}: {e}")
             show_error_message(self.main_window, "Błąd zmiany nazwy", str(e))
 
     def create_file(self, directory, file_name):
@@ -185,6 +192,7 @@ class FileManager:
                 pass  # Tworzy pusty plik
             self.main_window.status_bar.showMessage(f"Utworzono plik: {file_path}")
         except Exception as e:
+            logging.exception(f"Error creating file {file_path}: {e}")
             show_error_message(self.main_window, "Błąd tworzenia pliku", str(e))
 
     def create_directory(self, parent_directory, directory_name):
@@ -206,6 +214,7 @@ class FileManager:
             os.makedirs(directory_path)
             self.main_window.status_bar.showMessage(f"Utworzono folder: {directory_path}")
         except Exception as e:
+            logging.exception(f"Error creating directory {directory_path}: {e}")
             show_error_message(self.main_window, "Błąd tworzenia folderu", str(e))
 
     def search_files(self, root_path, pattern):

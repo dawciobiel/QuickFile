@@ -1,6 +1,9 @@
+import logging
 import os
 import shutil
 import filecmp
+from utils.dialogs import show_error_message
+
 
 class DirectorySynchronizer:
     def __init__(self, main_window):
@@ -18,7 +21,8 @@ class DirectorySynchronizer:
             self.main_window.status_bar.showMessage("Synchronizacja zakończona pomyślnie.")
             self.main_window.folder_browser.refresh_view()
         except Exception as e:
-            self.main_window.status_bar.showMessage(f"Błąd podczas synchronizacji: {e}")
+            logging.exception(f"Error during synchronization between {dir1} and {dir2}: {e}")
+            show_error_message(self.main_window, "Błąd synchronizacji", f"Błąd podczas synchronizacji: {e}")
 
     def _synchronize_one_way(self, source, dest, options):
         """Synchronizacja jednokierunkowa (source -> dest)."""

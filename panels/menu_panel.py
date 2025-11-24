@@ -1,3 +1,4 @@
+import logging
 import os
 import os
 from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog, QMessageBox
@@ -9,6 +10,7 @@ from utils.delete_dialog import DeleteDialog # Dodaj import DeleteDialog
 from utils.sync_dialog import SyncDialog
 from utils.shortcuts_dialog import ShortcutsDialog
 from utils.settings_dialog import SettingsDialog
+from utils.dialogs import show_error_message # Dodano import
 
 
 class MenuPanel:
@@ -85,7 +87,8 @@ class MenuPanel:
     def create_archive(self):
         selected_path = self.main_window.folder_browser.current_selected_path
         if not selected_path:
-            self.main_window.status_bar.showMessage("Nie wybrano pliku/folderu do archiwizacji.")
+            logging.warning("Attempted to create archive without selecting a file/folder.")
+            show_error_message(self.main_window, "Błąd archiwizacji", "Nie wybrano pliku/folderu do archiwizacji.")
             return
 
         archive_name, ok = QInputDialog.getText(self.main_window, "Utwórz archiwum", "Nazwa archiwum (bez rozszerzenia):")
@@ -98,7 +101,8 @@ class MenuPanel:
     def extract_archive(self):
         selected_path = self.main_window.folder_browser.current_selected_path
         if not selected_path or not selected_path.endswith(('.zip', '.tar', '.gz', '.bz2', '.xz', '.rar')):
-            self.main_window.status_bar.showMessage("Nie wybrano pliku archiwum do wypakowania.")
+            logging.warning(f"Attempted to extract invalid archive type or no archive selected: {selected_path}")
+            show_error_message(self.main_window, "Błąd wypakowywania", "Nie wybrano pliku archiwum do wypakowania lub nieobsługiwany format.")
             return
 
         extract_path, ok = QInputDialog.getText(self.main_window, "Wypakuj archiwum", "Ścieżka docelowa:", text=os.path.dirname(selected_path))
@@ -117,9 +121,11 @@ class MenuPanel:
                 self.main_window.folder_browser.refresh_view()
 
             except UnrarNotInstalledError as e:
+                logging.warning(f"Unrar not installed error: {e}")
                 QMessageBox.warning(self.main_window, "Błąd", str(e))
             except Exception as e:
-                self.main_window.status_bar.showMessage(f"Błąd podczas wypakowywania: {e}")
+                logging.exception(f"Error during archive extraction for {selected_path}: {e}")
+                show_error_message(self.main_window, "Błąd wypakowywania", str(e))
 
     def _create_operations_menu(self):
         operations_menu = self.menu_bar.addMenu("Operacje")
@@ -226,9 +232,11 @@ class MenuPanel:
                     self.file_manager.create_file(current_dir, file_name)
                     self.main_window.folder_browser.refresh_view()  # Odśwież widok po utworzeniu
             else:
-                self.main_window.status_bar.showMessage("Nie można określić bieżącego katalogu aktywnego panelu.")
+                logging.warning("Could not determine current directory for active panel when creating new file.")
+                show_error_message(self.main_window, "Błąd tworzenia pliku", "Nie można określić bieżącego katalogu aktywnego panelu.")
         else:
-            self.main_window.status_bar.showMessage("Brak aktywnego panelu.")
+            logging.warning("No active panel when attempting to create new file.")
+            show_error_message(self.main_window, "Błąd tworzenia pliku", "Brak aktywnego panelu.")
 
     def create_new_directory(self):
         """Tworzy nowy folder w aktywnym panelu."""
@@ -242,15 +250,18 @@ class MenuPanel:
                     self.file_manager.create_directory(current_dir, directory_name)
                     self.main_window.folder_browser.refresh_view()  # Odśwież widok po utworzeniu
             else:
-                self.main_window.status_bar.showMessage("Nie można określić bieżącego katalogu aktywnego panelu.")
+                logging.warning("Could not determine current directory for active panel when creating new directory.")
+                show_error_message(self.main_window, "Błąd tworzenia folderu", "Nie można określić bieżącego katalogu aktywnego panelu.")
         else:
-            self.main_window.status_bar.showMessage("Brak aktywnego panelu.")
+            logging.warning("No active panel when attempting to create new directory.")
+            show_error_message(self.main_window, "Błąd tworzenia folderu", "Brak aktywnego panelu.")
 
     def copy_selected_item(self):
         """Otwiera dialog kopiowania dla zaznaczonego elementu."""
         source_path = self.main_window.folder_browser.current_selected_path
         if not source_path:
-            self.main_window.status_bar.showMessage("Nie wybrano żadnego pliku/folderu do skopiowania.")
+            logging.warning("Attempted to copy item without selecting a file/folder.")
+            show_error_message(self.main_window, "Błąd kopiowania", "Nie wybrano żadnego pliku/folderu do skopiowania.")
             return
 
         # Określenie ścieżki docelowej (nieaktywne panele)
@@ -267,7 +278,8 @@ class MenuPanel:
         """Otwiera dialog przenoszenia dla zaznaczonego elementu."""
         source_path = self.main_window.folder_browser.current_selected_path
         if not source_path:
-            self.main_window.status_bar.showMessage("Nie wybrano żadnego pliku/folderu do przeniesienia.")
+            logging.warning("Attempted to move item without selecting a file/folder.")
+            show_error_message(self.main_window, "Błąd przenoszenia", "Nie wybrano żadnego pliku/folderu do przeniesienia.")
             return
 
         # Określenie ścieżki docelowej (nieaktywne panele)
@@ -286,7 +298,8 @@ class MenuPanel:
         if selected_path:
             self.file_manager.cut_item(selected_path)
         else:
-            self.main_window.status_bar.showMessage("Nie wybrano żadnego pliku/folderu do wycięcia.")
+            logging.warning("No file/folder selected for cut operation.")
+            show_error_message(self.main_window, "Błąd wycinania", "Nie wybrano żadnego pliku/folderu do wycięcia.")
 
     def paste_item_to_current_dir(self):
         """Wkleja element do bieżącego katalogu aktywnego panelu."""
@@ -297,16 +310,19 @@ class MenuPanel:
                 current_dir = current_root_index
                 self.file_manager.paste_item(current_dir)
             else:
-                self.main_window.status_bar.showMessage("Nie można określić bieżącego katalogu aktywnego panelu.")
+                logging.warning("Could not determine current directory for active panel when pasting item.")
+                show_error_message(self.main_window, "Błąd wklejania", "Nie można określić bieżącego katalogu aktywnego panelu.")
         else:
-            self.main_window.status_bar.showMessage("Brak aktywnego panelu.")
+            logging.warning("No active panel when attempting to paste item.")
+            show_error_message(self.main_window, "Błąd wklejania", "Brak aktywnego panelu.")
 
     def delete_selected_item(self):
         """Usuwa zaznaczony element z aktywnego panelu."""
         print("MenuPanel: delete_selected_item called") # Dodano komunikat debugujący
         selected_path = self.main_window.folder_browser.current_selected_path
         if not selected_path:
-            self.main_window.status_bar.showMessage("Nie wybrano żadnego pliku/folderu do usunięcia.")
+            logging.warning("No file/folder selected for delete operation.")
+            show_error_message(self.main_window, "Błąd usuwania", "Nie wybrano żadnego pliku/folderu do usunięcia.")
             return
 
         dialog = DeleteDialog(self.main_window, selected_path)
@@ -322,6 +338,8 @@ class MenuPanel:
             if ok and new_name:
                 self.file_manager.rename_item(selected_path, new_name)
             elif not new_name:
-                self.main_window.status_bar.showMessage("Nowa nazwa nie może być pusta.")
+                logging.warning("Attempted to rename item with an empty new name.")
+                show_error_message(self.main_window, "Błąd zmiany nazwy", "Nowa nazwa nie może być pusta.")
         else:
-            self.main_window.status_bar.showMessage("Nie wybrano żadnego pliku/folderu do zmiany nazwy.")
+            logging.warning("No file/folder selected for rename operation.")
+            show_error_message(self.main_window, "Błąd zmiany nazwy", "Nie wybrano żadnego pliku/folderu do zmiany nazwy.")
