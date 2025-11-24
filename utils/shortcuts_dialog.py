@@ -4,7 +4,7 @@ from PyQt6.QtCore import Qt
 class ShortcutsDialog(QDialog):
     def __init__(self, parent, shortcuts):
         super().__init__(parent)
-        self.setWindowTitle("Skróty Klawiszowe")
+        self.setWindowTitle("Keyboard Shortcuts")
         self.shortcuts = shortcuts
         self._init_ui()
 
@@ -13,7 +13,7 @@ class ShortcutsDialog(QDialog):
 
         self.table = QTableWidget()
         self.table.setColumnCount(2)
-        self.table.setHorizontalHeaderLabels(["Akcja", "Skrót"])
+        self.table.setHorizontalHeaderLabels(["Action", "Shortcut"])
         self.table.setRowCount(len(self.shortcuts))
 
         for i, (action, shortcut) in enumerate(self.shortcuts.items()):
@@ -24,8 +24,8 @@ class ShortcutsDialog(QDialog):
         layout.addWidget(self.table)
 
         button_layout = QHBoxLayout()
-        self.save_button = QPushButton("Zapisz")
-        self.cancel_button = QPushButton("Anuluj")
+        self.save_button = QPushButton("Save")
+        self.cancel_button = QPushButton("Cancel")
         button_layout.addWidget(self.save_button)
         button_layout.addWidget(self.cancel_button)
         layout.addLayout(button_layout)

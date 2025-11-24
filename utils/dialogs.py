@@ -3,12 +3,12 @@ from PyQt6.QtCore import QSize
 
 
 def show_error_message(parent, title, message):
-    """Wyświetla okno dialogowe z komunikatem o błędzie."""
+    """Displays an error message dialog."""
     error_dialog = QMessageBox(parent)
     error_dialog.setIcon(QMessageBox.Icon.Critical)
     error_dialog.setText(title)
     error_dialog.setInformativeText(message)
-    error_dialog.setWindowTitle("Błąd")
+    error_dialog.setWindowTitle("Error")
     
     # Add a spacer item to force the width
     spacer = QSpacerItem(400, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)

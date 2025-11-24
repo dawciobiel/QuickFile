@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QListWidget, QListW
 class BookmarkDialog(QDialog):
     def __init__(self, bookmarks, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Zakładki")
+        self.setWindowTitle("Bookmarks")
         self.bookmarks = bookmarks
         self.selected_bookmark = None
 
@@ -12,7 +12,7 @@ class BookmarkDialog(QDialog):
         self.setLayout(self.layout)
 
         self.filter_input = QLineEdit()
-        self.filter_input.setPlaceholderText("Filtruj zakładki...")
+        self.filter_input.setPlaceholderText("Filter bookmarks...")
         self.layout.addWidget(self.filter_input)
 
         self.bookmarks_list = QListWidget()
