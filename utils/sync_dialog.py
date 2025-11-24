@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit
 class SyncDialog(QDialog):
     def __init__(self, parent, source_dir, dest_dir):
         super().__init__(parent)
-        self.setWindowTitle("Synchronizacja Katalogów")
+        self.setWindowTitle("Directory Synchronization")
 
         self.source_dir = source_dir
         self.dest_dir = dest_dir
@@ -15,17 +15,17 @@ class SyncDialog(QDialog):
 
         # Scieżki
         path_layout = QVBoxLayout()
-        path_layout.addWidget(QLabel(f"Źródło: {self.source_dir}"))
-        path_layout.addWidget(QLabel(f"Cel: {self.dest_dir}"))
+        path_layout.addWidget(QLabel(f"Source: {self.source_dir}"))
+        path_layout.addWidget(QLabel(f"Destination: {self.dest_dir}"))
         layout.addLayout(path_layout)
 
         # Opcje
-        options_group = QGroupBox("Opcje Synchronizacji")
+        options_group = QGroupBox("Synchronization Options")
         options_layout = QVBoxLayout()
 
-        self.two_way_sync_checkbox = QCheckBox("Synchronizacja dwukierunkowa (kopiuj nowsze pliki w obie strony)")
-        self.delete_files_checkbox = QCheckBox("Usuń pliki w folderze docelowym, jeśli nie istnieją w źródłowym")
-        self.include_subdirs_checkbox = QCheckBox("Uwzględnij podkatalogi")
+        self.two_way_sync_checkbox = QCheckBox("Two-way synchronization (copy newer files both ways)")
+        self.delete_files_checkbox = QCheckBox("Delete files in destination folder if they don't exist in source")
+        self.include_subdirs_checkbox = QCheckBox("Include subdirectories")
         self.include_subdirs_checkbox.setChecked(True)
 
         options_layout.addWidget(self.two_way_sync_checkbox)
@@ -36,8 +36,8 @@ class SyncDialog(QDialog):
 
         # Przyciski
         button_layout = QHBoxLayout()
-        self.sync_button = QPushButton("Synchronizuj")
-        self.cancel_button = QPushButton("Anuluj")
+        self.sync_button = QPushButton("Synchronize")
+        self.cancel_button = QPushButton("Cancel")
         button_layout.addWidget(self.sync_button)
         button_layout.addWidget(self.cancel_button)
         layout.addLayout(button_layout)

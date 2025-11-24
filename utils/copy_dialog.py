@@ -4,17 +4,17 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QCheckBox, QDialogButt
 class CopyDialog(QDialog):
     def __init__(self, parent, source_path, destination_path):
         super().__init__(parent)
-        self.setWindowTitle("Kopiowanie")
+        self.setWindowTitle("Copy")
 
         self.layout = QVBoxLayout(self)
 
         # Etykiety informacyjne
-        self.layout.addWidget(QLabel(f"<b>Źródło:</b> {source_path}"))
-        self.layout.addWidget(QLabel(f"<b>Cel:</b> {destination_path}"))
+        self.layout.addWidget(QLabel(f"<b>Source:</b> {source_path}"))
+        self.layout.addWidget(QLabel(f"<b>Destination:</b> {destination_path}"))
 
         # Opcje
-        self.overwrite_checkbox = QCheckBox("Nadpisz istniejące pliki")
-        self.preserve_timestamp_checkbox = QCheckBox("Zachowaj oryginalną datę modyfikacji")
+        self.overwrite_checkbox = QCheckBox("Overwrite existing files")
+        self.preserve_timestamp_checkbox = QCheckBox("Preserve original modification date")
         self.preserve_timestamp_checkbox.setChecked(True)  # Domyślnie zaznaczone
 
         self.layout.addWidget(self.overwrite_checkbox)
@@ -27,7 +27,7 @@ class CopyDialog(QDialog):
         self.layout.addWidget(self.button_box)
 
     def get_options(self):
-        """Zwraca słownik z wybranymi opcjami."""
+        """Returns a dictionary with selected options."""
         return {
             "overwrite": self.overwrite_checkbox.isChecked(),
             "preserve_timestamp": self.preserve_timestamp_checkbox.isChecked(),

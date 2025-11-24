@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         # print(f"Qt.Key_F8 value: {Qt.Key_F8}") # Usunięto komunikat debugujący
 
     def _init_ui(self):
-        # Inicjalizacja menedżera plików
+        # Initialize file manager
         self.file_manager = FileManager(self)
         self.file_comparator = FileComparator()
         self.archive_manager = ArchiveManager(self)
@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         self.folder_browser = FolderBrowser(view_mode=self.settings_manager.get_setting("view_mode"), parent=self)
 
         # Inicjalizacja paska narzędzi
-        self.toolbar = self.addToolBar("Główne narzędzia")
+        self.toolbar = self.addToolBar("Main Tools")
         self.toolbar.setObjectName("mainToolbar") # Ustawienie objectName
         self.toolbar.setMovable(False)
 
@@ -55,13 +55,13 @@ class MainWindow(QMainWindow):
 
         # Pole wyszukiwania
         self.search_input = QLineEdit(self)
-        self.search_input.setPlaceholderText("Szukaj plików...")
+        self.search_input.setPlaceholderText("Search files...")
         self.toolbar.addWidget(self.search_input)
 
         # Przycisk do zakładek
         self.add_bookmark_button = QToolButton(self)
         self.add_bookmark_button.setText("⭐") # Użyj emoji jako ikony
-        self.add_bookmark_button.setToolTip("Dodaj bieżący katalog do zakładek")
+        self.add_bookmark_button.setToolTip("Add current directory to bookmarks")
         self.toolbar.addWidget(self.add_bookmark_button)
 
         # Inicjalizacja paska menu i paska stanu
@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
 
 
         self.status_bar = self.statusBar()
-        self.status_bar.showMessage("Gotowy")
+        self.status_bar.showMessage("Ready")
 
         # Pasek adresu
         self.address_bar = QLineEdit(self)
@@ -100,14 +100,14 @@ class MainWindow(QMainWindow):
         self.add_bookmark_button.clicked.connect(self.add_bookmark)
 
     def add_bookmark(self):
-        """Dodaje bieżący katalog aktywnego panelu do zakładek."""
+        """Adds the current directory of the active panel to bookmarks."""
         if self.folder_browser.active_panel:
             current_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.active_panel.model().index(self.folder_browser.active_panel.model().rootPath()))
             self.bookmarks_manager.add_bookmark(current_path)
-            self.status_bar.showMessage(f"Dodano zakładkę: {current_path}")
+            self.status_bar.showMessage(f"Bookmark added: {current_path}")
 
     def update_status_bar_path(self, path):
-        self.status_bar.showMessage(f"Aktualny katalog: {path}")
+        self.status_bar.showMessage(f"Current directory: {path}")
 
     def navigate_from_address_bar(self):
         path = self.address_bar.text()
@@ -120,17 +120,17 @@ class MainWindow(QMainWindow):
             results = self.file_manager.search_files(current_path, search_text)
             self.show_search_results(results)
         else:
-            self.status_bar.showMessage("Wprowadź tekst do wyszukania.")
+            self.status_bar.showMessage("Enter text to search.")
 
     def show_search_results(self, results):
-        """Wyświetla wyniki wyszukiwania w oknie dialogowym."""
+        """Displays search results in a dialog window."""
         dialog = SearchDialog(self, results)
         dialog.exec()
 
     def open_file_externally(self, file_path):
-        """Otwiera plik za pomocą domyślnego programu systemowego."""
+        """Opens the file using the system's default application."""
         if not os.path.exists(file_path):
-            show_error_message(self, "Błąd otwierania pliku", f"Plik '{file_path}' nie istnieje.")
+            show_error_message(self, "File Opening Error", f"File '{file_path}' does not exist.")
             return
 
         try:
@@ -140,13 +140,13 @@ class MainWindow(QMainWindow):
                 subprocess.call(('open', file_path))
             else:  # Linux
                 subprocess.call(('xdg-open', file_path))
-            self.status_bar.showMessage(f"Otwarto plik: {file_path}")
+            self.status_bar.showMessage(f"File opened: {file_path}")
         except Exception as e:
             logging.exception(f"Error opening file externally '{file_path}': {e}")
-            show_error_message(self, "Błąd otwierania pliku", f"Nie można otworzyć pliku '{file_path}': {e}")
+            show_error_message(self, "File Opening Error", f"Could not open file '{file_path}': {e}")
 
     def _get_selected_file_path(self):
-        """Zwraca ścieżkę do zaznaczonego pliku, jeśli jest to plik."""
+        """Returns the path to the selected file, if it is a file."""
         selected_path = self.folder_browser.current_selected_path
         if selected_path and os.path.isfile(selected_path):
             return selected_path
@@ -196,7 +196,7 @@ class MainWindow(QMainWindow):
             # print(f"MainWindow eventFilter: KeyPress event detected. Key: {event.key()}, Source: {source.objectName() if source.objectName() else source.__class__.__name__}")
             key = event.key()
             if key == Qt.Key.Key_F1:
-                self.status_bar.showMessage("F1: Pomoc (niezaimplementowana)")
+                self.status_bar.showMessage("F1: Help (not implemented)")
                 return True
             elif key == Qt.Key.Key_F2:
                 self.menu_panel.rename_selected_item()
@@ -206,14 +206,14 @@ class MainWindow(QMainWindow):
                 if selected_path:
                     self.open_file_externally(selected_path)
                 else:
-                    self.status_bar.showMessage("Nie wybrano pliku do podglądu.")
+                    self.status_bar.showMessage("No file selected for preview.")
                 return True
             elif key == Qt.Key.Key_F4:
                 selected_path = self._get_selected_file_path()
                 if selected_path:
                     self.open_file_externally(selected_path) # Na razie to samo co F3
                 else:
-                    self.status_bar.showMessage("Nie wybrano pliku do edycji.")
+                    self.status_bar.showMessage("No file selected for editing.")
                 return True
             elif key == Qt.Key.Key_F5:
                 # print("MainWindow eventFilter: Calling copy_selected_item for F5") # Usunięto komunikat debugujący
@@ -242,7 +242,7 @@ class MainWindow(QMainWindow):
         return super().eventFilter(source, event)
 
     def open_bookmark_dialog(self):
-        """Otwiera dialog zakładek."""
+        """Opens the bookmarks dialog."""
         dialog = BookmarkDialog(self.bookmarks_manager.bookmarks, self)
         if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_bookmark:
             self.folder_browser.navigate_to_path(dialog.selected_bookmark)

@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QRadio
 class SettingsDialog(QDialog):
     def __init__(self, parent, current_view_mode):
         super().__init__(parent)
-        self.setWindowTitle("Ustawienia Aplikacji")
+        self.setWindowTitle("Application Settings")
         self.current_view_mode = current_view_mode
         self.selected_view_mode = current_view_mode
         self._init_ui()
@@ -12,11 +12,11 @@ class SettingsDialog(QDialog):
         main_layout = QVBoxLayout(self)
 
         # Group box for view mode
-        view_mode_group = QGroupBox("Tryb Widoku Folderów")
+        view_mode_group = QGroupBox("Folder View Mode")
         view_mode_layout = QVBoxLayout()
 
-        self.flat_view_radio = QRadioButton("Widok płaski (tylko bieżący katalog, z opcją '..')")
-        self.tree_view_radio = QRadioButton("Widok drzewa (cała partycja, rozwijane katalogi)")
+        self.flat_view_radio = QRadioButton("Flat View (current directory only, with '..')")
+        self.tree_view_radio = QRadioButton("Tree View (entire partition, expandable directories)")
 
         if self.current_view_mode == "flat":
             self.flat_view_radio.setChecked(True)
@@ -33,8 +33,8 @@ class SettingsDialog(QDialog):
 
         # Buttons
         button_layout = QHBoxLayout()
-        self.save_button = QPushButton("Zapisz")
-        self.cancel_button = QPushButton("Anuluj")
+        self.save_button = QPushButton("Save")
+        self.cancel_button = QPushButton("Cancel")
         button_layout.addWidget(self.save_button)
         button_layout.addWidget(self.cancel_button)
         main_layout.addLayout(button_layout)
