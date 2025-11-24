@@ -1,9 +1,12 @@
+import logging
 import os
 from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel
 from PyQt6.QtWidgets import QWidget, QTableView, QVBoxLayout, QAbstractItemView, QHeaderView, QSplitter, QTreeView
 from PyQt6.QtGui import QFileSystemModel, QColor, QPalette
 # from browser.flat_view_proxy_model import FlatViewProxyModel # Old import
 from browser.flat_file_system_model import FlatFileSystemModel # New import
+from utils.dialogs import show_error_message # Dodano import
+
 
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
@@ -146,7 +149,19 @@ class FolderBrowser(QWidget):
         if panel is None:
             panel = self.active_panel
 
-        if panel and os.path.exists(path) and os.path.isdir(path):
+        if not os.path.exists(path) or not os.path.isdir(path):
+            msg = f"Ścieżka '{path}' jest nieprawidłowa lub nie istnieje."
+            logging.error(msg)
+            show_error_message(self, "Błąd nawigacji", msg)
+            return
+
+        if not os.access(path, os.R_OK):
+            msg = f"Brak uprawnień do odczytu katalogu:\n{path}"
+            logging.error(f"Permission denied for '{path}'.")
+            show_error_message(self, "Błąd uprawnień", msg)
+            return
+
+        if panel:
             # Decide what to select after the model reloads
             if select_entry_path:
                 self._select_on_load = os.path.basename(select_entry_path)
@@ -166,9 +181,9 @@ class FolderBrowser(QWidget):
                     self.current_paths[panel] = path
                     self.current_directory_changed.emit(path)
                 else:
-                    self.current_directory_changed.emit(f"Error: Could not set directory to '{path}'.")
-        else:
-            self.current_directory_changed.emit(f"Error: Path '{path}' is invalid or does not exist.")
+                    msg = f"Nie można ustawić katalogu na '{path}'."
+                    logging.error(msg)
+                    show_error_message(self, "Błąd nawigacji", msg)
 
     def set_panel_path(self, panel, path):
         self.navigate_to_path(path, panel)
@@ -194,7 +209,7 @@ class FolderBrowser(QWidget):
             self.active_panel.clearSelection()
 
         self.active_panel = panel
-        self.active_panel.setStyleSheet("QTableView { border: 1px solid blue; }") # Highlight active
+        self.active_panel.setStyleSheet("QTableView { border: 1px solid blue; } QTreeView { border: 1px solid blue; }") # Highlight active
         current_path = self.current_paths.get(self.active_panel)
         if current_path: # current_path is now a string
             self.current_directory_changed.emit(current_path)
