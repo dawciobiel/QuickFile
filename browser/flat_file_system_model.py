@@ -21,23 +21,28 @@ class FlatFileSystemModel(QAbstractTableModel):
         self.endResetModel()
 
     def _populate_items(self):
-        self._items = []
+        dot_dot_item = []
+        other_items = []
+
         if self._current_path != QDir.rootPath():
-            # Add ".." entry
-            self._items.append(("..", os.path.dirname(self._current_path), True))
+            # Keep ".." separate
+            dot_dot_item.append(("..", os.path.dirname(self._current_path), True))
         
         try:
             for item_name in os.listdir(self._current_path):
                 item_path = os.path.join(self._current_path, item_name)
                 is_dir = os.path.isdir(item_path)
-                self._items.append((item_name, item_path, is_dir))
+                other_items.append((item_name, item_path, is_dir))
             
-            # Sort items: directories first, then files, both alphabetically
-            self._items.sort(key=lambda x: (not x[2], x[0].lower()))
+            # Sort only the other items
+            other_items.sort(key=lambda x: (not x[2], x[0].lower()))
 
         except OSError:
             # Handle permission errors or invalid paths
-            self._items = [] # Clear items if path is inaccessible
+            other_items = []
+
+        # Combine the lists, with ".." always first
+        self._items = dot_dot_item + other_items
 
     def rowCount(self, parent=QModelIndex()):
         if parent.isValid():
