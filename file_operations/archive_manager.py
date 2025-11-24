@@ -1,8 +1,12 @@
+import logging
 import os
 import zipfile
 import tarfile
 import rarfile
 import shutil
+
+from utils.dialogs import show_error_message
+
 
 class UnrarNotInstalledError(Exception):
     """Custom exception raised when the unrar command is not found."""
@@ -28,7 +32,8 @@ class ArchiveManager:
                     zipf.write(source_path, os.path.basename(source_path))
             self.main_window.status_bar.showMessage(f"Utworzono archiwum: {archive_path}")
         except Exception as e:
-            self.main_window.status_bar.showMessage(f"Błąd podczas tworzenia archiwum ZIP: {e}")
+            logging.exception(f"Error creating ZIP archive {archive_path}: {e}")
+            show_error_message(self.main_window, "Błąd tworzenia archiwum ZIP", str(e))
 
     def extract_zip_archive(self, archive_path, extract_path):
         """
@@ -39,7 +44,8 @@ class ArchiveManager:
                 zipf.extractall(extract_path)
             self.main_window.status_bar.showMessage(f"Wypakowano archiwum do: {extract_path}")
         except Exception as e:
-            self.main_window.status_bar.showMessage(f"Błąd podczas wypakowywania archiwum ZIP: {e}")
+            logging.exception(f"Error extracting ZIP archive {archive_path}: {e}")
+            show_error_message(self.main_window, "Błąd wypakowywania archiwum ZIP", str(e))
 
     def create_tar_archive(self, source_path, archive_path, compression=""):
         """
@@ -52,7 +58,8 @@ class ArchiveManager:
                 tarf.add(source_path, arcname=os.path.basename(source_path))
             self.main_window.status_bar.showMessage(f"Utworzono archiwum TAR: {archive_path}")
         except Exception as e:
-            self.main_window.status_bar.showMessage(f"Błąd podczas tworzenia archiwum TAR: {e}")
+            logging.exception(f"Error creating TAR archive {archive_path}: {e}")
+            show_error_message(self.main_window, "Błąd tworzenia archiwum TAR", str(e))
 
     def extract_tar_archive(self, archive_path, extract_path):
         """
@@ -63,7 +70,8 @@ class ArchiveManager:
                 tarf.extractall(extract_path)
             self.main_window.status_bar.showMessage(f"Wypakowano archiwum do: {extract_path}")
         except Exception as e:
-            self.main_window.status_bar.showMessage(f"Błąd podczas wypakowywania archiwum TAR: {e}")
+            logging.exception(f"Error extracting TAR archive {archive_path}: {e}")
+            show_error_message(self.main_window, "Błąd wypakowywania archiwum TAR", str(e))
 
     def extract_rar_archive(self, archive_path, extract_path):
         """
@@ -78,6 +86,7 @@ class ArchiveManager:
                 rf.extractall(extract_path)
             self.main_window.status_bar.showMessage(f"Wypakowano archiwum RAR do: {extract_path}")
         except Exception as e:
-            self.main_window.status_bar.showMessage(f"Błąd podczas wypakowywania archiwum RAR: {e}")
+            logging.exception(f"Error extracting RAR archive {archive_path}: {e}")
+            show_error_message(self.main_window, "Błąd wypakowywania archiwum RAR", str(e))
             # Rzuć wyjątek dalej, aby można go było obsłużyć w UI
             raise e

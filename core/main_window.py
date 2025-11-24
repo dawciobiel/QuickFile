@@ -1,5 +1,6 @@
 import os
 import subprocess
+import logging # Dodano import logging
 from PyQt6.QtCore import Qt, QSettings, QEvent
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QToolBar, QLineEdit, QToolButton, QDialog, QMessageBox
 from PyQt6.QtGui import QFileSystemModel
@@ -142,6 +143,7 @@ class MainWindow(QMainWindow):
                 subprocess.call(('xdg-open', file_path))
             self.status_bar.showMessage(f"Otwarto plik: {file_path}")
         except Exception as e:
+            logging.exception(f"Error opening file externally '{file_path}': {e}")
             show_error_message(self, "Błąd otwierania pliku", f"Nie można otworzyć pliku '{file_path}': {e}")
 
     def _get_selected_file_path(self):
@@ -156,6 +158,7 @@ class MainWindow(QMainWindow):
         right_selected_path = self.folder_browser.right_panel.get_selected_path()
 
         if not left_selected_path or not right_selected_path:
+            logging.warning("Comparison Error: User tried to compare without selecting items in both panels.")
             QMessageBox.warning(self, "Comparison Error", "Please select items in both panels to compare.")
             return
 
@@ -169,6 +172,7 @@ class MainWindow(QMainWindow):
             # Compare files
             self._compare_files(left_selected_path, right_selected_path)
         else:
+            logging.warning("Comparison Error: User tried to compare a file with a directory.")
             QMessageBox.warning(self, "Comparison Error", "Cannot compare a file with a directory. Please select two files or two directories.")
 
     def _compare_files(self, file1_path, file2_path):
@@ -185,6 +189,7 @@ class MainWindow(QMainWindow):
             dialog = CompareDialog(self, report, dir1_path, dir2_path)
             dialog.exec()
         else:
+            logging.error("Directory Comparison Error: Could not compare directories. Ensure both paths are valid directories.")
             QMessageBox.critical(self, "Directory Comparison Error", "Could not compare directories. Ensure both paths are valid directories.")
 
     def eventFilter(self, source, event):
