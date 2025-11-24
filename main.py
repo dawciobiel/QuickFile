@@ -19,9 +19,9 @@ def global_exception_hook(exc_type, exc_value, exc_traceback):
     logger.critical(f"Unhandled exception:\n{tb_str}")
 
     # Show a dialog to the user
-    show_error_message(None, "Wystąpił krytyczny błąd",
-                       "Aplikacja napotkała nieoczekiwany błąd.\n"
-                       "Szczegóły zostały zapisane w pliku logu.")
+    show_error_message(None, "Critical Error Occurred",
+                       "The application encountered an unexpected error.\n"
+                       "Details have been written to the log file.")
 
     # It's generally a good idea to exit the application after an unhandled exception.
     # Depending on the error, the application state might be corrupted.

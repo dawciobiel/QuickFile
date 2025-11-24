@@ -186,7 +186,7 @@ def test_create_zip_archive_error(temp_dir, mock_main_window):
     
     mock_main_window.status_bar.showMessage.assert_called_once()
     actual_message = mock_main_window.status_bar.showMessage.call_args[0][0]
-    assert "Błąd podczas tworzenia archiwum ZIP: [Errno 2] No such file or directory:" in actual_message
+    assert "Error creating ZIP archive: [Errno 2] No such file or directory:" in actual_message
 
 def test_extract_zip_archive_error(temp_dir, mock_main_window):
     # Próba wypakowania uszkodzonego archiwum
@@ -199,7 +199,7 @@ def test_extract_zip_archive_error(temp_dir, mock_main_window):
 
     mock_main_window.status_bar.showMessage.assert_called_once()
     actual_message = mock_main_window.status_bar.showMessage.call_args[0][0]
-    assert "Błąd podczas wypakowywania archiwum ZIP: File is not a zip file" in actual_message
+    assert "Error extracting ZIP archive: File is not a zip file" in actual_message
 
 def test_create_tar_archive_error(temp_dir, mock_main_window):
     # Próba utworzenia archiwum z nieistniejącego źródła
@@ -211,7 +211,7 @@ def test_create_tar_archive_error(temp_dir, mock_main_window):
     
     mock_main_window.status_bar.showMessage.assert_called_once()
     actual_message = mock_main_window.status_bar.showMessage.call_args[0][0]
-    assert "Błąd podczas tworzenia archiwum TAR: [Errno 2] No such file or directory:" in actual_message
+    assert "Error creating TAR archive: [Errno 2] No such file or directory:" in actual_message
 
 def test_extract_tar_archive_error(temp_dir, mock_main_window):
     # Próba wypakowania uszkodzonego archiwum
@@ -224,4 +224,4 @@ def test_extract_tar_archive_error(temp_dir, mock_main_window):
 
     mock_main_window.status_bar.showMessage.assert_called_once()
     actual_message = mock_main_window.status_bar.showMessage.call_args[0][0]
-    assert "Błąd podczas wypakowywania archiwum TAR: file could not be opened successfully:" in actual_message
+    assert "Error extracting TAR archive: file could not be opened successfully:" in actual_message

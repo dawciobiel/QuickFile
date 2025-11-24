@@ -18,7 +18,7 @@ class ArchiveManager:
 
     def create_zip_archive(self, source_path, archive_path):
         """
-        Tworzy archiwum ZIP z podanego pliku lub folderu.
+        Creates a ZIP archive from the given file or folder.
         """
         try:
             with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -30,56 +30,56 @@ class ArchiveManager:
                             zipf.write(file_path, arcname)
                 else:
                     zipf.write(source_path, os.path.basename(source_path))
-            self.main_window.status_bar.showMessage(f"Utworzono archiwum: {archive_path}")
+            self.main_window.status_bar.showMessage(f"Archive created: {archive_path}")
         except Exception as e:
             logging.exception(f"Error creating ZIP archive {archive_path}: {e}")
-            show_error_message(self.main_window, "Błąd tworzenia archiwum ZIP", str(e))
+            show_error_message(self.main_window, "ZIP Archive Creation Error", str(e))
 
     def extract_zip_archive(self, archive_path, extract_path):
         """
-        Wypakowuje archiwum ZIP do podanej lokalizacji.
+        Extracts a ZIP archive to the specified location.
         """
         try:
             with zipfile.ZipFile(archive_path, 'r') as zipf:
                 zipf.extractall(extract_path)
-            self.main_window.status_bar.showMessage(f"Wypakowano archiwum do: {extract_path}")
+            self.main_window.status_bar.showMessage(f"Archive extracted to: {extract_path}")
         except Exception as e:
             logging.exception(f"Error extracting ZIP archive {archive_path}: {e}")
-            show_error_message(self.main_window, "Błąd wypakowywania archiwum ZIP", str(e))
+            show_error_message(self.main_window, "ZIP Archive Extraction Error", str(e))
 
     def create_tar_archive(self, source_path, archive_path, compression=""):
         """
-        Tworzy archiwum TAR z podanego pliku lub folderu.
-        compression: "gz", "bz2", "xz" lub "" (bez kompresji).
+        Creates a TAR archive from the given file or folder.
+        compression: "gz", "bz2", "xz" or "" (no compression).
         """
         mode = "w:" + compression
         try:
             with tarfile.open(archive_path, mode) as tarf:
                 tarf.add(source_path, arcname=os.path.basename(source_path))
-            self.main_window.status_bar.showMessage(f"Utworzono archiwum TAR: {archive_path}")
+            self.main_window.status_bar.showMessage(f"TAR Archive created: {archive_path}")
         except Exception as e:
             logging.exception(f"Error creating TAR archive {archive_path}: {e}")
-            show_error_message(self.main_window, "Błąd tworzenia archiwum TAR", str(e))
+            show_error_message(self.main_window, "TAR Archive Creation Error", str(e))
 
     def extract_tar_archive(self, archive_path, extract_path):
         """
-        Wypakowuje archiwum TAR do podanej lokalizacji.
+        Extracts a TAR archive to the specified location.
         """
         try:
             with tarfile.open(archive_path, "r:*") as tarf:
                 tarf.extractall(extract_path)
-            self.main_window.status_bar.showMessage(f"Wypakowano archiwum do: {extract_path}")
+            self.main_window.status_bar.showMessage(f"Archive extracted to: {extract_path}")
         except Exception as e:
             logging.exception(f"Error extracting TAR archive {archive_path}: {e}")
-            show_error_message(self.main_window, "Błąd wypakowywania archiwum TAR", str(e))
+            show_error_message(self.main_window, "TAR Archive Extraction Error", str(e))
 
     def extract_rar_archive(self, archive_path, extract_path):
         """
-        Wypakowuje archiwum RAR do podanej lokalizacji.
-        Sprawdza, czy narzędzie 'unrar' jest dostępne w systemie.
+        Extracts a RAR archive to the specified location.
+        Checks if the 'unrar' tool is available on the system.
         """
         if not shutil.which('unrar'):
-            raise UnrarNotInstalledError("Narzędzie 'unrar' nie jest zainstalowane lub nie ma go w ścieżce systemowej (PATH).")
+            raise UnrarNotInstalledError("The 'unrar' tool is not installed or not in the system's PATH.")
 
         try:
             with rarfile.RarFile(archive_path, 'r') as rf:
@@ -87,6 +87,6 @@ class ArchiveManager:
             self.main_window.status_bar.showMessage(f"Wypakowano archiwum RAR do: {extract_path}")
         except Exception as e:
             logging.exception(f"Error extracting RAR archive {archive_path}: {e}")
-            show_error_message(self.main_window, "Błąd wypakowywania archiwum RAR", str(e))
-            # Rzuć wyjątek dalej, aby można go było obsłużyć w UI
+            show_error_message(self.main_window, "RAR Archive Extraction Error", str(e))
+            # Re-raise the exception to be handled in the UI
             raise e

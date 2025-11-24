@@ -11,32 +11,32 @@ class DirectorySynchronizer:
 
     def synchronize(self, dir1, dir2, options):
         """
-        Synchronizuje dwa katalogi na podstawie podanych opcji.
+        Synchronizes two directories based on the given options.
         """
         try:
             if options.get("two_way"):
                 self._synchronize_two_way(dir1, dir2, options)
             else:
                 self._synchronize_one_way(dir1, dir2, options)
-            self.main_window.status_bar.showMessage("Synchronizacja zakończona pomyślnie.")
+            self.main_window.status_bar.showMessage("Synchronization completed successfully.")
             self.main_window.folder_browser.refresh_view()
         except Exception as e:
             logging.exception(f"Error during synchronization between {dir1} and {dir2}: {e}")
-            show_error_message(self.main_window, "Błąd synchronizacji", f"Błąd podczas synchronizacji: {e}")
+            show_error_message(self.main_window, "Synchronization Error", f"Error during synchronization: {e}")
 
     def _synchronize_one_way(self, source, dest, options):
-        """Synchronizacja jednokierunkowa (source -> dest)."""
+        """One-way synchronization (source -> dest)."""
         comparison = filecmp.dircmp(source, dest)
         
-        # Kopiuj pliki, które są w source, ale nie ma ich w dest
+        # Copy files that are in source but not in dest
         for item in comparison.left_only:
             shutil.copy2(os.path.join(source, item), os.path.join(dest, item))
 
-        # Kopiuj pliki, które są w obu, ale różnią się
+        # Copy files that are in both but differ
         for item in comparison.diff_files:
             shutil.copy2(os.path.join(source, item), os.path.join(dest, item))
 
-        # Usuń pliki z dest, jeśli opcja jest włączona
+        # Delete files from dest if the option is enabled
         if options.get("delete"):
             for item in comparison.right_only:
                 path = os.path.join(dest, item)
@@ -45,24 +45,24 @@ class DirectorySynchronizer:
                 else:
                     os.remove(path)
 
-        # Rekurencyjnie dla podkatalogów
+        # Recursively for subdirectories
         if options.get("include_subdirs"):
             for common_dir in comparison.common_dirs:
                 self._synchronize_one_way(os.path.join(source, common_dir), os.path.join(dest, common_dir), options)
 
     def _synchronize_two_way(self, dir1, dir2, options):
-        """Synchronizacja dwukierunkowa (kopiowanie nowszych plików)."""
+        """Two-way synchronization (copy newer files)."""
         comparison = filecmp.dircmp(dir1, dir2)
 
-        # Pliki tylko w dir1 -> kopiuj do dir2
+        # Files only in dir1 -> copy to dir2
         for item in comparison.left_only:
             shutil.copy2(os.path.join(dir1, item), os.path.join(dir2, item))
 
-        # Pliki tylko w dir2 -> kopiuj do dir1
+        # Files only in dir2 -> copy to dir1
         for item in comparison.right_only:
             shutil.copy2(os.path.join(dir2, item), os.path.join(dir1, item))
 
-        # Pliki, które się różnią -> kopiuj nowszy
+        # Files that differ -> copy newer
         for item in comparison.diff_files:
             path1 = os.path.join(dir1, item)
             path2 = os.path.join(dir2, item)
@@ -71,7 +71,7 @@ class DirectorySynchronizer:
             else:
                 shutil.copy2(path2, path1)
         
-        # Rekurencyjnie dla podkatalogów
+        # Recursively for subdirectories
         if options.get("include_subdirs"):
             for common_dir in comparison.common_dirs:
                 self._synchronize_two_way(os.path.join(dir1, common_dir), os.path.join(dir2, common_dir), options)
