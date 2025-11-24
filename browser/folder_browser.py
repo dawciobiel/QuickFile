@@ -53,6 +53,7 @@ class FolderBrowser(QWidget):
             model = QFileSystemModel()
             model.setRootPath(os.path.expanduser("~"))
             view = QTreeView() # Use QTreeView for tree mode
+            view.setExpandsOnDoubleClick(False)
             view.setModel(model)
             view.setRootIndex(model.index(os.path.expanduser("~")))
 
@@ -76,20 +77,26 @@ class FolderBrowser(QWidget):
 
         return view
     
-    def on_double_clicked(self, index: QModelIndex, view: QTableView):
+    def on_double_clicked(self, index: QModelIndex, view): # Note: 'view' can be QTableView or QTreeView
         model = view.model()
         if model.isDir(index):
-            file_name = model.fileName(index)
             new_path = model.filePath(index)
 
-            if file_name == "..":
-                # Going up. We want to select the directory we came from.
-                current_panel_path = self.current_paths.get(view)
-                self.navigate_to_path(new_path, panel=view, select_entry_path=current_panel_path)
-            else:
-                # Going down into a subdirectory. Default behavior is to select '..'.
-                self.navigate_to_path(new_path, panel=view)
+            if isinstance(view, QTreeView):
+                # In Tree view, double-clicking a directory should expand/collapse it
+                view.setExpanded(index, not view.isExpanded(index))
+                # Update current path without changing the tree root
+                self.current_paths[view] = new_path
+                self.current_directory_changed.emit(new_path)
+            else: # QTableView (Flat view)
+                file_name = model.fileName(index)
+                if file_name == "..":
+                    current_panel_path = self.current_paths.get(view)
+                    self.navigate_to_path(new_path, panel=view, select_entry_path=current_panel_path)
+                else:
+                    self.navigate_to_path(new_path, panel=view)
         else:
+            # If it's a file, emit file_selected (same for both views)
             self.file_selected.emit(model.filePath(index))
 
     def update_current_selection(self, current: QModelIndex, previous: QModelIndex, view: QTableView):
@@ -226,8 +233,10 @@ class FolderBrowser(QWidget):
         self._initial_load_complete = True
 
     def eventFilter(self, source, event):
-        if event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Tab:
-            if source in [self.left_panel, self.right_panel]:
+        if event.type() == QEvent.Type.KeyPress and source in [self.left_panel, self.right_panel]:
+            key = event.key()
+
+            if key == Qt.Key.Key_Tab:
                 if self.active_panel == self.left_panel:
                     new_panel = self.right_panel
                 else:
@@ -235,6 +244,38 @@ class FolderBrowser(QWidget):
                 
                 self.set_active_panel(new_panel)
                 new_panel.setFocus()
+                return True # Event handled
+
+            if key == Qt.Key.Key_Home:
+                model = source.model()
+                selection_model = source.selectionModel()
+                
+                parent_index = QModelIndex()
+                if not isinstance(model, FlatFileSystemModel):
+                    parent_index = source.rootIndex()
+
+                first_index = model.index(0, 0, parent_index)
+                if first_index.isValid():
+                    selection_model.setCurrentIndex(first_index, QItemSelectionModel.SelectionFlag.ClearAndSelect)
+                    selection_model.select(first_index, QItemSelectionModel.SelectionFlag.Rows | QItemSelectionModel.SelectionFlag.ClearAndSelect)
+                    source.scrollTo(first_index, QAbstractItemView.ScrollHint.PositionAtTop)
+                return True # Event handled
+
+            if key == Qt.Key.Key_End:
+                model = source.model()
+                selection_model = source.selectionModel()
+
+                parent_index = QModelIndex()
+                if not isinstance(model, FlatFileSystemModel):
+                    parent_index = source.rootIndex()
+
+                row_count = model.rowCount(parent_index)
+                if row_count > 0:
+                    last_index = model.index(row_count - 1, 0, parent_index)
+                    if last_index.isValid():
+                        selection_model.setCurrentIndex(last_index, QItemSelectionModel.SelectionFlag.ClearAndSelect)
+                        selection_model.select(last_index, QItemSelectionModel.SelectionFlag.Rows | QItemSelectionModel.SelectionFlag.ClearAndSelect)
+                        source.scrollTo(last_index, QAbstractItemView.ScrollHint.PositionAtBottom)
                 return True # Event handled
 
         if event.type() == QEvent.Type.FocusIn:
@@ -286,6 +327,11 @@ class FolderBrowser(QWidget):
         self.set_active_panel(self.left_panel)
 
     def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Backspace:
+            self.go_up_directory()
+            event.accept()
+            return
+
         if self.active_panel:
             model = self.active_panel.model()
             selection_model = self.active_panel.selectionModel()
@@ -298,24 +344,5 @@ class FolderBrowser(QWidget):
                         self.on_double_clicked(index, self.active_panel)
                         event.accept()
                         return
-            elif event.key() == Qt.Key.Key_Home:
-                # Move to the first item (which should be '..')
-                first_index = model.index(0, 0, self.active_panel.rootIndex())
-                if first_index.isValid():
-                    selection_model.setCurrentIndex(first_index, QItemSelectionModel.SelectionFlag.ClearAndSelect)
-                    selection_model.select(first_index, QItemSelectionModel.SelectionFlag.Rows | QItemSelectionModel.SelectionFlag.ClearAndSelect)
-                    self.active_panel.scrollTo(first_index, QAbstractItemView.ScrollHint.PositionAtTop)
-                    event.accept()
-                    return
-            elif event.key() == Qt.Key.Key_End:
-                # Move to the last item
-                row_count = model.rowCount(self.active_panel.rootIndex())
-                if row_count > 0:
-                    last_index = model.index(row_count - 1, 0, self.active_panel.rootIndex())
-                    if last_index.isValid():
-                        selection_model.setCurrentIndex(last_index, QItemSelectionModel.SelectionFlag.ClearAndSelect)
-                        selection_model.select(last_index, QItemSelectionModel.SelectionFlag.Rows | QItemSelectionModel.SelectionFlag.ClearAndSelect)
-                        self.active_panel.scrollTo(last_index, QAbstractItemView.ScrollHint.PositionAtBottom)
-                        event.accept()
-                        return
+
         super().keyPressEvent(event)

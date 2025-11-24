@@ -14,6 +14,7 @@
     - Naprawiono `TypeError` w `MenuPanel` związany z pobieraniem bieżących ścieżek katalogów.
     - Poprawiono import `QFileIconProvider` w nowym `FlatFileSystemModel`.
     - Zaktualizowano `IconType.FolderUp` na `IconType.Folder` dla wpisu ".." w `FlatFileSystemModel`.
+    - Naprawiono problem z podwójnym kliknięciem w widoku drzewa (`QTreeView`) poprzez wyłączenie domyślnego zachowania `expandsOnDoubleClick`, co pozwala naszej niestandardowej funkcji `on_double_clicked` na prawidłowe rozwijanie/zwijanie katalogów.
 
 ### Wcześniejsze postępy:
 - **Obsługa archiwów (ZIP, TAR)**: Dodano funkcje do tworzenia i wypakowywania archiwów ZIP i TAR z poziomu menu "Archiwum".
