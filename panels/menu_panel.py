@@ -1,6 +1,7 @@
 import os
 import os
-from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog
+from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog, QMessageBox
+from file_operations.archive_manager import UnrarNotInstalledError
 from PyQt6.QtGui import QIcon, QKeySequence, QAction
 from utils.copy_dialog import CopyDialog
 from utils.move_dialog import MoveDialog
@@ -96,7 +97,7 @@ class MenuPanel:
 
     def extract_archive(self):
         selected_path = self.main_window.folder_browser.current_selected_path
-        if not selected_path or not selected_path.endswith(('.zip', '.tar', '.gz', '.bz2', '.xz')):
+        if not selected_path or not selected_path.endswith(('.zip', '.tar', '.gz', '.bz2', '.xz', '.rar')):
             self.main_window.status_bar.showMessage("Nie wybrano pliku archiwum do wypakowania.")
             return
 
@@ -105,11 +106,20 @@ class MenuPanel:
             if not os.path.exists(extract_path):
                 os.makedirs(extract_path)
 
-            if selected_path.endswith('.zip'):
-                self.main_window.archive_manager.extract_zip_archive(selected_path, extract_path)
-            else:
-                self.main_window.archive_manager.extract_tar_archive(selected_path, extract_path)
-            self.main_window.folder_browser.refresh_view()
+            try:
+                if selected_path.endswith('.zip'):
+                    self.main_window.archive_manager.extract_zip_archive(selected_path, extract_path)
+                elif selected_path.endswith('.rar'):
+                    self.main_window.archive_manager.extract_rar_archive(selected_path, extract_path)
+                else:
+                    self.main_window.archive_manager.extract_tar_archive(selected_path, extract_path)
+                
+                self.main_window.folder_browser.refresh_view()
+
+            except UnrarNotInstalledError as e:
+                QMessageBox.warning(self.main_window, "Błąd", str(e))
+            except Exception as e:
+                self.main_window.status_bar.showMessage(f"Błąd podczas wypakowywania: {e}")
 
     def _create_operations_menu(self):
         operations_menu = self.menu_bar.addMenu("Operacje")

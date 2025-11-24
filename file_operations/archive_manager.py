@@ -1,6 +1,12 @@
 import os
 import zipfile
 import tarfile
+import rarfile
+import shutil
+
+class UnrarNotInstalledError(Exception):
+    """Custom exception raised when the unrar command is not found."""
+    pass
 
 class ArchiveManager:
     def __init__(self, main_window):
@@ -58,3 +64,20 @@ class ArchiveManager:
             self.main_window.status_bar.showMessage(f"Wypakowano archiwum do: {extract_path}")
         except Exception as e:
             self.main_window.status_bar.showMessage(f"Błąd podczas wypakowywania archiwum TAR: {e}")
+
+    def extract_rar_archive(self, archive_path, extract_path):
+        """
+        Wypakowuje archiwum RAR do podanej lokalizacji.
+        Sprawdza, czy narzędzie 'unrar' jest dostępne w systemie.
+        """
+        if not shutil.which('unrar'):
+            raise UnrarNotInstalledError("Narzędzie 'unrar' nie jest zainstalowane lub nie ma go w ścieżce systemowej (PATH).")
+
+        try:
+            with rarfile.RarFile(archive_path, 'r') as rf:
+                rf.extractall(extract_path)
+            self.main_window.status_bar.showMessage(f"Wypakowano archiwum RAR do: {extract_path}")
+        except Exception as e:
+            self.main_window.status_bar.showMessage(f"Błąd podczas wypakowywania archiwum RAR: {e}")
+            # Rzuć wyjątek dalej, aby można go było obsłużyć w UI
+            raise e
