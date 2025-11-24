@@ -150,15 +150,15 @@ class FolderBrowser(QWidget):
             panel = self.active_panel
 
         if not os.path.exists(path) or not os.path.isdir(path):
-            msg = f"Ścieżka '{path}' jest nieprawidłowa lub nie istnieje."
+            msg = f"Path '{path}' is invalid or does not exist."
             logging.error(msg)
-            show_error_message(self, "Błąd nawigacji", msg)
+            show_error_message(self, "Navigation Error", msg)
             return
 
         if not os.access(path, os.R_OK):
-            msg = f"Brak uprawnień do odczytu katalogu:\n{path}"
+            msg = f"Permission denied to read directory:\n{path}"
             logging.error(f"Permission denied for '{path}'.")
-            show_error_message(self, "Błąd uprawnień", msg)
+            show_error_message(self, "Permission Error", msg)
             return
 
         if panel:
@@ -181,9 +181,9 @@ class FolderBrowser(QWidget):
                     self.current_paths[panel] = path
                     self.current_directory_changed.emit(path)
                 else:
-                    msg = f"Nie można ustawić katalogu na '{path}'."
+                    msg = f"Could not set directory to '{path}'."
                     logging.error(msg)
-                    show_error_message(self, "Błąd nawigacji", msg)
+                    show_error_message(self, "Navigation Error", msg)
 
     def set_panel_path(self, panel, path):
         self.navigate_to_path(path, panel)
