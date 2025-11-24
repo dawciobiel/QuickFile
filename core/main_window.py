@@ -67,9 +67,8 @@ class MainWindow(QMainWindow):
         # Inicjalizacja paska menu i paska stanu
         self.menu_panel = MenuPanel(self)
 
-        # Akcja porównywania
-        self.compare_action = self.menu_panel.file_menu.addAction("Compare")
-        self.compare_action.triggered.connect(self._compare_selected_items)
+        # Akcja porównywania jest teraz tworzona w MenuPanel
+
 
         self.status_bar = self.statusBar()
         self.status_bar.showMessage("Gotowy")
