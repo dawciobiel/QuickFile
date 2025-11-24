@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLabel, QPushButt
 class PropertiesDialog(QDialog):
     def __init__(self, properties, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Właściwości")
+        self.setWindowTitle("Properties")
 
         layout = QVBoxLayout(self)
         form_layout = QFormLayout()
@@ -15,7 +15,7 @@ class PropertiesDialog(QDialog):
 
         layout.addLayout(form_layout)
 
-        # Przyciski OK
+        # OK Buttons
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
         button_box.accepted.connect(self.accept)
         layout.addWidget(button_box)

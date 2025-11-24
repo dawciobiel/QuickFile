@@ -102,11 +102,11 @@ class FlatFileSystemModel(QAbstractTableModel):
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
             if section == 0:
-                return "Nazwa"
+                return "Name"
             elif section == 1:
-                return "Rozmiar"
+                return "Size"
             elif section == 2:
-                return "Typ"
+                return "Type"
         return None
 
     def filePath(self, index):
