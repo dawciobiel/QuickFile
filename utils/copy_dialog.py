@@ -20,7 +20,7 @@ class CopyDialog(QDialog):
         self.layout.addWidget(self.overwrite_checkbox)
         self.layout.addWidget(self.preserve_timestamp_checkbox)
 
-        # Przyciski OK/Anuluj
+        # OK/Cancel buttons
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)

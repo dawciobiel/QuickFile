@@ -8,22 +8,22 @@ class ShortcutsManager:
         self.shortcuts_file = os.path.join(os.path.expanduser("~"), ".quickfile_shortcuts.json")
         self.actions = {}
         self.default_shortcuts = {
-            "Wyjdź": "Ctrl+Q",
-            "Idź w górę": "",
-            "Odśwież": "Ctrl+R",
-            "Nowy Plik": "",
-            "Nowy Folder": "F7",
-            "Szukaj": "",
-            "Kopiuj": "F5",
-            "Wklej": "Ctrl+V",
-            "Przenieś": "F6",
-            "Zmień nazwę": "F2",
-            "Usuń": "F8",
-            "Porównaj": "F9",
-            "Synchronizuj": "",
-            "Utwórz archiwum": "",
-            "Wypakuj archiwum": "",
-            "Otwórz zakładki": "Ctrl+B",
+            "Exit": "Ctrl+Q",
+            "Go Up": "",
+            "Refresh": "Ctrl+R",
+            "New File": "",
+            "New Folder": "F7",
+            "Search": "",
+            "Copy": "F5",
+            "Paste": "Ctrl+V",
+            "Move": "F6",
+            "Rename": "F2",
+            "Delete": "F8",
+            "Compare": "F9",
+            "Synchronize": "",
+            "Create Archive": "",
+            "Extract Archive": "",
+            "Open Bookmarks": "Ctrl+B",
         }
         self.shortcuts = self.load_shortcuts()
 

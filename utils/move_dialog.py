@@ -16,7 +16,7 @@ class MoveDialog(QDialog):
         self.overwrite_checkbox = QCheckBox("Overwrite existing files")
         self.layout.addWidget(self.overwrite_checkbox)
 
-        # Przyciski OK/Anuluj
+        # OK/Cancel buttons
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
