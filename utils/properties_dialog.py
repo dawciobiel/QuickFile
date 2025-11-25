@@ -15,7 +15,7 @@ class PropertiesDialog(QDialog):
 
         layout.addLayout(form_layout)
 
-        # OK Buttons
+        # OK Button
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
         button_box.accepted.connect(self.accept)
         layout.addWidget(button_box)

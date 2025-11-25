@@ -23,7 +23,7 @@ from utils.compare_dialog import CompareDialog
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Quick File")
+        self.setWindowTitle("Quick File version Alpha")
         self.resize(1200, 800)
 
         self.shortcuts_manager = ShortcutsManager(self)

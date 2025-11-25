@@ -17,19 +17,19 @@ class FunctionKeyPanel(QWidget):
     def _create_function_buttons(self):
         # Mapowanie klawiszy funkcyjnych na akcje
         # F1: Pomoc (na razie pusta)
-        # F2: Zmień nazwę
+        # F2: Rename
         # F3: Podgląd (otwórz zewnętrznie)
         # F4: Edytuj (otwórz zewnętrznie)
-        # F5: Kopiuj
-        # F6: Przenieś
-        # F7: Nowy Folder
-        # F8: Usuń
-        # F9: (na razie pusta)
-        # F10: Wyjdź
+        # F5: Copy
+        # F6: Move
+        # F7: New Folder
+        # F8: Delete
+        # F9: (currently empty)
+        # F10: Exit
 
         # F1 - Help (placeholder)
         btn_f1 = QPushButton("F1 Help")
-        btn_f1.clicked.connect(lambda: self.main_window.status_bar.showMessage("F1: Pomoc (niezaimplementowana)"))
+        btn_f1.clicked.connect(lambda: self.main_window.status_bar.showMessage("F1: Help (not implemented)"))
         self.layout.addWidget(btn_f1)
 
         # F2 - Rename
@@ -109,4 +109,4 @@ class FunctionKeyPanel(QWidget):
         if selected_path and os.path.isfile(selected_path):
             self.main_window.open_file_externally(selected_path)
         else:
-            self.main_window.status_bar.showMessage("Nie wybrano pliku do otwarcia.")
+            self.main_window.status_bar.showMessage("No file selected for opening.")
