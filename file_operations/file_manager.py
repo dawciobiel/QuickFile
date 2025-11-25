@@ -75,19 +75,20 @@ class FileManager:
             logging.exception(f"Error moving item from {source_path} to {destination_path}: {e}")
             show_error_message(self.main_window, "Move Error", str(e))
 
-    def delete_item_with_confirmation(self, item_path):
-        """Deletes a file/folder after confirmation."""
+    def delete_item_with_confirmation(self, item_path, show_confirmation=True):
+        """Deletes a file/folder. Confirmation can be skipped."""
         if not item_path or not os.path.exists(item_path):
             show_error_message(self.main_window, "Deletion Error", f"Path '{item_path}' is invalid or does not exist.")
             return
 
+        # The confirmation is now handled in the MenuPanel before calling this
+        # This method can now just delete
         try:
             if os.path.isdir(item_path):
                 shutil.rmtree(item_path)
             else:
                 os.remove(item_path)
             self.main_window.status_bar.showMessage(f"Deleted: {item_path}")
-            self.main_window.folder_browser.refresh_view()
         except Exception as e:
             logging.exception(f"Error deleting item {item_path}: {e}")
             show_error_message(self.main_window, "Deletion Error", str(e))

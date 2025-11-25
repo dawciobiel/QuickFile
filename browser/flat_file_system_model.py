@@ -7,7 +7,7 @@ class FlatFileSystemModel(QAbstractTableModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._current_path = os.path.expanduser("~")
-        self._items = [] # Stores (name, path, is_dir) tuples
+        self._items = [] # Stores (name, path, is_dir, is_selected) tuples
         self._icon_provider = QFileIconProvider()
         self._populate_items()
 
@@ -26,13 +26,13 @@ class FlatFileSystemModel(QAbstractTableModel):
 
         if self._current_path != QDir.rootPath():
             # Keep ".." separate
-            dot_dot_item.append(("..", os.path.dirname(self._current_path), True))
+            dot_dot_item.append(("..", os.path.dirname(self._current_path), True, False))
         
         try:
             for item_name in os.listdir(self._current_path):
                 item_path = os.path.join(self._current_path, item_name)
                 is_dir = os.path.isdir(item_path)
-                other_items.append((item_name, item_path, is_dir))
+                other_items.append((item_name, item_path, is_dir, False))
             
             # Sort only the other items
             other_items.sort(key=lambda x: (not x[2], x[0].lower()))
@@ -50,13 +50,24 @@ class FlatFileSystemModel(QAbstractTableModel):
         return len(self._items)
 
     def columnCount(self, parent=QModelIndex()):
-        return 3 # Name, Size, Type (or similar columns)
+        return 4 # Name, Size, Type, Selected (hidden state)
+
+    def flags(self, index):
+        default_flags = super().flags(index)
+        if index.column() == 0:
+            return default_flags | Qt.ItemFlag.ItemIsUserCheckable
+        return default_flags
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid() or not (0 <= index.row() < len(self._items)):
             return None
 
-        item_name, item_path, is_dir = self._items[index.row()]
+        item_name, item_path, is_dir, is_selected = self._items[index.row()]
+
+        if role == Qt.ItemDataRole.CheckStateRole and index.column() == 0:
+            if item_name == "..": # ".." should not be checkable
+                return None
+            return Qt.CheckState.Checked if is_selected else Qt.CheckState.Unchecked
 
         if role == Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
@@ -99,6 +110,22 @@ class FlatFileSystemModel(QAbstractTableModel):
 
         return None
 
+    def setData(self, index, value, role):
+        if not index.isValid() or not (0 <= index.row() < len(self._items)):
+            return False
+
+        if role == Qt.ItemDataRole.CheckStateRole and index.column() == 0:
+            # Do not allow checking ".."
+            if self._items[index.row()][0] == "..":
+                return False
+
+            current_item = self._items[index.row()]
+            self._items[index.row()] = (current_item[0], current_item[1], current_item[2], value == Qt.CheckState.Checked)
+            self.dataChanged.emit(index, index, [role])
+            return True
+        
+        return False
+
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
             if section == 0:
@@ -107,6 +134,7 @@ class FlatFileSystemModel(QAbstractTableModel):
                 return "Size"
             elif section == 2:
                 return "Type"
+            # No header for column 3, it's hidden
         return None
 
     def filePath(self, index):
@@ -123,3 +151,20 @@ class FlatFileSystemModel(QAbstractTableModel):
         if index.isValid() and 0 <= index.row() < len(self._items):
             return self._items[index.row()][0] # Return the item name
         return None
+
+    def get_selected_paths(self):
+        """Returns a list of paths for all items marked as selected."""
+        return [item[1] for item in self._items if item[3] and item[0] != ".."] # item[1] is path, item[3] is is_selected
+
+    def toggle_selection_by_index(self, index):
+        """Toggles the selection state for the item at the given index."""
+        if not index.isValid() or not (0 <= index.row() < len(self._items)):
+            return
+
+        # We trigger the setData logic by faking a check state change event
+        current_state = self.data(index, Qt.ItemDataRole.CheckStateRole)
+        if current_state is None: # For ".." item
+            return
+            
+        new_check_state = Qt.CheckState.Unchecked if current_state == Qt.CheckState.Checked else Qt.CheckState.Checked
+        self.setData(index, new_check_state, Qt.ItemDataRole.CheckStateRole)
