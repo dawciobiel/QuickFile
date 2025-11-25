@@ -86,6 +86,13 @@ class FolderBrowser(QWidget):
             new_path = model.filePath(index)
 
             if isinstance(view, QTreeView):
+                # Add a permission check before trying to expand
+                if not os.access(new_path, os.R_OK):
+                    msg = f"Permission denied to read directory:\n{new_path}"
+                    logging.error(f"Permission denied for '{new_path}'.")
+                    show_error_message(self, "Permission Error", msg)
+                    return
+
                 # In Tree view, double-clicking a directory should expand/collapse it
                 view.setExpanded(index, not view.isExpanded(index))
                 # Update current path without changing the tree root
