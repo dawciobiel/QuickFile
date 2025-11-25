@@ -256,9 +256,9 @@ class MenuPanel:
             show_error_message(self.main_window, "Folder Creation Error", "No active panel.")
 
     def copy_selected_item(self):
-        """Opens the copy dialog for the selected item."""
-        source_path = self.main_window.folder_browser.current_selected_path
-        if not source_path:
+        """Opens the copy dialog for the selected item or copies multiple items directly."""
+        source_paths = self.main_window.folder_browser.get_selected_paths()
+        if not source_paths:
             logging.warning("Attempted to copy item without selecting a file/folder.")
             show_error_message(self.main_window, "Copy Error", "No file/folder selected for copying.")
             return
@@ -266,10 +266,20 @@ class MenuPanel:
         active_panel = self.main_window.folder_browser.active_panel
         inactive_panel = self.main_window.folder_browser.right_panel if active_panel == self.main_window.folder_browser.left_panel else self.main_window.folder_browser.left_panel
         destination_path = inactive_panel.model().filePath(self.main_window.folder_browser.current_paths[inactive_panel])
-        dialog = CopyDialog(self.main_window, source_path, destination_path)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            options = dialog.get_options()
-            self.file_manager.copy_item_with_options(source_path, destination_path, options)
+
+        if len(source_paths) == 1:
+            # Single item: show dialog
+            dialog = CopyDialog(self.main_window, source_paths[0], destination_path)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                options = dialog.get_options()
+                self.file_manager.copy_item_with_options(source_paths[0], destination_path, options)
+        else:
+            # Multiple items: copy directly with default options
+            # Default options could be defined somewhere or hardcoded here
+            default_options = {"overwrite": False, "preserve_timestamp": True}
+            for source_path in source_paths:
+                self.file_manager.copy_item_with_options(source_path, destination_path, default_options)
+            self.main_window.folder_browser.refresh_view() # Refresh after all copies are done
 
     def move_selected_item(self):
         """Opens the move dialog for the selected item."""
@@ -311,15 +321,18 @@ class MenuPanel:
 
     def delete_selected_item(self):
         logging.debug("MenuPanel: delete_selected_item called")
-        selected_path = self.main_window.folder_browser.current_selected_path
-        if not selected_path:
+        selected_paths = self.main_window.folder_browser.get_selected_paths()
+
+        if not selected_paths:
             logging.warning("No file/folder selected for delete operation.")
             show_error_message(self.main_window, "Deletion Error", "No file/folder selected for deletion.")
             return
 
-        dialog = DeleteDialog(self.main_window, selected_path)
+        dialog = DeleteDialog(self.main_window, selected_paths)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.file_manager.delete_item_with_confirmation(selected_path)
+            for path in selected_paths:
+                self.file_manager.delete_item_with_confirmation(path, show_confirmation=False)
+            self.main_window.folder_browser.refresh_view()
 
     def rename_selected_item(self):
         selected_path = self.main_window.folder_browser.current_selected_path

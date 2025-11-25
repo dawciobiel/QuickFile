@@ -1,6 +1,6 @@
 import logging
 import os
-from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel
+from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QItemSelection
 from PyQt6.QtWidgets import QWidget, QTableView, QVBoxLayout, QAbstractItemView, QHeaderView, QSplitter, QTreeView
 from PyQt6.QtGui import QFileSystemModel, QColor, QPalette
 # from browser.flat_view_proxy_model import FlatViewProxyModel # Old import
@@ -52,6 +52,7 @@ class FolderBrowser(QWidget):
             view = QTableView()
             model = FlatFileSystemModel(self) # New custom model
             view.setModel(model)
+            view.setColumnHidden(3, True) # Hide the 'Selected' state column
         else: # view_mode == "tree" (QFileSystemModel)
             model = QFileSystemModel()
             model.setRootPath(os.path.expanduser("~"))
@@ -62,10 +63,6 @@ class FolderBrowser(QWidget):
 
         view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        if isinstance(view, QTableView): # Apply only to QTableView
-            view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
         # Modyfikacja palety dla zaznaczonych elementów - zakomentowano, ponieważ powoduje segmentation fault w PyQt6
         # palette = view.palette()
         # palette.setColor(QPalette.ColorRole.Highlight, QColor("#ADD8E6")) # Jasnoniebieskie tło zaznaczenia
@@ -211,12 +208,25 @@ class FolderBrowser(QWidget):
                 self.navigate_to_path(current_path, self.active_panel)
     
     def set_active_panel(self, panel):
+        # Define stylesheets
+        active_stylesheet = """
+            QTableView { border: 2px solid blue; }
+            QTreeView { border: 2px solid blue; }
+            QTableView::item:selected { background-color: #ADD8E6; color: black; }
+            QTreeView::item:selected { background-color: #ADD8E6; color: black; }
+        """
+        inactive_stylesheet = """
+            QTableView { border: none; }
+            QTreeView { border: none; }
+            QTableView::item:selected { background-color: #D3D3D3; color: black; }
+            QTreeView::item:selected { background-color: #D3D3D3; color: black; }
+        """
+
         if self.active_panel and self.active_panel != panel:
-            self.active_panel.setStyleSheet("") # Reset style sheet
-            self.active_panel.clearSelection()
+            self.active_panel.setStyleSheet(inactive_stylesheet)
 
         self.active_panel = panel
-        self.active_panel.setStyleSheet("QTableView { border: 1px solid blue; } QTreeView { border: 1px solid blue; }") # Highlight active
+        self.active_panel.setStyleSheet(active_stylesheet)
         current_path = self.current_paths.get(self.active_panel)
         if current_path: # current_path is now a string
             self.current_directory_changed.emit(current_path)
@@ -251,6 +261,41 @@ class FolderBrowser(QWidget):
             self.set_active_panel(panel_to_set)
             panel_to_set.setFocus()
 
+    def get_selected_paths(self):
+        """Returns a list of all selected file paths from the active panel."""
+        if not self.active_panel:
+            return []
+
+        model = self.active_panel.model()
+
+        # If it's our new model, use its internal selection logic
+        if isinstance(model, FlatFileSystemModel):
+            # Also include the currently focused item if no checkboxes are ticked
+            selected_paths = model.get_selected_paths()
+            if not selected_paths:
+                current_index = self.active_panel.currentIndex()
+                if current_index.isValid():
+                    file_name = model.fileName(current_index)
+                    if file_name != "..":
+                        return [model.filePath(current_index)]
+            return selected_paths
+
+        # Otherwise, use the standard QItemSelectionModel logic (for tree view)
+        selection_model = self.active_panel.selectionModel()
+        selected_rows = selection_model.selectedRows()
+        
+        if selected_rows:
+            paths = [model.filePath(index) for index in selected_rows]
+            return [p for p in paths if p and os.path.basename(p) != ".."]
+
+        # Fallback for single selection in tree view
+        current_index = self.active_panel.currentIndex()
+        if current_index.isValid():
+            path = model.filePath(current_index)
+            if path and os.path.basename(path) != "..":
+                return [path]
+
+        return []
     def initial_load_done(self):
         self._initial_load_complete = True
 
@@ -268,6 +313,23 @@ class FolderBrowser(QWidget):
                 new_panel.setFocus()
                 return True # Event handled
 
+            if key == Qt.Key.Key_Insert:
+                model = source.model()
+                # Check if it's our custom model that has the toggle method
+                if hasattr(model, 'toggle_selection_by_index'):
+                    current_index = source.currentIndex()
+                    model.toggle_selection_by_index(current_index)
+
+                    # Move to the next item
+                    next_row = current_index.row() + 1
+                    parent = current_index.parent()
+                    if next_row < model.rowCount(parent):
+                        next_index = model.index(next_row, current_index.column(), parent)
+                        if next_index.isValid():
+                            source.setCurrentIndex(next_index) # Move focus rect
+                            source.scrollTo(next_index, QAbstractItemView.ScrollHint.EnsureVisible)
+                return True
+            
             if key == Qt.Key.Key_Home:
                 model = source.model()
                 selection_model = source.selectionModel()

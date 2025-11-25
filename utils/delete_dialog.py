@@ -1,15 +1,26 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QTextEdit
 
 
 class DeleteDialog(QDialog):
-    def __init__(self, parent, item_path):
+    def __init__(self, parent, item_paths):
         super().__init__(parent)
         self.setWindowTitle("Delete")
 
         self.layout = QVBoxLayout(self)
 
-        # Etykieta informacyjna
-        self.layout.addWidget(QLabel(f"Are you sure you want to delete: <b>{item_path}</b>?"))
+        if len(item_paths) == 1:
+            # Single item view
+            self.layout.addWidget(QLabel(f"Are you sure you want to delete: <b>{item_paths[0]}</b>?"))
+        else:
+            # Multiple items view
+            self.layout.addWidget(QLabel(f"Are you sure you want to delete <b>{len(item_paths)}</b> items?"))
+            
+            # Add a scrollable text area with the list of files
+            files_to_delete_text = QTextEdit()
+            files_to_delete_text.setPlainText("\n".join(item_paths))
+            files_to_delete_text.setReadOnly(True)
+            self.layout.addWidget(files_to_delete_text)
+
         self.layout.addWidget(QLabel("This operation cannot be undone."))
 
         # OK/Cancel buttons
