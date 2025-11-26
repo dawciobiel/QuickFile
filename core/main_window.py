@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
     def start_file_search(self):
         search_text = self.search_input.text()
         if search_text:
-            current_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.active_panel.model().index(self.folder_browser.active_panel.model().rootPath()))
+            current_path = self.folder_browser.current_paths.get(self.folder_browser.active_panel)
             results = self.file_manager.search_files(current_path, search_text)
             self.show_search_results(results)
         else:
@@ -153,8 +153,8 @@ class MainWindow(QMainWindow):
         return None
 
     def _compare_selected_items(self):
-        left_selected_path = self.folder_browser.left_panel.get_selected_path()
-        right_selected_path = self.folder_browser.right_panel.get_selected_path()
+        left_selected_path = self.folder_browser.get_selected_path_for_panel(self.folder_browser.left_panel)
+        right_selected_path = self.folder_browser.get_selected_path_for_panel(self.folder_browser.right_panel)
 
         if not left_selected_path or not right_selected_path:
             logging.warning("Comparison Error: User tried to compare without selecting items in both panels.")

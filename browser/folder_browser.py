@@ -320,6 +320,25 @@ class FolderBrowser(QWidget):
                 return [path]
 
         return []
+    def get_selected_path_for_panel(self, panel):
+        """Returns the path to the currently selected file or directory in the given panel."""
+        selection_model = panel.selectionModel()
+        indexes = selection_model.selectedIndexes()
+        if indexes:
+            # We only care about the first selected item for comparison
+            selected_index = indexes[0]
+            # Ensure it's the 0th column index to get the file path correctly
+            if selected_index.column() != 0:
+                selected_index = selected_index.sibling(selected_index.row(), 0)
+
+            model = panel.model()
+            path = model.filePath(selected_index)
+            # Exclude '..' entry for selection
+            if os.path.basename(path) == "..":
+                return None
+            return path
+        return None
+
     def initial_load_done(self):
         self._initial_load_complete = True
 

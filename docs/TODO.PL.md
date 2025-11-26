@@ -1,5 +1,7 @@
 # TODO List
 
+- Zaprojektować i stworzyć możliwość zmiany wersji językowej GUI. Aplikacja główna powinna mieć własny plik językowy, a każdy plugin własny.
+
 - Zapytać ChatGPT w jaki sposób rozwiązać problem nasłuchiwania wielu modułów (folder_browser, hotkey menu) na zdarzenia klawiszowe.
 Bo Python nie jest ponoć wielowątkowy
 
