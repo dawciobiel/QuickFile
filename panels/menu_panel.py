@@ -104,7 +104,7 @@ class MenuPanel:
         if ok and archive_name:
             archive_path = os.path.join(os.path.dirname(selected_path), archive_name + ".zip")
             self.main_window.archive_manager.create_zip_archive(selected_path, archive_path)
-            self.main_window.folder_browser.refresh_view()
+            self.main_window.folder_browser.refresh_all_views()
 
     def extract_archive(self):
         selected_path = self.main_window.folder_browser.current_selected_path
@@ -124,7 +124,7 @@ class MenuPanel:
                     self.main_window.archive_manager.extract_rar_archive(selected_path, extract_path)
                 else:
                     self.main_window.archive_manager.extract_tar_archive(selected_path, extract_path)
-                self.main_window.folder_browser.refresh_view()
+                self.main_window.folder_browser.refresh_all_views()
             except UnrarNotInstalledError as e:
                 logging.warning(f"Unrar not installed error: {e}")
                 QMessageBox.warning(self.main_window, "Error", str(e))
@@ -141,7 +141,7 @@ class MenuPanel:
         self.toolbar.addAction(go_up_action)
         self.main_window.shortcuts_manager.register_action("Go Up", go_up_action)
         refresh_action = QAction(self.main_window.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload), "Refresh", self.main_window)
-        refresh_action.triggered.connect(self.main_window.folder_browser.refresh_view)
+        refresh_action.triggered.connect(self.main_window.folder_browser.refresh_all_views)
         operations_menu.addAction(refresh_action)
         self.toolbar.addAction(refresh_action)
         self.main_window.shortcuts_manager.register_action("Refresh", refresh_action)
@@ -230,7 +230,7 @@ class MenuPanel:
                 file_name, ok = QInputDialog.getText(self.main_window, "New File", "File name:")
                 if ok and file_name:
                     self.file_manager.create_file(current_dir, file_name)
-                    self.main_window.folder_browser.refresh_view()
+                    self.main_window.folder_browser.refresh_all_views()
             else:
                 logging.warning("Could not determine current directory for active panel when creating new file.")
                 show_error_message(self.main_window, "File Creation Error", "Could not determine current directory for active panel.")
@@ -247,7 +247,7 @@ class MenuPanel:
                 directory_name, ok = QInputDialog.getText(self.main_window, "New Folder", "Folder name:")
                 if ok and directory_name:
                     self.file_manager.create_directory(current_dir, directory_name)
-                    self.main_window.folder_browser.refresh_view()
+                    self.main_window.folder_browser.refresh_all_views()
             else:
                 logging.warning("Could not determine current directory for active panel when creating new directory.")
                 show_error_message(self.main_window, "Folder Creation Error", "Could not determine current directory for active panel.")
@@ -279,7 +279,7 @@ class MenuPanel:
             default_options = {"overwrite": False, "preserve_timestamp": True}
             for source_path in source_paths:
                 self.file_manager.copy_item_with_options(source_path, destination_path, default_options)
-            self.main_window.folder_browser.refresh_view() # Refresh after all copies are done
+            self.main_window.folder_browser.refresh_all_views() # Refresh after all copies are done
 
     def move_selected_item(self):
         """Opens the move dialog for the selected item."""
@@ -346,7 +346,7 @@ class MenuPanel:
         if dialog.exec() == QDialog.DialogCode.Accepted:
             for path in selected_paths:
                 self.file_manager.delete_item_with_confirmation(path, show_confirmation=False)
-            self.main_window.folder_browser.refresh_view()
+            self.main_window.folder_browser.refresh_all_views()
 
     def rename_selected_item(self):
         selected_path = self.main_window.folder_browser.current_selected_path
