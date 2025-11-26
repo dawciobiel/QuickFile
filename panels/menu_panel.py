@@ -214,8 +214,8 @@ class MenuPanel:
             show_error_message(self.main_window, "Error", f"Could not retrieve properties for: {selected_path}")
 
     def synchronize_directories(self):
-        left_path = self.main_window.folder_browser.left_panel.model().filePath(self.main_window.folder_browser.current_paths[self.main_window.folder_browser.left_panel])
-        right_path = self.main_window.folder_browser.right_panel.model().filePath(self.main_window.folder_browser.current_paths[self.main_window.folder_browser.right_panel])
+        left_path = self.main_window.folder_browser.current_paths[self.main_window.folder_browser.left_panel]
+        right_path = self.main_window.folder_browser.current_paths[self.main_window.folder_browser.right_panel]
         dialog = SyncDialog(self.main_window, left_path, right_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
