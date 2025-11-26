@@ -175,10 +175,12 @@ class FolderBrowser(QWidget):
             # Trigger the model reset
             model = panel.model()
             if isinstance(model, FlatFileSystemModel):
-                model.set_current_path(path)
+                model.set_current_path(path) # This is for FlatFileSystemModel
+                model.layoutChanged.emit()
+                panel.viewport().update()
                 self.current_paths[panel] = path
                 self.current_directory_changed.emit(path)
-            else: # QFileSystemModel
+            else: # QFileSystemModel (for tree view)
                 index = model.index(path)
                 if index.isValid():
                     panel.setRootIndex(index)
@@ -201,11 +203,33 @@ class FolderBrowser(QWidget):
                     # Pass the current_path (the subdirectory we are leaving) to navigate_to_path
                     self.navigate_to_path(parent_path, self.active_panel, select_entry_path=current_path)
 
-    def refresh_view(self):
-        if self.active_panel:
-            current_path = self.current_paths.get(self.active_panel)
+    def refresh_all_views(self):
+        """Refreshes both the left and right panels."""
+        logging.info("Refreshing all views.")
+        self.refresh_view_for_panel(self.left_panel)
+        self.refresh_view_for_panel(self.right_panel)
+
+    def refresh_view_for_panel(self, panel):
+        """Helper to refresh a specific panel."""
+        if panel:
+            current_path = self.current_paths.get(panel)
             if current_path:
-                self.navigate_to_path(current_path, self.active_panel)
+                model = panel.model()
+                if isinstance(model, FlatFileSystemModel):
+                    # Directly re-populate and signal for FlatFileSystemModel
+                    model.beginResetModel()
+                    model._populate_items() # Re-fetch items
+                    model.endResetModel()
+                    # Explicitly emit signals to ensure QTableView updates
+                    model.layoutChanged.emit() 
+                    panel.viewport().update() # Force viewport update
+                    # Update internal path tracking and emit signal if path changed
+                    if self.current_paths.get(panel) != current_path:
+                        self.current_paths[panel] = current_path
+                        self.current_directory_changed.emit(current_path)
+                else: # QFileSystemModel (tree view)
+                    # For tree view, navigate_to_path handles setRootIndex and refresh
+                    self.navigate_to_path(current_path, panel)
     
     def set_active_panel(self, panel):
         # Define stylesheets

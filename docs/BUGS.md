@@ -1,8 +1,17 @@
 # BUGS
 
-1. Okno dialogowe błędu pojawia się w przypadku trybu przeglądania plików "table". 
-W trybie przeglądania plików "tree" okno dialogowe od błędu się nie pokazuje, np. przy próbie wejścia do folderu do którego użytkownik nie posiada uprawnienia np. "/root".
-2. W aplikacji nie działa funkcja zaznaczania plików/katalogów za pomocą prawego klawisza myszy lub za pomocą klawisza "Insert". Wydaje mi się, że ta funkcjonalność była już implementowana ale być może przestała działaś w momencie poprawiania działania paneli do przeglądania katalogów.
+1. Błąd przy próbie wykonania akcji Copy:
+```log
+    2025-11-25 21:44:52,611 - __main__ - CRITICAL - Unhandled exception:
+    Traceback (most recent call last):
+      File "/home/dawciobiel/PycharmProjects/QuickFile/panels/menu_panel.py", line 268, in copy_selected_item
+        destination_path = inactive_panel.model().filePath(self.main_window.folder_browser.current_paths[inactive_panel])
+      File "/home/dawciobiel/PycharmProjects/QuickFile/browser/flat_file_system_model.py", line 141, in filePath
+        if index.isValid() and 0 <= index.row() < len(self._items):
+           ^^^^^^^^^^^^^
+    AttributeError: 'str' object has no attribute 'isValid'
+```
+2. Błąd przy próbie wykonania akcji Move
 3. Błąd przy wywołaniu funkcji "Compare" i aplikacja się zakańcza działanie. Pokazuje się okno dialogowe "Error" z treścią:
 ```log
     Critical Error Occurred

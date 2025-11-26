@@ -265,7 +265,7 @@ class MenuPanel:
 
         active_panel = self.main_window.folder_browser.active_panel
         inactive_panel = self.main_window.folder_browser.right_panel if active_panel == self.main_window.folder_browser.left_panel else self.main_window.folder_browser.left_panel
-        destination_path = inactive_panel.model().filePath(self.main_window.folder_browser.current_paths[inactive_panel])
+        destination_path = self.main_window.folder_browser.current_paths[inactive_panel]
 
         if len(source_paths) == 1:
             # Single item: show dialog
@@ -283,7 +283,9 @@ class MenuPanel:
 
     def move_selected_item(self):
         """Opens the move dialog for the selected item."""
+        logging.info("--- Starting move_selected_item ---")
         source_path = self.main_window.folder_browser.current_selected_path
+        logging.info(f"Source path: {source_path}")
         if not source_path:
             logging.warning("Attempted to move item without selecting a file/folder.")
             show_error_message(self.main_window, "Move Error", "No file/folder selected for moving.")
@@ -291,11 +293,23 @@ class MenuPanel:
 
         active_panel = self.main_window.folder_browser.active_panel
         inactive_panel = self.main_window.folder_browser.right_panel if active_panel == self.main_window.folder_browser.left_panel else self.main_window.folder_browser.left_panel
-        destination_path = inactive_panel.model().filePath(self.main_window.folder_browser.current_paths[inactive_panel])
+        destination_path = self.main_window.folder_browser.current_paths[inactive_panel]
+        logging.info(f"Destination path: {destination_path}")
+
         dialog = MoveDialog(self.main_window, source_path, destination_path)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
+        logging.info("MoveDialog created.")
+        dialog_result = dialog.exec()
+        logging.info(f"dialog.exec() returned: {dialog_result}")
+
+        if dialog_result == QDialog.DialogCode.Accepted:
+            logging.info("Move dialog accepted.")
             options = dialog.get_options()
+            logging.info(f"Move options: {options}")
+            logging.info(f"Calling file_manager.move_item_with_options with source: {source_path}, destination: {destination_path}, options: {options}")
             self.file_manager.move_item_with_options(source_path, destination_path, options)
+            logging.info("move_item_with_options call completed.")
+        else:
+            logging.info("Move dialog not accepted (cancelled or failed).")
 
     def cut_selected_item(self):
         selected_path = self.main_window.folder_browser.current_selected_path

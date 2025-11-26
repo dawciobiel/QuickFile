@@ -38,7 +38,7 @@ class FileManager:
                 copy_function(source_path, destination_full_path)
 
             self.main_window.status_bar.showMessage(f"Copied '{base_name}' to '{destination_path}'")
-            self.main_window.folder_browser.refresh_view()
+            self.main_window.folder_browser.refresh_all_views()
 
         except Exception as e:
             logging.exception(f"Error copying item from {source_path} to {destination_path}: {e}")
@@ -58,21 +58,43 @@ class FileManager:
             base_name = os.path.basename(source_path)
             destination_full_path = os.path.join(destination_path, base_name)
 
-            if os.path.exists(destination_full_path):
-                if not options.get("overwrite"):
-                    show_error_message(self.main_window, "Move Error", f"File '{base_name}' already exists in the destination. Check 'Overwrite' to replace it.")
-                    return
-                else:
-                    if os.path.isdir(destination_full_path):
+            if os.path.isdir(source_path):
+                # If moving a directory, and destination exists and is a directory, we need to move the contents into it.
+                # If destination exists and is a file, it's an error.
+                if os.path.exists(destination_full_path):
+                    if os.path.isfile(destination_full_path):
+                        show_error_message(self.main_window, "Move Error", f"Cannot move directory '{base_name}' to existing file '{destination_full_path}'.")
+                        return
+                    elif not options.get("overwrite"): # If destination is a directory and overwrite is false, we should not proceed
+                        show_error_message(self.main_window, "Move Error", f"Directory '{base_name}' already exists in the destination. Check 'Overwrite' to replace it.")
+                        return
+                    else:
+                        # If overwriting and destination is a directory, clear it first before moving
                         shutil.rmtree(destination_full_path)
+                        logging.info(f"Removed existing directory at {destination_full_path} for overwrite.")
+                
+                logging.info(f"Moving directory from {source_path} to {destination_full_path}")
+                shutil.move(source_path, destination_full_path)
+                self.main_window.status_bar.showMessage(f"Moved directory '{base_name}' to '{destination_full_path}'")
+
+            else:
+                # Moving a file
+                if os.path.exists(destination_full_path):
+                    if not options.get("overwrite"):
+                        show_error_message(self.main_window, "Move Error", f"File '{base_name}' already exists in the destination. Check 'Overwrite' to replace it.")
+                        return
                     else:
                         os.remove(destination_full_path)
+                        logging.info(f"Removed existing file at {destination_full_path} for overwrite.")
+                
+                logging.info(f"Moving file from {source_path} to {destination_full_path}")
+                shutil.move(source_path, destination_full_path)
+                self.main_window.status_bar.showMessage(f"Moved file '{base_name}' to '{destination_full_path}'")
 
-            self.main_window.status_bar.showMessage(f"Moved '{base_name}' to '{destination_full_path}'")
-            self.main_window.folder_browser.refresh_view()
+            self.main_window.folder_browser.refresh_all_views()
 
         except Exception as e:
-            logging.exception(f"Error moving item from {source_path} to {destination_path}: {e}")
+            logging.exception(f"Error moving item from {source_path} to {destination_full_path}: {e}")
             show_error_message(self.main_window, "Move Error", str(e))
 
     def delete_item_with_confirmation(self, item_path, show_confirmation=True):
@@ -89,6 +111,7 @@ class FileManager:
             else:
                 os.remove(item_path)
             self.main_window.status_bar.showMessage(f"Deleted: {item_path}")
+            self.main_window.folder_browser.refresh_all_views()
         except Exception as e:
             logging.exception(f"Error deleting item {item_path}: {e}")
             show_error_message(self.main_window, "Deletion Error", str(e))
@@ -129,6 +152,7 @@ class FileManager:
                 else:
                     shutil.copy2(self.clipboard, destination_full_path)
                 self.main_window.status_bar.showMessage(f"Copied '{base_name}' to '{destination_full_path}'")
+                self.main_window.folder_browser.refresh_all_views()
 
         except Exception as e:
             logging.exception(f"Error pasting item to {destination_path}: {e}")
@@ -166,6 +190,7 @@ class FileManager:
             new_path = os.path.join(directory, new_name)
             os.rename(old_path, new_path)
             self.main_window.status_bar.showMessage(f"Renamed to: {new_name}")
+            self.main_window.folder_browser.refresh_all_views()
         except Exception as e:
             logging.exception(f"Error renaming item {old_path} to {new_name}: {e}")
             show_error_message(self.main_window, "Rename Error", str(e))
@@ -189,6 +214,7 @@ class FileManager:
             with open(file_path, 'w') as f:
                 pass  # Creates an empty file
             self.main_window.status_bar.showMessage(f"File created: {file_path}")
+            self.main_window.folder_browser.refresh_all_views()
         except Exception as e:
             logging.exception(f"Error creating file {file_path}: {e}")
             show_error_message(self.main_window, "File Creation Error", str(e))
@@ -211,6 +237,7 @@ class FileManager:
         try:
             os.makedirs(directory_path)
             self.main_window.status_bar.showMessage(f"Folder created: {directory_path}")
+            self.main_window.folder_browser.refresh_all_views()
         except Exception as e:
             logging.exception(f"Error creating directory {directory_path}: {e}")
             show_error_message(self.main_window, "Folder Creation Error", str(e))
