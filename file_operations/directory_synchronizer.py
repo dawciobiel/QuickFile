@@ -19,7 +19,7 @@ class DirectorySynchronizer:
             else:
                 self._synchronize_one_way(dir1, dir2, options)
             self.main_window.status_bar.showMessage("Synchronization completed successfully.")
-            self.main_window.folder_browser.refresh_view()
+            self.main_window.folder_browser.refresh_all_views()
         except Exception as e:
             logging.exception(f"Error during synchronization between {dir1} and {dir2}: {e}")
             show_error_message(self.main_window, "Synchronization Error", f"Error during synchronization: {e}")
