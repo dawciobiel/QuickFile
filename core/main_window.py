@@ -1,7 +1,7 @@
 import os
 import subprocess
 import logging # Dodano import logging
-from PyQt6.QtCore import Qt, QSettings, QEvent
+from PyQt6.QtCore import Qt, QSettings, QEvent, QCoreApplication
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QToolBar, QLineEdit, QToolButton, QDialog, QMessageBox
 from PyQt6.QtGui import QFileSystemModel
 from bookmarks.bookmarks_manager import BookmarksManager
@@ -23,7 +23,7 @@ from utils.compare_dialog import CompareDialog
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Quick File version Alpha")
+        self.setWindowTitle(self.tr("Quick File version Alpha"))
         self.resize(1200, 800)
 
         self.shortcuts_manager = ShortcutsManager(self)
@@ -44,10 +44,10 @@ class MainWindow(QMainWindow):
         self.directory_synchronizer = DirectorySynchronizer(self)
 
         # Inicjalizacja komponentów, które są potrzebne innym
-        self.folder_browser = FolderBrowser(view_mode=self.settings_manager.get_setting("view_mode"), parent=self)
+        self.folder_browser = FolderBrowser(view_mode=self.settings_manager.get_setting("view_mode"), settings_manager=self.settings_manager, parent=self)
 
         # Inicjalizacja paska narzędzi
-        self.toolbar = self.addToolBar("Main Tools")
+        self.toolbar = self.addToolBar(self.tr("Main Tools"))
         self.toolbar.setObjectName("mainToolbar") # Ustawienie objectName
         self.toolbar.setMovable(False)
 
@@ -55,13 +55,13 @@ class MainWindow(QMainWindow):
 
         # Pole wyszukiwania
         self.search_input = QLineEdit(self)
-        self.search_input.setPlaceholderText("Search files...")
+        self.search_input.setPlaceholderText(self.tr("Search files..."))
         self.toolbar.addWidget(self.search_input)
 
         # Przycisk do zakładek
         self.add_bookmark_button = QToolButton(self)
         self.add_bookmark_button.setText("⭐") # Użyj emoji jako ikony
-        self.add_bookmark_button.setToolTip("Add current directory to bookmarks")
+        self.add_bookmark_button.setToolTip(self.tr("Add current directory to bookmarks"))
         self.toolbar.addWidget(self.add_bookmark_button)
 
         # Inicjalizacja paska menu i paska stanu
@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
 
 
         self.status_bar = self.statusBar()
-        self.status_bar.showMessage("Ready")
+        self.status_bar.showMessage(self.tr("Ready"))
 
         # Pasek adresu
         self.address_bar = QLineEdit(self)
@@ -104,10 +104,10 @@ class MainWindow(QMainWindow):
         if self.folder_browser.active_panel:
             current_path = self.folder_browser.active_panel.model().filePath(self.folder_browser.active_panel.model().index(self.folder_browser.active_panel.model().rootPath()))
             self.bookmarks_manager.add_bookmark(current_path)
-            self.status_bar.showMessage(f"Bookmark added: {current_path}")
+            self.status_bar.showMessage(self.tr(f"Bookmark added: {current_path}"))
 
     def update_status_bar_path(self, path):
-        self.status_bar.showMessage(f"Current directory: {path}")
+        self.status_bar.showMessage(self.tr(f"Current directory: {path}"))
 
     def navigate_from_address_bar(self):
         path = self.address_bar.text()
@@ -120,7 +120,7 @@ class MainWindow(QMainWindow):
             results = self.file_manager.search_files(current_path, search_text)
             self.show_search_results(results)
         else:
-            self.status_bar.showMessage("Enter text to search.")
+            self.status_bar.showMessage(self.tr("Enter text to search."))
 
     def show_search_results(self, results):
         """Displays search results in a dialog window."""
@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
     def open_file_externally(self, file_path):
         """Opens the file using the system's default application."""
         if not os.path.exists(file_path):
-            show_error_message(self, "File Opening Error", f"File '{file_path}' does not exist.")
+            show_error_message(self, self.tr("File Opening Error"), self.tr(f"File '{file_path}' does not exist."))
             return
 
         try:
@@ -140,10 +140,10 @@ class MainWindow(QMainWindow):
                 subprocess.call(('open', file_path))
             else:  # Linux
                 subprocess.call(('xdg-open', file_path))
-            self.status_bar.showMessage(f"File opened: {file_path}")
+            self.status_bar.showMessage(self.tr(f"File opened: {file_path}"))
         except Exception as e:
             logging.exception(f"Error opening file externally '{file_path}': {e}")
-            show_error_message(self, "File Opening Error", f"Could not open file '{file_path}': {e}")
+            show_error_message(self, self.tr("File Opening Error"), self.tr(f"Could not open file '{file_path}': {e}"))
 
     def _get_selected_file_path(self):
         """Returns the path to the selected file, if it is a file."""
@@ -158,7 +158,7 @@ class MainWindow(QMainWindow):
 
         if not left_selected_path or not right_selected_path:
             logging.warning("Comparison Error: User tried to compare without selecting items in both panels.")
-            QMessageBox.warning(self, "Comparison Error", "Please select items in both panels to compare.")
+            QMessageBox.warning(self, self.tr("Comparison Error"), self.tr("Please select items in both panels to compare."))
             return
 
         is_left_dir = os.path.isdir(left_selected_path)
@@ -172,14 +172,14 @@ class MainWindow(QMainWindow):
             self._compare_files(left_selected_path, right_selected_path)
         else:
             logging.warning("Comparison Error: User tried to compare a file with a directory.")
-            QMessageBox.warning(self, "Comparison Error", "Cannot compare a file with a directory. Please select two files or two directories.")
+            QMessageBox.warning(self, self.tr("Comparison Error"), self.tr("Cannot compare a file with a directory. Please select two files or two directories."))
 
     def _compare_files(self, file1_path, file2_path):
         are_identical = self.file_comparator.compare_files(file1_path, file2_path)
         if are_identical:
-            QMessageBox.information(self, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are identical.")
+            QMessageBox.information(self, self.tr("File Comparison Result"), self.tr(f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are identical."))
         else:
-            QMessageBox.information(self, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are different.")
+            QMessageBox.information(self, self.tr("File Comparison Result"), self.tr(f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are different."))
 
     def _compare_directories(self, dir1_path, dir2_path):
         dircmp_obj = self.file_comparator.compare_directories(dir1_path, dir2_path)
@@ -189,14 +189,14 @@ class MainWindow(QMainWindow):
             dialog.exec()
         else:
             logging.error("Directory Comparison Error: Could not compare directories. Ensure both paths are valid directories.")
-            QMessageBox.critical(self, "Directory Comparison Error", "Could not compare directories. Ensure both paths are valid directories.")
+            QMessageBox.critical(self, self.tr("Directory Comparison Error"), self.tr("Could not compare directories. Ensure both paths are valid directories."))
 
     def eventFilter(self, source, event):
         if event.type() == QEvent.Type.KeyPress:
             # print(f"MainWindow eventFilter: KeyPress event detected. Key: {event.key()}, Source: {source.objectName() if source.objectName() else source.__class__.__name__}")
             key = event.key()
             if key == Qt.Key.Key_F1:
-                self.status_bar.showMessage("F1: Help (not implemented)")
+                self.status_bar.showMessage(self.tr("F1: Help (not implemented)"))
                 return True
             elif key == Qt.Key.Key_F2:
                 self.menu_panel.rename_selected_item()
@@ -206,14 +206,14 @@ class MainWindow(QMainWindow):
                 if selected_path:
                     self.open_file_externally(selected_path)
                 else:
-                    self.status_bar.showMessage("No file selected for preview.")
+                    self.status_bar.showMessage(self.tr("No file selected for preview."))
                 return True
             elif key == Qt.Key.Key_F4:
                 selected_path = self._get_selected_file_path()
                 if selected_path:
                     self.open_file_externally(selected_path) # Na razie to samo co F3
                 else:
-                    self.status_bar.showMessage("No file selected for editing.")
+                    self.status_bar.showMessage(self.tr("No file selected for editing."))
                 return True
             elif key == Qt.Key.Key_F5:
                 # print("MainWindow eventFilter: Calling copy_selected_item for F5") # Usunięto komunikat debugujący
@@ -298,6 +298,13 @@ class MainWindow(QMainWindow):
         self.settings_manager.set_setting("leftPanelPath", left_panel_path)
         self.settings_manager.set_setting("rightPanelPath", right_panel_path)
         self.settings_manager.set_setting("activePanel", self.folder_browser.get_active_panel_id())
+
+        # Save column widths
+        column_widths = self.folder_browser.get_column_widths()
+        if "table_column_widths" in column_widths:
+            self.settings_manager.set_setting("table_column_widths", column_widths["table_column_widths"])
+        if "tree_column_widths" in column_widths:
+            self.settings_manager.set_setting("tree_column_widths", column_widths["tree_column_widths"])
 
     def closeEvent(self, event):
         self.save_settings()

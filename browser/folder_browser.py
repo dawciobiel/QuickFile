@@ -12,8 +12,9 @@ class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
-    def __init__(self, view_mode="flat", parent=None):
+    def __init__(self, view_mode="flat", settings_manager=None, parent=None):
         super().__init__(parent)
+        self.settings_manager = settings_manager # Store settings_manager
 
         self.active_panel = None
         self.current_selected_path = None
@@ -63,20 +64,62 @@ class FolderBrowser(QWidget):
 
         view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        # Modyfikacja palety dla zaznaczonych elementów - zakomentowano, ponieważ powoduje segmentation fault w PyQt6
-        # palette = view.palette()
-        # palette.setColor(QPalette.ColorRole.Highlight, QColor("#ADD8E6")) # Jasnoniebieskie tło zaznaczenia
-        # palette.setColor(QPalette.ColorRole.HighlightedText, QColor("orange")) # Pomarańczowy tekst zaznaczenia
-        # view.setPalette(palette)
+        
+        horizontal_header = view.horizontalHeader()
+        
+        if view_mode == "flat":
+            # Load and apply column widths for QTableView (flat view)
+            saved_widths = self.settings_manager.get_setting("table_column_widths")
+            if saved_widths:
+                for i, width in enumerate(saved_widths):
+                    if i < horizontal_header.count():
+                        horizontal_header.resizeSection(i, width)
+        else: # view_mode == "tree"
+            # Load and apply column widths for QTreeView (tree view)
+            saved_widths = self.settings_manager.get_setting("tree_column_widths")
+            if saved_widths:
+                for i, width in enumerate(saved_widths):
+                    if i < horizontal_header.count():
+                        horizontal_header.resizeSection(i, width)
 
-        model.modelReset.connect(lambda: self.select_item_after_load(view))
-        view.doubleClicked.connect(lambda index: self.on_double_clicked(index, view))
-        view.selectionModel().currentChanged.connect(lambda current, previous: self.update_current_selection(current, previous, view))
-        view.setMouseTracking(True) # Enable mouse tracking for focus events
-        view.installEventFilter(self) # Install event filter for focus events
+        # Connect signal for saving column widths
+        horizontal_header.sectionResized.connect(lambda section, old_size, new_size: self._on_header_section_resized(view, section, old_size, new_size))
 
         return view
     
+    def _on_header_section_resized(self, view, section, old_size, new_size):
+        """Saves the current column widths for the given view."""
+        if not self.settings_manager:
+            logging.warning("Settings manager not available, cannot save column widths.")
+            return
+
+        horizontal_header = view.horizontalHeader()
+        column_widths = []
+        for i in range(horizontal_header.count()):
+            column_widths.append(horizontal_header.sectionSize(i))
+
+        if isinstance(view, QTableView):
+            self.settings_manager.set_setting("table_column_widths", column_widths)
+        elif isinstance(view, QTreeView):
+            self.settings_manager.set_setting("tree_column_widths", column_widths)
+
+
+    def get_column_widths(self):
+        """Returns the current column widths for both panels."""
+        widths = {}
+        
+        for panel in [self.left_panel, self.right_panel]:
+            horizontal_header = panel.horizontalHeader()
+            column_widths = []
+            for i in range(horizontal_header.count()):
+                column_widths.append(horizontal_header.sectionSize(i))
+            
+            if isinstance(panel.model(), FlatFileSystemModel):
+                widths["table_column_widths"] = column_widths
+            elif isinstance(panel.model(), QFileSystemModel):
+                widths["tree_column_widths"] = column_widths
+        return widths
+
     def on_double_clicked(self, index: QModelIndex, view): # Note: 'view' can be QTableView or QTreeView
         model = view.model()
         if model.isDir(index):
