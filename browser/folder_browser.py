@@ -114,7 +114,8 @@ class FolderBrowser(QWidget):
         widths = {}
         
         for panel in [self.left_panel, self.right_panel]:
-            horizontal_header = panel.horizontalHeader()
+            # Get the header view using panel.header()
+            horizontal_header = panel.header() # Use panel.header() for both QTableView and QTreeView
             column_widths = []
             for i in range(horizontal_header.count()):
                 column_widths.append(horizontal_header.sectionSize(i))
