@@ -65,13 +65,15 @@ class FolderBrowser(QWidget):
         view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         
-        horizontal_header = view.horizontalHeader()
-        
+        # Get the header view. QTreeView also has a header() method.
+        horizontal_header = view.header() # Use view.header() for both QTableView and QTreeView
+
         if view_mode == "flat":
             # Load and apply column widths for QTableView (flat view)
             saved_widths = self.settings_manager.get_setting("table_column_widths")
             if saved_widths:
                 for i, width in enumerate(saved_widths):
+                    # Ensure we don't go out of bounds for the header count
                     if i < horizontal_header.count():
                         horizontal_header.resizeSection(i, width)
         else: # view_mode == "tree"
@@ -79,10 +81,12 @@ class FolderBrowser(QWidget):
             saved_widths = self.settings_manager.get_setting("tree_column_widths")
             if saved_widths:
                 for i, width in enumerate(saved_widths):
+                    # Ensure we don't go out of bounds for the header count
                     if i < horizontal_header.count():
                         horizontal_header.resizeSection(i, width)
 
         # Connect signal for saving column widths
+        # This part also needs to use view.header()
         horizontal_header.sectionResized.connect(lambda section, old_size, new_size: self._on_header_section_resized(view, section, old_size, new_size))
 
         return view
@@ -93,7 +97,8 @@ class FolderBrowser(QWidget):
             logging.warning("Settings manager not available, cannot save column widths.")
             return
 
-        horizontal_header = view.horizontalHeader()
+        # Get the header view using view.header()
+        horizontal_header = view.header() # Use view.header() for both QTableView and QTreeView
         column_widths = []
         for i in range(horizontal_header.count()):
             column_widths.append(horizontal_header.sectionSize(i))
