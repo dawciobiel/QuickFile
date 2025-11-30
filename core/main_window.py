@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
     def start_file_search(self):
         search_text = self.search_input.text()
         if search_text:
-            current_path = self.folder_browser.current_paths.get(self.folder_browser.active_panel)
+            current_path = self.folder_browser.current_paths.get(self.folder_browser.active_panel_widget)
             results = self.file_manager.search_files(current_path, search_text)
             self.show_search_results(results)
         else:
