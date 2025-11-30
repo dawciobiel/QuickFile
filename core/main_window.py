@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
 
         # Inicjalizacja komponentów, które są potrzebne innym
         self.folder_browser = FolderBrowser(view_mode=self.settings_manager.get_setting("view_mode"), settings_manager=self.settings_manager, parent=self)
+        logging.debug(f"FolderBrowser initialized with show_dot_files: {self.folder_browser._show_dot_files}")
 
         # Inicjalizacja paska narzędzi
         self.toolbar = self.addToolBar(self.tr("Main Tools"))

@@ -36,6 +36,7 @@ def global_exception_hook(exc_type, exc_value, exc_traceback):
 if __name__ == "__main__":
     # Setup logging
     setup_logging()
+    logging.info("Application started.")
 
     # Set the global exception hook
     sys.excepthook = global_exception_hook

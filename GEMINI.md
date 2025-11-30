@@ -66,7 +66,19 @@ Earlier features:
     ## Data: 2025-11-30
     
     ### Postępy prac:
-    - **Poprawka klawiszy Home/End:**
-        - Zdiagnozowano, że klawisze `Home` i `End` nie działały w aktywnym panelu ze względu na brak zainstalowania `FolderBrowser` jako filtra zdarzeń dla jego paneli (`left_panel`, `right_panel`).
+    - **Poprawka klawiszy nawigacyjnych (Home, End, Tab):**
+        - Zdiagnozowano, że klawisze `Home`, `End` i `Tab` nie działały w aktywnym panelu ze względu na brak zainstalowania `FolderBrowser` jako filtra zdarzeń dla jego paneli (`left_panel`, `right_panel`).
         - Zainstalowano `FolderBrowser` jako filtr zdarzeń dla `self.left_panel` i `self.right_panel` w `browser/folder_browser.py`, zapewniając prawidłowe przetwarzanie zdarzeń klawiszy nawigacyjnych.
-    
+    - **Opcja ukrywania plików/folderów z kropką:**
+        - Dodano opcję `Show hidden files (Dot Files)` w ustawieniach aplikacji, aby kontrolować widoczność plików i folderów rozpoczynających się od kropki.
+        - Zaktualizowano `SettingsManager` o nowe ustawienie `showDotFiles`, domyślnie ustawione na `True`.
+        - Zmodyfikowano `SettingsDialog` w celu dodania pola wyboru dla tego ustawienia.
+        - Zaktualizowano `MenuPanel`, aby przekazywać i zapisywać to ustawienie.
+        - Zaimplementowano filtrowanie plików kropkowych w `FlatFileSystemModel` i `QFileSystemModel` na podstawie ustawienia `showDotFiles`.
+    - **Naprawiono błąd NameError w SettingsDialog:**
+        - Dodano brakujący import `from PyQt6.QtCore import Qt` w `utils/settings_dialog.py`, aby rozwiązać błąd `NameError` podczas dostępu do `Qt.CheckState`.
+    - **Naprawiono błąd NameError w FolderBrowser:**
+        - Dodano brakujący import `from PyQt6.QtCore import QDir` w `browser/folder_browser.py`, aby rozwiązać błąd `NameError` podczas dostępu do `QDir.Filter` w metodzie `create_file_view`.
+    - **Naprawiono problem z przełączaniem trybów widoku i filtrowaniem plików kropkowych:**
+        - W metodzie `set_view_mode` w `FolderBrowser` ponownie zainstalowano filtry zdarzeń dla nowo utworzonych paneli (`self.left_panel`, `self.right_panel`), aby przywrócić obsługę zdarzeń klawiatury po zmianie trybu widoku.
+        - Poprawiono logikę ustawiania filtra dla `QFileSystemModel` w metodzie `create_file_view`, aby `QDir.Filter.Hidden` było stosowane tylko wtedy, gdy ustawienie `_show_dot_files` jest `True`, zapewniając prawidłowe filtrowanie plików kropkowych w widoku drzewa.

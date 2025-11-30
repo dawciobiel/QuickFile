@@ -53,6 +53,7 @@ class MenuPanel:
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_view_mode = dialog.get_selected_view_mode()
             new_show_dot_files = dialog.get_selected_show_dot_files()
+            logging.debug(f"Current show_dot_files: {current_show_dot_files}, New show_dot_files: {new_show_dot_files}")
 
             # Apply view mode setting
             if new_view_mode != current_view_mode:
@@ -63,7 +64,7 @@ class MenuPanel:
             # Apply show dot files setting
             if new_show_dot_files != current_show_dot_files:
                 self.main_window.settings_manager.set_setting("showDotFiles", new_show_dot_files)
-                self.main_window.folder_browser.refresh_all_views() # Refresh to apply filter
+                self.main_window.folder_browser.set_show_dot_files(new_show_dot_files) # <--- ADDED THIS CALL
                 self.main_window.status_bar.showMessage(QCoreApplication.translate("MenuPanel", f"Show dot files changed to: {new_show_dot_files}."))
 
     def open_shortcuts_dialog(self):

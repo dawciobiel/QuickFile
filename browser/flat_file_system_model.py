@@ -1,3 +1,4 @@
+import logging # Added logging import
 import os
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QDir
 from PyQt6.QtGui import QIcon
@@ -10,6 +11,7 @@ class FlatFileSystemModel(QAbstractTableModel):
         self._items = [] # Stores (name, path, is_dir, is_selected) tuples
         self._icon_provider = QFileIconProvider()
         self._show_dot_files = show_dot_files # New setting
+        logging.debug(f"FlatFileSystemModel.__init__ called. Initial show_dot_files: {self._show_dot_files}")
         self._populate_items()
 
     def set_current_path(self, path):
@@ -22,6 +24,7 @@ class FlatFileSystemModel(QAbstractTableModel):
         self.endResetModel()
 
     def _populate_items(self):
+        logging.debug(f"FlatFileSystemModel._populate_items called. Current _show_dot_files: {self._show_dot_files}")
         dot_dot_item = []
         other_items = []
 
@@ -33,6 +36,7 @@ class FlatFileSystemModel(QAbstractTableModel):
             for item_name in os.listdir(self._current_path):
                 # Apply dot file filtering
                 if not self._show_dot_files and item_name.startswith('.') and item_name != '..':
+                    logging.debug(f"Filtering out dot file: {item_name} (show_dot_files is False).")
                     continue
                 item_path = os.path.join(self._current_path, item_name)
                 is_dir = os.path.isdir(item_path)
@@ -41,20 +45,25 @@ class FlatFileSystemModel(QAbstractTableModel):
             # Sort only the other items
             other_items.sort(key=lambda x: (not x[2], x[0].lower()))
 
-        except OSError:
+        except OSError as e:
             # Handle permission errors or invalid paths
+            logging.error(f"Error listing directory {self._current_path}: {e}")
             other_items = []
 
         # Combine the lists, with ".." always first
         self._items = dot_dot_item + other_items
+        logging.debug(f"FlatFileSystemModel._populate_items finished. Total items: {len(self._items)}")
 
-    def set_show_dot_files(self, show_dot_files):
-        if self._show_dot_files == show_dot_files:
+    def set_show_dot_files(self, new_dot_files_state):
+        logging.debug(f"FlatFileSystemModel.set_show_dot_files called. New value (param): {new_dot_files_state}, Current internal _show_dot_files: {self._show_dot_files}")
+        if self._show_dot_files == new_dot_files_state:
+            logging.debug("FlatFileSystemModel.set_show_dot_files: Internal value is the same as new value, returning.")
             return
-        self._show_dot_files = show_dot_files
+        self._show_dot_files = new_dot_files_state
         self.beginResetModel()
         self._populate_items()
         self.endResetModel()
+        logging.debug("FlatFileSystemModel finished resetting model.")
 
     def rowCount(self, parent=QModelIndex()):
         if parent.isValid():
