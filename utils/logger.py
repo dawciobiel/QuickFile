@@ -7,7 +7,7 @@ def setup_logging():
     Configures the logging for the application.
     Logs are saved to ~/.config/QuickFile/main.log.
     """
-    log_dir = os.path.expanduser("~/.config/QuickFile")
+    log_dir = "logs"
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 

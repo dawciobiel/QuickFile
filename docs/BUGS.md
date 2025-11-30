@@ -11,5 +11,4 @@
 
 **Unresolved Bugs:**
 
-1.  **Compare Action Error:** `AttributeError: 'QTableView' object has no attribute 'get_selected_path'` in `_compare_selected_items` remains unresolved.
-2.  **Search Operation Error:** An unspecified error occurs with the Search operation. Further investigation is needed.
+*None*
