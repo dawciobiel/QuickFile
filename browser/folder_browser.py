@@ -1,7 +1,7 @@
 import logging
 import os
 from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QItemSelection, QDir
-from PyQt6.QtWidgets import QWidget, QTableView, QVBoxLayout, QAbstractItemView, QHeaderView, QSplitter, QTreeView
+from PyQt6.QtWidgets import QWidget, QTableView, QVBoxLayout, QAbstractItemView, QHeaderView, QSplitter, QTreeView, QLineEdit, QLineEdit
 from PyQt6.QtGui import QFileSystemModel, QColor, QPalette
 # from browser.flat_view_proxy_model import FlatViewProxyModel # Old import
 from browser.flat_file_system_model import FlatFileSystemModel # New import
@@ -23,48 +23,73 @@ class FolderBrowser(QWidget):
         self.view_mode = view_mode # Store view mode
         self._select_on_load = ".." # Default item to select after model reset
         self._initial_load_complete = False
+        self.active_panel_widget = None # Initialize active_panel_widget
         logging.debug(f"FolderBrowser initialized with view_mode: {self.view_mode}")
 
-        self.left_panel = self.create_file_view(self.view_mode)
-        self.right_panel = self.create_file_view(self.view_mode)
+        self.left_panel_widget = self.create_file_view(self.view_mode)
+        self.right_panel_widget = self.create_file_view(self.view_mode)
+
+        # Store references to the actual file views and path displays
+        self.left_panel = self.left_panel_widget.file_view
+        self.left_path_display = self.left_panel_widget.path_display
+        self.right_panel = self.right_panel_widget.file_view
+        self.right_path_display = self.right_panel_widget.path_display
 
         # Set initial paths for panels
         home_path = os.path.expanduser("~")
-        self.current_paths[self.left_panel] = home_path
-        self.current_paths[self.right_panel] = home_path
+        self.current_paths[self.left_panel_widget] = home_path
+        self.current_paths[self.right_panel_widget] = home_path
 
-        # Initialize models with current paths
+        # Initialize models with current paths and update path displays
         if self.view_mode == "flat":
-            self.left_panel.model().set_current_path(self.current_paths[self.left_panel])
-            self.right_panel.model().set_current_path(self.current_paths[self.right_panel])
+            self.left_panel.model().set_current_path(self.current_paths[self.left_panel_widget])
+            self.right_panel.model().set_current_path(self.current_paths[self.right_panel_widget])
         else: # tree view (QFileSystemModel)
-            self.left_panel.setRootIndex(self.left_panel.model().index(self.current_paths[self.left_panel]))
-            self.right_panel.setRootIndex(self.right_panel.model().index(self.current_paths[self.right_panel]))
-
+            self.left_panel.setRootIndex(self.left_panel.model().index(self.current_paths[self.left_panel_widget]))
+            self.right_panel.setRootIndex(self.right_panel.model().index(self.current_paths[self.right_panel_widget]))
+        
+        # Update path display fields initially
+        self.left_path_display.setText(home_path)
+        self.right_path_display.setText(home_path)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.addWidget(self.left_panel)
-        splitter.addWidget(self.right_panel)
+        splitter.addWidget(self.left_panel_widget)
+        splitter.addWidget(self.right_panel_widget)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
         
-        # Install event filter on panels for key events (Home, End, Tab, Insert)
+        # Install event filter on file views for key events (Home, End, Tab, Insert)
         self.left_panel.installEventFilter(self)
         self.right_panel.installEventFilter(self)
 
     def create_file_view(self, view_mode):
+        panel_widget = QWidget()
+        panel_layout = QVBoxLayout(panel_widget)
+        panel_layout.setContentsMargins(0, 0, 0, 0)
+
+        path_display = QLineEdit()
+        path_display.setReadOnly(True)
+        path_display.setStyleSheet("""
+            QLineEdit {
+                background-color: #333;
+                color: #EEE;
+                border: 1px solid #555;
+                padding: 2px;
+            }
+        """)
+        panel_layout.addWidget(path_display)
+
         if view_mode == "flat":
-            view = QTableView()
-            model = FlatFileSystemModel(self, show_dot_files=self._show_dot_files) # Pass setting to custom model
-            view.setModel(model)
-            view.setColumnHidden(3, True) # Hide the 'Selected' state column
+            file_view = QTableView()
+            model = FlatFileSystemModel(self, show_dot_files=self._show_dot_files)
+            file_view.setModel(model)
+            file_view.setColumnHidden(3, True)
         else: # view_mode == "tree" (QFileSystemModel)
             model = QFileSystemModel()
             model.setRootPath(os.path.expanduser("~"))
             
-            # Apply dot file filtering for QFileSystemModel
             if self._show_dot_files:
                 logging.debug(f"Setting QFileSystemModel filter to show hidden files: AllDirs | Files | Hidden")
                 model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.Hidden)
@@ -72,35 +97,33 @@ class FolderBrowser(QWidget):
                 logging.debug(f"Setting QFileSystemModel filter to hide hidden files: AllDirs | Files | NoDotAndDotDot")
                 model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot)
 
-            view = QTreeView() # Use QTreeView for tree mode
-            view.setExpandsOnDoubleClick(False)
-            view.setModel(model)
-            view.setRootIndex(model.index(os.path.expanduser("~")))
-            horizontal_header = view.header()
+            file_view = QTreeView()
+            file_view.setExpandsOnDoubleClick(False)
+            file_view.setModel(model)
+            file_view.setRootIndex(model.index(os.path.expanduser("~")))
+        
+        panel_layout.addWidget(file_view)
 
+        # Store path_display and file_view in the panel_widget for easy access
+        panel_widget.path_display = path_display
+        panel_widget.file_view = file_view
+
+        # Apply column widths
         if view_mode == "flat":
-            # Load and apply column widths for QTableView (flat view)
-            horizontal_header = view.horizontalHeader()
+            horizontal_header = file_view.horizontalHeader()
             saved_widths = self.settings_manager.get_setting("table_column_widths")
-            if saved_widths:
-                for i, width in enumerate(saved_widths):
-                    # Ensure we don't go out of bounds for the header count
-                    if i < horizontal_header.count():
-                        horizontal_header.resizeSection(i, width)
         else: # view_mode == "tree"
-            # Load and apply column widths for QTreeView (tree view)
+            horizontal_header = file_view.header()
             saved_widths = self.settings_manager.get_setting("tree_column_widths")
-            if saved_widths:
-                for i, width in enumerate(saved_widths):
-                    # Ensure we don't go out of bounds for the header count
-                    if i < horizontal_header.count():
-                        horizontal_header.resizeSection(i, width)
 
-        # Connect signal for saving column widths
-        # This part also needs to use view.header()
-        horizontal_header.sectionResized.connect(lambda section, old_size, new_size: self._on_header_section_resized(view, section, old_size, new_size))
+        if saved_widths:
+            for i, width in enumerate(saved_widths):
+                if i < horizontal_header.count():
+                    horizontal_header.resizeSection(i, width)
+        
+        horizontal_header.sectionResized.connect(lambda section, old_size, new_size: self._on_header_section_resized(file_view, section, old_size, new_size))
 
-        return view
+        return panel_widget
     
     def _on_header_section_resized(self, view, section, old_size, new_size):
         """Saves the current column widths for the given view."""
@@ -122,7 +145,8 @@ class FolderBrowser(QWidget):
         """Returns the current column widths for both panels."""
         widths = {}
         
-        for panel in [self.left_panel, self.right_panel]:
+        for panel_widget in [self.left_panel_widget, self.right_panel_widget]:
+            panel = panel_widget.file_view # Get the actual file view (QTableView or QTreeView)
             # Get the header view. QTableView uses horizontalHeader(), QTreeView uses header().
             if isinstance(panel.model(), FlatFileSystemModel): # It's a QTableView
                 horizontal_header = panel.horizontalHeader()
@@ -222,6 +246,15 @@ class FolderBrowser(QWidget):
         if panel is None:
             panel = self.active_panel
 
+        panel_widget = None
+        if panel == self.left_panel:
+            panel_widget = self.left_panel_widget
+        elif panel == self.right_panel:
+            panel_widget = self.right_panel_widget
+        else:
+            logging.error(f"navigate_to_path: Could not determine panel_widget for file_view: {panel}")
+            return
+
         if not os.path.exists(path) or not os.path.isdir(path):
             msg = f"Path '{path}' is invalid or does not exist."
             logging.error(msg)
@@ -234,7 +267,7 @@ class FolderBrowser(QWidget):
             show_error_message(self, "Permission Error", msg)
             return
 
-        if panel:
+        if panel_widget:
             # Decide what to select after the model reloads
             if select_entry_path:
                 self._select_on_load = os.path.basename(select_entry_path)
@@ -244,17 +277,19 @@ class FolderBrowser(QWidget):
             # Trigger the model reset
             model = panel.model()
             if isinstance(model, FlatFileSystemModel):
-                model.set_current_path(path) # This is for FlatFileSystemModel
+                model.set_current_path(path)
                 model.layoutChanged.emit()
                 panel.viewport().update()
-                self.current_paths[panel] = path
+                self.current_paths[panel_widget] = path
+                panel_widget.path_display.setText(path) # Update path display
                 self.current_directory_changed.emit(path)
                 self.select_item_after_load(panel)
             else: # QFileSystemModel (for tree view)
                 index = model.index(path)
                 if index.isValid():
                     panel.setRootIndex(index)
-                    self.current_paths[panel] = path
+                    self.current_paths[panel_widget] = path
+                    panel_widget.path_display.setText(path) # Update path display
                     self.current_directory_changed.emit(path)
                     self.select_item_after_load(panel)
                 else:
@@ -283,7 +318,17 @@ class FolderBrowser(QWidget):
         """Helper to refresh a specific panel."""
         if panel:
             logging.debug(f"Refreshing view for panel: {panel} (type: {type(panel.model())})")
-            current_path = self.current_paths.get(panel)
+            
+            panel_widget = None
+            if panel == self.left_panel:
+                panel_widget = self.left_panel_widget
+            elif panel == self.right_panel:
+                panel_widget = self.right_panel_widget
+            else:
+                logging.error(f"refresh_view_for_panel: Could not determine panel_widget for file_view: {panel}")
+                return
+
+            current_path = self.current_paths.get(panel_widget) # Use panel_widget here
             if current_path:
                 model = panel.model()
                 if isinstance(model, FlatFileSystemModel):
@@ -294,8 +339,9 @@ class FolderBrowser(QWidget):
                     model.layoutChanged.emit() 
                     panel.viewport().update() # Force viewport update
                     logging.debug(f"FlatFileSystemModel for panel {panel} refreshed and viewport updated.")
-                    if self.current_paths.get(panel) != current_path:
-                        self.current_paths[panel] = current_path
+                    if self.current_paths.get(panel_widget) != current_path:
+                        self.current_paths[panel_widget] = current_path
+                        panel_widget.path_display.setText(current_path) # Update path display
                         self.current_directory_changed.emit(current_path)
                 else: # QFileSystemModel (tree view)
                     logging.debug(f"Entering QFileSystemModel refresh logic for panel: {panel}.")
@@ -315,30 +361,34 @@ class FolderBrowser(QWidget):
                     else:
                         logging.error(f"Could not set root index to '{current_path}' for panel refresh.")
                     
+                    panel_widget.path_display.setText(current_path) # Update path display
                     model.layoutChanged.emit()
                     panel.viewport().update()
     
-    def set_active_panel(self, panel):
+    def set_active_panel(self, panel_widget):
         # Define stylesheets
         active_stylesheet = """
-            QTableView { border: 2px solid blue; }
-            QTreeView { border: 2px solid blue; }
+            QWidget { border: 2px solid blue; }
             QTableView::item:selected { background-color: #ADD8E6; color: black; }
             QTreeView::item:selected { background-color: #ADD8E6; color: black; }
         """
         inactive_stylesheet = """
-            QTableView { border: none; }
-            QTreeView { border: none; }
+            QWidget { border: none; }
             QTableView::item:selected { background-color: #D3D3D3; color: black; }
             QTreeView::item:selected { background-color: #D3D3D3; color: black; }
         """
 
-        if self.active_panel and self.active_panel != panel:
-            self.active_panel.setStyleSheet(inactive_stylesheet)
+        # Deactivate previously active panel if any
+        if self.active_panel_widget and self.active_panel_widget != panel_widget:
+            self.active_panel_widget.setStyleSheet(inactive_stylesheet)
 
-        self.active_panel = panel
-        self.active_panel.setStyleSheet(active_stylesheet)
-        current_path = self.current_paths.get(self.active_panel)
+        # Set new active panel
+        self.active_panel_widget = panel_widget
+        self.active_panel = panel_widget.file_view
+        self.active_path_display = panel_widget.path_display
+        self.active_panel_widget.setStyleSheet(active_stylesheet)
+
+        current_path = self.current_paths.get(self.active_panel_widget)
         if current_path: # current_path is now a string
             self.current_directory_changed.emit(current_path)
 
@@ -362,15 +412,15 @@ class FolderBrowser(QWidget):
         return None
 
     def set_active_panel_by_id(self, panel_id):
-        panel_to_set = None
+        panel_widget_to_set = None
         if panel_id == "left":
-            panel_to_set = self.left_panel
+            panel_widget_to_set = self.left_panel_widget
         elif panel_id == "right":
-            panel_to_set = self.right_panel
+            panel_widget_to_set = self.right_panel_widget
         
-        if panel_to_set:
-            self.set_active_panel(panel_to_set)
-            panel_to_set.setFocus()
+        if panel_widget_to_set:
+            self.set_active_panel(panel_widget_to_set)
+            panel_widget_to_set.file_view.setFocus()
 
     def get_selected_paths(self):
         """Returns a list of all selected file paths from the active panel."""
@@ -434,13 +484,15 @@ class FolderBrowser(QWidget):
             key = event.key()
 
             if key == Qt.Key.Key_Tab:
-                if self.active_panel == self.left_panel:
-                    new_panel = self.right_panel
+                # Determine the next panel_widget to activate
+                if self.active_panel_widget == self.left_panel_widget:
+                    new_panel_widget = self.right_panel_widget
                 else:
-                    new_panel = self.left_panel
+                    new_panel_widget = self.left_panel_widget
                 
-                self.set_active_panel(new_panel)
-                new_panel.setFocus()
+                # Set the new active panel and focus on its file view
+                self.set_active_panel(new_panel_widget)
+                new_panel_widget.file_view.setFocus()
                 return True # Event handled
 
             if key == Qt.Key.Key_Insert:
@@ -494,8 +546,10 @@ class FolderBrowser(QWidget):
 
         if event.type() == QEvent.Type.FocusIn:
             if self._initial_load_complete and source in [self.left_panel, self.right_panel]:
-                # Unconditionally update active_panel when focus changes to a panel
-                self.set_active_panel(source)
+                if source == self.left_panel:
+                    self.set_active_panel(self.left_panel_widget)
+                elif source == self.right_panel:
+                    self.set_active_panel(self.right_panel_widget)
         
         return super().eventFilter(source, event)
 
@@ -542,7 +596,7 @@ class FolderBrowser(QWidget):
         self.navigate_to_path(left_path, self.left_panel)
         self.navigate_to_path(right_path, self.right_panel)
 
-        self.set_active_panel(self.left_panel)
+        self.set_active_panel(self.left_panel_widget)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Backspace:
