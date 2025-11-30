@@ -48,13 +48,23 @@ class MenuPanel:
 
     def open_general_settings_dialog(self):
         current_view_mode = self.main_window.settings_manager.get_setting("view_mode")
-        dialog = SettingsDialog(self.main_window, current_view_mode)
+        current_show_dot_files = self.main_window.settings_manager.get_setting("showDotFiles")
+        dialog = SettingsDialog(self.main_window, current_view_mode, current_show_dot_files)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_view_mode = dialog.get_selected_view_mode()
+            new_show_dot_files = dialog.get_selected_show_dot_files()
+
+            # Apply view mode setting
             if new_view_mode != current_view_mode:
                 self.main_window.settings_manager.set_setting("view_mode", new_view_mode)
                 self.main_window.folder_browser.set_view_mode(new_view_mode)
                 self.main_window.status_bar.showMessage(QCoreApplication.translate("MenuPanel", f"View mode changed to: {new_view_mode}."))
+
+            # Apply show dot files setting
+            if new_show_dot_files != current_show_dot_files:
+                self.main_window.settings_manager.set_setting("showDotFiles", new_show_dot_files)
+                self.main_window.folder_browser.refresh_all_views() # Refresh to apply filter
+                self.main_window.status_bar.showMessage(QCoreApplication.translate("MenuPanel", f"Show dot files changed to: {new_show_dot_files}."))
 
     def open_shortcuts_dialog(self):
         dialog = ShortcutsDialog(self.main_window, self.main_window.shortcuts_manager.shortcuts)

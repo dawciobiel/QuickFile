@@ -1,11 +1,13 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QRadioButton, QPushButton
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QRadioButton, QPushButton, QCheckBox
 
 class SettingsDialog(QDialog):
-    def __init__(self, parent, current_view_mode):
+    def __init__(self, parent, current_view_mode, current_show_dot_files):
         super().__init__(parent)
         self.setWindowTitle("Application Settings")
         self.current_view_mode = current_view_mode
         self.selected_view_mode = current_view_mode
+        self.current_show_dot_files = current_show_dot_files
+        self.selected_show_dot_files = current_show_dot_files
         self._init_ui()
 
     def _init_ui(self):
@@ -31,6 +33,16 @@ class SettingsDialog(QDialog):
         view_mode_group.setLayout(view_mode_layout)
         main_layout.addWidget(view_mode_group)
 
+        # Group box for dot files
+        dot_files_group = QGroupBox("Hidden Files (Dot Files)")
+        dot_files_layout = QVBoxLayout()
+        self.show_dot_files_checkbox = QCheckBox("Show files and folders starting with '.'")
+        self.show_dot_files_checkbox.setChecked(self.current_show_dot_files)
+        self.show_dot_files_checkbox.stateChanged.connect(self._set_selected_show_dot_files)
+        dot_files_layout.addWidget(self.show_dot_files_checkbox)
+        dot_files_group.setLayout(dot_files_layout)
+        main_layout.addWidget(dot_files_group)
+
         # Buttons
         button_layout = QHBoxLayout()
         self.save_button = QPushButton("Save")
@@ -45,5 +57,11 @@ class SettingsDialog(QDialog):
     def _set_selected_view_mode(self, mode):
         self.selected_view_mode = mode
 
+    def _set_selected_show_dot_files(self, state):
+        self.selected_show_dot_files = (state == Qt.CheckState.Checked.value)
+
     def get_selected_view_mode(self):
         return self.selected_view_mode
+
+    def get_selected_show_dot_files(self):
+        return self.selected_show_dot_files

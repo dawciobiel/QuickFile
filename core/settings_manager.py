@@ -17,7 +17,8 @@ class SettingsManager:
             "view_mode": "flat",
             "leftPanelPath": os.path.expanduser("~"),
             "rightPanelPath": os.path.expanduser("~"),
-            "activePanel": "left"
+            "activePanel": "left",
+            "showDotFiles": True
         }
         self.settings = self.load_settings()
 

@@ -15,6 +15,7 @@ class FolderBrowser(QWidget):
     def __init__(self, view_mode="flat", settings_manager=None, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager # Store settings_manager
+        self._show_dot_files = self.settings_manager.get_setting("showDotFiles", True)
 
         self.active_panel = None
         self.current_selected_path = None
@@ -55,17 +56,22 @@ class FolderBrowser(QWidget):
     def create_file_view(self, view_mode):
         if view_mode == "flat":
             view = QTableView()
-            model = FlatFileSystemModel(self) # New custom model
+            model = FlatFileSystemModel(self, show_dot_files=self._show_dot_files) # Pass setting to custom model
             view.setModel(model)
             view.setColumnHidden(3, True) # Hide the 'Selected' state column
         else: # view_mode == "tree" (QFileSystemModel)
             model = QFileSystemModel()
             model.setRootPath(os.path.expanduser("~"))
+            # Apply dot file filtering for QFileSystemModel
+            if self._show_dot_files:
+                model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot | QDir.Filter.Hidden)
+            else:
+                model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot)
+
             view = QTreeView() # Use QTreeView for tree mode
             view.setExpandsOnDoubleClick(False)
             view.setModel(model)
             view.setRootIndex(model.index(os.path.expanduser("~")))
-
         view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         
@@ -133,6 +139,12 @@ class FolderBrowser(QWidget):
             elif isinstance(panel.model(), QFileSystemModel):
                 widths["tree_column_widths"] = column_widths
         return widths
+
+    def set_show_dot_files(self, show_dot_files):
+        if self._show_dot_files == show_dot_files:
+            return
+        self._show_dot_files = show_dot_files
+        self.refresh_all_views() # Refresh all views to apply the new filter
 
     def on_double_clicked(self, index: QModelIndex, view): # Note: 'view' can be QTableView or QTreeView
         model = view.model()
@@ -272,6 +284,8 @@ class FolderBrowser(QWidget):
             if current_path:
                 model = panel.model()
                 if isinstance(model, FlatFileSystemModel):
+                    # Update filter before populating items
+                    model.set_show_dot_files(self._show_dot_files)
                     # Directly re-populate and signal for FlatFileSystemModel
                     model.beginResetModel()
                     model._populate_items() # Re-fetch items
@@ -284,6 +298,11 @@ class FolderBrowser(QWidget):
                         self.current_paths[panel] = current_path
                         self.current_directory_changed.emit(current_path)
                 else: # QFileSystemModel (tree view)
+                    # Apply dot file filtering for QFileSystemModel before refreshing
+                    if self._show_dot_files:
+                        model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot | QDir.Filter.Hidden)
+                    else:
+                        model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot)
                     # For tree view, navigate_to_path handles setRootIndex and refresh
                     self.navigate_to_path(current_path, panel)
     
