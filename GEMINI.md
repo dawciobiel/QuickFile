@@ -47,3 +47,26 @@ Earlier features:
 - UI improvements (icons, shortcuts, toolbar, address bar, go up, refresh, new file/folder actions, saving settings, opening files externally).
 - The last implemented feature was changing the behavior of the `Tree` view so that `Enter` or double-click on a directory expands/collapses it within the tree, rather than changing the root. The user will test this feature tomorrow.
 - When creating a git commit, always use a safe syntax for multi-line messages to avoid bash errors. Use separate -m flags for the title and each line of the body. For example: `git commit -m "Title" -m "Line 1 of body." -m "Line 2 of body."`   
+
+## Data: 2025-11-28
+
+### Postępy prac:
+- **Internacjonalizacja (i18n):**
+    - Naprawiono uszkodzony plik `translations/app_pl.ts` poprzez wygenerowanie nowego pliku z poprawną strukturą i przeniesienie istniejących tłumaczeń.
+    - Zmieniono użycie `self.tr()` na `QCoreApplication.translate("MenuPanel", ...)` w `panels/menu_panel.py`, aby zapewnić poprawne działanie tłumaczeń bez konieczności dziedziczenia klasy `MenuPanel` z `QObject` lub `QWidget`.
+    - Skompilowano `translations/app_pl.ts` do `translations/app_pl.qm`.
+    - Potwierdzono, że nieprzetłumaczone ciągi znaków będą wyświetlane w języku angielskim.
+- **Wyświetlanie okien dialogowych:**
+    - Zdiagnozowano i rozwiązano problem z niewyświetlaniem się okien dialogowych (takich jak Ustawienia, Skróty, Tworzenie Archiwum, Tworzenie Katalogu). Problem był związany z dziedziczeniem klasy `MenuPanel` i użyciem `self.tr()`.
+    - Zweryfikowano działanie wszystkich okien dialogowych.
+- **Logowanie:**
+    - Zmieniono ścieżkę zapisu logów z `~/.config/QuickFile/main.log` na `logs/main.log` w katalogu projektu.
+        - Usunięto tymczasowe pliki logów i skrypty diagnostyczne.
+    
+    ## Data: 2025-11-30
+    
+    ### Postępy prac:
+    - **Poprawka klawiszy Home/End:**
+        - Zdiagnozowano, że klawisze `Home` i `End` nie działały w aktywnym panelu ze względu na brak zainstalowania `FolderBrowser` jako filtra zdarzeń dla jego paneli (`left_panel`, `right_panel`).
+        - Zainstalowano `FolderBrowser` jako filtr zdarzeń dla `self.left_panel` i `self.right_panel` w `browser/folder_browser.py`, zapewniając prawidłowe przetwarzanie zdarzeń klawiszy nawigacyjnych.
+    

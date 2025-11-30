@@ -47,6 +47,10 @@ class FolderBrowser(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
+        
+        # Install event filter on panels for key events (Home, End, Tab, Insert)
+        self.left_panel.installEventFilter(self)
+        self.right_panel.installEventFilter(self)
 
     def create_file_view(self, view_mode):
         if view_mode == "flat":
@@ -65,8 +69,11 @@ class FolderBrowser(QWidget):
         view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         
-        # Get the header view. QTreeView also has a header() method.
-        horizontal_header = view.header() # Use view.header() for both QTableView and QTreeView
+        # Get the header view.
+        if view_mode == "flat": # QTableView
+            horizontal_header = view.horizontalHeader()
+        else: # QTreeView
+            horizontal_header = view.header()
 
         if view_mode == "flat":
             # Load and apply column widths for QTableView (flat view)
@@ -93,12 +100,10 @@ class FolderBrowser(QWidget):
     
     def _on_header_section_resized(self, view, section, old_size, new_size):
         """Saves the current column widths for the given view."""
-        if not self.settings_manager:
-            logging.warning("Settings manager not available, cannot save column widths.")
-            return
-
-        # Get the header view using view.header()
-        horizontal_header = view.header() # Use view.header() for both QTableView and QTreeView
+        if isinstance(view, QTableView):
+            horizontal_header = view.horizontalHeader()
+        else: # Assuming QTreeView
+            horizontal_header = view.header()
         column_widths = []
         for i in range(horizontal_header.count()):
             column_widths.append(horizontal_header.sectionSize(i))
@@ -114,8 +119,11 @@ class FolderBrowser(QWidget):
         widths = {}
         
         for panel in [self.left_panel, self.right_panel]:
-            # Get the header view using panel.header()
-            horizontal_header = panel.header() # Use panel.header() for both QTableView and QTreeView
+            # Get the header view. QTableView uses horizontalHeader(), QTreeView uses header().
+            if isinstance(panel.model(), FlatFileSystemModel): # It's a QTableView
+                horizontal_header = panel.horizontalHeader()
+            else: # It's a QTreeView
+                horizontal_header = panel.header()
             column_widths = []
             for i in range(horizontal_header.count()):
                 column_widths.append(horizontal_header.sectionSize(i))
@@ -239,7 +247,6 @@ class FolderBrowser(QWidget):
                     msg = f"Could not set directory to '{path}'."
                     logging.error(msg)
                     show_error_message(self, "Navigation Error", msg)
-
     def set_panel_path(self, panel, path):
         self.navigate_to_path(path, panel)
 
@@ -456,8 +463,8 @@ class FolderBrowser(QWidget):
 
         if event.type() == QEvent.Type.FocusIn:
             if self._initial_load_complete and source in [self.left_panel, self.right_panel]:
-                if self.active_panel != source:
-                    self.set_active_panel(source)
+                # Unconditionally update active_panel when focus changes to a panel
+                self.set_active_panel(source)
         
         return super().eventFilter(source, event)
 
