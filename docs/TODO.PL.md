@@ -1,6 +1,7 @@
 # TODO List
 
 - Zaprojektować i stworzyć możliwość zmiany wersji językowej GUI. Aplikacja główna powinna mieć własny plik językowy, a każdy plugin własny.
+- Dokonaj ręcznego tłumaczenia pozostałych ciągów znaków w pliku `translations/app_pl.ts` za pomocą narzędzia Qt Linguist. Obecnie nieprzetłumaczone ciągi znaków są wyświetlane w języku angielskim.
 
 - Zapytać ChatGPT w jaki sposób rozwiązać problem nasłuchiwania wielu modułów (folder_browser, hotkey menu) na zdarzenia klawiszowe.
 Bo Python nie jest ponoć wielowątkowy
