@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QRadioButton, QPushButton, QCheckBox
+from PyQt6.QtCore import Qt
 
 class SettingsDialog(QDialog):
     def __init__(self, parent, current_view_mode, current_show_dot_files):

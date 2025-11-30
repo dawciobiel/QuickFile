@@ -13,6 +13,11 @@ def setup_logging():
 
     log_file = os.path.join(log_dir, "main.log")
 
+    # If the log file exists, clear it
+    if os.path.exists(log_file):
+        with open(log_file, "w", encoding='utf-8') as f:
+            f.truncate(0)
+
     # Configure the root logger
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)

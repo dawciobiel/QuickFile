@@ -1,6 +1,6 @@
 import logging
 import os
-from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QItemSelection
+from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QItemSelection, QDir
 from PyQt6.QtWidgets import QWidget, QTableView, QVBoxLayout, QAbstractItemView, QHeaderView, QSplitter, QTreeView
 from PyQt6.QtGui import QFileSystemModel, QColor, QPalette
 # from browser.flat_view_proxy_model import FlatViewProxyModel # Old import
@@ -23,6 +23,7 @@ class FolderBrowser(QWidget):
         self.view_mode = view_mode # Store view mode
         self._select_on_load = ".." # Default item to select after model reset
         self._initial_load_complete = False
+        logging.debug(f"FolderBrowser initialized with view_mode: {self.view_mode}")
 
         self.left_panel = self.create_file_view(self.view_mode)
         self.right_panel = self.create_file_view(self.view_mode)
@@ -62,27 +63,24 @@ class FolderBrowser(QWidget):
         else: # view_mode == "tree" (QFileSystemModel)
             model = QFileSystemModel()
             model.setRootPath(os.path.expanduser("~"))
+            
             # Apply dot file filtering for QFileSystemModel
             if self._show_dot_files:
-                model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot | QDir.Filter.Hidden)
+                logging.debug(f"Setting QFileSystemModel filter to show hidden files: AllDirs | Files | Hidden")
+                model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.Hidden)
             else:
+                logging.debug(f"Setting QFileSystemModel filter to hide hidden files: AllDirs | Files | NoDotAndDotDot")
                 model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot)
 
             view = QTreeView() # Use QTreeView for tree mode
             view.setExpandsOnDoubleClick(False)
             view.setModel(model)
             view.setRootIndex(model.index(os.path.expanduser("~")))
-        view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        
-        # Get the header view.
-        if view_mode == "flat": # QTableView
-            horizontal_header = view.horizontalHeader()
-        else: # QTreeView
             horizontal_header = view.header()
 
         if view_mode == "flat":
             # Load and apply column widths for QTableView (flat view)
+            horizontal_header = view.horizontalHeader()
             saved_widths = self.settings_manager.get_setting("table_column_widths")
             if saved_widths:
                 for i, width in enumerate(saved_widths):
@@ -142,8 +140,10 @@ class FolderBrowser(QWidget):
 
     def set_show_dot_files(self, show_dot_files):
         if self._show_dot_files == show_dot_files:
+            logging.debug(f"FolderBrowser.set_show_dot_files: Value is already {show_dot_files}, no change needed.")
             return
-        self._show_dot_files = show_dot_files
+        self._show_dot_files = show_dot_files  # This line updates FolderBrowser's internal attribute
+        logging.debug(f"FolderBrowser.set_show_dot_files: Updated _show_dot_files to {self._show_dot_files} before refreshing views.")
         self.refresh_all_views() # Refresh all views to apply the new filter
 
     def on_double_clicked(self, index: QModelIndex, view): # Note: 'view' can be QTableView or QTreeView
@@ -249,12 +249,14 @@ class FolderBrowser(QWidget):
                 panel.viewport().update()
                 self.current_paths[panel] = path
                 self.current_directory_changed.emit(path)
+                self.select_item_after_load(panel)
             else: # QFileSystemModel (for tree view)
                 index = model.index(path)
                 if index.isValid():
                     panel.setRootIndex(index)
                     self.current_paths[panel] = path
                     self.current_directory_changed.emit(path)
+                    self.select_item_after_load(panel)
                 else:
                     msg = f"Could not set directory to '{path}'."
                     logging.error(msg)
@@ -280,31 +282,41 @@ class FolderBrowser(QWidget):
     def refresh_view_for_panel(self, panel):
         """Helper to refresh a specific panel."""
         if panel:
+            logging.debug(f"Refreshing view for panel: {panel} (type: {type(panel.model())})")
             current_path = self.current_paths.get(panel)
             if current_path:
                 model = panel.model()
                 if isinstance(model, FlatFileSystemModel):
-                    # Update filter before populating items
+                    logging.debug(f"In FolderBrowser.refresh_view_for_panel: Preparing to call FlatFileSystemModel.set_show_dot_files with value: {self._show_dot_files}")
+                    # Update filter by calling the model's specific setter
                     model.set_show_dot_files(self._show_dot_files)
-                    # Directly re-populate and signal for FlatFileSystemModel
-                    model.beginResetModel()
-                    model._populate_items() # Re-fetch items
-                    model.endResetModel()
                     # Explicitly emit signals to ensure QTableView updates
                     model.layoutChanged.emit() 
                     panel.viewport().update() # Force viewport update
-                    # Update internal path tracking and emit signal if path changed
+                    logging.debug(f"FlatFileSystemModel for panel {panel} refreshed and viewport updated.")
                     if self.current_paths.get(panel) != current_path:
                         self.current_paths[panel] = current_path
                         self.current_directory_changed.emit(current_path)
                 else: # QFileSystemModel (tree view)
+                    logging.debug(f"Entering QFileSystemModel refresh logic for panel: {panel}.")
                     # Apply dot file filtering for QFileSystemModel before refreshing
                     if self._show_dot_files:
-                        model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot | QDir.Filter.Hidden)
+                        logging.debug(f"Refreshing QFileSystemModel filter to show hidden files: AllDirs | Files | Hidden")
+                        model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.Hidden)
                     else:
+                        logging.debug(f"Refreshing QFileSystemModel filter to hide hidden files: AllDirs | Files | NoDotAndDotDot")
                         model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot)
-                    # For tree view, navigate_to_path handles setRootIndex and refresh
-                    self.navigate_to_path(current_path, panel)
+                    
+                    # For QFileSystemModel, reset the root index to force a refresh
+                    # (the filter will have already been updated)
+                    index = model.index(current_path)
+                    if index.isValid():
+                        panel.setRootIndex(index)
+                    else:
+                        logging.error(f"Could not set root index to '{current_path}' for panel refresh.")
+                    
+                    model.layoutChanged.emit()
+                    panel.viewport().update()
     
     def set_active_panel(self, panel):
         # Define stylesheets
@@ -521,6 +533,10 @@ class FolderBrowser(QWidget):
             layout.addWidget(self.right_panel)
             old_left_panel.deleteLater()
             old_right_panel.deleteLater()
+
+        # Re-install event filters on new panels
+        self.left_panel.installEventFilter(self)
+        self.right_panel.installEventFilter(self)
 
         # Restore paths
         self.navigate_to_path(left_path, self.left_panel)
