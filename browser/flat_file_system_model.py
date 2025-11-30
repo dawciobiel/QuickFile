@@ -4,11 +4,12 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QFileIconProvider
 
 class FlatFileSystemModel(QAbstractTableModel):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, show_dot_files=True):
         super().__init__(parent)
         self._current_path = os.path.expanduser("~")
         self._items = [] # Stores (name, path, is_dir, is_selected) tuples
         self._icon_provider = QFileIconProvider()
+        self._show_dot_files = show_dot_files # New setting
         self._populate_items()
 
     def set_current_path(self, path):
@@ -30,6 +31,9 @@ class FlatFileSystemModel(QAbstractTableModel):
         
         try:
             for item_name in os.listdir(self._current_path):
+                # Apply dot file filtering
+                if not self._show_dot_files and item_name.startswith('.') and item_name != '..':
+                    continue
                 item_path = os.path.join(self._current_path, item_name)
                 is_dir = os.path.isdir(item_path)
                 other_items.append((item_name, item_path, is_dir, False))
@@ -43,6 +47,14 @@ class FlatFileSystemModel(QAbstractTableModel):
 
         # Combine the lists, with ".." always first
         self._items = dot_dot_item + other_items
+
+    def set_show_dot_files(self, show_dot_files):
+        if self._show_dot_files == show_dot_files:
+            return
+        self._show_dot_files = show_dot_files
+        self.beginResetModel()
+        self._populate_items()
+        self.endResetModel()
 
     def rowCount(self, parent=QModelIndex()):
         if parent.isValid():
