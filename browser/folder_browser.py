@@ -1,6 +1,6 @@
 import logging
 import os
-from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QItemSelection, QDir
+from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QItemSelection, QDir, QStringListModel
 from PyQt6.QtWidgets import QWidget, QTableView, QVBoxLayout, QAbstractItemView, QHeaderView, QSplitter, QTreeView, QLineEdit, QCompleter
 from PyQt6.QtGui import QFileSystemModel, QColor, QPalette
 # from browser.flat_view_proxy_model import FlatViewProxyModel # Old import
@@ -82,7 +82,8 @@ class FolderBrowser(QWidget):
         """)
 
         # Initialize completer for path suggestions
-        completer = QCompleter(self) # 'self' refers to FolderBrowser instance
+        model = QStringListModel()
+        completer = QCompleter(model, self) # Use model and self as parent
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         completer.setFilterMode(Qt.MatchFlag.MatchContains)
         path_edit.setCompleter(completer)
