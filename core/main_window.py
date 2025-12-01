@@ -76,9 +76,6 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(self.tr("Ready"))
 
         # Pasek adresu
-        self.address_bar = QLineEdit(self)
-        self.address_bar.setReadOnly(True)
-
         # Panel klawiszy funkcyjnych
         self.function_key_panel = FunctionKeyPanel(self)
 
@@ -89,16 +86,13 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0) # Usunięcie marginesów
         layout.setSpacing(0) # Usunięcie odstępów między widżetami
 
-        layout.addWidget(self.address_bar)
         layout.addWidget(self.folder_browser, 1) # Rozciągnij folder_browser
         layout.addWidget(self.function_key_panel) # function_key_panel zachowa swoją naturalną wysokość
 
     def _connect_signals(self):
         self.search_input.returnPressed.connect(self.start_file_search)
-        self.address_bar.returnPressed.connect(self.navigate_from_address_bar)
         self.folder_browser.file_selected.connect(self.open_file_externally)
         self.folder_browser.current_directory_changed.connect(self.update_status_bar_path)
-        self.folder_browser.current_directory_changed.connect(self.address_bar.setText)
         self.add_bookmark_button.clicked.connect(self.add_bookmark)
 
     def add_bookmark(self):
@@ -110,10 +104,6 @@ class MainWindow(QMainWindow):
 
     def update_status_bar_path(self, path):
         self.status_bar.showMessage(self.tr(f"Current directory: {path}"))
-
-    def navigate_from_address_bar(self):
-        path = self.address_bar.text()
-        self.folder_browser.navigate_to_path(path)
 
     def start_file_search(self):
         search_text = self.search_input.text()
