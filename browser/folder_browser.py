@@ -31,9 +31,9 @@ class FolderBrowser(QWidget):
 
         # Store references to the actual file views and path displays
         self.left_panel = self.left_panel_widget.file_view
-        self.left_path_display = self.left_panel_widget.path_display
+        self.left_path_display = self.left_panel_widget.path_edit
         self.right_panel = self.right_panel_widget.file_view
-        self.right_path_display = self.right_panel_widget.path_display
+        self.right_path_display = self.right_panel_widget.path_edit
 
         # Set initial paths for panels
         home_path = os.path.expanduser("~")
