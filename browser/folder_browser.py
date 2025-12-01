@@ -691,11 +691,8 @@ class FolderBrowser(QWidget):
 
         self.current_paths[panel_widget] = path # Update current path storage
 
-        # Decide what to select after the model reloads
-        if select_entry_path:
-            self._select_on_load = os.path.basename(select_entry_path)
-        else:
-            self._select_on_load = ".." # Default to selecting '..' for upward navigation
+        # Always set _select_on_load to '..' to ensure correct parent directory is selected after navigation
+        self._select_on_load = ".."
 
         # Trigger the model reset
         model = panel.model()
