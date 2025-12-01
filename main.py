@@ -3,6 +3,9 @@ import logging
 import traceback
 import os
 
+from PyQt6.QtWidgets import QMainWindow, QLineEdit, QVBoxLayout, QWidget, QCompleter
+from PyQt6.QtCore import Qt
+
 from __version__ import __version__
 
 from PyQt6.QtWidgets import QApplication
