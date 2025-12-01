@@ -1,6 +1,7 @@
 import os
 import subprocess
 import logging # Dodano import logging
+from __version__ import __version__
 from PyQt6.QtCore import Qt, QSettings, QEvent, QCoreApplication
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QToolBar, QLineEdit, QToolButton, QDialog, QMessageBox
 from PyQt6.QtGui import QFileSystemModel
@@ -23,7 +24,7 @@ from utils.compare_dialog import CompareDialog
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(self.tr("Quick File version Alpha"))
+        self.setWindowTitle(f"QuickFile v{__version__}")
         self.resize(1200, 800)
 
         self.shortcuts_manager = ShortcutsManager(self)
