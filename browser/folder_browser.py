@@ -308,6 +308,7 @@ class FolderBrowser(QWidget):
                 panel_widget.path_display.setText(path) # Update path display
                 self.current_directory_changed.emit(path)
                 self.select_item_after_load(panel)
+                panel.setFocus() # Ensure file view gets focus after navigation
             else: # QFileSystemModel (for tree view)
                 index = model.index(path)
                 if index.isValid():
@@ -710,6 +711,7 @@ class FolderBrowser(QWidget):
                 panel.setRootIndex(index)
                 self.current_directory_changed.emit(path)
                 self.select_item_after_load(panel)
+                panel.setFocus() # Ensure file view gets focus after navigation
             else:
                 msg = f"Could not set root index to '{path}' for panel."
                 logging.error(msg)
@@ -817,8 +819,7 @@ class FolderBrowser(QWidget):
             # Update the path edit field of the newly active panel
             if panel_widget.path_edit:
                 panel_widget.path_edit.setText(current_path)
-                # Ensure focus is on the path edit when it becomes active
-                panel_widget.path_edit.setFocus()
+                # Do NOT unconditionally set focus to path_edit here. It should go to file_view unless explicitly interacted with.
 
         # Ensure full-row selection on the newly activated panel
         selection_model = self.active_panel.selectionModel()
@@ -848,9 +849,9 @@ class FolderBrowser(QWidget):
         
         if panel_widget_to_set:
             self.set_active_panel(panel_widget_to_set)
-            # Set focus to the path edit field of the activated panel
-            if panel_widget_to_set.path_edit:
-                panel_widget_to_set.path_edit.setFocus()
+            # When setting active panel by ID, we assume the user intends to operate on the file view.
+            # The focus should be on the file_view, not the path_edit.
+            panel_widget_to_set.file_view.setFocus()
 
     def get_selected_paths(self):
         """Returns a list of all selected file paths from the active panel."""
@@ -922,9 +923,8 @@ class FolderBrowser(QWidget):
                 
                 # Set the new active panel and focus on its file view
                 self.set_active_panel(new_panel_widget)
-                # Ensure focus goes to the path edit field of the activated panel
-                if new_panel_widget.path_edit:
-                    new_panel_widget.path_edit.setFocus()
+                # Ensure focus goes to the file view of the activated panel, not path_edit
+                new_panel_widget.file_view.setFocus()
                 return True # Event handled
 
             if key == Qt.Key.Key_Insert:
@@ -1059,8 +1059,8 @@ class FolderBrowser(QWidget):
                 next_panel_widget = self.left_panel_widget
             
             self.set_active_panel(next_panel_widget)
-            if next_panel_widget.path_edit:
-                next_panel_widget.path_edit.setFocus()
+            if next_panel_widget.file_view:
+                next_panel_widget.file_view.setFocus()
             event.accept()
             return
 
