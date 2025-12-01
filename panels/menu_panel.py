@@ -27,6 +27,19 @@ class MenuPanel:
         self._create_archive_menu()
         self._create_view_menu()
         self._create_settings_menu()
+        self._create_help_menu() # Add help menu
+
+    def show_about_dialog(self):
+        """Opens the about dialog."""
+        from utils.about_dialog import AboutDialog # Import locally to avoid circular dependencies if AboutDialog imports MenuPanel
+        dialog = AboutDialog(self.main_window)
+        dialog.exec()
+
+    def _create_help_menu(self):
+        help_menu = self.menu_bar.addMenu(QCoreApplication.translate("MenuPanel", "Help"))
+        about_action = QAction(QCoreApplication.translate("MenuPanel", "About"), self.main_window)
+        about_action.triggered.connect(self.show_about_dialog)
+        help_menu.addAction(about_action)
 
     def _create_view_menu(self):
         view_menu = self.menu_bar.addMenu(QCoreApplication.translate("MenuPanel", "View"))
