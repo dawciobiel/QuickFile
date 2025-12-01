@@ -266,61 +266,8 @@ class FolderBrowser(QWidget):
         # Reset the flag
         self._select_on_load = None
 
-    def navigate_to_path(self, path, panel=None, select_entry_path=None):
-        if panel is None:
-            panel = self.active_panel
 
-        panel_widget = None
-        if panel == self.left_panel:
-            panel_widget = self.left_panel_widget
-        elif panel == self.right_panel:
-            panel_widget = self.right_panel_widget
-        else:
-            logging.error(f"navigate_to_path: Could not determine panel_widget for file_view: {panel}")
-            return
 
-        if not os.path.exists(path) or not os.path.isdir(path):
-            msg = f"Path '{path}' is invalid or does not exist."
-            logging.error(msg)
-            show_error_message(self, "Navigation Error", msg)
-            return
-
-        if not os.access(path, os.R_OK):
-            msg = f"Permission denied to read directory:\n{path}"
-            logging.error(f"Permission denied for '{path}'.")
-            show_error_message(self, "Permission Error", msg)
-            return
-
-        if panel_widget:
-            # Decide what to select after the model reloads
-            if select_entry_path:
-                self._select_on_load = os.path.basename(select_entry_path)
-            else:
-                self._select_on_load = ".."
-
-            # Trigger the model reset
-            model = panel.model()
-            if isinstance(model, FlatFileSystemModel):
-                model.set_current_path(path)
-                model.layoutChanged.emit()
-                panel.viewport().update()
-                self.current_paths[panel_widget] = path
-                panel_widget.path_display.setText(path) # Update path display
-                self.current_directory_changed.emit(path)
-                self.select_item_after_load(panel)
-                panel.setFocus() # Ensure file view gets focus after navigation
-            else: # QFileSystemModel (for tree view)
-                index = model.index(path)
-                if index.isValid():
-                    panel.setRootIndex(index)
-                    self.current_paths[panel_widget] = path
-                    panel_widget.path_display.setText(path) # Update path display
-                    self.current_directory_changed.emit(path)
-                    self.select_item_after_load(panel)
-                else:
-                    msg = f"Could not set directory to '{path}'."
-                    logging.error(msg)
-                    show_error_message(self, "Navigation Error", msg)
     def set_panel_path(self, panel, path):
         self.navigate_to_path(path, panel)
 
@@ -691,8 +638,11 @@ class FolderBrowser(QWidget):
 
         self.current_paths[panel_widget] = path # Update current path storage
 
-        # Always set _select_on_load to '..' to ensure correct parent directory is selected after navigation
-        self._select_on_load = ".."
+        # Decide what to select after the model reloads
+        if select_entry_path:
+            self._select_on_load = os.path.basename(select_entry_path)
+        else:
+            self._select_on_load = ".."
 
         # Trigger the model reset
         model = panel.model()
