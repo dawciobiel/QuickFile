@@ -577,9 +577,18 @@ class FolderBrowser(QWidget):
 
     def _update_path_completions(self, text, panel_widget):
         """Updates path completions based on the text entered in the path edit field."""
+        if not panel_widget:
+            logging.error("_update_path_completions: panel_widget is None.")
+            return
+            
         completer = panel_widget.completer
         if not completer:
             logging.error(f"_update_path_completions: Completer not found for panel_widget.")
+            return
+        
+        # Check if completer model is valid before using it
+        if not completer.model():
+            logging.error(f"_update_path_completions: Completer model is None for panel_widget.")
             return
 
         # Get the directory part of the path for listing
