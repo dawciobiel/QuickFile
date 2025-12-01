@@ -11,4 +11,4 @@
 
 **Unresolved Bugs:**
 
-*None*
+*   **Incorrect '..' Path Navigation:** When navigating to the parent directory (using '..') after changing the path in the path control, the displayed path is one level deeper than expected (e.g., `/home/user/tmp` instead of `/home/user`). This occurs because the `_select_on_load` mechanism incorrectly prioritizes the '..' entry, leading to an unintended deeper dive into the directory structure rather than selecting the intended previous directory.
