@@ -71,6 +71,7 @@ class FolderBrowser(QWidget):
 
         # Editable path display with autocompletion
         # Editable path display with autocompletion
+        # Editable path display with autocompletion
         path_edit = QLineEdit() # Use editable QLineEdit
         path_edit.setReadOnly(False) # Make it editable
         path_edit.setStyleSheet("""
@@ -83,14 +84,15 @@ class FolderBrowser(QWidget):
         """)
 
         # Initialize completer for path suggestions
-        model = QStringListModel()
-        completer = QCompleter(model, self) # Use model and self as parent
+        path_model = QStringListModel() # Create the model
+        completer = QCompleter(path_model, self) # Create completer with the model
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         completer.setFilterMode(Qt.MatchFlag.MatchContains)
         
         # Store completer and path_edit on panel_widget FIRST
         panel_widget.path_edit = path_edit
         panel_widget.completer = completer # Assign completer to panel_widget
+        panel_widget.completer_model = path_model # Explicitly store the model
 
         # Set the completer for the QLineEdit
         path_edit.setCompleter(completer)
