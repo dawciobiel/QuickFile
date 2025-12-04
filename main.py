@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import logging
 import traceback
@@ -53,18 +55,35 @@ if __name__ == "__main__":
     
     # Try to load system locale
     system_locale = QLocale().system().name() # e.g., 'en_US', 'pl_PL'
+    logging.info(f"Detected system locale: {system_locale}")
     translations_path = os.path.join(os.path.dirname(__file__), "translations")
     
     # Try loading for the full locale (e.g., 'app_en_US.qm')
-    if not app_translator.load(f"app_{system_locale}", translations_path):
+    translation_loaded = False
+    active_translation_file = "None"
+    if app_translator.load(f"app_{system_locale}", translations_path):
+        active_translation_file = f"app_{system_locale}.qm"
+        logging.info(f"Successfully loaded translations for full locale: {active_translation_file}")
+        translation_loaded = True
+    else:
+        logging.info(f"Could not load translations for full locale: app_{system_locale}.qm. Trying language-only.")
         # Fallback to language only (e.g., 'app_en.qm')
         language_code = system_locale.split('_')[0]
-        if not app_translator.load(f"app_{language_code}", translations_path):
-            # Fallback to Polish if nothing else works
-            logging.warning(f"Could not load translations for system locale '{system_locale}' or language '{language_code}'. Defaulting to Polish.")
-            app_translator.load("app_pl", translations_path)
+        if app_translator.load(f"app_{language_code}", translations_path):
+            active_translation_file = f"app_{language_code}.qm"
+            logging.info(f"Successfully loaded translations for language code: {active_translation_file}")
+            translation_loaded = True
+        else:
+            active_translation_file = "app_en.qm"
+            logging.warning(f"Could not load translations for system locale '{system_locale}' or language '{language_code}'. Defaulting to English.")
+            app_translator.load("app_en", translations_path) # Fallback to English
+            translation_loaded = True # Assuming app_en.qm is always present
             
-    app.installTranslator(app_translator)
+    if translation_loaded:
+        app.installTranslator(app_translator)
+        logging.info(f"Translator installed. Active translation file: {active_translation_file}")
+    else:
+        logging.warning("No translator installed. Application will run in default (English) language.")
 
     window = MainWindow()
     app.installEventFilter(window)

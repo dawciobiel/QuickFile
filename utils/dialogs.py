@@ -1,14 +1,14 @@
-from PyQt6.QtWidgets import QMessageBox, QSpacerItem, QSizePolicy, QGridLayout
-from PyQt6.QtCore import QSize
+from PyQt6.QtWidgets import QMessageBox, QSpacerItem, QSizePolicy, QGridLayout, QWidget
+from PyQt6.QtCore import QSize, QCoreApplication
 
 
-def show_error_message(parent, title, message):
+def show_error_message(parent: QWidget | None, title: str, message: str):
     """Displays an error message dialog."""
     error_dialog = QMessageBox(parent)
     error_dialog.setIcon(QMessageBox.Icon.Critical)
     error_dialog.setText(title)
     error_dialog.setInformativeText(message)
-    error_dialog.setWindowTitle("Error")
+    error_dialog.setWindowTitle(QCoreApplication.translate("QMessageBox", "Error")) # Zastosowano tłumaczenie dla tytułu okna
     
     # Add a spacer item to force the width
     spacer = QSpacerItem(400, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
