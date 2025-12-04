@@ -1,12 +1,14 @@
 import logging # Added logging import
 import os
-from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QDir
+from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QDir, QCoreApplication
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QFileIconProvider
+from utils.dialogs import show_error_message # Dodano import
 
 class FlatFileSystemModel(QAbstractTableModel):
     def __init__(self, parent=None, show_dot_files=True):
         super().__init__(parent)
+        self.parent_widget = parent # Store the parent widget
         self._current_path = os.path.expanduser("~")
         self._items = [] # Stores (name, path, is_dir, is_selected) tuples
         self._icon_provider = QFileIconProvider()
@@ -32,6 +34,15 @@ class FlatFileSystemModel(QAbstractTableModel):
             # Keep ".." separate
             dot_dot_item.append(("..", os.path.dirname(self._current_path), True, False))
         
+        # Prevent listing /root directory directly due to permission issues
+        if self._current_path == "/root":
+            msg = QCoreApplication.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
+            logging.warning(f"Skipping listing of /root directory due to permission restrictions.")
+            show_error_message(self.parent_widget, QCoreApplication.translate("FlatFileSystemModel", "Permission Error"), msg)
+            self._items = dot_dot_item # Only show ".."
+            self.endResetModel() # Ensure model is reset
+            return # Exit early to prevent further processing
+
         try:
             for item_name in os.listdir(self._current_path):
                 # Apply dot file filtering
@@ -46,8 +57,9 @@ class FlatFileSystemModel(QAbstractTableModel):
             other_items.sort(key=lambda x: (not x[2], x[0].lower()))
 
         except OSError as e:
-            # Handle permission errors or invalid paths
-            logging.error(f"Error listing directory {self._current_path}: {e}")
+            msg = QCoreApplication.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}") # Define msg
+            logging.error(f"Permission error accessing {self._current_path}: {e}")
+            show_error_message(self.parent_widget, QCoreApplication.translate("FlatFileSystemModel", "Permission Error"), msg)
             other_items = []
 
         # Combine the lists, with ".." always first
@@ -113,7 +125,7 @@ class FlatFileSystemModel(QAbstractTableModel):
                 if is_dir:
                     return "Folder"
                 else:
-                    return os.path.splitext(item_name)[1].lstrip('.') or "File" # Get extension
+                    return self.tr("File") # Get extension
             return None
 
         elif role == Qt.ItemDataRole.DecorationRole:
@@ -150,11 +162,11 @@ class FlatFileSystemModel(QAbstractTableModel):
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
             if section == 0:
-                return "Name"
+                return self.tr("Name")
             elif section == 1:
-                return "Size"
+                return self.tr("Size")
             elif section == 2:
-                return "Type"
+                return self.tr("Type")
             # No header for column 3, it's hidden
         return None
 

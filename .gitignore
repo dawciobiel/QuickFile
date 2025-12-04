@@ -1,3 +1,6 @@
+# My private notes not includes to remote repository
+NOTE.md
+
 /.idea/
 experiments/
 
@@ -166,4 +169,4 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-logs/
+#logs/
