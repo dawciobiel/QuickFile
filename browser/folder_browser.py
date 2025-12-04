@@ -203,8 +203,8 @@ class FolderBrowser(QWidget):
                 # Add a permission check before trying to expand
                 if not os.access(new_path, os.R_OK):
                     msg = f"Permission denied to read directory:\n{new_path}"
-                    logging.error(f"Permission denied for '{new_path}'.")
-                    show_error_message(self, "Permission Error", msg)
+                    logging.error(f"Permission denied for \"{new_path}\".")
+                    show_error_message(self, self.tr("Permission Error"), msg)
                     return
 
                 # In Tree view, double-clicking a directory should expand/collapse it
@@ -609,25 +609,6 @@ class FolderBrowser(QWidget):
             msg = f"Path '{path}' is invalid or does not exist."
             logging.error(msg)
             show_error_message(self, "Navigation Error", msg)
-            # Reset the path edit to the current valid path if navigation fails
-            current_valid_path = self.current_paths.get(panel_widget)
-            if current_valid_path:
-                path_edit = panel_widget.path_edit
-                if path_edit:
-                    path_edit.setText(current_valid_path)
-            return
-
-        if not os.access(path, os.R_OK):
-            msg = f"Permission denied to read directory:\n{path}"
-            logging.error(f"Permission denied for '{path}'.")
-            show_error_message(self, "Permission Error", msg)
-            # Reset the path edit to the current valid path if navigation fails
-            current_valid_path = self.current_paths.get(panel_widget)
-            if current_valid_path:
-                path_edit = panel_widget.path_edit
-                if path_edit:
-                    path_edit.setText(current_valid_path)
-            return
 
         # Update the path edit field FIRST
         path_edit = panel_widget.path_edit

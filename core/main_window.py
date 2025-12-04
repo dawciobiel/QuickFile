@@ -103,7 +103,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(self.tr(f"Bookmark added: {current_path}"))
 
     def update_status_bar_path(self, path):
-        self.status_bar.showMessage(self.tr(f"Current directory: {path}"))
+        self.status_bar.showMessage(self.tr("Current directory:") + f" {path}")
 
     def start_file_search(self):
         search_text = self.search_input.text()
