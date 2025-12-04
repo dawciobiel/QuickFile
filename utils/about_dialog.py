@@ -14,25 +14,25 @@ except ImportError:
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"About QuickFile") # Will use the actual version in a bit
+        self.setWindowTitle(self.tr("About")) # Will use the actual version in a bit
         self.setFixedSize(400, 250) # Fixed size for simplicity
 
         layout = QVBoxLayout()
 
         # Application Name
-        app_name_label = QLabel("QuickFile")
+        app_name_label = QLabel(self.tr("QuickFile"))
         app_name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         app_name_label.setStyleSheet("font-size: 24px; font-weight: bold;")
         layout.addWidget(app_name_label)
 
         # Version
-        version_label = QLabel(f"Version: {__version__}")
+        version_label = QLabel(self.tr(f"Version: {__version__}"))
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet("font-size: 14px;")
         layout.addWidget(version_label)
 
         # Author
-        author_label = QLabel("Author: Dawid Bielecki")
+        author_label = QLabel(self.tr("Author: Dawid Bielecki"))
         author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         author_label.setStyleSheet("font-size: 12px;")
         layout.addWidget(author_label)
@@ -45,7 +45,7 @@ class AboutDialog(QDialog):
         layout.addWidget(url_label)
 
         # Description (placeholder)
-        description_label = QLabel("A powerful and efficient file manager with modern features.")
+        description_label = QLabel(self.tr("A powerful and efficient file manager with modern features."))
         description_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         description_label.setWordWrap(True)
         description_label.setStyleSheet("font-size: 12px;")
