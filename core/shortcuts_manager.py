@@ -1,11 +1,20 @@
 import json
 import os
 from PyQt6.QtGui import QKeySequence, QAction
+from PyQt6.QtCore import QStandardPaths # Dodaj ten import
 
 class ShortcutsManager:
     def __init__(self, main_window):
         self.main_window = main_window
-        self.shortcuts_file = os.path.join(os.path.expanduser("~"), ".quickfile_shortcuts.json")
+        
+        # Zmieniona ścieżka do pliku skrótów
+        config_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.ConfigLocation)
+        quickfile_config_dir = os.path.join(config_dir, "QuickFile")
+        
+        if not os.path.exists(quickfile_config_dir):
+            os.makedirs(quickfile_config_dir) # Tworzymy katalog, jeśli nie istnieje
+
+        self.shortcuts_file = os.path.join(quickfile_config_dir, "quickfile_shortcuts.json")
         self.actions = {}
         self.default_shortcuts = {
             "Exit": "Ctrl+Q",
