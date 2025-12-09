@@ -15,14 +15,7 @@ class PanelWidget(QWidget):
 
         self.path_edit = QLineEdit()
         self.path_edit.setReadOnly(False)
-        self.path_edit.setStyleSheet("""
-            QLineEdit {
-                background-color: #333;
-                color: #EEE;
-                border: 1px solid #555;
-                padding: 2px;
-            }
-        """)
+        # Usunięto domyślne style, będą zarządzane przez FolderBrowser
         self.layout.addWidget(self.path_edit)
 
         self.file_view = None  # Placeholder for QTableView or QTreeView
@@ -47,10 +40,18 @@ class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
+    # Styles for path_edit
+    ACTIVE_PATH_STYLE = "QLineEdit { background-color: #336699; color: #FFFFFF; border: 1px solid #555; padding: 2px; }" # Ciemniejszy niebieski
+    INACTIVE_PATH_STYLE = "QLineEdit { background-color: #555555; color: #EEEEEE; border: 1px solid #555; padding: 2px; }" # Ciemniejszy szary
+
     def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
         self._show_dot_files = self.settings_manager.get_setting("showDotFiles", True) if self.settings_manager else True
+
+        # Get selection colors from settings
+        self.active_selection_color = self.settings_manager.get_setting("active_selection_color")
+        self.inactive_selection_color = self.settings_manager.get_setting("inactive_selection_color")
 
         self.active_panel_widget = None
         self.current_selected_path = None
@@ -75,6 +76,9 @@ class FolderBrowser(QWidget):
 
         self.left_panel_widget.get_file_view().installEventFilter(self)
         self.right_panel_widget.get_file_view().installEventFilter(self)
+
+        # Ustawienie początkowego aktywnego panelu i jego stylu
+        self.set_active_panel(self.left_panel_widget)
 
     @property
     def left_panel(self):
@@ -108,6 +112,8 @@ class FolderBrowser(QWidget):
             model = FlatFileSystemModel(self, show_dot_files=self._show_dot_files)
             file_view.setModel(model)
             file_view.setColumnHidden(3, True)
+            file_view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # Zaznaczanie całego wiersza
+            file_view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection) # Zaznaczanie pojedynczego wiersza
         else:  # "tree"
             model = QFileSystemModel()
             model.setRootPath(os.path.expanduser("~"))
@@ -244,8 +250,7 @@ class FolderBrowser(QWidget):
 
     def _select_and_scroll_to(self, panel, index):
         selection_model = panel.selectionModel()
-        selection_model.setCurrentIndex(index, QItemSelectionModel.SelectionFlag.ClearAndSelect)
-        selection_model.select(index, QItemSelectionModel.SelectionFlag.Rows)
+        selection_model.select(index, QItemSelectionModel.SelectionFlag.ClearAndSelect | QItemSelectionModel.SelectionFlag.Rows)
         panel.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
 
     def go_up_directory(self):
@@ -284,14 +289,17 @@ class FolderBrowser(QWidget):
         panel_widget.get_path_edit().setText(current_path)
 
     def set_active_panel(self, panel_widget):
-        active_stylesheet = "QWidget { border: 2px solid blue; }"
-        inactive_stylesheet = "QWidget { border: none; }"
-
+        # Apply inactive style to previously active panel's path_edit
         if self.active_panel_widget and self.active_panel_widget != panel_widget:
-            self.active_panel_widget.setStyleSheet(inactive_stylesheet)
+            self.active_panel_widget.get_path_edit().setStyleSheet(self.INACTIVE_PATH_STYLE)
+            # Apply inactive selection style to the file view
+            self.active_panel_widget.get_file_view().setStyleSheet(f"QAbstractItemView::item:selected {{ background-color: {self.inactive_selection_color}; }}")
 
+        # Set new active panel and apply active style to its path_edit
         self.active_panel_widget = panel_widget
-        self.active_panel_widget.setStyleSheet(active_stylesheet)
+        self.active_panel_widget.get_path_edit().setStyleSheet(self.ACTIVE_PATH_STYLE)
+        # Apply active selection style to the file view
+        self.active_panel_widget.get_file_view().setStyleSheet(f"QAbstractItemView::item:selected {{ background-color: {self.active_selection_color}; }}")
         
         current_path = self.current_paths.get(self.active_panel_widget)
         if current_path:
