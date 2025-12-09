@@ -112,6 +112,8 @@ class FolderBrowser(QWidget):
             model = FlatFileSystemModel(self, show_dot_files=self._show_dot_files)
             file_view.setModel(model)
             file_view.setColumnHidden(3, True)
+            file_view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # Zaznaczanie całego wiersza
+            file_view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection) # Zaznaczanie pojedynczego wiersza
         else:  # "tree"
             model = QFileSystemModel()
             model.setRootPath(os.path.expanduser("~"))
@@ -248,8 +250,7 @@ class FolderBrowser(QWidget):
 
     def _select_and_scroll_to(self, panel, index):
         selection_model = panel.selectionModel()
-        selection_model.setCurrentIndex(index, QItemSelectionModel.SelectionFlag.ClearAndSelect)
-        selection_model.select(index, QItemSelectionModel.SelectionFlag.Rows)
+        selection_model.select(index, QItemSelectionModel.SelectionFlag.ClearAndSelect | QItemSelectionModel.SelectionFlag.Rows)
         panel.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
 
     def go_up_directory(self):
