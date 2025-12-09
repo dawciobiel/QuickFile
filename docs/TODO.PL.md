@@ -2,7 +2,7 @@
 
 # Important notes
 
-- Ważne: Każdą funcjonalność rozwiązywać na własnym dla niej branchu.
+- Ważne: Każdą funkcjonalność rozwiązywać na własnym dla niej branch-u.
 
 ## TODO List
 
@@ -10,20 +10,20 @@
 
 - **Translation:** Dokonaj ręcznego tłumaczenia pozostałych ciągów znaków w pliku `translations/app_pl.ts` za pomocą narzędzia Qt Linguist. Obecnie nieprzetłumaczone ciągi znaków są wyświetlane w języku angielskim.
 
-- **Refactoring:** Zawartość okna "About" powinna być czytana z pliku. Obecnie treść jest wpisana na sztywno w kodzie aplikacji i dodatkowo tłumaczona za pomocą wersji językowych. Zastanowić się jak to rozwiązać, bo treść tego okna powinna być tłumaczona na różne języki. Jednak jest to tylko tłumaczenie, a nie zawartość okna jeżeli chodzi o np. odpowiednie sformatowanie i ułożenie wyświetlanego tekstu. Trzeba to przemyśleć. Być może użyć dodatkowo Qt Designer'a. Kwestie związane z i18n powinny odbywać się na oddzielnym branchu "feature/i18n-polish".
+- **Refactoring:** Zawartość okna "About" powinna być czytana z pliku. Obecnie treść jest wpisana na sztywno w kodzie aplikacji i dodatkowo tłumaczona za pomocą wersji językowych. Zastanowić się jak to rozwiązać, bo treść tego okna powinna być tłumaczona na różne języki. Jednak jest to tylko tłumaczenie, a nie zawartość okna, jeżeli chodzi o np. odpowiednie sformatowanie i ułożenie wyświetlanego tekstu. Trzeba to przemyśleć. Być może użyć dodatkowo Qt Designer'a. Kwestie związane z i18n powinny odbywać się na oddzielnym branch-u "feature/i18n-polish".
 
-- **Application Architecture:** Ważne jest aby wszelkie akcje które mogą być wykonane przez aplikację były wywoływane jako "akcja". W ten sposób będzie możliwe wywoływanie tych akcji niezależnie od źródłowej kontrolki GUI. Np. niezależnie czy akcja jest wywołana z menu głównego aplikacji czy ze skrótku klawiszowego.
+- **Application Architecture:** Ważne jest, aby wszelkie akcje, które mogą być wykonane przez aplikację, były wywoływane jako "akcja". W ten sposób będzie możliwe wywoływanie tych akcji niezależnie od źródłowej kontrolki GUI. Np. niezależnie czy akcja jest wywołana z menu głównego aplikacji, czy ze skrótu klawiszowego.
 
-- **New Feature:** Dodać button jako rozwijalną listę z której można wybrać napęd i ewentualne zamontowane urządzenia. Ta rozwijalna lista powinna znajdować się nad panelem do przeglądania plików.
+- **New Feature:** Dodać button jako rozwijalną listę, z której można wybrać napęd i ewentualne zamontowane urządzenia. Ta rozwijalna lista powinna znajdować się nad panelem do przeglądania plików.
 
-- Dodać przycisk do zmiany bierzącej ścieżki na głowny katalog napędu :`/` .
+- Dodać przycisk do zmiany bieżącej ścieżki na główny katalog napędu :`/` .
 
-- **New Feature:** Dodać przycisk do zmiany bierzącej ścieżki na katalog domowy użytkownika. Musi działać zależnie od systemu na którym uruchomiona jest aplikacja [ linux, Windows, MacOS ].
-- **New Feature:** Dodać przycisk z rozwijalną listą który wyświetli ścieżki z listy katalogów dodanych do "Ulubionych".
+- **New Feature:** Dodać przycisk do zmiany bieżącej ścieżki na katalog domowy użytkownika. Musi działać zależnie od systemu na którym uruchomiona jest aplikacja [ linux, Windows, MacOS ].
+- **New Feature:** Dodać przycisk z rozwijalną listą, który wyświetli ścieżki z listy katalogów dodanych do "Ulubionych".
 
 - Kontrolka od przeglądania listowania plików/folderów musi być umieszczona w kontrolce "Tab Widget". W ten sposób będzie można mieć jednocześnie otwarte zakładki z różnymi katalogami bierzącymi.
 
-- **New Feature:** Stworzyć style dla aplikacji. Tak aby można było w łatwy sposób zmienic kolorystykę całej aplikacji.
+- **New Feature:** Stworzyć style dla aplikacji. Tak, aby można było w łatwy sposób zmienić kolorystykę całej aplikacji.
 
 - **New Feature:** Dodać możliwość definiowania kolorowania czcionki dla plików/folderów wg wzorca to jest według ich nazwy pliku lub rozszerzenia. Ew. można spróbować zmieniać nie kolor czcionki co kolor tła w komórce tabeli.
 
@@ -33,6 +33,9 @@
 
 - **New Feature:** Dodać możliwość zapamiętania domyślnej lokalizacji paneli do przeglądania plików. Trzeba się zastanowić jaki rodzaj GUI do tej funkcji stworzyć.
 
+- **New Feature:** Panel do przeglądania zawartości plików powinien być osadzony wewnątrz komponentu "Multi Tabs".
+
+- **New Feature:** Wyszukiwanie plików powinno być możliwe w oknie dialogowym zamiast w "text field" w oknie głównym. Wyniki wyszukiwania powinny mieć możliwość być wyświetlone jako dodatkowa zakładka w panelu przeglądania plików.
 
 ## Testing Writestyle code assistant 
 {collapsible="true" default-state="expanded"}
