@@ -49,6 +49,10 @@ class FolderBrowser(QWidget):
         self.settings_manager = settings_manager
         self._show_dot_files = self.settings_manager.get_setting("showDotFiles", True) if self.settings_manager else True
 
+        # Get selection colors from settings
+        self.active_selection_color = self.settings_manager.get_setting("active_selection_color")
+        self.inactive_selection_color = self.settings_manager.get_setting("inactive_selection_color")
+
         self.active_panel_widget = None
         self.current_selected_path = None
         self.current_paths = {}
@@ -287,10 +291,14 @@ class FolderBrowser(QWidget):
         # Apply inactive style to previously active panel's path_edit
         if self.active_panel_widget and self.active_panel_widget != panel_widget:
             self.active_panel_widget.get_path_edit().setStyleSheet(self.INACTIVE_PATH_STYLE)
+            # Apply inactive selection style to the file view
+            self.active_panel_widget.get_file_view().setStyleSheet(f"QAbstractItemView::item:selected {{ background-color: {self.inactive_selection_color}; }}")
 
         # Set new active panel and apply active style to its path_edit
         self.active_panel_widget = panel_widget
         self.active_panel_widget.get_path_edit().setStyleSheet(self.ACTIVE_PATH_STYLE)
+        # Apply active selection style to the file view
+        self.active_panel_widget.get_file_view().setStyleSheet(f"QAbstractItemView::item:selected {{ background-color: {self.active_selection_color}; }}")
         
         current_path = self.current_paths.get(self.active_panel_widget)
         if current_path:
