@@ -1,8 +1,8 @@
 import json
 import os
 import shutil
-from PyQt6.QtCore import QSettings # Dodaj ten import
-from PyQt6.QtWidgets import QMainWindow # Dodaj ten import
+from PyQt6.QtCore import QSettings
+from PyQt6.QtWidgets import QMainWindow
 
 class SettingsManager:
     def __init__(self):
@@ -20,9 +20,11 @@ class SettingsManager:
             "leftPanelPath": os.path.expanduser("~"),
             "rightPanelPath": os.path.expanduser("~"),
             "activePanel": "left",
-            "showDotFiles": True
+            "showDotFiles": True,
+            "active_selection_color": "#336699",  # Darker blue for active selection
+            "inactive_selection_color": "#606060" # Darker gray for inactive selection
         }
-        self.settings = self.load_settings_from_file() # Zmieniono nazwę, aby uniknąć konfliktu
+        self.settings = self.load_settings_from_file()
 
     def load_settings_from_file(self):
         if os.path.exists(self.settings_file):
@@ -45,7 +47,8 @@ class SettingsManager:
             print(f"Warning: Could not save settings to {self.settings_file}")
 
     def get_setting(self, key, default=None):
-        return self.settings.get(key, default)
+        # Ensure that if a new default is added, it's correctly returned if not in settings.json
+        return self.settings.get(key, self.default_settings.get(key, default))
 
     def set_setting(self, key, value):
         self.settings[key] = value
