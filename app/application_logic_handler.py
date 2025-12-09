@@ -1,24 +1,58 @@
 import os
 import subprocess
 import logging
-from PyQt6.QtCore import QObject, Qt
-from PyQt6.QtWidgets import QDialog, QMessageBox
+from PyQt6.QtCore import QObject, Qt, QCoreApplication
+from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 from bookmarks.bookmarks_manager import BookmarksManager
-from file_operations.file_manager import FileManager
+from file_operations.file_manager import FileManager, FileManagerError
 from file_operations.file_comparator import FileComparator
+from file_operations.archive_manager import ArchiveManager, UnrarNotInstalledError
+from file_operations.directory_synchronizer import DirectorySynchronizer, DirectorySynchronizerError
+from file_operations.properties_manager import get_file_properties
 from utils.dialogs import show_error_message
 from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
 from utils.compare_dialog import CompareDialog
+from utils.copy_dialog import CopyDialog
+from utils.move_dialog import MoveDialog
+from utils.delete_dialog import DeleteDialog
+from utils.sync_dialog import SyncDialog
+from utils.properties_dialog import PropertiesDialog
+
 
 class ApplicationLogicHandler(QObject):
-    def __init__(self, main_window):
+    def __init__(self, main_window, file_manager, file_comparator, bookmarks_manager, archive_manager, directory_synchronizer):
         super().__init__(main_window)
         self.main_window = main_window
-        # References to managers/components from MainWindow
-        self.file_manager = FileManager(main_window)
-        self.file_comparator = FileComparator()
-        self.bookmarks_manager = BookmarksManager()
+        self.file_manager = file_manager
+        self.file_comparator = file_comparator
+        self.bookmarks_manager = bookmarks_manager
+        self.archive_manager = archive_manager
+        self.directory_synchronizer = directory_synchronizer
+
+        # Constants for repeated strings (from MenuPanel)
+        self.ACTION_COMPARE = QCoreApplication.translate("MenuPanel", "Compare")
+        self.ACTION_PROPERTIES = QCoreApplication.translate("MenuPanel", "Properties")
+        self.ACTION_EXIT = QCoreApplication.translate("MenuPanel", "Exit")
+        self.ACTION_CREATE_ARCHIVE = QCoreApplication.translate("MenuPanel", "Create Archive")
+        self.ACTION_EXTRACT_ARCHIVE = QCoreApplication.translate("MenuPanel", "Extract Archive")
+        self.ACTION_GO_UP = QCoreApplication.translate("MenuPanel", "Go Up")
+        self.ACTION_REFRESH = QCoreApplication.translate("MenuPanel", "Refresh")
+        self.ACTION_NEW_FILE = QCoreApplication.translate("MenuPanel", "New File")
+        self.ACTION_NEW_FOLDER = QCoreApplication.translate("MenuPanel", "New Folder")
+        self.ACTION_SEARCH = QCoreApplication.translate("MenuPanel", "Search")
+        self.ACTION_COPY = QCoreApplication.translate("MenuPanel", "Copy")
+        self.ACTION_PASTE = QCoreApplication.translate("MenuPanel", "Paste")
+        self.ACTION_MOVE = QCoreApplication.translate("MenuPanel", "Move")
+        self.ACTION_RENAME = QCoreApplication.translate("MenuPanel", "Rename")
+        self.ACTION_DELETE = QCoreApplication.translate("MenuPanel", "Delete")
+        self.ACTION_SYNCHRONIZE = QCoreApplication.translate("MenuPanel", "Synchronize")
+
+        self.ERROR_NO_ACTIVE_PANEL = QCoreApplication.translate("MenuPanel", "No active panel.")
+        self.ERROR_NO_CURRENT_DIR = QCoreApplication.translate("MenuPanel", "Could not determine current directory for active panel.")
+        self.ERROR_FILE_CREATION = QCoreApplication.translate("MenuPanel", "File Creation Error")
+        self.ERROR_FOLDER_CREATION = QCoreApplication.translate("MenuPanel", "Folder Creation Error")
+
 
     def _handle_f3_key(self):
         selected_path = self._get_selected_file_path()
@@ -48,8 +82,12 @@ class ApplicationLogicHandler(QObject):
         search_text = self.main_window.search_input.text()
         if search_text:
             current_path = self.main_window.folder_browser.current_paths.get(self.main_window.folder_browser.active_panel_widget)
-            results = self.file_manager.search_files(current_path, search_text)
-            self.show_search_results(results)
+            try:
+                results, message = self.file_manager.search_files(current_path, search_text)
+                self.show_search_results(results)
+                self.main_window.status_bar.showMessage(message)
+            except (FileNotFoundError, FileManagerError) as e:
+                show_error_message(self.main_window, self.main_window.tr("Search Error"), str(e))
         else:
             self.main_window.status_bar.showMessage(self.main_window.tr("Enter text to search."))
 
@@ -130,3 +168,201 @@ class ApplicationLogicHandler(QObject):
         dialog = BookmarkDialog(self.bookmarks_manager.bookmarks, self.main_window)
         if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_bookmark:
             self.main_window.folder_browser.navigate_to_path(dialog.selected_bookmark)
+
+    def create_archive(self):
+        selected_path = self.main_window.folder_browser.current_selected_path
+        if not selected_path:
+            show_error_message(self.main_window, self.ACTION_CREATE_ARCHIVE, QCoreApplication.translate("MenuPanel", "No file/folder selected for archiving."))
+            return
+
+        archive_name, ok = QInputDialog.getText(self.main_window, self.ACTION_CREATE_ARCHIVE, QCoreApplication.translate("MenuPanel", "Archive name (without extension):"))
+        if ok and archive_name:
+            archive_path = os.path.join(os.path.dirname(selected_path), archive_name + ".zip")
+            try:
+                message = self.archive_manager.create_zip_archive(selected_path, archive_path)
+                self.main_window.status_bar.showMessage(message)
+                self.main_window.folder_browser.refresh_all_views()
+            except Exception as e:
+                show_error_message(self.main_window, self.ACTION_CREATE_ARCHIVE, str(e))
+
+    def extract_archive(self):
+        selected_path = self.main_window.folder_browser.current_selected_path
+        if not selected_path or not any(selected_path.endswith(ext) for ext in ['.zip', '.tar', '.gz', '.bz2', '.xz', '.rar']):
+            show_error_message(self.main_window, self.ACTION_EXTRACT_ARCHIVE, QCoreApplication.translate("MenuPanel", "No archive file selected or unsupported format."))
+            return
+
+        extract_path, ok = QInputDialog.getText(self.main_window, self.ACTION_EXTRACT_ARCHIVE, QCoreApplication.translate("MenuPanel", "Destination path:"), text=os.path.dirname(selected_path))
+        if ok and extract_path:
+            try:
+                message = self.archive_manager.extract_archive(selected_path, extract_path)
+                self.main_window.status_bar.showMessage(message)
+                self.main_window.folder_browser.refresh_all_views()
+            except (UnrarNotInstalledError, Exception) as e:
+                show_error_message(self.main_window, self.ACTION_EXTRACT_ARCHIVE, str(e))
+
+    def show_properties_dialog(self):
+        selected_path = self.main_window.folder_browser.current_selected_path
+        if not selected_path:
+            show_error_message(self.main_window, self.ACTION_PROPERTIES, QCoreApplication.translate("MenuPanel", "No file or folder selected."))
+            return
+        properties = get_file_properties(selected_path)
+        if properties:
+            PropertiesDialog(properties, self.main_window).exec()
+        else:
+            show_error_message(self.main_window, self.ACTION_PROPERTIES, f"Could not retrieve properties for: {selected_path}")
+
+    def synchronize_directories(self):
+        left_path = self.main_window.folder_browser.current_paths.get(self.main_window.folder_browser.left_panel_widget)
+        right_path = self.main_window.folder_browser.current_paths.get(self.main_window.folder_browser.right_panel_widget)
+        if left_path and right_path:
+            dialog = SyncDialog(self.main_window, left_path, right_path)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                options = dialog.get_options()
+                try:
+                    message = self.directory_synchronizer.synchronize(left_path, right_path, options)
+                    self.main_window.status_bar.showMessage(message)
+                    self.main_window.folder_browser.refresh_all_views()
+                except Exception as e:
+                    show_error_message(self.main_window, self.main_window.tr("Synchronization Error"), str(e))
+
+    def create_new_file(self):
+        self._create_new_item("file")
+
+    def create_new_directory(self):
+        self._create_new_item("directory")
+
+    def _create_new_item(self, item_type):
+        active_panel = self.main_window.folder_browser.active_panel_widget
+        if not active_panel:
+            show_error_message(self.main_window, self.ERROR_FILE_CREATION if item_type == "file" else self.ERROR_FOLDER_CREATION, self.ERROR_NO_ACTIVE_PANEL)
+            return
+
+        current_dir = self.main_window.folder_browser.current_paths.get(active_panel)
+        if not current_dir:
+            show_error_message(self.main_window, self.ERROR_FILE_CREATION if item_type == "file" else self.ERROR_FOLDER_CREATION, self.ERROR_NO_CURRENT_DIR)
+            return
+
+        title = self.ACTION_NEW_FILE if item_type == "file" else self.ACTION_NEW_FOLDER
+        label = QCoreApplication.translate("MenuPanel", "File name:") if item_type == "file" else QCoreApplication.translate("MenuPanel", "Folder name:")
+        name, ok = QInputDialog.getText(self.main_window, title, label)
+
+        if ok and name:
+            try:
+                if item_type == "file":
+                    message = self.file_manager.create_file(current_dir, name)
+                else:
+                    message = self.file_manager.create_directory(current_dir, name)
+                self.main_window.status_bar.showMessage(message)
+                self.main_window.folder_browser.refresh_all_views()
+            except (FileNotFoundError, FileExistsError, ValueError, FileManagerError) as e:
+                show_error_message(self.main_window, title, str(e))
+
+    def copy_selected_item(self):
+        source_paths = self.main_window.folder_browser.get_selected_paths()
+        if not source_paths:
+            show_error_message(self.main_window, self.ACTION_COPY, QCoreApplication.translate("MenuPanel", "No file/folder selected for copying."))
+            return
+
+        active_widget = self.main_window.folder_browser.active_panel_widget
+        inactive_widget = self.main_window.folder_browser.right_panel_widget if active_widget == self.main_window.folder_browser.left_panel_widget else self.main_window.folder_browser.left_panel_widget
+        destination_path = self.main_window.folder_browser.current_paths.get(inactive_widget)
+
+        if len(source_paths) == 1:
+            dialog = CopyDialog(self.main_window, source_paths[0], destination_path)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                try:
+                    message = self.file_manager.copy_item_with_options(source_paths[0], destination_path, dialog.get_options())
+                    self.main_window.status_bar.showMessage(message)
+                    self.main_window.folder_browser.refresh_all_views()
+                except (FileNotFoundError, FileExistsError, FileManagerError) as e:
+                    show_error_message(self.main_window, self.ACTION_COPY, str(e))
+        else:
+            for source_path in source_paths:
+                try:
+                    self.file_manager.copy_item_with_options(source_path, destination_path, {"overwrite": False, "preserve_timestamp": True})
+                except (FileNotFoundError, FileExistsError, FileManagerError) as e:
+                    show_error_message(self.main_window, self.ACTION_COPY, f"Error copying {os.path.basename(source_path)}: {str(e)}")
+                    return # Stop on first error
+            self.main_window.status_bar.showMessage(self.main_window.tr(f"Copied {len(source_paths)} items to '{destination_path}'"))
+            self.main_window.folder_browser.refresh_all_views()
+
+    def move_selected_item(self):
+        source_path = self.main_window.folder_browser.current_selected_path
+        if not source_path:
+            show_error_message(self.main_window, self.ACTION_MOVE, QCoreApplication.translate("MenuPanel", "No file/folder selected for moving."))
+            return
+
+        active_widget = self.main_window.folder_browser.active_panel_widget
+        inactive_widget = self.main_window.folder_browser.right_panel_widget if active_widget == self.main_window.folder_browser.left_panel_widget else self.main_window.folder_browser.left_panel_widget
+        destination_path = self.main_window.folder_browser.current_paths.get(inactive_widget)
+
+        dialog = MoveDialog(self.main_window, source_path, destination_path)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            try:
+                message = self.file_manager.move_item_with_options(source_path, destination_path, dialog.get_options())
+                self.main_window.status_bar.showMessage(message)
+                self.main_window.folder_browser.refresh_all_views()
+            except (FileNotFoundError, FileExistsError, IsADirectoryError, FileManagerError) as e:
+                show_error_message(self.main_window, self.ACTION_MOVE, str(e))
+
+    def paste_item_to_current_dir(self):
+        active_widget = self.main_window.folder_browser.active_panel_widget
+        if not active_widget:
+            show_error_message(self.main_window, self.ACTION_PASTE, self.ERROR_NO_ACTIVE_PANEL)
+            return
+        current_dir = self.main_window.folder_browser.current_paths.get(active_widget)
+        if not current_dir:
+            show_error_message(self.main_window, self.ACTION_PASTE, self.ERROR_NO_CURRENT_DIR)
+            return
+        try:
+            message = self.file_manager.paste_item(current_dir)
+            self.main_window.status_bar.showMessage(message)
+            self.main_window.folder_browser.refresh_all_views()
+        except (ValueError, FileNotFoundError, FileManagerError) as e:
+            show_error_message(self.main_window, self.ACTION_PASTE, str(e))
+
+    def delete_selected_item(self):
+        selected_paths = self.main_window.folder_browser.get_selected_paths()
+        if not selected_paths:
+            show_error_message(self.main_window, self.ACTION_DELETE, QCoreApplication.translate("MenuPanel", "No file/folder selected for deletion."))
+            return
+
+        dialog = DeleteDialog(self.main_window, selected_paths)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            for path in selected_paths:
+                try:
+                    message = self.file_manager.delete_item(path)
+                    self.main_window.status_bar.showMessage(message)
+                except (FileNotFoundError, FileManagerError) as e:
+                    show_error_message(self.main_window, self.ACTION_DELETE, f"Error deleting {os.path.basename(path)}: {str(e)}")
+                    return # Stop on first error
+            self.main_window.folder_browser.refresh_all_views()
+
+    def rename_selected_item(self):
+        selected_path = self.main_window.folder_browser.current_selected_path
+        if not selected_path:
+            show_error_message(self.main_window, self.ACTION_RENAME, QCoreApplication.translate("MenuPanel", "No file/folder selected for renaming."))
+            return
+
+        old_name = os.path.basename(selected_path)
+        new_name, ok = QInputDialog.getText(self.main_window, self.ACTION_RENAME, QCoreApplication.translate("MenuPanel", "New name:"), text=old_name)
+        if ok and new_name:
+            try:
+                message = self.file_manager.rename_item(selected_path, new_name)
+                self.main_window.status_bar.showMessage(message)
+                self.main_window.folder_browser.refresh_all_views()
+            except (FileNotFoundError, FileExistsError, ValueError, FileManagerError) as e:
+                show_error_message(self.main_window, self.ACTION_RENAME, str(e))
+        elif not new_name:
+            show_error_message(self.main_window, self.ACTION_RENAME, QCoreApplication.translate("MenuPanel", "New name cannot be empty."))
+
+    def apply_general_settings(self, new_view_mode, new_show_dot_files):
+        # new_view_mode is now None, as it's no longer set in SettingsDialog
+        if new_show_dot_files is not None: # Check if it's actually passed
+            current_show_dot_files = self.main_window.settings_manager.get_setting("showDotFiles")
+            if new_show_dot_files != current_show_dot_files:
+                self.main_window.settings_manager.set_setting("showDotFiles", new_show_dot_files)
+                self.main_window.folder_browser.set_show_dot_files(new_show_dot_files)
+
+    def apply_shortcuts_settings(self, new_shortcuts):
+        self.main_window.shortcuts_manager.save_shortcuts(new_shortcuts)
