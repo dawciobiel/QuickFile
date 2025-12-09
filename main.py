@@ -13,7 +13,7 @@ from __version__ import __version__
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import QTranslator, QLocale
 
-from core.main_window import MainWindow
+from ui.main_window import MainWindow
 from utils.dialogs import show_error_message
 from utils.logger import setup_logging
 
@@ -86,6 +86,6 @@ if __name__ == "__main__":
         logging.warning("No translator installed. Application will run in default (English) language.")
 
     window = MainWindow()
-    app.installEventFilter(window)
+    app.installEventFilter(window.keyboard_event_handler) # Install the KeyboardEventHandler as the event filter
     window.show()
     app.exec()
