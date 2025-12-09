@@ -2,12 +2,14 @@ import logging
 import os
 import shutil
 import filecmp
-from utils.dialogs import show_error_message
 
+class DirectorySynchronizerError(Exception):
+    """Custom exception for DirectorySynchronizer errors."""
+    pass
 
 class DirectorySynchronizer:
-    def __init__(self, main_window):
-        self.main_window = main_window
+    def __init__(self):
+        pass
 
     def synchronize(self, dir1, dir2, options):
         """
@@ -18,11 +20,10 @@ class DirectorySynchronizer:
                 self._synchronize_two_way(dir1, dir2, options)
             else:
                 self._synchronize_one_way(dir1, dir2, options)
-            self.main_window.status_bar.showMessage("Synchronization completed successfully.")
-            self.main_window.folder_browser.refresh_all_views()
+            return "Synchronization completed successfully."
         except Exception as e:
             logging.exception(f"Error during synchronization between {dir1} and {dir2}: {e}")
-            show_error_message(self.main_window, "Synchronization Error", f"Error during synchronization: {e}")
+            raise DirectorySynchronizerError(f"Error during synchronization: {e}")
 
     def _synchronize_one_way(self, source, dest, options):
         """One-way synchronization (source -> dest)."""

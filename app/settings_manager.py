@@ -1,6 +1,8 @@
 import json
 import os
 import shutil
+from PyQt6.QtCore import QSettings # Dodaj ten import
+from PyQt6.QtWidgets import QMainWindow # Dodaj ten import
 
 class SettingsManager:
     def __init__(self):
@@ -20,9 +22,9 @@ class SettingsManager:
             "activePanel": "left",
             "showDotFiles": True
         }
-        self.settings = self.load_settings()
+        self.settings = self.load_settings_from_file() # Zmieniono nazwę, aby uniknąć konfliktu
 
-    def load_settings(self):
+    def load_settings_from_file(self):
         if os.path.exists(self.settings_file):
             try:
                 with open(self.settings_file, 'r') as f:
@@ -35,7 +37,7 @@ class SettingsManager:
                 return self.default_settings.copy()
         return self.default_settings.copy()
 
-    def save_settings(self):
+    def save_settings_to_file(self):
         try:
             with open(self.settings_file, 'w') as f:
                 json.dump(self.settings, f, indent=4)
@@ -47,4 +49,16 @@ class SettingsManager:
 
     def set_setting(self, key, value):
         self.settings[key] = value
-        self.save_settings()
+        self.save_settings_to_file()
+
+    def load_window_settings(self, window: QMainWindow):
+        q_settings = QSettings("QuickFile", "QuickFile")
+        geometry = q_settings.value("geometry", window.saveGeometry())
+        window.restoreGeometry(geometry)
+        window_state = q_settings.value("windowState", window.saveState())
+        window.restoreState(window_state)
+
+    def save_window_settings(self, window: QMainWindow):
+        q_settings = QSettings("QuickFile", "QuickFile")
+        q_settings.setValue("geometry", window.saveGeometry())
+        q_settings.setValue("windowState", window.saveState())
