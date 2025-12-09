@@ -123,6 +123,9 @@ class FolderBrowser(QWidget):
             file_view.setModel(model)
             file_view.setRootIndex(model.index(os.path.expanduser("~")))
 
+        # Connect the clicked signal to perform 'Enter' action on directories
+        file_view.clicked.connect(self.on_item_clicked)
+
         # Connect the currentChanged signal to update_current_selection
         file_view.selectionModel().currentChanged.connect(
             lambda current, previous, view=file_view: self.update_current_selection(current, previous, view)
@@ -220,6 +223,12 @@ class FolderBrowser(QWidget):
                 self.navigate_to_path(new_path, panel=view, select_entry_path=select_path)
         else:
             self.file_selected.emit(model.filePath(index))
+
+    def on_item_clicked(self, index):
+        """Handle single-click on an item. If it's a directory, perform the double-click action."""
+        view = self.sender()
+        if view and view.model().isDir(index):
+            self.on_double_clicked(index, view)
 
     def update_current_selection(self, current, previous, view):
         if current.isValid():
