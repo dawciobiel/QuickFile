@@ -15,14 +15,7 @@ class PanelWidget(QWidget):
 
         self.path_edit = QLineEdit()
         self.path_edit.setReadOnly(False)
-        self.path_edit.setStyleSheet("""
-            QLineEdit {
-                background-color: #333;
-                color: #EEE;
-                border: 1px solid #555;
-                padding: 2px;
-            }
-        """)
+        # Usunięto domyślne style, będą zarządzane przez FolderBrowser
         self.layout.addWidget(self.path_edit)
 
         self.file_view = None  # Placeholder for QTableView or QTreeView
@@ -46,6 +39,10 @@ class PanelWidget(QWidget):
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
+
+    # Styles for path_edit
+    ACTIVE_PATH_STYLE = "QLineEdit { background-color: #336699; color: #FFFFFF; border: 1px solid #555; padding: 2px; }" # Ciemniejszy niebieski
+    INACTIVE_PATH_STYLE = "QLineEdit { background-color: #555555; color: #EEEEEE; border: 1px solid #555; padding: 2px; }" # Ciemniejszy szary
 
     def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, parent=None):
         super().__init__(parent)
@@ -75,6 +72,9 @@ class FolderBrowser(QWidget):
 
         self.left_panel_widget.get_file_view().installEventFilter(self)
         self.right_panel_widget.get_file_view().installEventFilter(self)
+
+        # Ustawienie początkowego aktywnego panelu i jego stylu
+        self.set_active_panel(self.left_panel_widget)
 
     @property
     def left_panel(self):
@@ -284,14 +284,13 @@ class FolderBrowser(QWidget):
         panel_widget.get_path_edit().setText(current_path)
 
     def set_active_panel(self, panel_widget):
-        active_stylesheet = "QWidget { border: 2px solid blue; }"
-        inactive_stylesheet = "QWidget { border: none; }"
-
+        # Apply inactive style to previously active panel's path_edit
         if self.active_panel_widget and self.active_panel_widget != panel_widget:
-            self.active_panel_widget.setStyleSheet(inactive_stylesheet)
+            self.active_panel_widget.get_path_edit().setStyleSheet(self.INACTIVE_PATH_STYLE)
 
+        # Set new active panel and apply active style to its path_edit
         self.active_panel_widget = panel_widget
-        self.active_panel_widget.setStyleSheet(active_stylesheet)
+        self.active_panel_widget.get_path_edit().setStyleSheet(self.ACTIVE_PATH_STYLE)
         
         current_path = self.current_paths.get(self.active_panel_widget)
         if current_path:
