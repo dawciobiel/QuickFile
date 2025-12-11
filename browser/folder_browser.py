@@ -121,11 +121,11 @@ class FolderBrowser(QWidget):
             file_view = QTableView()
             model = FlatFileSystemModel(self, show_dot_files=self._show_dot_files)
             file_view.setModel(model)
-            file_view.setColumnHidden(3, True)
+            file_view.setColumnHidden(4, True)
             file_view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
             file_view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         else:  # "tree"
-            model = TranslatedFileSystemModel() # Use the new subclass
+            model = TranslatedFileSystemModel()
             model.setRootPath(os.path.expanduser("~"))
             self._apply_dot_file_filter(model)
             
@@ -178,10 +178,14 @@ class FolderBrowser(QWidget):
         setting_key = "table_column_widths" if view_mode == "flat" else "tree_column_widths"
         saved_widths = self.settings_manager.get_setting(setting_key)
 
-        if saved_widths:
+        # If the number of saved widths doesn't match the current number of columns,
+        # ignore the saved widths and resize to contents.
+        if saved_widths and len(saved_widths) == header.count():
             for i, width in enumerate(saved_widths):
-                if i < header.count():
-                    header.resizeSection(i, width)
+                header.resizeSection(i, width)
+        else:
+            if isinstance(file_view, QTableView):
+                file_view.resizeColumnsToContents()
 
         header.sectionResized.connect(
             lambda section, old_size, new_size, view=file_view: self._on_header_section_resized(view)
