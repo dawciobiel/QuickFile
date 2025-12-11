@@ -37,3 +37,6 @@ class BookmarksManager:
         if path in self.bookmarks:
             self.bookmarks.remove(path)
             self.save_bookmarks()
+
+    def get_bookmarks(self):
+        return self.bookmarks
