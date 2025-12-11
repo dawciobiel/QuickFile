@@ -19,9 +19,16 @@ class FlatFileSystemModel(QAbstractTableModel):
 
     def set_current_path(self, path):
         if self._current_path == path:
+            self.refresh()
             return
         self.beginResetModel()
         self._current_path = path
+        self._populate_items()
+        self.endResetModel()
+
+    def refresh(self):
+        """Explicitly refreshes the model's data."""
+        self.beginResetModel()
         self._populate_items()
         self.endResetModel()
 

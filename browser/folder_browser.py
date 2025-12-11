@@ -297,9 +297,14 @@ class FolderBrowser(QWidget):
         model = panel.model()
         if isinstance(model, FlatFileSystemModel):
             model.set_show_dot_files(self._show_dot_files)
-            model.layoutChanged.emit()
+            model.refresh()
         else:
             self._apply_dot_file_filter(model)
+            # For QFileSystemModel, we can't just refresh.
+            # We need to reset the root path to force a reload of the directory.
+            # This is a bit of a hack, but it's the most reliable way.
+            model.setRootPath("")
+            model.setRootPath(os.path.expanduser("~"))
             index = model.index(current_path)
             if index.isValid():
                 panel.setRootIndex(index)
@@ -461,7 +466,6 @@ class FolderBrowser(QWidget):
         model = panel.model()
         if isinstance(model, FlatFileSystemModel):
             model.set_current_path(path)
-            model.layoutChanged.emit()
         else:
             index = model.index(path)
             if index.isValid():

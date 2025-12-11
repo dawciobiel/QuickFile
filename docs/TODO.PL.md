@@ -2,7 +2,7 @@
 
 # Important notes
 
-- Ważne: Każdą funkcjonalność rozwiązywać na własnym dla niej branch-u.
+- **Important**: Każdą funkcjonalność rozwiązywać na własnym dla niej branch-u.
 
 ## TODO List
 
