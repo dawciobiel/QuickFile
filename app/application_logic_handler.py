@@ -70,10 +70,12 @@ class ApplicationLogicHandler(QObject):
 
     def add_bookmark(self):
         """Adds the current directory of the active panel to bookmarks."""
-        if self.main_window.folder_browser.active_panel:
-            current_path = self.main_window.folder_browser.active_panel.model().filePath(self.main_window.folder_browser.active_panel.model().index(self.main_window.folder_browser.active_panel.model().rootPath()))
-            self.bookmarks_manager.add_bookmark(current_path)
-            self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", f"Bookmark added: {current_path}"))
+        active_panel_widget = self.main_window.folder_browser.active_panel_widget
+        if active_panel_widget:
+            current_path = self.main_window.folder_browser.current_paths.get(active_panel_widget)
+            if current_path:
+                self.bookmarks_manager.add_bookmark(current_path)
+                self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", f"Bookmark added: {current_path}"))
 
     def update_status_bar_path(self, path):
         self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", "Current directory:") + f" {path}")
@@ -165,7 +167,8 @@ class ApplicationLogicHandler(QObject):
 
     def open_bookmark_dialog(self):
         """Opens the bookmarks dialog."""
-        dialog = BookmarkDialog(self.bookmarks_manager.bookmarks, self.main_window)
+        bookmarks = self.bookmarks_manager.get_bookmarks()
+        dialog = BookmarkDialog(bookmarks, self.main_window)
         if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_bookmark:
             self.main_window.folder_browser.navigate_to_path(dialog.selected_bookmark)
 
@@ -340,7 +343,7 @@ class ApplicationLogicHandler(QObject):
                 try:
                     message = self.file_manager.delete_item(path)
                     self.main_window.status_bar.showMessage(message)
-                except (FileNotFoundError, FileManagerError) as e:
+                except (FileNotFound, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_DELETE, f"Error deleting {os.path.basename(path)}: {str(e)}")
                     all_successful = False
                     break # Stop on first error

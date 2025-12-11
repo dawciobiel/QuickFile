@@ -14,9 +14,9 @@
 10. **Translation: About Dialog:** The "Version" label in the "About" dialog was not translated. Fixed.
 11. **Wrong config file path:** The shortcuts file `.quickfile_shortcuts.json` was correctly moved to `~/.config/QuickFile/`. (Moved to fixed as it's a completed task).
 12. **Invalid Index value:** After using the Home or End keys, the cursor position was not correctly updated, causing subsequent arrow key presses to fail. This was resolved by explicitly setting the current index in the selection model.
+13. **Bug: Bookmarks Button Crash:** The application crashed when the "Bookmarks" button was pressed. This was resolved by adding a `get_bookmarks()` method to the `BookmarksManager` and calling it from the `ApplicationLogicHandler`.
 
 **Unresolved Bugs:**
 
 1. **Incorrect '..' Path Navigation:** When navigating to the parent directory (using '..') after changing the path in the path control, the displayed path is one level deeper than expected (e.g., `/home/user/tmp` instead of `/home/user`). This occurs because the `_select_on_load` mechanism incorrectly prioritizes the '..' entry, leading to an unintended deeper dive into the directory structure rather than selecting the intended previous directory.
 2. **Incorrect Selection after 'Go Up':** In "flat" view mode, after going up a directory, the cursor automatically selects the first item on the list, instead of the directory that was just exited.
-3. **Bug: Bookmarks Button Crash:** The application crashes when the "Bookmarks" button is pressed.
