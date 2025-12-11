@@ -59,24 +59,24 @@ class ApplicationLogicHandler(QObject):
         if selected_path:
             self.open_file_externally(selected_path)
         else:
-            self.main_window.status_bar.showMessage(self.main_window.tr("No file selected for preview."))
+            self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", "No file selected for preview."))
 
     def _handle_f4_key(self):
         selected_path = self._get_selected_file_path()
         if selected_path:
             self.open_file_externally(selected_path)  # Currently same as F3
         else:
-            self.main_window.status_bar.showMessage(self.main_window.tr("No file selected for editing."))
+            self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", "No file selected for editing."))
 
     def add_bookmark(self):
         """Adds the current directory of the active panel to bookmarks."""
         if self.main_window.folder_browser.active_panel:
             current_path = self.main_window.folder_browser.active_panel.model().filePath(self.main_window.folder_browser.active_panel.model().index(self.main_window.folder_browser.active_panel.model().rootPath()))
             self.bookmarks_manager.add_bookmark(current_path)
-            self.main_window.status_bar.showMessage(self.main_window.tr(f"Bookmark added: {current_path}"))
+            self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", f"Bookmark added: {current_path}"))
 
     def update_status_bar_path(self, path):
-        self.main_window.status_bar.showMessage(self.main_window.tr("Current directory:") + f" {path}")
+        self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", "Current directory:") + f" {path}")
 
     def start_file_search(self):
         search_text = self.main_window.search_input.text()
@@ -87,9 +87,9 @@ class ApplicationLogicHandler(QObject):
                 self.show_search_results(results)
                 self.main_window.status_bar.showMessage(message)
             except (FileNotFoundError, FileManagerError) as e:
-                show_error_message(self.main_window, self.main_window.tr("Search Error"), str(e))
+                show_error_message(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "Search Error"), str(e))
         else:
-            self.main_window.status_bar.showMessage(self.main_window.tr("Enter text to search."))
+            self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", "Enter text to search."))
 
     def show_search_results(self, results):
         """Displays search results in a dialog window."""
@@ -99,7 +99,7 @@ class ApplicationLogicHandler(QObject):
     def open_file_externally(self, file_path):
         """Opens the file using the system's default application."""
         if not os.path.exists(file_path):
-            show_error_message(self.main_window, self.main_window.tr("File Opening Error"), self.main_window.tr(f"File '{file_path}' does not exist."))
+            show_error_message(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "File Opening Error"), QCoreApplication.translate("ApplicationLogicHandler", f"File '{file_path}' does not exist."))
             return
 
         try:
@@ -109,10 +109,10 @@ class ApplicationLogicHandler(QObject):
                 subprocess.call(('open', file_path))
             else:  # Linux
                 subprocess.call(('xdg-open', file_path))
-            self.main_window.status_bar.showMessage(self.main_window.tr(f"File opened: {file_path}"))
+            self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", f"File opened: {file_path}"))
         except Exception as e:
             logging.exception(f"Error opening file externally '{file_path}': {e}")
-            show_error_message(self.main_window, self.main_window.tr("File Opening Error"), self.main_window.tr(f"Could not open file '{file_path}': {e}"))
+            show_error_message(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "File Opening Error"), QCoreApplication.translate("ApplicationLogicHandler", f"Could not open file '{file_path}': {e}"))
 
     def _get_selected_file_path(self):
         """Returns the path to the selected file, if it is a file."""
@@ -130,7 +130,7 @@ class ApplicationLogicHandler(QObject):
 
         if not left_selected_path or not right_selected_path:
             logging.warning("Comparison Error: User tried to compare without selecting items in both panels.")
-            QMessageBox.warning(self.main_window, self.main_window.tr("Comparison Error"), self.main_window.tr("Please select items in both panels to compare."))
+            QMessageBox.warning(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "Comparison Error"), QCoreApplication.translate("ApplicationLogicHandler", "Please select items in both panels to compare."))
             return
 
         is_left_dir = os.path.isdir(left_selected_path)
@@ -144,14 +144,14 @@ class ApplicationLogicHandler(QObject):
             self._compare_files(left_selected_path, right_selected_path)
         else:
             logging.warning("Comparison Error: User tried to compare a file with a directory.")
-            QMessageBox.warning(self.main_window, self.main_window.tr("Comparison Error"), self.main_window.tr("Cannot compare a file with a directory. Please select two files or two directories."))
+            QMessageBox.warning(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "Comparison Error"), QCoreApplication.translate("ApplicationLogicHandler", "Cannot compare a file with a directory. Please select two files or two directories."))
 
     def _compare_files(self, file1_path, file2_path):
         are_identical = self.file_comparator.compare_files(file1_path, file2_path)
         if are_identical:
-            QMessageBox.information(self.main_window, self.main_window.tr("File Comparison Result"), self.main_window.tr(f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are identical."))
+            QMessageBox.information(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "File Comparison Result"), QCoreApplication.translate("ApplicationLogicHandler", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are identical."))
         else:
-            QMessageBox.information(self.main_window, self.main_window.tr("File Comparison Result"), self.main_window.tr(f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are different."))
+            QMessageBox.information(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "File Comparison Result"), QCoreApplication.translate("ApplicationLogicHandler", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are different."))
 
     def _compare_directories(self, dir1_path, dir2_path):
         dircmp_obj = self.file_comparator.compare_directories(dir1_path, dir2_path)
@@ -161,7 +161,7 @@ class ApplicationLogicHandler(QObject):
             dialog.exec()
         else:
             logging.error("Directory Comparison Error: Could not compare directories. Ensure both paths are valid directories.")
-            QMessageBox.critical(self.main_window, self.main_window.tr("Directory Comparison Error"), self.main_window.tr("Could not compare directories. Ensure both paths are valid directories."))
+            QMessageBox.critical(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "Directory Comparison Error"), QCoreApplication.translate("ApplicationLogicHandler", "Could not compare directories. Ensure both paths are valid directories."))
 
     def open_bookmark_dialog(self):
         """Opens the bookmarks dialog."""
@@ -223,7 +223,7 @@ class ApplicationLogicHandler(QObject):
                     self.main_window.status_bar.showMessage(message)
                     self.main_window.folder_browser.refresh_all_views()
                 except Exception as e:
-                    show_error_message(self.main_window, self.main_window.tr("Synchronization Error"), str(e))
+                    show_error_message(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "Synchronization Error"), str(e))
 
     def create_new_file(self):
         self._create_new_item("file")
@@ -283,7 +283,7 @@ class ApplicationLogicHandler(QObject):
                 except (FileNotFoundError, FileExistsError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_COPY, f"Error copying {os.path.basename(source_path)}: {str(e)}")
                     return # Stop on first error
-            self.main_window.status_bar.showMessage(self.main_window.tr(f"Copied {len(source_paths)} items to '{destination_path}'"))
+            self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", f"Copied {len(source_paths)} items to '{destination_path}'"))
             self.main_window.folder_browser.refresh_all_views()
 
     def move_selected_item(self):

@@ -1,7 +1,7 @@
 import os
 import subprocess
 import logging
-from PyQt6.QtCore import Qt, QSettings, QEvent, QObject
+from PyQt6.QtCore import Qt, QSettings, QEvent, QObject, QCoreApplication
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLineEdit, QToolButton, QDialog, QMessageBox
 from PyQt6.QtGui import QFileSystemModel
 from bookmarks.bookmarks_manager import BookmarksManager
@@ -42,26 +42,26 @@ class UIManager(QObject):
         )
 
         # Inicjalizacja paska narzędzi
-        self.main_window.toolbar = self.main_window.addToolBar(self.main_window.tr("Main Tools"))
+        self.main_window.toolbar = self.main_window.addToolBar(QCoreApplication.translate("UIManager", "Main Tools"))
         self.main_window.toolbar.setObjectName("mainToolbar")
         self.main_window.toolbar.setMovable(False)
 
         # Pole wyszukiwania
         self.main_window.search_input = QLineEdit(self.main_window)
-        self.main_window.search_input.setPlaceholderText(self.main_window.tr("Search files..."))
+        self.main_window.search_input.setPlaceholderText(QCoreApplication.translate("UIManager", "Search files..."))
         self.main_window.toolbar.addWidget(self.main_window.search_input)
 
         # Przycisk do zakładek
         self.main_window.add_bookmark_button = QToolButton(self.main_window)
         self.main_window.add_bookmark_button.setText("⭐")
-        self.main_window.add_bookmark_button.setToolTip(self.main_window.tr("Add current directory to bookmarks"))
+        self.main_window.add_bookmark_button.setToolTip(QCoreApplication.translate("UIManager", "Add current directory to bookmarks"))
         self.main_window.toolbar.addWidget(self.main_window.add_bookmark_button)
 
         # Inicjalizacja paska menu i paska stanu
         self.main_window.menu_panel = MenuPanel(self.main_window)
 
         self.main_window.status_bar = self.main_window.statusBar()
-        self.main_window.status_bar.showMessage(self.main_window.tr("Ready"))
+        self.main_window.status_bar.showMessage(QCoreApplication.translate("UIManager", "Ready"))
 
         # Panel klawiszy funkcyjnych
         self.main_window.function_key_panel = FunctionKeyPanel(self.main_window)
