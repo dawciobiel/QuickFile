@@ -1,7 +1,8 @@
 import logging
 import os
-from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QDir, QStringListModel, QCoreApplication
-from PyQt6.QtWidgets import QWidget, QTableView, QVBoxLayout, QAbstractItemView, QSplitter, QTreeView, QLineEdit, QCompleter
+from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QDir, QStringListModel, QCoreApplication, QStorageInfo
+from PyQt6.QtWidgets import (QWidget, QTableView, QVBoxLayout, QHBoxLayout, QAbstractItemView, 
+                             QSplitter, QTreeView, QLineEdit, QCompleter, QComboBox, QSizePolicy)
 from PyQt6.QtGui import QFileSystemModel
 from browser.flat_file_system_model import FlatFileSystemModel
 from utils.dialogs import show_error_message
@@ -22,10 +23,21 @@ class TranslatedFileSystemModel(QFileSystemModel):
         return super().headerData(section, orientation, role)
 
 class PanelWidget(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, settings_manager: SettingsManager = None, parent=None):
         super().__init__(parent)
+        self.settings_manager = settings_manager
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(2)
+
+        drive_combo_max_width = 140 # Domyślna wartość
+        if self.settings_manager:
+            drive_combo_max_width = self.settings_manager.get_setting("drive_combo_max_width", 140)
+
+        self.drive_combo = QComboBox()
+        self.drive_combo.setMaximumWidth(drive_combo_max_width)
+        self.drive_combo.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.layout.addWidget(self.drive_combo)
 
         self.path_edit = QLineEdit()
         self.path_edit.setReadOnly(False)
@@ -47,6 +59,9 @@ class PanelWidget(QWidget):
 
     def get_path_edit(self):
         return self.path_edit
+
+    def get_drive_combo(self):
+        return self.drive_combo
 
 
 class FolderBrowser(QWidget):
@@ -110,10 +125,11 @@ class FolderBrowser(QWidget):
         }
 
     def create_panel_widget(self, view_mode):
-        panel_widget = PanelWidget(self)
+        panel_widget = PanelWidget(settings_manager=self.settings_manager, parent=self)
         file_view, model = self._create_file_view_and_model(view_mode)
         panel_widget.set_file_view(file_view)
         self._setup_path_completion(panel_widget)
+        self._setup_drive_selector(panel_widget)
         return panel_widget
 
     def _create_file_view_and_model(self, view_mode):
@@ -156,6 +172,25 @@ class FolderBrowser(QWidget):
         path_edit.textChanged.connect(lambda text, pw=panel_widget: self._update_path_completions(text, pw))
         path_edit.returnPressed.connect(lambda pw=panel_widget: self._navigate_from_path_edit(pw))
 
+    def _setup_drive_selector(self, panel_widget):
+        drive_combo = panel_widget.get_drive_combo()
+        volumes = QStorageInfo.mountedVolumes()
+        for volume in volumes:
+            if volume.isValid() and volume.isReady():
+                display_name = volume.displayName()
+                # Corrected: Decode QByteArray to a proper UTF-8 string
+                device = volume.device().data().decode('utf-8')
+                label = f"{display_name} [{device}]" if display_name else f"Volume [{device}]"
+                drive_combo.addItem(label, userData=volume.rootPath())
+
+        drive_combo.activated.connect(lambda index, pw=panel_widget: self._on_drive_selected(index, pw))
+
+    def _on_drive_selected(self, index, panel_widget):
+        drive_combo = panel_widget.get_drive_combo()
+        path = drive_combo.itemData(index)
+        if path and os.path.isdir(path):
+            self.navigate_to_path(path, panel=panel_widget.get_file_view())
+
     def _setup_panel(self, panel_widget, path):
         file_view = panel_widget.get_file_view()
         model = file_view.model()
@@ -166,6 +201,7 @@ class FolderBrowser(QWidget):
             file_view.setRootIndex(model.index(path))
 
         panel_widget.get_path_edit().setText(path)
+        self._update_drive_combo_for_path(panel_widget, path)
 
     def _apply_dot_file_filter(self, model):
         if self._show_dot_files:
@@ -173,13 +209,26 @@ class FolderBrowser(QWidget):
         else:
             model.setFilter(QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot)
 
+    def _update_drive_combo_for_path(self, panel_widget, path):
+        drive_combo = panel_widget.get_drive_combo()
+        best_match = -1
+        best_len = -1
+        for i in range(drive_combo.count()):
+            drive_path = drive_combo.itemData(i)
+            if path.startswith(drive_path) and len(drive_path) > best_len:
+                best_len = len(drive_path)
+                best_match = i
+        
+        if best_match != -1 and drive_combo.currentIndex() != best_match:
+            drive_combo.blockSignals(True)
+            drive_combo.setCurrentIndex(best_match)
+            drive_combo.blockSignals(False)
+
     def _configure_view_headers(self, file_view, view_mode):
         header = file_view.horizontalHeader() if isinstance(file_view, QTableView) else file_view.header()
         setting_key = "table_column_widths" if view_mode == "flat" else "tree_column_widths"
         saved_widths = self.settings_manager.get_setting(setting_key)
 
-        # If the number of saved widths doesn't match the current number of columns,
-        # ignore the saved widths and resize to contents.
         if saved_widths and len(saved_widths) == header.count():
             for i, width in enumerate(saved_widths):
                 header.resizeSection(i, width)
@@ -302,9 +351,6 @@ class FolderBrowser(QWidget):
             model.refresh()
         else:
             self._apply_dot_file_filter(model)
-            # For QFileSystemModel, we can't just refresh.
-            # We need to reset the root path to force a reload of the directory.
-            # This is a bit of a hack, but it's the most reliable way.
             model.setRootPath("")
             model.setRootPath(os.path.expanduser("~"))
             index = model.index(current_path)
@@ -457,13 +503,19 @@ class FolderBrowser(QWidget):
             panel = self.active_panel_widget.get_file_view()
         
         panel_widget = panel.parent()
+        
+        previous_path = self.current_paths.get(panel_widget, path)
+
         if not os.path.isdir(path):
             show_error_message(self, "Navigation Error", f"Path '{path}' is not a valid directory.")
+            panel_widget.get_path_edit().setText(previous_path)
             return
 
         panel_widget.get_path_edit().setText(path)
         self.current_paths[panel_widget] = path
         self._select_on_load = os.path.basename(select_entry_path) if select_entry_path else ".."
+
+        self._update_drive_combo_for_path(panel_widget, path)
 
         model = panel.model()
         if isinstance(model, FlatFileSystemModel):
@@ -474,6 +526,8 @@ class FolderBrowser(QWidget):
                 panel.setRootIndex(index)
             else:
                 show_error_message(self, "Navigation Error", f"Could not set root to '{path}'.")
+                panel_widget.get_path_edit().setText(previous_path)
+                self.current_paths[panel_widget] = previous_path
                 return
         
         self.current_directory_changed.emit(path)

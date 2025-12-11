@@ -4,11 +4,15 @@
 
 - **Important**: Każdą funkcjonalność rozwiązywać na własnym dla niej branch-u.
 
-## TODO List
-
-- **Refactoring:** Zawartość okna "About" powinna być czytana z pliku. Obecnie treść jest wpisana na sztywno w kodzie aplikacji i dodatkowo tłumaczona za pomocą wersji językowych. Zastanowić się jak to rozwiązać, bo treść tego okna powinna być tłumaczona na różne języki. Jednak jest to tylko tłumaczenie, a nie zawartość okna, jeżeli chodzi o np. odpowiednie sformatowanie i ułożenie wyświetlanego tekstu. Trzeba to przemyśleć. Być może użyć dodatkowo Qt Designer'a.
+## Zaimplementowane
 
 - **New Feature:** Dodać button jako rozwijalną listę, z której można wybrać napęd i ewentualne zamontowane urządzenia. Ta rozwijalna lista powinna znajdować się nad panelem do przeglądania plików.
+
+## TODO List
+
+- **New Feature:** Manager-a do montowania napędów (np. USB, DVD, dysk itp.). Przemyśleć to wraz z opcją do zapamiętywania ścieżek do ulubionych napędów. 
+
+- **Refactoring:** Zawartość okna "About" powinna być czytana z pliku. Obecnie treść jest wpisana na sztywno w kodzie aplikacji i dodatkowo tłumaczona za pomocą wersji językowych. Zastanowić się jak to rozwiązać, bo treść tego okna powinna być tłumaczona na różne języki. Jednak jest to tylko tłumaczenie, a nie zawartość okna, jeżeli chodzi o np. odpowiednie sformatowanie i ułożenie wyświetlanego tekstu. Trzeba to przemyśleć. Być może użyć dodatkowo Qt Designer'a.
 
 - **New Feature:** Dodać przycisk z rozwijalną listą, który wyświetli ścieżki z listy katalogów dodanych do "Ulubionych".
 
