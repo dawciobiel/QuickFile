@@ -1,11 +1,25 @@
 import logging
 import os
-from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QDir, QStringListModel
+from PyQt6.QtCore import Qt, QModelIndex, pyqtSignal, QEvent, QItemSelectionModel, QDir, QStringListModel, QCoreApplication
 from PyQt6.QtWidgets import QWidget, QTableView, QVBoxLayout, QAbstractItemView, QSplitter, QTreeView, QLineEdit, QCompleter
 from PyQt6.QtGui import QFileSystemModel
 from browser.flat_file_system_model import FlatFileSystemModel
 from utils.dialogs import show_error_message
-from app.settings_manager import SettingsManager # Import SettingsManager
+from app.settings_manager import SettingsManager
+
+# --- Custom File System Model for Tree View Translations ---
+class TranslatedFileSystemModel(QFileSystemModel):
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
+            if section == 0:
+                return QCoreApplication.translate("TranslatedFileSystemModel", "Name")
+            elif section == 1:
+                return QCoreApplication.translate("TranslatedFileSystemModel", "Size")
+            elif section == 2:
+                return QCoreApplication.translate("TranslatedFileSystemModel", "Type")
+            elif section == 3:
+                return QCoreApplication.translate("TranslatedFileSystemModel", "Date Modified")
+        return super().headerData(section, orientation, role)
 
 class PanelWidget(QWidget):
     def __init__(self, parent=None):
@@ -15,10 +29,9 @@ class PanelWidget(QWidget):
 
         self.path_edit = QLineEdit()
         self.path_edit.setReadOnly(False)
-        # Usunięto domyślne style, będą zarządzane przez FolderBrowser
         self.layout.addWidget(self.path_edit)
 
-        self.file_view = None  # Placeholder for QTableView or QTreeView
+        self.file_view = None
         self.completer = None
         self.completer_model = None
 
@@ -40,16 +53,14 @@ class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
-    # Styles for path_edit
-    ACTIVE_PATH_STYLE = "QLineEdit { background-color: #336699; color: #FFFFFF; border: 1px solid #555; padding: 2px; }" # Ciemniejszy niebieski
-    INACTIVE_PATH_STYLE = "QLineEdit { background-color: #555555; color: #EEEEEE; border: 1px solid #555; padding: 2px; }" # Ciemniejszy szary
+    ACTIVE_PATH_STYLE = "QLineEdit { background-color: #336699; color: #FFFFFF; border: 1px solid #555; padding: 2px; }"
+    INACTIVE_PATH_STYLE = "QLineEdit { background-color: #555555; color: #EEEEEE; border: 1px solid #555; padding: 2px; }"
 
     def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
         self._show_dot_files = self.settings_manager.get_setting("showDotFiles", True) if self.settings_manager else True
 
-        # Get selection colors from settings
         self.active_selection_color = self.settings_manager.get_setting("active_selection_color")
         self.inactive_selection_color = self.settings_manager.get_setting("inactive_selection_color")
 
@@ -77,7 +88,6 @@ class FolderBrowser(QWidget):
         self.left_panel_widget.get_file_view().installEventFilter(self)
         self.right_panel_widget.get_file_view().installEventFilter(self)
 
-        # Ustawienie początkowego aktywnego panelu i jego stylu
         self.set_active_panel(self.left_panel_widget)
 
     @property
@@ -112,21 +122,19 @@ class FolderBrowser(QWidget):
             model = FlatFileSystemModel(self, show_dot_files=self._show_dot_files)
             file_view.setModel(model)
             file_view.setColumnHidden(3, True)
-            file_view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # Zaznaczanie całego wiersza
-            file_view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection) # Zaznaczanie pojedynczego wiersza
+            file_view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+            file_view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         else:  # "tree"
-            model = QFileSystemModel()
+            model = TranslatedFileSystemModel() # Use the new subclass
             model.setRootPath(os.path.expanduser("~"))
             self._apply_dot_file_filter(model)
+            
             file_view = QTreeView()
             file_view.setExpandsOnDoubleClick(False)
             file_view.setModel(model)
             file_view.setRootIndex(model.index(os.path.expanduser("~")))
 
-        # Connect the clicked signal to perform 'Enter' action on directories
         file_view.clicked.connect(self.on_item_clicked)
-
-        # Connect the currentChanged signal to update_current_selection
         file_view.selectionModel().currentChanged.connect(
             lambda current, previous, view=file_view: self.update_current_selection(current, previous, view)
         )
@@ -186,7 +194,6 @@ class FolderBrowser(QWidget):
         self.settings_manager.set_setting(setting_key, column_widths)
 
     def get_column_widths(self):
-        """Returns the current column widths for both panels."""
         widths = {}
         for panel_widget in [self.left_panel_widget, self.right_panel_widget]:
             panel = panel_widget.get_file_view()
@@ -216,7 +223,7 @@ class FolderBrowser(QWidget):
                     self.current_paths[view] = new_path
                     self.current_directory_changed.emit(new_path)
                 else:
-                    show_error_message(self, self.tr("Permission Error"), f"Permission denied to read directory:\n{new_path}")
+                    show_error_message(self, QCoreApplication.translate("FolderBrowser", "Permission Error"), f"Permission denied to read directory:\n{new_path}")
             else:
                 current_panel_path = self.current_paths.get(view.parent())
                 select_path = current_panel_path if model.fileName(index) == ".." else None
@@ -225,7 +232,6 @@ class FolderBrowser(QWidget):
             self.file_selected.emit(model.filePath(index))
 
     def on_item_clicked(self, index):
-        """Handle single-click on an item. If it's a directory, perform the double-click action."""
         view = self.sender()
         if view and view.model().isDir(index):
             self.on_double_clicked(index, view)
@@ -298,16 +304,12 @@ class FolderBrowser(QWidget):
         panel_widget.get_path_edit().setText(current_path)
 
     def set_active_panel(self, panel_widget):
-        # Apply inactive style to previously active panel's path_edit
         if self.active_panel_widget and self.active_panel_widget != panel_widget:
             self.active_panel_widget.get_path_edit().setStyleSheet(self.INACTIVE_PATH_STYLE)
-            # Apply inactive selection style to the file view
             self.active_panel_widget.get_file_view().setStyleSheet(f"QAbstractItemView::item:selected {{ background-color: {self.inactive_selection_color}; }}")
 
-        # Set new active panel and apply active style to its path_edit
         self.active_panel_widget = panel_widget
         self.active_panel_widget.get_path_edit().setStyleSheet(self.ACTIVE_PATH_STYLE)
-        # Apply active selection style to the file view
         self.active_panel_widget.get_file_view().setStyleSheet(f"QAbstractItemView::item:selected {{ background-color: {self.active_selection_color}; }}")
         
         current_path = self.current_paths.get(self.active_panel_widget)
@@ -501,7 +503,6 @@ class FolderBrowser(QWidget):
         self.set_active_panel(self.left_panel_widget)
 
     def load_panel_settings(self):
-        """Loads panel paths, active panel, and column widths from settings."""
         if not self.settings_manager:
             return
 
@@ -516,44 +517,36 @@ class FolderBrowser(QWidget):
         active_panel_id = self.settings_manager.get_setting("activePanel", "left")
         self.set_active_panel_by_id(active_panel_id)
 
-        # Column widths are handled by _configure_view_headers when views are created/recreated.
-        # Ensure they are applied after navigation.
         self._configure_view_headers(self.left_panel, self.view_mode)
         self._configure_view_headers(self.right_panel, self.view_mode)
 
-        self.initial_load_done() # Signal that initial load is complete
+        self.initial_load_done()
 
     def save_panel_settings(self):
-        """Saves panel paths, active panel, and column widths to settings."""
         if not self.settings_manager:
             return
 
         default_path = os.path.expanduser("~")
         
-        # Get left panel path
         left_panel_model = self.left_panel.model()
         left_panel_root_index = self.left_panel.rootIndex()
-        if isinstance(left_panel_model, QFileSystemModel): # For tree view
+        if isinstance(left_panel_model, QFileSystemModel):
             left_panel_path = left_panel_model.filePath(left_panel_root_index) if left_panel_root_index.isValid() else default_path
-        else: # For flat view (FlatFileSystemModel)
+        else:
             left_panel_path = self.current_paths.get(self.left_panel_widget, default_path)
         
-        # Get right panel path
         right_panel_model = self.right_panel.model()
         right_panel_root_index = self.right_panel.rootIndex()
-        if isinstance(right_panel_model, QFileSystemModel): # For tree view
+        if isinstance(right_panel_model, QFileSystemModel):
             right_panel_path = right_panel_model.filePath(right_panel_root_index) if right_panel_root_index.isValid() else default_path
-        else: # For flat view (FlatFileSystemModel)
+        else:
             right_panel_path = self.current_paths.get(self.right_panel_widget, default_path)
 
-        # Save paths
         self.settings_manager.set_setting("leftPanelPath", left_panel_path)
         self.settings_manager.set_setting("rightPanelPath", right_panel_path)
         
-        # Save active panel
         self.settings_manager.set_setting("activePanel", self.get_active_panel_id())
 
-        # Save column widths (already handled by _on_header_section_resized, but ensure it's saved on close)
         column_widths = self.get_column_widths()
         if "table_column_widths" in column_widths:
             self.settings_manager.set_setting("table_column_widths", column_widths["table_column_widths"])
