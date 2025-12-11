@@ -27,3 +27,4 @@ Details have been written to the log file."
     ```
     Błąd ten występuje niezależnie czy plik/katalog jest zaznaczony czy niezaznaczony. Ten błąd rozwiązywać na branchu "master".
 9. **Incorrect:** Tryb przeglądania plików "flat". Po przejściu poziom wyżej w strukturze katalogów index kursora ustawiany jest automatycznie na pierwszej pozycji na liście plików. A powinien być ustawiana dokładnie na katalogu, z którego nastąpiło przejście.
+10. **Bug:** Aplikacja zakańcza się błędem w momencie naciśnięcie "Zakładki" za pomocą button-a.

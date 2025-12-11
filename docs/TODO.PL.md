@@ -16,9 +16,6 @@
 
 - **New Feature:** Dodać button jako rozwijalną listę, z której można wybrać napęd i ewentualne zamontowane urządzenia. Ta rozwijalna lista powinna znajdować się nad panelem do przeglądania plików.
 
-- Dodać przycisk do zmiany bieżącej ścieżki na główny katalog napędu :`/` .
-
-- **New Feature:** Dodać przycisk do zmiany bieżącej ścieżki na katalog domowy użytkownika. Musi działać zależnie od systemu na którym uruchomiona jest aplikacja [ linux, Windows, MacOS ].
 - **New Feature:** Dodać przycisk z rozwijalną listą, który wyświetli ścieżki z listy katalogów dodanych do "Ulubionych".
 
 - Kontrolka od przeglądania listowania plików/folderów musi być umieszczona w kontrolce "Tab Widget". W ten sposób będzie można mieć jednocześnie otwarte zakładki z różnymi katalogami bierzącymi.
@@ -36,6 +33,15 @@
 - **New Feature:** Panel do przeglądania zawartości plików powinien być osadzony wewnątrz komponentu "Multi Tabs".
 
 - **New Feature:** Wyszukiwanie plików powinno być możliwe w oknie dialogowym zamiast w "text field" w oknie głównym. Wyniki wyszukiwania powinny mieć możliwość być wyświetlone jako dodatkowa zakładka w panelu przeglądania plików.
+
+- **New Feature:** Dodać buttons przy text-filed ze ścieżką wskazującą na aktualny przeglądany katalog. Musi działać zależnie od systemu, na którym uruchomiona jest aplikacja (linux, Windows, MacOS). Buttony te powinny być konfigurowalne i umożliwiać zmianę obecnie przeglądanego katalogu na ścieżkę np. do:
+    - katalog domowy użytkownika
+    - katalog /etc
+    - katalog /tmp
+    - katalog ~/Download
+    - katalog ~/Documents
+    - katalog główny napędu :`/` .
+
 
 ## Testing Writestyle code assistant 
 {collapsible="true" default-state="expanded"}
