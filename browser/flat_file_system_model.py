@@ -125,7 +125,7 @@ class FlatFileSystemModel(QAbstractTableModel):
                 if is_dir:
                     return "Folder"
                 else:
-                    return self.tr("File") # Get extension
+                    return QCoreApplication.translate("FlatFileSystemModel", "File") # Get extension
             return None
 
         elif role == Qt.ItemDataRole.DecorationRole:
@@ -162,11 +162,11 @@ class FlatFileSystemModel(QAbstractTableModel):
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
             if section == 0:
-                return self.tr("Name")
+                return QCoreApplication.translate("FlatFileSystemModel", "Name")
             elif section == 1:
-                return self.tr("Size")
+                return QCoreApplication.translate("FlatFileSystemModel", "Size")
             elif section == 2:
-                return self.tr("Type")
+                return QCoreApplication.translate("FlatFileSystemModel", "Type")
             # No header for column 3, it's hidden
         return None
 

@@ -1,7 +1,7 @@
 import logging
 import os
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QCoreApplication
 
 # We need to import __version__ here as well to display it.
 # Assuming __version__.py is accessible in the project root.
@@ -14,25 +14,26 @@ except ImportError:
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr("About")) # Will use the actual version in a bit
-        self.setFixedSize(400, 250) # Fixed size for simplicity
+        self.setWindowTitle(QCoreApplication.translate("AboutDialog", "About"))
+        self.setFixedSize(400, 250)
 
         layout = QVBoxLayout()
 
         # Application Name
-        app_name_label = QLabel(self.tr("QuickFile"))
+        app_name_label = QLabel(QCoreApplication.translate("AboutDialog", "QuickFile"))
         app_name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         app_name_label.setStyleSheet("font-size: 24px; font-weight: bold;")
         layout.addWidget(app_name_label)
 
         # Version
-        version_label = QLabel(self.tr(f"Version: {__version__}"))
+        version_text = QCoreApplication.translate("AboutDialog", "Version: ") + __version__
+        version_label = QLabel(version_text)
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet("font-size: 14px;")
         layout.addWidget(version_label)
 
         # Author
-        author_label = QLabel(self.tr("Author: Dawid Bielecki"))
+        author_label = QLabel(QCoreApplication.translate("AboutDialog", "Author: Dawid Bielecki"))
         author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         author_label.setStyleSheet("font-size: 12px;")
         layout.addWidget(author_label)
@@ -40,12 +41,12 @@ class AboutDialog(QDialog):
         # URL
         url_label = QLabel("URL: <a href='https://github.com/dawciobiel/QuickFile'>https://github.com/dawciobiel/QuickFile</a>")
         url_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        url_label.setOpenExternalLinks(True) # Make the link clickable
+        url_label.setOpenExternalLinks(True)
         url_label.setStyleSheet("font-size: 12px; color: blue;")
         layout.addWidget(url_label)
 
         # Description (placeholder)
-        description_label = QLabel(self.tr("A powerful and efficient file manager with modern features."))
+        description_label = QLabel(QCoreApplication.translate("AboutDialog", "A powerful and efficient file manager with modern features."))
         description_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         description_label.setWordWrap(True)
         description_label.setStyleSheet("font-size: 12px;")
