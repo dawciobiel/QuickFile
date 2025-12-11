@@ -181,7 +181,7 @@ class ApplicationLogicHandler(QObject):
             try:
                 message = self.archive_manager.create_zip_archive(selected_path, archive_path)
                 self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views()
+                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
             except Exception as e:
                 show_error_message(self.main_window, self.ACTION_CREATE_ARCHIVE, str(e))
 
@@ -196,7 +196,7 @@ class ApplicationLogicHandler(QObject):
             try:
                 message = self.archive_manager.extract_archive(selected_path, extract_path)
                 self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views()
+                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
             except (UnrarNotInstalledError, Exception) as e:
                 show_error_message(self.main_window, self.ACTION_EXTRACT_ARCHIVE, str(e))
 
@@ -221,7 +221,7 @@ class ApplicationLogicHandler(QObject):
                 try:
                     message = self.directory_synchronizer.synchronize(left_path, right_path, options)
                     self.main_window.status_bar.showMessage(message)
-                    self.main_window.folder_browser.refresh_all_views()
+                    self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
                 except Exception as e:
                     show_error_message(self.main_window, QCoreApplication.translate("ApplicationLogicHandler", "Synchronization Error"), str(e))
 
@@ -253,7 +253,7 @@ class ApplicationLogicHandler(QObject):
                 else:
                     message = self.file_manager.create_directory(current_dir, name)
                 self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views()
+                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
             except (FileNotFoundError, FileExistsError, ValueError, FileManagerError) as e:
                 show_error_message(self.main_window, title, str(e))
 
@@ -273,18 +273,24 @@ class ApplicationLogicHandler(QObject):
                 try:
                     message = self.file_manager.copy_item_with_options(source_paths[0], destination_path, dialog.get_options())
                     self.main_window.status_bar.showMessage(message)
-                    self.main_window.folder_browser.refresh_all_views()
+                    self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
                 except (FileNotFoundError, FileExistsError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_COPY, str(e))
         else:
+            # For multiple items, we assume the dialog is not used, and options are default.
+            # The prompt asks to refresh the source panel if it's the same as the target.
+            # However, refresh_all_views() is safer and simpler for now.
+            all_successful = True
             for source_path in source_paths:
                 try:
                     self.file_manager.copy_item_with_options(source_path, destination_path, {"overwrite": False, "preserve_timestamp": True})
                 except (FileNotFoundError, FileExistsError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_COPY, f"Error copying {os.path.basename(source_path)}: {str(e)}")
-                    return # Stop on first error
-            self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", f"Copied {len(source_paths)} items to '{destination_path}'"))
-            self.main_window.folder_browser.refresh_all_views()
+                    all_successful = False
+                    break # Stop on first error
+            if all_successful:
+                self.main_window.status_bar.showMessage(QCoreApplication.translate("ApplicationLogicHandler", f"Copied {len(source_paths)} items to '{destination_path}'"))
+            self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation(s)
 
     def move_selected_item(self):
         source_path = self.main_window.folder_browser.current_selected_path
@@ -301,7 +307,7 @@ class ApplicationLogicHandler(QObject):
             try:
                 message = self.file_manager.move_item_with_options(source_path, destination_path, dialog.get_options())
                 self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views()
+                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
             except (FileNotFoundError, FileExistsError, IsADirectoryError, FileManagerError) as e:
                 show_error_message(self.main_window, self.ACTION_MOVE, str(e))
 
@@ -317,7 +323,7 @@ class ApplicationLogicHandler(QObject):
         try:
             message = self.file_manager.paste_item(current_dir)
             self.main_window.status_bar.showMessage(message)
-            self.main_window.folder_browser.refresh_all_views()
+            self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
         except (ValueError, FileNotFoundError, FileManagerError) as e:
             show_error_message(self.main_window, self.ACTION_PASTE, str(e))
 
@@ -329,14 +335,17 @@ class ApplicationLogicHandler(QObject):
 
         dialog = DeleteDialog(self.main_window, selected_paths)
         if dialog.exec() == QDialog.DialogCode.Accepted:
+            all_successful = True
             for path in selected_paths:
                 try:
                     message = self.file_manager.delete_item(path)
                     self.main_window.status_bar.showMessage(message)
                 except (FileNotFoundError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_DELETE, f"Error deleting {os.path.basename(path)}: {str(e)}")
-                    return # Stop on first error
-            self.main_window.folder_browser.refresh_all_views()
+                    all_successful = False
+                    break # Stop on first error
+            if all_successful:
+                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation(s)
 
     def rename_selected_item(self):
         selected_path = self.main_window.folder_browser.current_selected_path
@@ -350,7 +359,7 @@ class ApplicationLogicHandler(QObject):
             try:
                 message = self.file_manager.rename_item(selected_path, new_name)
                 self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views()
+                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
             except (FileNotFoundError, FileExistsError, ValueError, FileManagerError) as e:
                 show_error_message(self.main_window, self.ACTION_RENAME, str(e))
         elif not new_name:
