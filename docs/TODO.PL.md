@@ -6,13 +6,7 @@
 
 ## TODO List
 
-- **Application Architecture:** Zaprojektować i stworzyć możliwość zmiany wersji językowej GUI. Aplikacja główna powinna mieć własny plik językowy, a każdy plugin własny.
-
-- **Translation:** Dokonaj ręcznego tłumaczenia pozostałych ciągów znaków w pliku `translations/app_pl.ts` za pomocą narzędzia Qt Linguist. Obecnie nieprzetłumaczone ciągi znaków są wyświetlane w języku angielskim.
-
-- **Refactoring:** Zawartość okna "About" powinna być czytana z pliku. Obecnie treść jest wpisana na sztywno w kodzie aplikacji i dodatkowo tłumaczona za pomocą wersji językowych. Zastanowić się jak to rozwiązać, bo treść tego okna powinna być tłumaczona na różne języki. Jednak jest to tylko tłumaczenie, a nie zawartość okna, jeżeli chodzi o np. odpowiednie sformatowanie i ułożenie wyświetlanego tekstu. Trzeba to przemyśleć. Być może użyć dodatkowo Qt Designer'a. Kwestie związane z i18n powinny odbywać się na oddzielnym branch-u "feature/i18n-polish".
-
-- **Application Architecture:** Ważne jest, aby wszelkie akcje, które mogą być wykonane przez aplikację, były wywoływane jako "akcja". W ten sposób będzie możliwe wywoływanie tych akcji niezależnie od źródłowej kontrolki GUI. Np. niezależnie czy akcja jest wywołana z menu głównego aplikacji, czy ze skrótu klawiszowego.
+- **Refactoring:** Zawartość okna "About" powinna być czytana z pliku. Obecnie treść jest wpisana na sztywno w kodzie aplikacji i dodatkowo tłumaczona za pomocą wersji językowych. Zastanowić się jak to rozwiązać, bo treść tego okna powinna być tłumaczona na różne języki. Jednak jest to tylko tłumaczenie, a nie zawartość okna, jeżeli chodzi o np. odpowiednie sformatowanie i ułożenie wyświetlanego tekstu. Trzeba to przemyśleć. Być może użyć dodatkowo Qt Designer'a.
 
 - **New Feature:** Dodać button jako rozwijalną listę, z której można wybrać napęd i ewentualne zamontowane urządzenia. Ta rozwijalna lista powinna znajdować się nad panelem do przeglądania plików.
 
