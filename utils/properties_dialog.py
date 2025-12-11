@@ -1,10 +1,11 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLabel, QDialogButtonBox
+from PyQt6.QtCore import QCoreApplication
 
 
 class PropertiesDialog(QDialog):
     def __init__(self, properties, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Properties")
+        self.setWindowTitle(QCoreApplication.translate("PropertiesDialog", "Properties"))
 
         layout = QVBoxLayout(self)
         form_layout = QFormLayout()
