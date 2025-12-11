@@ -103,36 +103,41 @@
 <context>
     <name>FlatFileSystemModel</name>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="41"/>
-        <location filename="../browser/flat_file_system_model.py" line="62"/>
+        <location filename="../browser/flat_file_system_model.py" line="39"/>
+        <location filename="../browser/flat_file_system_model.py" line="57"/>
         <source>Permission Error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="128"/>
+        <location filename="../browser/flat_file_system_model.py" line="112"/>
         <source>File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="165"/>
+        <location filename="../browser/flat_file_system_model.py" line="153"/>
         <source>Name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="167"/>
+        <location filename="../browser/flat_file_system_model.py" line="155"/>
         <source>Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="169"/>
+        <location filename="../browser/flat_file_system_model.py" line="157"/>
         <source>Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../browser/flat_file_system_model.py" line="159"/>
+        <source>Date Modified</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>FolderBrowser</name>
     <message>
-        <location filename="../browser/folder_browser.py" line="226"/>
+        <location filename="../browser/folder_browser.py" line="230"/>
         <source>Permission Error</source>
         <translation type="unfinished"></translation>
     </message>

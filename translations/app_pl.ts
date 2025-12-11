@@ -33,12 +33,12 @@
     <message>
         <location filename="../app/application_logic_handler.py" line="62" />
         <source>No file selected for preview.</source>
-        <translation>Nie wybrano pliku do podglądu.</translation>
+        <translation>Nie wybrano pliku do podglądu</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="69" />
         <source>No file selected for editing.</source>
-        <translation>Nie wybrano pliku do edycji.</translation>
+        <translation>Nie wybrano pliku do edycji</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="79" />
@@ -53,7 +53,7 @@
     <message>
         <location filename="../app/application_logic_handler.py" line="92" />
         <source>Enter text to search.</source>
-        <translation>Wprowadź tekst do wyszukania.</translation>
+        <translation>Wprowadź tekst do wyszukania</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="102" />
@@ -70,7 +70,7 @@
     <message>
         <location filename="../app/application_logic_handler.py" line="133" />
         <source>Please select items in both panels to compare.</source>
-        <translation>Wybierz elementy w obu panelach do porównania.</translation>
+        <translation>Wybierz elementy w obu panelach do porównania</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="147" />
@@ -102,36 +102,41 @@
 <context>
     <name>FlatFileSystemModel</name>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="41" />
-        <location filename="../browser/flat_file_system_model.py" line="62" />
+        <location filename="../browser/flat_file_system_model.py" line="39" />
+        <location filename="../browser/flat_file_system_model.py" line="57" />
         <source>Permission Error</source>
         <translation>Błąd uprawnień</translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="128" />
+        <location filename="../browser/flat_file_system_model.py" line="112" />
         <source>File</source>
         <translation>Plik</translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="165" />
+        <location filename="../browser/flat_file_system_model.py" line="153" />
         <source>Name</source>
         <translation>Nazwa</translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="167" />
+        <location filename="../browser/flat_file_system_model.py" line="155" />
         <source>Size</source>
         <translation>Rozmiar</translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="169" />
+        <location filename="../browser/flat_file_system_model.py" line="157" />
         <source>Type</source>
         <translation>Typ</translation>
+    </message>
+    <message>
+        <location filename="../browser/flat_file_system_model.py" line="159" />
+        <source>Date Modified</source>
+        <translation>Data modyfikacji</translation>
     </message>
 </context>
 <context>
     <name>FolderBrowser</name>
     <message>
-        <location filename="../browser/folder_browser.py" line="226" />
+        <location filename="../browser/folder_browser.py" line="230" />
         <source>Permission Error</source>
         <translation>Błąd uprawnień</translation>
     </message>
@@ -387,7 +392,7 @@
     <message>
         <location filename="../app/application_logic_handler.py" line="51" />
         <source>No active panel.</source>
-        <translation>Brak aktywnego panelu.</translation>
+        <translation>Brak aktywnego panelu</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="52" />
@@ -407,7 +412,7 @@
     <message>
         <location filename="../app/application_logic_handler.py" line="175" />
         <source>No file/folder selected for archiving.</source>
-        <translation>Nie wybrano pliku/folderu do archiwizacji.</translation>
+        <translation>Nie wybrano pliku/folderu do archiwizacji</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="178" />
@@ -417,17 +422,17 @@
     <message>
         <location filename="../app/application_logic_handler.py" line="191" />
         <source>No archive file selected or unsupported format.</source>
-        <translation>Nie wybrano pliku archiwum lub format nieobsługiwany.</translation>
+        <translation>Nie wybrano pliku archiwum lub format nieobsługiwany</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="194" />
         <source>Destination path:</source>
-        <translation>Ścieżka docelowa:</translation>
+        <translation>Ścieżka docelowa</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="206" />
         <source>No file or folder selected.</source>
-        <translation>Nie wybrano pliku ani folderu.</translation>
+        <translation>Nie wybrano pliku ani folderu</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="246" />
@@ -442,22 +447,22 @@
     <message>
         <location filename="../app/application_logic_handler.py" line="263" />
         <source>No file/folder selected for copying.</source>
-        <translation>Nie wybrano pliku/folderu do kopiowania.</translation>
+        <translation>Nie wybrano pliku/folderu do kopiowania</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="292" />
         <source>No file/folder selected for moving.</source>
-        <translation>Nie wybrano pliku/folderu do przeniesienia.</translation>
+        <translation>Nie wybrano pliku/folderu do przeniesienia</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="327" />
         <source>No file/folder selected for deletion.</source>
-        <translation>Nie wybrano pliku/folderu do usunięcia.</translation>
+        <translation>Nie wybrano pliku/folderu do usunięcia</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="344" />
         <source>No file/folder selected for renaming.</source>
-        <translation>Nie wybrano pliku/folderu do zmiany nazwy.</translation>
+        <translation>Nie wybrano pliku/folderu do zmiany nazwy</translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="348" />
@@ -467,7 +472,7 @@
     <message>
         <location filename="../app/application_logic_handler.py" line="357" />
         <source>New name cannot be empty.</source>
-        <translation>Nowa nazwa nie może być pusta.</translation>
+        <translation>Nowa nazwa nie może być pusta</translation>
     </message>
     <message>
         <location filename="../panels/menu_panel.py" line="86" />
