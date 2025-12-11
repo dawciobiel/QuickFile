@@ -13,6 +13,7 @@
 9.  **Translation: Dialogs:** Buttons and titles in "Shortcuts", "Properties", and "Error" dialogs were not translated. Fixed.
 10. **Translation: About Dialog:** The "Version" label in the "About" dialog was not translated. Fixed.
 11. **Wrong config file path:** The shortcuts file `.quickfile_shortcuts.json` was correctly moved to `~/.config/QuickFile/`. (Moved to fixed as it's a completed task).
+12. **Invalid Index value:** After using the Home or End keys, the cursor position was not correctly updated, causing subsequent arrow key presses to fail. This was resolved by explicitly setting the current index in the selection model.
 
 **Unresolved Bugs:**
 

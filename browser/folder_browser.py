@@ -269,7 +269,9 @@ class FolderBrowser(QWidget):
 
     def _select_and_scroll_to(self, panel, index):
         selection_model = panel.selectionModel()
-        selection_model.select(index, QItemSelectionModel.SelectionFlag.ClearAndSelect | QItemSelectionModel.SelectionFlag.Rows)
+        selection_model.clear()
+        selection_model.setCurrentIndex(index, QItemSelectionModel.SelectionFlag.SelectCurrent)
+        selection_model.select(index, QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows)
         panel.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
 
     def go_up_directory(self):
