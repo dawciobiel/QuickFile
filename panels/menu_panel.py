@@ -125,11 +125,10 @@ class MenuPanel(QObject):
         settings_menu.addAction(settings_action)
 
     def open_general_settings_dialog(self):
-        current_show_dot_files = self.main_window.settings_manager.get_setting("showDotFiles")
-        dialog = SettingsDialog(self.main_window, current_show_dot_files)
+        dialog = SettingsDialog(self.main_window, self.main_window.settings_manager)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            new_show_dot_files = dialog.get_selected_show_dot_files()
-            self.main_window.application_logic_handler.apply_general_settings(None, new_show_dot_files)
+            new_settings = dialog.get_settings()
+            self.main_window.application_logic_handler.apply_general_settings(new_settings)
 
     def open_shortcuts_dialog(self):
         dialog = ShortcutsDialog(self.main_window, self.main_window.shortcuts_manager.shortcuts)

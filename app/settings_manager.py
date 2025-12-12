@@ -22,7 +22,10 @@ class SettingsManager:
             "activePanel": "left",
             "showDotFiles": True,
             "active_selection_color": "#336699",  # Darker blue for active selection
-            "inactive_selection_color": "#606060" # Darker gray for inactive selection
+            "inactive_selection_color": "#606060", # Darker gray for inactive selection
+            "file_permissions_display_mode": "symbolic", # "symbolic" or "numeric"
+            "show_uid_column": True,
+            "show_gid_column": True
         }
         self.settings = self.load_settings_from_file()
 
