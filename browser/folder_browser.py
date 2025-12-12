@@ -200,8 +200,7 @@ class FolderBrowser(QWidget):
         else:
             file_view.setRootIndex(model.index(path))
 
-        panel_widget.get_path_edit().setText(path)
-        self._update_drive_combo_for_path(panel_widget, path)
+        self._update_panel_path_display(panel_widget, path)
 
     def _apply_dot_file_filter(self, model):
         if self._show_dot_files:
@@ -223,6 +222,11 @@ class FolderBrowser(QWidget):
             drive_combo.blockSignals(True)
             drive_combo.setCurrentIndex(best_match)
             drive_combo.blockSignals(False)
+
+    def _update_panel_path_display(self, panel_widget, path):
+        """Updates the path QLineEdit and drive QComboBox for a given panel."""
+        panel_widget.get_path_edit().setText(path)
+        self._update_drive_combo_for_path(panel_widget, path)
 
     def _configure_view_headers(self, file_view, view_mode):
         header = file_view.horizontalHeader() if isinstance(file_view, QTableView) else file_view.header()
@@ -273,8 +277,9 @@ class FolderBrowser(QWidget):
             if isinstance(view, QTreeView):
                 if os.access(new_path, os.R_OK):
                     view.setExpanded(index, not view.isExpanded(index))
-                    self.current_paths[view] = new_path
+                    self.current_paths[view.parent()] = new_path # Use view.parent() to get the PanelWidget
                     self.current_directory_changed.emit(new_path)
+                    self._update_panel_path_display(view.parent(), new_path) # Update path display for tree view
                 else:
                     show_error_message(self, QCoreApplication.translate("FolderBrowser", "Permission Error"), f"Permission denied to read directory:\n{new_path}")
             else:
@@ -358,7 +363,7 @@ class FolderBrowser(QWidget):
                 panel.setRootIndex(index)
 
         panel.viewport().update()
-        panel_widget.get_path_edit().setText(current_path)
+        self._update_panel_path_display(panel_widget, current_path) # Use the new helper method
 
     def set_active_panel(self, panel_widget):
         if self.active_panel_widget and self.active_panel_widget != panel_widget:
@@ -508,14 +513,13 @@ class FolderBrowser(QWidget):
 
         if not os.path.isdir(path):
             show_error_message(self, "Navigation Error", f"Path '{path}' is not a valid directory.")
-            panel_widget.get_path_edit().setText(previous_path)
+            self._update_panel_path_display(panel_widget, previous_path) # Use the new helper method
             return
 
-        panel_widget.get_path_edit().setText(path)
         self.current_paths[panel_widget] = path
         self._select_on_load = os.path.basename(select_entry_path) if select_entry_path else ".."
 
-        self._update_drive_combo_for_path(panel_widget, path)
+        self._update_panel_path_display(panel_widget, path) # Use the new helper method
 
         model = panel.model()
         if isinstance(model, FlatFileSystemModel):
@@ -526,7 +530,7 @@ class FolderBrowser(QWidget):
                 panel.setRootIndex(index)
             else:
                 show_error_message(self, "Navigation Error", f"Could not set root to '{path}'.")
-                panel_widget.get_path_edit().setText(previous_path)
+                self._update_panel_path_display(panel_widget, previous_path) # Use the new helper method
                 self.current_paths[panel_widget] = previous_path
                 return
         
