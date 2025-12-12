@@ -1,7 +1,8 @@
 import logging
 import os
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
-from PyQt6.QtCore import Qt, QCoreApplication
+from PyQt6.QtCore import Qt
+from app.translation_manager import translation_manager # Import our new manager
 
 # We need to import __version__ here as well to display it.
 # Assuming __version__.py is accessible in the project root.
@@ -14,26 +15,26 @@ except ImportError:
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(QCoreApplication.translate("AboutDialog", "About"))
+        self.setWindowTitle(translation_manager.translate("AboutDialog", "About"))
         self.setFixedSize(400, 250)
 
         layout = QVBoxLayout()
 
         # Application Name
-        app_name_label = QLabel(QCoreApplication.translate("AboutDialog", "QuickFile"))
+        app_name_label = QLabel(translation_manager.translate("AboutDialog", "QuickFile"))
         app_name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         app_name_label.setStyleSheet("font-size: 24px; font-weight: bold;")
         layout.addWidget(app_name_label)
 
         # Version
-        version_text = QCoreApplication.translate("AboutDialog", "Version: ") + __version__
+        version_text = translation_manager.translate("AboutDialog", "Version: ") + __version__
         version_label = QLabel(version_text)
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet("font-size: 14px;")
         layout.addWidget(version_label)
 
         # Author
-        author_label = QLabel(QCoreApplication.translate("AboutDialog", "Author: Dawid Bielecki"))
+        author_label = QLabel(translation_manager.translate("AboutDialog", "Author: Dawid Bielecki"))
         author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         author_label.setStyleSheet("font-size: 12px;")
         layout.addWidget(author_label)
@@ -46,7 +47,7 @@ class AboutDialog(QDialog):
         layout.addWidget(url_label)
 
         # Description (placeholder)
-        description_label = QLabel(QCoreApplication.translate("AboutDialog", "A powerful and efficient file manager with modern features."))
+        description_label = QLabel(translation_manager.translate("AboutDialog", "A powerful and efficient file manager with modern features."))
         description_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         description_label.setWordWrap(True)
         description_label.setStyleSheet("font-size: 12px;")

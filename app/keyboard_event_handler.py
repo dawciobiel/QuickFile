@@ -1,4 +1,5 @@
-from PyQt6.QtCore import Qt, QEvent, QObject, QCoreApplication
+from PyQt6.QtCore import Qt, QEvent, QObject
+from app.translation_manager import translation_manager # Import our new manager
 
 class KeyboardEventHandler(QObject):
     def __init__(self, main_window):
@@ -11,7 +12,7 @@ class KeyboardEventHandler(QObject):
         """Initializes a dictionary to handle key press events."""
         # Access main_window's attributes directly for now
         self.key_handlers = {
-            Qt.Key.Key_F1: lambda: self.main_window.status_bar.showMessage(QCoreApplication.translate("KeyboardEventHandler", "F1: Help (not implemented)")),
+            Qt.Key.Key_F1: lambda: self.main_window.status_bar.showMessage(translation_manager.translate("KeyboardEventHandler", "F1: Help (not implemented)")),
             Qt.Key.Key_F2: self.main_window.application_logic_handler.rename_selected_item,
             Qt.Key.Key_F3: self.main_window.application_logic_handler._handle_f3_key,
             Qt.Key.Key_F4: self.main_window.application_logic_handler._handle_f4_key,

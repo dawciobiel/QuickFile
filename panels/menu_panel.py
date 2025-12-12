@@ -1,7 +1,7 @@
 import logging
 import os
 from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog, QMessageBox
-from PyQt6.QtCore import QCoreApplication, QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal
 from file_operations.archive_manager import UnrarNotInstalledError
 from PyQt6.QtGui import QAction
 from utils.copy_dialog import CopyDialog
@@ -13,6 +13,7 @@ from utils.settings_dialog import SettingsDialog
 from utils.dialogs import show_error_message
 from utils.properties_dialog import PropertiesDialog
 from file_operations.properties_manager import get_file_properties
+from app.translation_manager import translation_manager # Import our new manager
 
 
 class MenuPanel(QObject):
@@ -81,26 +82,26 @@ class MenuPanel(QObject):
         dialog.exec()
 
     def _create_help_menu(self):
-        help_menu = self.menu_bar.addMenu(QCoreApplication.translate("MainWindow", "Help"))
+        help_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Help"))
         about_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "About"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "About"),
+            visible_text=translation_manager.translate("MenuPanel", "About"),
+            tooltip_text=translation_manager.translate("MenuPanel", "About"),
             slot=self.show_about_dialog,
             shortcut_key=self.KEY_ABOUT
         )
         help_menu.addAction(about_action)
 
     def _create_view_menu(self):
-        view_menu = self.menu_bar.addMenu(QCoreApplication.translate("MainWindow", "View"))
+        view_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "View"))
         flat_view_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Flat View"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Flat View"),
+            visible_text=translation_manager.translate("MenuPanel", "Flat View"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Flat View"),
             slot=lambda: self.view_mode_changed.emit("flat"),
             shortcut_key=self.KEY_FLAT_VIEW
         )
         tree_view_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Tree View"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Tree View"),
+            visible_text=translation_manager.translate("MenuPanel", "Tree View"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Tree View"),
             slot=lambda: self.view_mode_changed.emit("tree"),
             shortcut_key=self.KEY_TREE_VIEW
         )
@@ -108,16 +109,16 @@ class MenuPanel(QObject):
         view_menu.addAction(tree_view_action)
 
     def _create_settings_menu(self):
-        settings_menu = self.menu_bar.addMenu(QCoreApplication.translate("MainWindow", "Settings"))
+        settings_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Settings"))
         shortcuts_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Configure Shortcuts"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Configure Shortcuts"),
+            visible_text=translation_manager.translate("MenuPanel", "Configure Shortcuts"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Configure Shortcuts"),
             slot=self.open_shortcuts_dialog,
             shortcut_key=self.KEY_CONFIGURE_SHORTCUTS
         )
         settings_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "General Settings"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "General Settings"),
+            visible_text=translation_manager.translate("MenuPanel", "General Settings"),
+            tooltip_text=translation_manager.translate("MenuPanel", "General Settings"),
             slot=self.open_general_settings_dialog,
             shortcut_key=self.KEY_GENERAL_SETTINGS
         )
@@ -137,24 +138,24 @@ class MenuPanel(QObject):
             self.main_window.application_logic_handler.apply_shortcuts_settings(new_shortcuts)
 
     def _create_file_menu(self):
-        file_menu = self.menu_bar.addMenu(QCoreApplication.translate("MainWindow", "File"))
+        file_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "File"))
         
         compare_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Compare"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Compare selected items"),
+            visible_text=translation_manager.translate("MenuPanel", "Compare"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Compare selected items"),
             slot=self.main_window.application_logic_handler.compare_selected_items,
             shortcut_key=self.KEY_COMPARE
         )
         properties_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Properties"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Show properties of selected item"),
+            visible_text=translation_manager.translate("MenuPanel", "Properties"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Show properties of selected item"),
             icon=QStyle.StandardPixmap.SP_FileDialogInfoView,
             slot=self.main_window.application_logic_handler.show_properties_dialog,
             shortcut_key=self.KEY_PROPERTIES
         )
         exit_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Exit"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Exit the application"),
+            visible_text=translation_manager.translate("MenuPanel", "Exit"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Exit the application"),
             icon=QStyle.StandardPixmap.SP_DialogCancelButton,
             slot=self.main_window.close,
             shortcut_key=self.KEY_EXIT
@@ -168,16 +169,16 @@ class MenuPanel(QObject):
         self.toolbar.addAction(properties_action)
 
     def _create_archive_menu(self):
-        archive_menu = self.menu_bar.addMenu(QCoreApplication.translate("MainWindow", "Archive"))
+        archive_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Archive"))
         create_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Create Archive"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Create an archive from selected item"),
+            visible_text=translation_manager.translate("MenuPanel", "Create Archive"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Create an archive from selected item"),
             slot=self.main_window.application_logic_handler.create_archive,
             shortcut_key=self.KEY_CREATE_ARCHIVE
         )
         extract_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Extract Archive"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Extract selected archive"),
+            visible_text=translation_manager.translate("MenuPanel", "Extract Archive"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Extract selected archive"),
             slot=self.main_window.application_logic_handler.extract_archive,
             shortcut_key=self.KEY_EXTRACT_ARCHIVE
         )
@@ -185,13 +186,13 @@ class MenuPanel(QObject):
         archive_menu.addAction(extract_action)
 
     def _create_operations_menu(self):
-        operations_menu = self.menu_bar.addMenu(QCoreApplication.translate("MainWindow", "Operations"))
+        operations_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Operations"))
         self.toolbar.addSeparator()
 
         # --- Go Up ---
         go_up_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Go Up"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Go to parent directory"),
+            visible_text=translation_manager.translate("MenuPanel", "Go Up"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Go to parent directory"),
             icon=QStyle.StandardPixmap.SP_ArrowUp,
             slot=self.go_up_requested,
             shortcut_key=self.KEY_GO_UP
@@ -201,8 +202,8 @@ class MenuPanel(QObject):
 
         # --- Refresh ---
         refresh_action = self._create_action(
-            visible_text=QCoreApplication.translate("MenuPanel", "Refresh"),
-            tooltip_text=QCoreApplication.translate("MenuPanel", "Refresh the current view"),
+            visible_text=translation_manager.translate("MenuPanel", "Refresh"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Refresh the current view"),
             icon=QStyle.StandardPixmap.SP_BrowserReload,
             slot=self.refresh_requested,
             shortcut_key=self.KEY_REFRESH
@@ -215,57 +216,57 @@ class MenuPanel(QObject):
         # --- Other Operations ---
         
         # New File
-        new_file_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "New File"), tooltip_text=QCoreApplication.translate("MenuPanel", "Create a new empty file"), icon=QStyle.StandardPixmap.SP_FileIcon, slot=self.main_window.application_logic_handler.create_new_file, shortcut_key=self.KEY_NEW_FILE)
+        new_file_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "New File"), tooltip_text=translation_manager.translate("MenuPanel", "Create a new empty file"), icon=QStyle.StandardPixmap.SP_FileIcon, slot=self.main_window.application_logic_handler.create_new_file, shortcut_key=self.KEY_NEW_FILE)
         operations_menu.addAction(new_file_action)
         self.toolbar.addAction(new_file_action)
 
         # New Folder
-        new_folder_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "New Folder"), tooltip_text=QCoreApplication.translate("MenuPanel", "Create a new directory"), icon=QStyle.StandardPixmap.SP_DirIcon, slot=self.main_window.application_logic_handler.create_new_directory, shortcut_key=self.KEY_NEW_FOLDER)
+        new_folder_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "New Folder"), tooltip_text=translation_manager.translate("MenuPanel", "Create a new directory"), icon=QStyle.StandardPixmap.SP_DirIcon, slot=self.main_window.application_logic_handler.create_new_directory, shortcut_key=self.KEY_NEW_FOLDER)
         operations_menu.addAction(new_folder_action)
         self.toolbar.addAction(new_folder_action)
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
         # Search
-        search_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "Search"), tooltip_text=QCoreApplication.translate("MenuPanel", "Search for files and directories"), icon=QStyle.StandardPixmap.SP_FileDialogDetailedView, slot=self.main_window.search_input.setFocus, shortcut_key=self.KEY_SEARCH)
+        search_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Search"), tooltip_text=translation_manager.translate("MenuPanel", "Search for files and directories"), icon=QStyle.StandardPixmap.SP_FileDialogDetailedView, slot=self.main_window.search_input.setFocus, shortcut_key=self.KEY_SEARCH)
         operations_menu.addAction(search_action)
         self.toolbar.addAction(search_action)
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
         # Copy
-        copy_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "Copy"), tooltip_text=QCoreApplication.translate("MenuPanel", "Copy selected items"), icon=QStyle.StandardPixmap.SP_FileLinkIcon, slot=self.main_window.application_logic_handler.copy_selected_item, shortcut_key=self.KEY_COPY)
+        copy_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Copy"), tooltip_text=translation_manager.translate("MenuPanel", "Copy selected items"), icon=QStyle.StandardPixmap.SP_FileLinkIcon, slot=self.main_window.application_logic_handler.copy_selected_item, shortcut_key=self.KEY_COPY)
         operations_menu.addAction(copy_action)
         self.toolbar.addAction(copy_action)
 
         # Paste
-        paste_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "Paste"), tooltip_text=QCoreApplication.translate("MenuPanel", "Paste items from clipboard"), icon=QStyle.StandardPixmap.SP_FileIcon, slot=self.main_window.application_logic_handler.paste_item_to_current_dir, shortcut_key=self.KEY_PASTE)
+        paste_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Paste"), tooltip_text=translation_manager.translate("MenuPanel", "Paste items from clipboard"), icon=QStyle.StandardPixmap.SP_FileIcon, slot=self.main_window.application_logic_handler.paste_item_to_current_dir, shortcut_key=self.KEY_PASTE)
         operations_menu.addAction(paste_action)
         self.toolbar.addAction(paste_action)
 
         # Move
-        move_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "Move"), tooltip_text=QCoreApplication.translate("MenuPanel", "Move selected items"), icon=QStyle.StandardPixmap.SP_DirLinkIcon, slot=self.main_window.application_logic_handler.move_selected_item, shortcut_key=self.KEY_MOVE)
+        move_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Move"), tooltip_text=translation_manager.translate("MenuPanel", "Move selected items"), icon=QStyle.StandardPixmap.SP_DirLinkIcon, slot=self.main_window.application_logic_handler.move_selected_item, shortcut_key=self.KEY_MOVE)
         operations_menu.addAction(move_action)
         self.toolbar.addAction(move_action)
 
         # Rename
-        rename_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "Rename"), tooltip_text=QCoreApplication.translate("MenuPanel", "Rename selected item"), icon=QStyle.StandardPixmap.SP_LineEditClearButton, slot=self.main_window.application_logic_handler.rename_selected_item, shortcut_key=self.KEY_RENAME)
+        rename_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Rename"), tooltip_text=translation_manager.translate("MenuPanel", "Rename selected item"), icon=QStyle.StandardPixmap.SP_LineEditClearButton, slot=self.main_window.application_logic_handler.rename_selected_item, shortcut_key=self.KEY_RENAME)
         operations_menu.addAction(rename_action)
         self.toolbar.addAction(rename_action)
 
         # Delete
-        delete_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "Delete"), tooltip_text=QCoreApplication.translate("MenuPanel", "Delete selected items"), icon=QStyle.StandardPixmap.SP_TrashIcon, slot=self.main_window.application_logic_handler.delete_selected_item, shortcut_key=self.KEY_DELETE)
+        delete_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Delete"), tooltip_text=translation_manager.translate("MenuPanel", "Delete selected items"), icon=QStyle.StandardPixmap.SP_TrashIcon, slot=self.main_window.application_logic_handler.delete_selected_item, shortcut_key=self.KEY_DELETE)
         operations_menu.addAction(delete_action)
         self.toolbar.addAction(delete_action)
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
         # Compare
-        compare_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "Compare"), tooltip_text=QCoreApplication.translate("MenuPanel", "Compare selected items"), icon=QStyle.StandardPixmap.SP_FileDialogToParent, slot=self.main_window.application_logic_handler.compare_selected_items, shortcut_key=self.KEY_COMPARE)
+        compare_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Compare"), tooltip_text=translation_manager.translate("MenuPanel", "Compare selected items"), icon=QStyle.StandardPixmap.SP_FileDialogToParent, slot=self.main_window.application_logic_handler.compare_selected_items, shortcut_key=self.KEY_COMPARE)
         operations_menu.addAction(compare_action)
         self.toolbar.addAction(compare_action)
 
         # Synchronize
-        sync_action = self._create_action(visible_text=QCoreApplication.translate("MenuPanel", "Synchronize"), tooltip_text=QCoreApplication.translate("MenuPanel", "Synchronize directories"), icon=QStyle.StandardPixmap.SP_DirLinkIcon, slot=self.main_window.application_logic_handler.synchronize_directories, shortcut_key=self.KEY_SYNCHRONIZE)
+        sync_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Synchronize"), tooltip_text=translation_manager.translate("MenuPanel", "Synchronize directories"), icon=QStyle.StandardPixmap.SP_DirLinkIcon, slot=self.main_window.application_logic_handler.synchronize_directories, shortcut_key=self.KEY_SYNCHRONIZE)
         operations_menu.addAction(sync_action)
         self.toolbar.addAction(sync_action)

@@ -2,7 +2,8 @@ import os
 import pwd
 import grp
 import logging
-from PyQt6.QtCore import QAbstractItemModel, QModelIndex, Qt, QCoreApplication
+from PyQt6.QtCore import QAbstractItemModel, QModelIndex, Qt
+from app.translation_manager import translation_manager # Import our new manager
 
 class TreeItem:
     def __init__(self, path, parent=None):
@@ -168,8 +169,16 @@ class TreeFileSystemModel(QAbstractItemModel):
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
-            headers = ["Name", "Size", "Type", "Date Modified", "Permissions", "Owner", "Group"]
-            return QCoreApplication.translate("TreeFileSystemModel", headers[section])
+            headers = {
+                0: translation_manager.translate("TreeFileSystemModel", "Name"),
+                1: translation_manager.translate("TreeFileSystemModel", "Size"),
+                2: translation_manager.translate("TreeFileSystemModel", "Type"),
+                3: translation_manager.translate("TreeFileSystemModel", "Date Modified"),
+                4: translation_manager.translate("TreeFileSystemModel", "Permissions"),
+                5: translation_manager.translate("TreeFileSystemModel", "Owner"),
+                6: translation_manager.translate("TreeFileSystemModel", "Group")
+            }
+            return headers.get(section, None)
         return None
 
     def filePath(self, index):

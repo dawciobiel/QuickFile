@@ -3,10 +3,11 @@ import os
 import datetime
 import pwd # Import for UID to username conversion
 import grp # Import for GID to groupname conversion
-from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QDir, QCoreApplication
+from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QDir
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QFileIconProvider
 from utils.dialogs import show_error_message
+from app.translation_manager import translation_manager # Import our new manager
 
 class FlatFileSystemModel(QAbstractTableModel):
     def __init__(self, parent=None, show_dot_files=True, file_permissions_display_mode="symbolic", show_uid_column=True, show_gid_column=True):
@@ -46,11 +47,10 @@ class FlatFileSystemModel(QAbstractTableModel):
             dot_dot_item.append(("..", os.path.dirname(self._current_path), True, False))
         
         if self._current_path == "/root":
-            msg = QCoreApplication.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
+            msg = translation_manager.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
             logging.warning(f"Skipping listing of /root directory due to permission restrictions.")
-            show_error_message(self.parent_widget, QCoreApplication.translate("FlatFileSystemModel", "Permission Error"), msg)
-            self._items = dot_dot_item
-            return
+            show_error_message(self.parent_widget, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
+            other_items = []
 
         try:
             for item_name in os.listdir(self._current_path):
@@ -64,9 +64,9 @@ class FlatFileSystemModel(QAbstractTableModel):
             other_items.sort(key=lambda x: (not x[2], x[0].lower()))
 
         except OSError as e:
-            msg = QCoreApplication.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
+            msg = translation_manager.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
             logging.error(f"Permission error accessing {self._current_path}: {e}")
-            show_error_message(self.parent_widget, QCoreApplication.translate("FlatFileSystemModel", "Permission Error"), msg)
+            show_error_message(self.parent_widget, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
             other_items = []
 
         self._items = dot_dot_item + other_items
@@ -144,7 +144,7 @@ class FlatFileSystemModel(QAbstractTableModel):
                 if is_dir:
                     return "Folder"
                 else:
-                    return QCoreApplication.translate("FlatFileSystemModel", "File")
+                    return translation_manager.translate("FlatFileSystemModel", "File")
             elif index.column() == 3:  # Date Modified
                 try:
                     mtime = os.path.getmtime(item_path)
@@ -223,10 +223,10 @@ class FlatFileSystemModel(QAbstractTableModel):
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
             base_headers = {
-                0: QCoreApplication.translate("FlatFileSystemModel", "Name"),
-                1: QCoreApplication.translate("FlatFileSystemModel", "Size"),
-                2: QCoreApplication.translate("FlatFileSystemModel", "Type"),
-                3: QCoreApplication.translate("FlatFileSystemModel", "Date Modified")
+                0: translation_manager.translate("FlatFileSystemModel", "Name"),
+                1: translation_manager.translate("FlatFileSystemModel", "Size"),
+                2: translation_manager.translate("FlatFileSystemModel", "Type"),
+                3: translation_manager.translate("FlatFileSystemModel", "Date Modified")
             }
             if section in base_headers:
                 return base_headers[section]
@@ -234,15 +234,15 @@ class FlatFileSystemModel(QAbstractTableModel):
             current_col = 4
             if self._show_uid_column or self._show_gid_column:
                 if section == current_col:
-                    return QCoreApplication.translate("FlatFileSystemModel", "Permissions")
+                    return translation_manager.translate("FlatFileSystemModel", "Permissions")
                 current_col += 1
             if self._show_uid_column:
                 if section == current_col:
-                    return QCoreApplication.translate("FlatFileSystemModel", "Owner")
+                    return translation_manager.translate("FlatFileSystemModel", "Owner")
                 current_col += 1
             if self._show_gid_column:
                 if section == current_col:
-                    return QCoreApplication.translate("FlatFileSystemModel", "Group")
+                    return translation_manager.translate("FlatFileSystemModel", "Group")
                 current_col += 1
         return None
 

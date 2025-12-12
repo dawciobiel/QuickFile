@@ -1,10 +1,11 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout
-from PyQt6.QtCore import Qt, QCoreApplication
+from PyQt6.QtCore import Qt
+from app.translation_manager import translation_manager # Import our new manager
 
 class ShortcutsDialog(QDialog):
     def __init__(self, parent, shortcuts):
         super().__init__(parent)
-        self.setWindowTitle(QCoreApplication.translate("ShortcutsDialog", "Keyboard Shortcuts"))
+        self.setWindowTitle(translation_manager.translate("ShortcutsDialog", "Keyboard Shortcuts"))
         self.shortcuts = shortcuts
         self._init_ui()
 
@@ -13,7 +14,7 @@ class ShortcutsDialog(QDialog):
 
         self.table = QTableWidget()
         self.table.setColumnCount(2)
-        self.table.setHorizontalHeaderLabels([QCoreApplication.translate("ShortcutsDialog", "Action"), QCoreApplication.translate("ShortcutsDialog", "Shortcut")])
+        self.table.setHorizontalHeaderLabels([translation_manager.translate("ShortcutsDialog", "Action"), translation_manager.translate("ShortcutsDialog", "Shortcut")])
         self.table.setRowCount(len(self.shortcuts))
 
         for i, (action, shortcut) in enumerate(self.shortcuts.items()):
@@ -24,8 +25,8 @@ class ShortcutsDialog(QDialog):
         layout.addWidget(self.table)
 
         button_layout = QHBoxLayout()
-        self.save_button = QPushButton(QCoreApplication.translate("ShortcutsDialog", "Save"))
-        self.cancel_button = QPushButton(QCoreApplication.translate("ShortcutsDialog", "Cancel"))
+        self.save_button = QPushButton(translation_manager.translate("ShortcutsDialog", "Save"))
+        self.cancel_button = QPushButton(translation_manager.translate("ShortcutsDialog", "Cancel"))
         button_layout.addWidget(self.save_button)
         button_layout.addWidget(self.cancel_button)
         layout.addLayout(button_layout)

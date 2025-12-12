@@ -1,11 +1,12 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QLabel, QTabWidget, QWidget
 from PyQt6.QtCore import Qt
+from app.translation_manager import translation_manager # Import our new manager
 import os
 
 class CompareDialog(QDialog):
     def __init__(self, parent=None, report=None, path1="", path2=""):
         super().__init__(parent)
-        self.setWindowTitle(f"Comparison Results: {path1} vs {path2}")
+        self.setWindowTitle(translation_manager.translate("CompareDialog", "Comparison Results") + f": {path1} vs {path2}")
         self.setGeometry(100, 100, 800, 600)
 
         self.report = report
@@ -18,18 +19,18 @@ class CompareDialog(QDialog):
         main_layout = QVBoxLayout(self)
 
         # Display paths
-        path_label = QLabel(f"Comparing:\nLeft: {self.path1}\nRight: {self.path2}")
+        path_label = QLabel(translation_manager.translate("CompareDialog", "Comparing:") + f"\n{translation_manager.translate('CompareDialog', 'Left')}: {self.path1}\n{translation_manager.translate('CompareDialog', 'Right')}: {self.path2}")
         main_layout.addWidget(path_label)
 
         self.tab_widget = QTabWidget()
         main_layout.addWidget(self.tab_widget)
 
-        self._add_tab("Different Files", self.report.get("diff_files", []))
-        self._add_tab("Left Only", self.report.get("left_only", []))
-        self._add_tab("Right Only", self.report.get("right_only", []))
-        self._add_tab("Same Files", self.report.get("same_files", []))
-        self._add_tab("Common Dirs", self.report.get("common_dirs", []))
-        self._add_tab("Common Funny", self.report.get("common_funny", []))
+        self._add_tab(translation_manager.translate("CompareDialog", "Different Files"), self.report.get("diff_files", []))
+        self._add_tab(translation_manager.translate("CompareDialog", "Left Only"), self.report.get("left_only", []))
+        self._add_tab(translation_manager.translate("CompareDialog", "Right Only"), self.report.get("right_only", []))
+        self._add_tab(translation_manager.translate("CompareDialog", "Same Files"), self.report.get("same_files", []))
+        self._add_tab(translation_manager.translate("CompareDialog", "Common Dirs"), self.report.get("common_dirs", []))
+        self._add_tab(translation_manager.translate("CompareDialog", "Common Funny"), self.report.get("common_funny", []))
 
         # Handle subdirectories recursively
         if self.report.get("subdirs"):
@@ -58,18 +59,18 @@ class CompareDialog(QDialog):
             subdir_tab = QWidget()
             subdir_layout = QVBoxLayout(subdir_tab)
             
-            subdir_label = QLabel(f"Subdirectory: {subdir_name}")
+            subdir_label = QLabel(translation_manager.translate("CompareDialog", "Subdirectory:") + f" {subdir_name}")
             subdir_layout.addWidget(subdir_label)
 
             subdir_tab_widget = QTabWidget()
             subdir_layout.addWidget(subdir_tab_widget)
 
-            self._add_tab_to_widget(subdir_tab_widget, "Different Files", subdir_report.get("diff_files", []))
-            self._add_tab_to_widget(subdir_tab_widget, "Left Only", subdir_report.get("left_only", []))
-            self._add_tab_to_widget(subdir_tab_widget, "Right Only", subdir_report.get("right_only", []))
-            self._add_tab_to_widget(subdir_tab_widget, "Same Files", subdir_report.get("same_files", []))
-            self._add_tab_to_widget(subdir_tab_widget, "Common Dirs", subdir_report.get("common_dirs", []))
-            self._add_tab_to_widget(subdir_tab_widget, "Common Funny", subdir_report.get("common_funny", []))
+            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Different Files"), subdir_report.get("diff_files", []))
+            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Left Only"), subdir_report.get("left_only", []))
+            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Right Only"), subdir_report.get("right_only", []))
+            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Same Files"), subdir_report.get("same_files", []))
+            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Common Dirs"), subdir_report.get("common_dirs", []))
+            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Common Funny"), subdir_report.get("common_funny", []))
 
             if subdir_report.get("subdirs"):
                 self._add_subdir_tabs(subdir_report["subdirs"], subdir_tab_widget, subdir_path1, subdir_path2)
