@@ -1,23 +1,28 @@
 import os
 import pwd
 import grp
+import logging
 from PyQt6.QtCore import QSortFilterProxyModel, Qt, QModelIndex, QCoreApplication
 
 class FileSystemProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None, settings_manager=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
-        self._file_permissions_display_mode = "symbolic"
-        self._show_uid_column = True
-        self._show_gid_column = True
+        self.update_settings()
+
+    def update_settings(self):
         if self.settings_manager:
             self._file_permissions_display_mode = self.settings_manager.get_setting("file_permissions_display_mode", "symbolic")
             self._show_uid_column = self.settings_manager.get_setting("show_uid_column", True)
             self._show_gid_column = self.settings_manager.get_setting("show_gid_column", True)
+        else:
+            self._file_permissions_display_mode = "symbolic"
+            self._show_uid_column = True
+            self._show_gid_column = True
+        logging.debug(f"Proxy settings updated: UID={self._show_uid_column}, GID={self._show_gid_column}")
+        self.layoutChanged.emit()
 
-    # --- Column Handling ---
     def columnCount(self, parent=QModelIndex()):
-        # Add 3 extra columns for Permissions, Owner, Group
         return self.sourceModel().columnCount(parent) + 3
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
@@ -25,7 +30,8 @@ class FileSystemProxyModel(QSortFilterProxyModel):
             source_cols = self.sourceModel().columnCount()
             if section < source_cols:
                 return self.sourceModel().headerData(section, orientation, role)
-            elif section == source_cols:
+            
+            if section == source_cols:
                 return QCoreApplication.translate("FileSystemProxyModel", "Permissions")
             elif section == source_cols + 1:
                 return QCoreApplication.translate("FileSystemProxyModel", "Owner")
@@ -33,23 +39,20 @@ class FileSystemProxyModel(QSortFilterProxyModel):
                 return QCoreApplication.translate("FileSystemProxyModel", "Group")
         return super().headerData(section, orientation, role)
 
-    # --- Data Handling ---
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
 
         source_cols = self.sourceModel().columnCount()
         if index.column() < source_cols:
-            # For columns from the source model, we need to map the index
             source_index = self.mapToSource(index)
             return self.sourceModel().data(source_index, role)
 
-        # For new columns, get the source index for the item (row)
-        source_index_for_row = self.mapToSource(index.siblingAtColumn(0))
-        if not source_index_for_row.isValid():
-            return None
-
         if role == Qt.ItemDataRole.DisplayRole:
+            source_index_for_row = self.mapToSource(index.siblingAtColumn(0))
+            if not source_index_for_row.isValid():
+                return None
+
             file_path = self.sourceModel().filePath(source_index_for_row)
             if not os.path.exists(file_path):
                 return None
@@ -59,27 +62,29 @@ class FileSystemProxyModel(QSortFilterProxyModel):
             except OSError:
                 return ""
 
-            if index.column() == source_cols: # Permissions
+            if index.column() == source_cols:
                 if self._file_permissions_display_mode == "symbolic":
                     return self._get_file_permissions_symbolic(stat_info.st_mode)
                 else:
                     return self._get_file_permissions_numeric(stat_info.st_mode)
-            elif index.column() == source_cols + 1: # Owner
+            elif index.column() == source_cols + 1:
                 return self._get_username_from_uid(stat_info.st_uid)
-            elif index.column() == source_cols + 2: # Group
+            elif index.column() == source_cols + 2:
                 return self._get_groupname_from_gid(stat_info.st_gid)
 
-        return None # For other roles for the new columns
+        return None
 
-    # --- Pass-through methods to source QFileSystemModel ---
     def filePath(self, index):
-        return self.sourceModel().filePath(self.mapToSource(index))
+        source_index = self.mapToSource(index)
+        return self.sourceModel().filePath(source_index)
 
     def isDir(self, index):
-        return self.sourceModel().isDir(self.mapToSource(index))
+        source_index = self.mapToSource(index)
+        return self.sourceModel().isDir(source_index)
 
     def fileName(self, index):
-        return self.sourceModel().fileName(self.mapToSource(index))
+        source_index = self.mapToSource(index)
+        return self.sourceModel().fileName(source_index)
         
     def index(self, path_or_row, column=0, parent=QModelIndex()):
         if isinstance(path_or_row, str):
@@ -87,7 +92,6 @@ class FileSystemProxyModel(QSortFilterProxyModel):
             return self.mapFromSource(source_index)
         return super().index(path_or_row, column, parent)
 
-    # --- Settings setters ---
     def set_file_permissions_display_mode(self, mode):
         self._file_permissions_display_mode = mode
         self.layoutChanged.emit()
@@ -100,7 +104,6 @@ class FileSystemProxyModel(QSortFilterProxyModel):
         self._show_gid_column = show
         self.layoutChanged.emit()
 
-    # --- Helper functions ---
     def _get_file_permissions_symbolic(self, mode):
         perm = []
         perm.append('r' if (mode & 0o400) else '-')
