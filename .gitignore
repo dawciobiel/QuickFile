@@ -1,5 +1,5 @@
 # Logs
-logs/
+# logs/
 
 # Refactorization notes
 docs/refactor/
@@ -9,6 +9,16 @@ NOTE.md
 
 # Temporary translation file
 translations/to_translate_pl.txt
+
+# Old Qt translation files
+translations/*.ts
+translations/*.qm
+
+# Translation scripts (now obsolete)
+update_translations.sh
+extract_for_translation.py
+apply_translations.py
+compile_translations.sh
 
 /.idea/
 experiments/
@@ -70,9 +80,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Translations
-*.mo
-*.pot
+# Translations (now handled by JSON)
+# *.mo
+# *.pot
 
 # Django stuff:
 # *.log
