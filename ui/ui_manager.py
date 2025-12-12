@@ -1,7 +1,7 @@
 import os
 import subprocess
 import logging
-from PyQt6.QtCore import Qt, QSettings, QEvent, QObject, QCoreApplication
+from PyQt6.QtCore import Qt, QSettings, QEvent, QObject
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLineEdit, QToolButton, QDialog, QMessageBox
 from PyQt6.QtGui import QFileSystemModel
 from bookmarks.bookmarks_manager import BookmarksManager
@@ -18,6 +18,7 @@ from utils.dialogs import show_error_message
 from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
 from utils.compare_dialog import CompareDialog
+from app.translation_manager import translation_manager # Import our new manager
 
 class UIManager(QObject):
     def __init__(self, main_window, settings_manager, file_manager, file_comparator, archive_manager, directory_synchronizer, bookmarks_manager):
@@ -33,40 +34,32 @@ class UIManager(QObject):
         self._connect_signals()
 
     def _init_ui(self):
-        # Inicjalizacja komponentów, które są potrzebne innym
-        # FolderBrowser needs settings_manager and parent
         self.main_window.folder_browser = FolderBrowser(
             view_mode=self.settings_manager.get_setting("view_mode"),
             settings_manager=self.settings_manager,
             parent=self.main_window
         )
 
-        # Inicjalizacja paska narzędzi
-        self.main_window.toolbar = self.main_window.addToolBar(QCoreApplication.translate("UIManager", "Main Tools"))
+        self.main_window.toolbar = self.main_window.addToolBar(translation_manager.translate("UIManager", "Main Tools"))
         self.main_window.toolbar.setObjectName("mainToolbar")
         self.main_window.toolbar.setMovable(False)
 
-        # Pole wyszukiwania
         self.main_window.search_input = QLineEdit(self.main_window)
-        self.main_window.search_input.setPlaceholderText(QCoreApplication.translate("UIManager", "Search files..."))
+        self.main_window.search_input.setPlaceholderText(translation_manager.translate("UIManager", "Search files..."))
         self.main_window.toolbar.addWidget(self.main_window.search_input)
 
-        # Przycisk do zakładek
         self.main_window.add_bookmark_button = QToolButton(self.main_window)
         self.main_window.add_bookmark_button.setText("⭐")
-        self.main_window.add_bookmark_button.setToolTip(QCoreApplication.translate("UIManager", "Add current directory to bookmarks"))
+        self.main_window.add_bookmark_button.setToolTip(translation_manager.translate("UIManager", "Add current directory to bookmarks"))
         self.main_window.toolbar.addWidget(self.main_window.add_bookmark_button)
 
-        # Inicjalizacja paska menu i paska stanu
         self.main_window.menu_panel = MenuPanel(self.main_window)
 
         self.main_window.status_bar = self.main_window.statusBar()
-        self.main_window.status_bar.showMessage(QCoreApplication.translate("UIManager", "Ready"))
+        self.main_window.status_bar.showMessage(translation_manager.translate("UIManager", "Ready"))
 
-        # Panel klawiszy funkcyjnych
         self.main_window.function_key_panel = FunctionKeyPanel(self.main_window)
 
-        # Ustawienie centralnego widżetu
         central_widget = QWidget(self.main_window)
         self.main_window.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)

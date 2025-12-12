@@ -1,10 +1,11 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QListWidget, QListWidgetItem
+from app.translation_manager import translation_manager # Import our new manager
 
 class BookmarkDialog(QDialog):
     def __init__(self, bookmarks, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Bookmarks")
+        self.setWindowTitle(translation_manager.translate("BookmarkDialog", "Bookmarks"))
         self.bookmarks = bookmarks
         self.selected_bookmark = None
 
@@ -12,7 +13,7 @@ class BookmarkDialog(QDialog):
         self.setLayout(self.layout)
 
         self.filter_input = QLineEdit()
-        self.filter_input.setPlaceholderText("Filter bookmarks...")
+        self.filter_input.setPlaceholderText(translation_manager.translate("BookmarkDialog", "Filter bookmarks..."))
         self.layout.addWidget(self.filter_input)
 
         self.bookmarks_list = QListWidget()

@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QMessageBox, QSpacerItem, QSizePolicy, QGridLayout, QWidget
-from PyQt6.QtCore import QSize, QCoreApplication
+from PyQt6.QtCore import QSize
+from app.translation_manager import translation_manager # Import our new manager
 
 
 def show_error_message(parent: QWidget | None, title: str, message: str):
@@ -8,7 +9,7 @@ def show_error_message(parent: QWidget | None, title: str, message: str):
     error_dialog.setIcon(QMessageBox.Icon.Critical)
     error_dialog.setText(title)
     error_dialog.setInformativeText(message)
-    error_dialog.setWindowTitle(QCoreApplication.translate("QMessageBox", "Error")) # Zastosowano tłumaczenie dla tytułu okna
+    error_dialog.setWindowTitle(translation_manager.translate("QMessageBox", "Error")) # Zastosowano tłumaczenie dla tytułu okna
     
     # Add a spacer item to force the width
     spacer = QSpacerItem(400, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
