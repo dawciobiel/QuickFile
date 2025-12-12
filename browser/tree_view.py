@@ -1,4 +1,5 @@
 import os
+from PyQt6.QtCore import QModelIndex, Qt, QEvent
 from PyQt6.QtWidgets import QTreeView, QVBoxLayout, QAbstractItemView, QHeaderView
 from browser.base_view import AbstractFileView
 from browser.tree_file_system_model import TreeFileSystemModel
@@ -13,17 +14,37 @@ class TreeFileView(AbstractFileView):
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        self.view.setExpandsOnDoubleClick(False) # We handle this manually
+        self.view.setExpandsOnDoubleClick(False)
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.view)
         
-        self.update_view_settings() # Apply initial settings
+        self.update_view_settings()
+        
+        self.view.doubleClicked.connect(self.on_item_double_clicked)
+        self.view.installEventFilter(self)
+
+    def eventFilter(self, source, event):
+        if source is self.view and event.type() == QEvent.Type.KeyPress:
+            key = event.key()
+            if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
+                current_index = self.view.currentIndex()
+                if current_index.isValid():
+                    self.on_item_double_clicked(current_index)
+                return True
+            elif key == Qt.Key.Key_Insert:
+                self.toggle_selection()
+                return True
+            elif key == Qt.Key.Key_Backspace:
+                self.go_up()
+                return True
+        
+        return super().eventFilter(source, event)
 
     def set_path(self, path):
         self.model.set_root_path(path)
-        self.view.setRootIndex(self.model.index(0, 0, QModelIndex()))
+        self.view.setRootIndex(QModelIndex())
 
     def get_current_path(self):
         return self.model.root_item.path
@@ -32,8 +53,8 @@ class TreeFileView(AbstractFileView):
         self.model.update_settings()
 
     def get_selected_paths(self):
-        indexes = self.view.selectionModel().selectedRows()
-        return [self.model.filePath(index) for index in indexes]
+        # This needs to be implemented based on the is_marked flag in the model
+        return []
 
     def get_current_selected_path(self):
         if self.view.currentIndex().isValid():
@@ -56,12 +77,10 @@ class TreeFileView(AbstractFileView):
         show_uid = self.settings_manager.get_setting("show_uid_column", True)
         show_gid = self.settings_manager.get_setting("show_gid_column", True)
         
-        # Columns: 0:Name, 1:Size, 2:Type, 3:Date, 4:Perms, 5:Owner, 6:Group
         self.view.setColumnHidden(4, not (show_uid or show_gid))
         self.view.setColumnHidden(5, not show_uid)
         self.view.setColumnHidden(6, not show_gid)
         
-        # Restore widths
         setting_key = "tree_column_widths"
         saved_widths = self.settings_manager.get_setting(setting_key)
         if saved_widths and len(saved_widths) == header.count():
@@ -77,3 +96,22 @@ class TreeFileView(AbstractFileView):
         header = self.view.header()
         column_widths = [header.sectionSize(i) for i in range(header.count())]
         self.settings_manager.set_setting("tree_column_widths", column_widths)
+        
+    def on_item_double_clicked(self, index):
+        if os.path.isdir(self.model.filePath(index)):
+            if self.view.isExpanded(index):
+                self.view.collapse(index)
+            else:
+                self.view.expand(index)
+        # else: emit signal to open file
+
+    def toggle_selection(self):
+        current_index = self.view.currentIndex()
+        if current_index.isValid():
+            self.model.toggle_selection_by_index(current_index)
+            # Move to the next item
+            next_row = current_index.row() + 1
+            parent = current_index.parent()
+            if next_row < self.model.rowCount(parent):
+                next_index = self.model.index(next_row, current_index.column(), parent)
+                self.view.setCurrentIndex(next_index)
