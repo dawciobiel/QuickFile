@@ -43,7 +43,7 @@ class ApplicationLogicHandler(QObject):
         self.ACTION_SEARCH = QCoreApplication.translate("MenuPanel", "Search")
         self.ACTION_COPY = QCoreApplication.translate("MenuPanel", "Copy")
         self.ACTION_PASTE = QCoreApplication.translate("MenuPanel", "Paste")
-        self.ACTION_MOVE = QCoreApplication.translate("MenuPanel", "Move")
+        self.ACTION_MOVE = "Move" # QCoreApplication.translate("MenuPanel", "Move")
         self.ACTION_RENAME = QCoreApplication.translate("MenuPanel", "Rename")
         self.ACTION_DELETE = QCoreApplication.translate("MenuPanel", "Delete")
         self.ACTION_SYNCHRONIZE = QCoreApplication.translate("MenuPanel", "Synchronize")
@@ -343,7 +343,7 @@ class ApplicationLogicHandler(QObject):
                 try:
                     message = self.file_manager.delete_item(path)
                     self.main_window.status_bar.showMessage(message)
-                except (FileNotFound, FileManagerError) as e:
+                except (FileNotFoundError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_DELETE, f"Error deleting {os.path.basename(path)}: {str(e)}")
                     all_successful = False
                     break # Stop on first error
@@ -368,13 +368,27 @@ class ApplicationLogicHandler(QObject):
         elif not new_name:
             show_error_message(self.main_window, self.ACTION_RENAME, QCoreApplication.translate("MenuPanel", "New name cannot be empty."))
 
-    def apply_general_settings(self, new_view_mode, new_show_dot_files):
-        # new_view_mode is now None, as it's no longer set in SettingsDialog
-        if new_show_dot_files is not None: # Check if it's actually passed
-            current_show_dot_files = self.main_window.settings_manager.get_setting("showDotFiles")
-            if new_show_dot_files != current_show_dot_files:
-                self.main_window.settings_manager.set_setting("showDotFiles", new_show_dot_files)
-                self.main_window.folder_browser.set_show_dot_files(new_show_dot_files)
+    def apply_general_settings(self, new_settings: dict):
+        current_show_dot_files = self.main_window.settings_manager.get_setting("showDotFiles")
+        current_file_permissions_display_mode = self.main_window.settings_manager.get_setting("file_permissions_display_mode")
+        current_show_uid_column = self.main_window.settings_manager.get_setting("show_uid_column")
+        current_show_gid_column = self.main_window.settings_manager.get_setting("show_gid_column")
+
+        if new_settings.get("showDotFiles") is not None and new_settings["showDotFiles"] != current_show_dot_files:
+            self.main_window.settings_manager.set_setting("showDotFiles", new_settings["showDotFiles"])
+            self.main_window.folder_browser.set_show_dot_files(new_settings["showDotFiles"])
+
+        if new_settings.get("file_permissions_display_mode") is not None and new_settings["file_permissions_display_mode"] != current_file_permissions_display_mode:
+            self.main_window.settings_manager.set_setting("file_permissions_display_mode", new_settings["file_permissions_display_mode"])
+            self.main_window.folder_browser.set_file_permissions_display_mode(new_settings["file_permissions_display_mode"])
+
+        if new_settings.get("show_uid_column") is not None and new_settings["show_uid_column"] != current_show_uid_column:
+            self.main_window.settings_manager.set_setting("show_uid_column", new_settings["show_uid_column"])
+            self.main_window.folder_browser.set_show_uid_column(new_settings["show_uid_column"])
+
+        if new_settings.get("show_gid_column") is not None and new_settings["show_gid_column"] != current_show_gid_column:
+            self.main_window.settings_manager.set_setting("show_gid_column", new_settings["show_gid_column"])
+            self.main_window.folder_browser.set_show_gid_column(new_settings["show_gid_column"])
 
     def apply_shortcuts_settings(self, new_shortcuts):
         self.main_window.shortcuts_manager.save_shortcuts(new_shortcuts)
