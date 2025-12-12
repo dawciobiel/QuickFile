@@ -1,19 +1,24 @@
 import logging
 import os
 import datetime
+import pwd # Import for UID to username conversion
+import grp # Import for GID to groupname conversion
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QDir, QCoreApplication
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QFileIconProvider
 from utils.dialogs import show_error_message
 
 class FlatFileSystemModel(QAbstractTableModel):
-    def __init__(self, parent=None, show_dot_files=True):
+    def __init__(self, parent=None, show_dot_files=True, file_permissions_display_mode="symbolic", show_uid_column=True, show_gid_column=True):
         super().__init__(parent)
         self.parent_widget = parent
         self._current_path = os.path.expanduser("~")
         self._items = []
         self._icon_provider = QFileIconProvider()
         self._show_dot_files = show_dot_files
+        self._file_permissions_display_mode = file_permissions_display_mode
+        self._show_uid_column = show_uid_column
+        self._show_gid_column = show_gid_column
         logging.debug(f"FlatFileSystemModel.__init__ called. Initial show_dot_files: {self._show_dot_files}")
         self._populate_items()
 
@@ -75,11 +80,34 @@ class FlatFileSystemModel(QAbstractTableModel):
         self._populate_items()
         self.endResetModel()
 
+    def set_file_permissions_display_mode(self, mode):
+        if self._file_permissions_display_mode != mode:
+            self._file_permissions_display_mode = mode
+            self.layoutChanged.emit()
+
+    def set_show_uid_column(self, show):
+        if self._show_uid_column != show:
+            self._show_uid_column = show
+            self.layoutChanged.emit()
+
+    def set_show_gid_column(self, show):
+        if self._show_gid_column != show:
+            self._show_gid_column = show
+            self.layoutChanged.emit()
+
     def rowCount(self, parent=QModelIndex()):
         return len(self._items)
 
     def columnCount(self, parent=QModelIndex()):
-        return 5  # Name, Size, Type, Date Modified, Selected (hidden)
+        base_columns = 4  # Name, Size, Type, Date Modified
+        extra_columns = 0
+        if self._show_uid_column or self._show_gid_column:
+            extra_columns += 1 # Permissions column
+        if self._show_uid_column:
+            extra_columns += 1
+        if self._show_gid_column:
+            extra_columns += 1
+        return base_columns + extra_columns + 1 # +1 for the hidden selection column
 
     def flags(self, index):
         default_flags = super().flags(index)
@@ -123,6 +151,44 @@ class FlatFileSystemModel(QAbstractTableModel):
                     return datetime.datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
                 except OSError:
                     return "N/A"
+            
+            # New columns
+            base_columns = 4
+            current_col = base_columns
+
+            # Permissions column
+            if self._show_uid_column or self._show_gid_column: # Display permissions if owner/group are shown
+                if index.column() == current_col:
+                    try:
+                        stat_info = os.stat(item_path)
+                        if self._file_permissions_display_mode == "symbolic":
+                            return self._get_file_permissions_symbolic(stat_info.st_mode)
+                        else:
+                            return self._get_file_permissions_numeric(stat_info.st_mode)
+                    except OSError:
+                        return ""
+                current_col += 1
+            
+            # UID column
+            if self._show_uid_column:
+                if index.column() == current_col:
+                    try:
+                        stat_info = os.stat(item_path)
+                        return self._get_username_from_uid(stat_info.st_uid)
+                    except OSError:
+                        return ""
+                current_col += 1
+            
+            # GID column
+            if self._show_gid_column:
+                if index.column() == current_col:
+                    try:
+                        stat_info = os.stat(item_path)
+                        return self._get_groupname_from_gid(stat_info.st_gid)
+                    except OSError:
+                        return ""
+                current_col += 1
+
             return None
 
         elif role == Qt.ItemDataRole.DecorationRole:
@@ -156,14 +222,28 @@ class FlatFileSystemModel(QAbstractTableModel):
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
-            if section == 0:
-                return QCoreApplication.translate("FlatFileSystemModel", "Name")
-            elif section == 1:
-                return QCoreApplication.translate("FlatFileSystemModel", "Size")
-            elif section == 2:
-                return QCoreApplication.translate("FlatFileSystemModel", "Type")
-            elif section == 3:
-                return QCoreApplication.translate("FlatFileSystemModel", "Date Modified")
+            base_headers = {
+                0: QCoreApplication.translate("FlatFileSystemModel", "Name"),
+                1: QCoreApplication.translate("FlatFileSystemModel", "Size"),
+                2: QCoreApplication.translate("FlatFileSystemModel", "Type"),
+                3: QCoreApplication.translate("FlatFileSystemModel", "Date Modified")
+            }
+            if section in base_headers:
+                return base_headers[section]
+            
+            current_col = 4
+            if self._show_uid_column or self._show_gid_column:
+                if section == current_col:
+                    return QCoreApplication.translate("FlatFileSystemModel", "Permissions")
+                current_col += 1
+            if self._show_uid_column:
+                if section == current_col:
+                    return QCoreApplication.translate("FlatFileSystemModel", "Owner")
+                current_col += 1
+            if self._show_gid_column:
+                if section == current_col:
+                    return QCoreApplication.translate("FlatFileSystemModel", "Group")
+                current_col += 1
         return None
 
     def filePath(self, index):
@@ -192,3 +272,36 @@ class FlatFileSystemModel(QAbstractTableModel):
             return
         new_check_state = Qt.CheckState.Unchecked if current_state == Qt.CheckState.Checked else Qt.CheckState.Checked
         self.setData(index, new_check_state, Qt.ItemDataRole.CheckStateRole)
+
+    def _get_file_permissions_symbolic(self, mode):
+        # Helper to convert numeric permissions to symbolic (rwx)
+        perm = []
+        # Owner
+        perm.append('r' if (mode & 0o400) else '_')
+        perm.append('w' if (mode & 0o200) else '_')
+        perm.append('x' if (mode & 0o100) else '_')
+        # Group
+        perm.append('r' if (mode & 0o040) else '_')
+        perm.append('w' if (mode & 0o020) else '_')
+        perm.append('x' if (mode & 0o010) else '_')
+        # Others
+        perm.append('r' if (mode & 0o004) else '_')
+        perm.append('w' if (mode & 0o002) else '_')
+        perm.append('x' if (mode & 0o001) else '_')
+        return "".join(perm)
+
+    def _get_file_permissions_numeric(self, mode):
+        # Helper to convert numeric permissions to octal (755)
+        return oct(mode)[-3:]
+
+    def _get_username_from_uid(self, uid):
+        try:
+            return pwd.getpwuid(uid).pw_name
+        except KeyError:
+            return str(uid)
+
+    def _get_groupname_from_gid(self, gid):
+        try:
+            return grp.getgrgid(gid).gr_name
+        except KeyError:
+            return str(gid)
