@@ -13,7 +13,7 @@ class SettingsManager:
         # Migrate old settings file if it exists
         old_settings_file = os.path.join(os.path.expanduser("~"), ".quickfile_settings.json")
         if os.path.exists(old_settings_file) and not os.path.exists(self.settings_file):
-            shutil.move(old_settings_file, self.settings_file)
+            shutil.move(old_bookmarks_file, self.settings_file)
 
         self.default_settings = {
             "view_mode": "flat",
@@ -25,7 +25,9 @@ class SettingsManager:
             "inactive_selection_color": "#606060", # Darker gray for inactive selection
             "file_permissions_display_mode": "symbolic", # "symbolic" or "numeric"
             "show_uid_column": True,
-            "show_gid_column": True
+            "show_gid_column": True,
+            "language_mode": "auto", # "auto" or "manual"
+            "manual_language": "en_US" # e.g., "en_US", "pl_PL"
         }
         self.settings = self.load_settings_from_file()
 
