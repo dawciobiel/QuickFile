@@ -1,7 +1,6 @@
-from abc import ABC, abstractmethod
 from PyQt6.QtWidgets import QWidget
 
-class AbstractFileView(QWidget, ABC):
+class AbstractFileView(QWidget):
     """
     Abstract base class for file views (e.g., flat, tree).
     Defines a common interface for the FolderBrowser to interact with.
@@ -10,37 +9,38 @@ class AbstractFileView(QWidget, ABC):
         super().__init__(parent)
         self.settings_manager = settings_manager
 
-    @abstractmethod
     def set_path(self, path):
         """Sets the current path for the view."""
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def get_current_path(self):
         """Returns the current path of the view."""
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def refresh(self):
         """Refreshes the content of the view."""
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def get_selected_paths(self):
         """Returns a list of absolute paths for selected items."""
-        pass
+        raise NotImplementedError
         
-    @abstractmethod
     def get_current_selected_path(self):
         """Returns the single, currently focused item's path."""
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def go_up(self):
         """Navigates one level up in the directory structure."""
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def update_view_settings(self):
         """Applies new settings (like show_dot_files) to the view/model."""
-        pass
+        raise NotImplementedError
+        
+    def on_item_double_clicked(self, index):
+        """Handles double-click on an item."""
+        raise NotImplementedError
+        
+    def toggle_selection(self):
+        """Toggles the selection of the currently focused item."""
+        raise NotImplementedError

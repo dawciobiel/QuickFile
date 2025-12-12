@@ -1,6 +1,7 @@
 import os
 import pwd
 import grp
+import logging
 from PyQt6.QtCore import QAbstractItemModel, QModelIndex, Qt, QCoreApplication
 
 class TreeItem:
@@ -9,6 +10,7 @@ class TreeItem:
         self.parent = parent
         self.children = []
         self.is_populated = False
+        self.is_marked = False
 
     def child(self, row):
         return self.children[row]
@@ -83,7 +85,7 @@ class TreeItem:
                 child_path = os.path.join(self.path, filename)
                 self.children.append(TreeItem(child_path, self))
         except OSError:
-            pass # Ignore permission errors for now
+            pass
 
 class TreeFileSystemModel(QAbstractItemModel):
     def __init__(self, settings_manager, parent=None):
@@ -136,10 +138,33 @@ class TreeFileSystemModel(QAbstractItemModel):
         return 7
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
-        if not index.isValid() or role != Qt.ItemDataRole.DisplayRole:
+        if not index.isValid():
             return None
+        
         item = index.internalPointer()
-        return item.data(index.column())
+        
+        if role == Qt.ItemDataRole.CheckStateRole and index.column() == 0:
+            return Qt.CheckState.Checked if item.is_marked else Qt.CheckState.Unchecked
+            
+        if role == Qt.ItemDataRole.DisplayRole:
+            value = item.data(index.column())
+            return value
+            
+        return None
+
+    def setData(self, index, value, role):
+        if role == Qt.ItemDataRole.CheckStateRole and index.column() == 0:
+            item = index.internalPointer()
+            item.is_marked = (value == Qt.CheckState.Checked)
+            self.dataChanged.emit(index, index, [role])
+            return True
+        return super().setData(index, value, role)
+
+    def flags(self, index):
+        base_flags = super().flags(index)
+        if index.column() == 0:
+            return base_flags | Qt.ItemFlag.ItemIsUserCheckable
+        return base_flags
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
@@ -151,3 +176,11 @@ class TreeFileSystemModel(QAbstractItemModel):
         if not index.isValid():
             return ""
         return index.internalPointer().path
+
+    def toggle_selection_by_index(self, index):
+        if not index.isValid():
+            return
+        
+        item = index.internalPointer()
+        new_check_state = Qt.CheckState.Unchecked if item.is_marked else Qt.CheckState.Checked
+        self.setData(index, new_check_state, Qt.ItemDataRole.CheckStateRole)
