@@ -42,60 +42,60 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="79"/>
+        <location filename="../app/application_logic_handler.py" line="81"/>
         <source>Current directory:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="90"/>
+        <location filename="../app/application_logic_handler.py" line="92"/>
         <source>Search Error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="92"/>
+        <location filename="../app/application_logic_handler.py" line="94"/>
         <source>Enter text to search.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="102"/>
-        <location filename="../app/application_logic_handler.py" line="115"/>
+        <location filename="../app/application_logic_handler.py" line="104"/>
+        <location filename="../app/application_logic_handler.py" line="117"/>
         <source>File Opening Error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="133"/>
-        <location filename="../app/application_logic_handler.py" line="147"/>
+        <location filename="../app/application_logic_handler.py" line="135"/>
+        <location filename="../app/application_logic_handler.py" line="149"/>
         <source>Comparison Error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="133"/>
+        <location filename="../app/application_logic_handler.py" line="135"/>
         <source>Please select items in both panels to compare.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="147"/>
+        <location filename="../app/application_logic_handler.py" line="149"/>
         <source>Cannot compare a file with a directory. Please select two files or two directories.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="152"/>
         <location filename="../app/application_logic_handler.py" line="154"/>
+        <location filename="../app/application_logic_handler.py" line="156"/>
         <source>File Comparison Result</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="164"/>
+        <location filename="../app/application_logic_handler.py" line="166"/>
         <source>Directory Comparison Error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="164"/>
+        <location filename="../app/application_logic_handler.py" line="166"/>
         <source>Could not compare directories. Ensure both paths are valid directories.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="226"/>
+        <location filename="../app/application_logic_handler.py" line="229"/>
         <source>Synchronization Error</source>
         <translation type="unfinished"></translation>
     </message>
@@ -103,41 +103,56 @@
 <context>
     <name>FlatFileSystemModel</name>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="39"/>
-        <location filename="../browser/flat_file_system_model.py" line="57"/>
+        <location filename="../browser/flat_file_system_model.py" line="51"/>
+        <location filename="../browser/flat_file_system_model.py" line="69"/>
         <source>Permission Error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="112"/>
+        <location filename="../browser/flat_file_system_model.py" line="147"/>
         <source>File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="153"/>
+        <location filename="../browser/flat_file_system_model.py" line="226"/>
         <source>Name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="155"/>
+        <location filename="../browser/flat_file_system_model.py" line="227"/>
         <source>Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="157"/>
+        <location filename="../browser/flat_file_system_model.py" line="228"/>
         <source>Type</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/flat_file_system_model.py" line="159"/>
+        <location filename="../browser/flat_file_system_model.py" line="229"/>
         <source>Date Modified</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../browser/flat_file_system_model.py" line="237"/>
+        <source>Permissions</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../browser/flat_file_system_model.py" line="241"/>
+        <source>Owner</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../browser/flat_file_system_model.py" line="245"/>
+        <source>Group</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>FolderBrowser</name>
     <message>
-        <location filename="../browser/folder_browser.py" line="230"/>
+        <location filename="../browser/folder_browser.py" line="501"/>
         <source>Permission Error</source>
         <translation type="unfinished"></translation>
     </message>
@@ -276,17 +291,17 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="141"/>
+        <location filename="../panels/menu_panel.py" line="140"/>
         <source>File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="172"/>
+        <location filename="../panels/menu_panel.py" line="171"/>
         <source>Archive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="189"/>
+        <location filename="../panels/menu_panel.py" line="188"/>
         <source>Operations</source>
         <translation type="unfinished"></translation>
     </message>
@@ -295,98 +310,98 @@
     <name>MenuPanel</name>
     <message>
         <location filename="../app/application_logic_handler.py" line="34"/>
-        <location filename="../panels/menu_panel.py" line="144"/>
-        <location filename="../panels/menu_panel.py" line="265"/>
+        <location filename="../panels/menu_panel.py" line="143"/>
+        <location filename="../panels/menu_panel.py" line="264"/>
         <source>Compare</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="35"/>
-        <location filename="../panels/menu_panel.py" line="150"/>
+        <location filename="../panels/menu_panel.py" line="149"/>
         <source>Properties</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="36"/>
-        <location filename="../panels/menu_panel.py" line="157"/>
+        <location filename="../panels/menu_panel.py" line="156"/>
         <source>Exit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="37"/>
-        <location filename="../panels/menu_panel.py" line="174"/>
+        <location filename="../panels/menu_panel.py" line="173"/>
         <source>Create Archive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="38"/>
-        <location filename="../panels/menu_panel.py" line="180"/>
+        <location filename="../panels/menu_panel.py" line="179"/>
         <source>Extract Archive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="39"/>
-        <location filename="../panels/menu_panel.py" line="194"/>
+        <location filename="../panels/menu_panel.py" line="193"/>
         <source>Go Up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="40"/>
-        <location filename="../panels/menu_panel.py" line="205"/>
+        <location filename="../panels/menu_panel.py" line="204"/>
         <source>Refresh</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="41"/>
-        <location filename="../panels/menu_panel.py" line="219"/>
+        <location filename="../panels/menu_panel.py" line="218"/>
         <source>New File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="42"/>
-        <location filename="../panels/menu_panel.py" line="224"/>
+        <location filename="../panels/menu_panel.py" line="223"/>
         <source>New Folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="43"/>
-        <location filename="../panels/menu_panel.py" line="231"/>
+        <location filename="../panels/menu_panel.py" line="230"/>
         <source>Search</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="44"/>
-        <location filename="../panels/menu_panel.py" line="238"/>
+        <location filename="../panels/menu_panel.py" line="237"/>
         <source>Copy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="45"/>
-        <location filename="../panels/menu_panel.py" line="243"/>
+        <location filename="../panels/menu_panel.py" line="242"/>
         <source>Paste</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="46"/>
-        <location filename="../panels/menu_panel.py" line="248"/>
+        <location filename="../panels/menu_panel.py" line="247"/>
         <source>Move</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="47"/>
-        <location filename="../panels/menu_panel.py" line="253"/>
+        <location filename="../panels/menu_panel.py" line="252"/>
         <source>Rename</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="48"/>
-        <location filename="../panels/menu_panel.py" line="258"/>
+        <location filename="../panels/menu_panel.py" line="257"/>
         <source>Delete</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/application_logic_handler.py" line="49"/>
-        <location filename="../panels/menu_panel.py" line="270"/>
+        <location filename="../panels/menu_panel.py" line="269"/>
         <source>Synchronize</source>
         <translation type="unfinished"></translation>
     </message>
@@ -411,67 +426,67 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="175"/>
+        <location filename="../app/application_logic_handler.py" line="178"/>
         <source>No file/folder selected for archiving.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="178"/>
+        <location filename="../app/application_logic_handler.py" line="181"/>
         <source>Archive name (without extension):</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="191"/>
+        <location filename="../app/application_logic_handler.py" line="194"/>
         <source>No archive file selected or unsupported format.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="194"/>
+        <location filename="../app/application_logic_handler.py" line="197"/>
         <source>Destination path:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="206"/>
+        <location filename="../app/application_logic_handler.py" line="209"/>
         <source>No file or folder selected.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="246"/>
+        <location filename="../app/application_logic_handler.py" line="249"/>
         <source>File name:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="246"/>
+        <location filename="../app/application_logic_handler.py" line="249"/>
         <source>Folder name:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="263"/>
+        <location filename="../app/application_logic_handler.py" line="266"/>
         <source>No file/folder selected for copying.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="292"/>
+        <location filename="../app/application_logic_handler.py" line="301"/>
         <source>No file/folder selected for moving.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="327"/>
+        <location filename="../app/application_logic_handler.py" line="336"/>
         <source>No file/folder selected for deletion.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="344"/>
+        <location filename="../app/application_logic_handler.py" line="356"/>
         <source>No file/folder selected for renaming.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="348"/>
+        <location filename="../app/application_logic_handler.py" line="360"/>
         <source>New name:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/application_logic_handler.py" line="357"/>
+        <location filename="../app/application_logic_handler.py" line="369"/>
         <source>New name cannot be empty.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -506,83 +521,83 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="145"/>
-        <location filename="../panels/menu_panel.py" line="265"/>
+        <location filename="../panels/menu_panel.py" line="144"/>
+        <location filename="../panels/menu_panel.py" line="264"/>
         <source>Compare selected items</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="151"/>
+        <location filename="../panels/menu_panel.py" line="150"/>
         <source>Show properties of selected item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="158"/>
+        <location filename="../panels/menu_panel.py" line="157"/>
         <source>Exit the application</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="175"/>
+        <location filename="../panels/menu_panel.py" line="174"/>
         <source>Create an archive from selected item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="181"/>
+        <location filename="../panels/menu_panel.py" line="180"/>
         <source>Extract selected archive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="195"/>
+        <location filename="../panels/menu_panel.py" line="194"/>
         <source>Go to parent directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="206"/>
+        <location filename="../panels/menu_panel.py" line="205"/>
         <source>Refresh the current view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="219"/>
+        <location filename="../panels/menu_panel.py" line="218"/>
         <source>Create a new empty file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="224"/>
+        <location filename="../panels/menu_panel.py" line="223"/>
         <source>Create a new directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="231"/>
+        <location filename="../panels/menu_panel.py" line="230"/>
         <source>Search for files and directories</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="238"/>
+        <location filename="../panels/menu_panel.py" line="237"/>
         <source>Copy selected items</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="243"/>
+        <location filename="../panels/menu_panel.py" line="242"/>
         <source>Paste items from clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="248"/>
+        <location filename="../panels/menu_panel.py" line="247"/>
         <source>Move selected items</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="253"/>
+        <location filename="../panels/menu_panel.py" line="252"/>
         <source>Rename selected item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="258"/>
+        <location filename="../panels/menu_panel.py" line="257"/>
         <source>Delete selected items</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../panels/menu_panel.py" line="270"/>
+        <location filename="../panels/menu_panel.py" line="269"/>
         <source>Synchronize directories</source>
         <translation type="unfinished"></translation>
     </message>
@@ -606,27 +621,57 @@
 <context>
     <name>SettingsDialog</name>
     <message>
-        <location filename="../utils/settings_dialog.py" line="7"/>
+        <location filename="../utils/settings_dialog.py" line="8"/>
         <source>Application Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../utils/settings_dialog.py" line="16"/>
+        <location filename="../utils/settings_dialog.py" line="27"/>
         <source>Hidden Files (Dot Files)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../utils/settings_dialog.py" line="18"/>
+        <location filename="../utils/settings_dialog.py" line="29"/>
         <source>Show files and folders starting with &apos;.&apos;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../utils/settings_dialog.py" line="27"/>
+        <location filename="../utils/settings_dialog.py" line="37"/>
+        <source>File Permissions Display</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../utils/settings_dialog.py" line="39"/>
+        <source>Symbolic (rwx)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../utils/settings_dialog.py" line="40"/>
+        <source>Numeric (755)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../utils/settings_dialog.py" line="56"/>
+        <source>Column Visibility</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../utils/settings_dialog.py" line="58"/>
+        <source>Show UID Column</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../utils/settings_dialog.py" line="63"/>
+        <source>Show GID Column</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../utils/settings_dialog.py" line="73"/>
         <source>Save</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../utils/settings_dialog.py" line="28"/>
+        <location filename="../utils/settings_dialog.py" line="74"/>
         <source>Cancel</source>
         <translation type="unfinished"></translation>
     </message>
@@ -700,23 +745,38 @@
 <context>
     <name>TranslatedFileSystemModel</name>
     <message>
-        <location filename="../browser/folder_browser.py" line="15"/>
+        <location filename="../browser/folder_browser.py" line="25"/>
         <source>Name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/folder_browser.py" line="17"/>
+        <location filename="../browser/folder_browser.py" line="27"/>
         <source>Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/folder_browser.py" line="19"/>
+        <location filename="../browser/folder_browser.py" line="29"/>
         <source>Type</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../browser/folder_browser.py" line="21"/>
+        <location filename="../browser/folder_browser.py" line="31"/>
         <source>Date Modified</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../browser/folder_browser.py" line="33"/>
+        <source>Permissions</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../browser/folder_browser.py" line="35"/>
+        <source>Owner</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../browser/folder_browser.py" line="37"/>
+        <source>Group</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
