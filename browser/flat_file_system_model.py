@@ -26,6 +26,7 @@ class FlatFileSystemModel(QAbstractTableModel):
         if self._current_path == path:
             self.refresh()
             return
+        logging.debug(f"[FlatFileSystemModel.set_current_path] Changing path from '{self._current_path}' to '{path}'")
         self.beginResetModel()
         self._current_path = path
         self._populate_items()
@@ -33,11 +34,13 @@ class FlatFileSystemModel(QAbstractTableModel):
 
     def refresh(self):
         """Explicitly refreshes the model's data."""
+        logging.debug(f"[FlatFileSystemModel.refresh] Refreshing model for path '{self._current_path}'")
         self.beginResetModel()
         self._populate_items()
         self.endResetModel()
 
     def _populate_items(self):
+        logging.debug(f"[FlatFileSystemModel._populate_items] Populating items for path: '{self._current_path}'")
         dot_dot_item = []
         other_items = []
 
@@ -67,6 +70,7 @@ class FlatFileSystemModel(QAbstractTableModel):
             other_items = []
 
         self._items = dot_dot_item + other_items
+        logging.debug(f"[FlatFileSystemModel._populate_items] Populated {len(self._items)} items.") # Reduced logging detail
 
     def set_show_dot_files(self, new_dot_files_state):
         if self._show_dot_files == new_dot_files_state:

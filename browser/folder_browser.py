@@ -90,6 +90,7 @@ class PanelWidget(QWidget):
         if index >= 0:
             selected_drive_path = self.drive_combo.itemText(index)
             self.file_view.set_path(selected_drive_path)
+            self.file_view.view.setFocus() # Set focus to the file view
 
     def _on_path_changed(self, new_path):
         """
@@ -141,8 +142,8 @@ class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
-    ACTIVE_PANEL_STYLE = "border: 2px solid blue;"
-    INACTIVE_PANEL_STYLE = "border: 2px solid lightgray;"
+    ACTIVE_PANEL_STYLE = "QTableView { border: 2px solid blue; } QTreeView { border: 2px solid blue; }"
+    INACTIVE_PANEL_STYLE = "QTableView { border: 2px solid lightgray; } QTreeView { border: 2px solid lightgray; }"
 
     def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, parent=None):
         super().__init__(parent)
@@ -178,10 +179,10 @@ class FolderBrowser(QWidget):
 
     def set_active_panel(self, panel_widget):
         if self.active_panel_widget:
-            self.active_panel_widget.setStyleSheet(self.INACTIVE_PANEL_STYLE)
+            self.active_panel_widget.file_view.view.setStyleSheet(self.INACTIVE_PANEL_STYLE)
         
         self.active_panel_widget = panel_widget
-        self.active_panel_widget.setStyleSheet(self.ACTIVE_PANEL_STYLE)
+        self.active_panel_widget.file_view.view.setStyleSheet(self.ACTIVE_PANEL_STYLE)
         self.active_panel_widget.file_view.view.setFocus() # Ensure the view inside the panel has focus
 
     def switch_active_panel(self):

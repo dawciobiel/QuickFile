@@ -58,10 +58,35 @@ class TreeFileView(AbstractFileView):
         # For other keys, let the default QTreeView handling take over (e.g., arrows, PageUp/Down)
         return False # Event not handled by this view, propagate further
 
-    def set_path(self, path):
+    def set_path(self, path, select_item_name=None):
         self.model.set_root_path(path)
         self.view.setRootIndex(QModelIndex())
         self.path_changed.emit(path)
+        
+        if select_item_name:
+            # Find and select the item by name
+            found_index = None
+            # Iterate through top-level items in the new root
+            for row in range(self.model.rowCount(QModelIndex())):
+                index = self.model.index(row, 0, QModelIndex())
+                if self.model.fileName(index) == select_item_name:
+                    found_index = index
+                    break
+            if found_index:
+                self.view.setCurrentIndex(found_index)
+                self.view.scrollTo(found_index, QAbstractItemView.ScrollHint.EnsureVisible)
+            else:
+                # Fallback to first item if not found
+                first_index = self.model.index(0, 0)
+                if first_index.isValid():
+                    self.view.setCurrentIndex(first_index)
+                    self.view.scrollTo(first_index, QAbstractItemView.ScrollHint.EnsureVisible)
+        else:
+            # Default to first item (root of the new path)
+            first_index = self.model.index(0, 0)
+            if first_index.isValid():
+                self.view.setCurrentIndex(first_index)
+                self.view.scrollTo(first_index, QAbstractItemView.ScrollHint.EnsureVisible)
 
     def get_current_path(self):
         return self.model.root_item.path
@@ -81,9 +106,13 @@ class TreeFileView(AbstractFileView):
     def go_up(self):
         current_path = self.get_current_path()
         parent_path = os.path.dirname(current_path)
+        
         if parent_path != current_path:
-            self.set_path(parent_path)
-
+            # Remember the current directory name to select it in the parent view
+            current_dir_name = os.path.basename(current_path)
+            
+            self.set_path(parent_path, select_item_name=current_dir_name) # Pass the name to select
+            
     def update_view_settings(self):
         self.model.update_settings()
         header = self.view.header()
