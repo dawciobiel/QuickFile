@@ -423,6 +423,7 @@ class ApplicationLogicHandler(QObject):
         current_show_gid_column = self.main_window.settings_manager.get_setting("show_gid_column")
         current_language_mode = self.main_window.settings_manager.get_setting("language_mode")
         current_manual_language = self.main_window.settings_manager.get_setting("manual_language")
+        current_theme = self.main_window.settings_manager.get_setting("theme") # Get current theme
 
         settings_changed = False
 
@@ -465,6 +466,12 @@ class ApplicationLogicHandler(QObject):
                                     translation_manager.translate("ApplicationLogicHandler", "Language Change"),
                                     translation_manager.translate("ApplicationLogicHandler", "Language settings have been updated. Please restart the application for changes to take full effect."))
             
+        # Handle theme setting
+        if new_settings.get("theme") is not None and new_settings["theme"] != current_theme:
+            self.main_window.settings_manager.set_setting("theme", new_settings["theme"])
+            self.theme_manager.apply_theme(new_settings["theme"])
+            settings_changed = True
+
         if settings_changed and not language_settings_changed:
             # Refresh views if other settings changed, but not language (as language requires restart)
             self.main_window.folder_browser.refresh_all_views()
