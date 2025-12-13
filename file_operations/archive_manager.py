@@ -17,20 +17,41 @@ class ArchiveManager:
     def __init__(self):
         pass
 
-    def create_zip_archive(self, source_path, archive_path):
+    def create_zip_archive(self, source_paths, archive_path):
         """
-        Creates a ZIP archive from the given file or folder.
+        Creates a ZIP archive from the given list of files or folders.
+        source_paths: A list of paths to files/folders to be archived.
         """
+        if not isinstance(source_paths, list):
+            source_paths = [source_paths] # Ensure it's always a list
+
+        if not source_paths:
+            raise ArchiveManagerError("No source paths provided for archiving.")
+
         try:
             with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                if os.path.isdir(source_path):
-                    for root, dirs, files in os.walk(source_path):
-                        for file in files:
-                            file_path = os.path.join(root, file)
-                            arcname = os.path.relpath(file_path, os.path.dirname(source_path))
-                            zipf.write(file_path, arcname)
-                else:
-                    zipf.write(source_path, os.path.basename(source_path))
+                for source_path in source_paths:
+                    if not os.path.exists(source_path):
+                        logging.warning(f"Source path '{source_path}' does not exist, skipping.")
+                        continue
+
+                    if os.path.isdir(source_path):
+                        # If archiving a directory, add its contents
+                        for root, dirs, files in os.walk(source_path):
+                            for file in files:
+                                file_path = os.path.join(root, file)
+                                # arcname should be relative to the common base directory
+                                # or just the name if archiving multiple top-level items
+                                arcname = os.path.relpath(file_path, os.path.dirname(source_path))
+                                zipf.write(file_path, arcname)
+                            for dir_name in dirs:
+                                dir_path = os.path.join(root, dir_name)
+                                arcname = os.path.relpath(dir_path, os.path.dirname(source_path))
+                                # Add directory entry to archive
+                                zipf.writestr(zipfile.ZipInfo(arcname + '/'), '')
+                    else:
+                        # If archiving a single file, add it directly
+                        zipf.write(source_path, os.path.basename(source_path))
             return f"Archive created: {archive_path}"
         except Exception as e:
             logging.exception(f"Error creating ZIP archive {archive_path}: {e}")
