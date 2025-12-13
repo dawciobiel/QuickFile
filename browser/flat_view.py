@@ -33,29 +33,32 @@ class FlatFileView(AbstractFileView):
 
     def eventFilter(self, source, event):
         if source is self.view and event.type() == QEvent.Type.KeyPress:
-            key = event.key()
-            if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
-                current_index = self.view.currentIndex()
-                if current_index.isValid():
-                    self.on_item_double_clicked(current_index)
-                return True # Event handled
-            elif key == Qt.Key.Key_Home:
-                first_index = self.model.index(0, 0)
-                if first_index.isValid():
-                    self.view.setCurrentIndex(first_index)
-                return True # Event handled
-            elif key == Qt.Key.Key_End:
-                last_row = self.model.rowCount() - 1
-                if last_row >= 0:
-                    last_index = self.model.index(last_row, 0)
-                    if last_index.isValid():
-                        self.view.setCurrentIndex(last_index)
-                return True # Event handled
-            elif key == Qt.Key.Key_Insert:
-                self.toggle_selection()
-                return True
-        
+            return self.handle_key_event(event)
         return super().eventFilter(source, event)
+
+    def handle_key_event(self, event: QEvent):
+        key = event.key()
+        if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
+            current_index = self.view.currentIndex()
+            if current_index.isValid():
+                self.on_item_double_clicked(current_index)
+            return True # Event handled
+        elif key == Qt.Key.Key_Home:
+            first_index = self.model.index(0, 0)
+            if first_index.isValid():
+                self.view.setCurrentIndex(first_index)
+            return True # Event handled
+        elif key == Qt.Key.Key_End:
+            last_row = self.model.rowCount() - 1
+            if last_row >= 0:
+                last_index = self.model.index(last_row, 0)
+                if last_index.isValid():
+                    self.view.setCurrentIndex(last_index)
+            return True # Event handled
+        elif key == Qt.Key.Key_Insert:
+            self.toggle_selection()
+            return True
+        return False
 
     def _configure_view(self):
         header = self.view.horizontalHeader()
@@ -81,6 +84,7 @@ class FlatFileView(AbstractFileView):
 
     def set_path(self, path):
         self.model.set_current_path(path)
+        self.path_changed.emit(path)
 
     def get_current_path(self):
         return self.model._current_path

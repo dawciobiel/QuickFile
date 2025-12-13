@@ -1,7 +1,8 @@
 import logging
 import os
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QLineEdit, QComboBox, QSizePolicy
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QLineEdit, QComboBox, QSizePolicy, QCompleter
+from PyQt6.QtGui import QFileSystemModel
 from browser.flat_view import FlatFileView
 from browser.tree_view import TreeFileView
 from app.settings_manager import SettingsManager
@@ -24,12 +25,49 @@ class PanelWidget(QWidget):
         self.path_edit = QLineEdit()
         self.layout.addWidget(self.path_edit)
 
+        # Setup completer for the path edit - each panel has its own
+        self.completer = QCompleter(self)
+        self.completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.completer_model = QFileSystemModel(self)
+        self.completer.setModel(self.completer_model)
+        self.path_edit.setCompleter(self.completer)
+
         if self.view_mode == "flat":
             self.file_view = FlatFileView(self.settings_manager, self)
         else: # "tree"
             self.file_view = TreeFileView(self.settings_manager, self)
         
         self.layout.addWidget(self.file_view)
+
+        # Connect signals for path synchronization
+        self.file_view.path_changed.connect(self._on_path_changed)
+        self.path_edit.returnPressed.connect(self.on_path_edited)
+
+    def _on_path_changed(self, new_path):
+        """
+        Updates the path in the line edit and sets the root for the completer.
+        """
+        self.path_edit.setText(new_path)
+        # The QFileSystemModel completer is smart enough to handle full paths.
+        # We set the root path to the current directory to help with relative completions,
+        # but it will still complete absolute paths correctly.
+        self.completer_model.setRootPath(new_path)
+
+    def on_path_edited(self):
+        """
+        Called when the user presses Enter in the path edit field.
+        Normalizes and validates the entered path.
+        """
+        # Normalize the path: expand '~' and remove leading/trailing whitespace
+        path = os.path.expanduser(self.path_edit.text().strip())
+        
+        if os.path.isdir(path):
+            self.file_view.set_path(path)
+            # Set focus back to the file view for keyboard navigation
+            self.file_view.view.setFocus()
+        else:
+            # If path is invalid, revert the line edit to the current path
+            self.path_edit.setText(self.file_view.get_current_path())
 
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)

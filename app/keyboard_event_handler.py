@@ -1,6 +1,6 @@
 import logging
 from PyQt6.QtCore import Qt, QEvent, QObject
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QLineEdit
 from app.translation_manager import translation_manager # Import our new manager
 
 class KeyboardEventManager(QObject):
@@ -13,6 +13,11 @@ class KeyboardEventManager(QObject):
             return False # Let the modal widget handle the event
 
         if event.type() == QEvent.Type.KeyPress:
+            # If a QLineEdit has focus, don't handle the key event here
+            # so that it can process it (e.g., for typing, Enter press)
+            if isinstance(QApplication.focusWidget(), QLineEdit):
+                return False
+
             return self.handle_key_event(event)
             
         return super().eventFilter(source, event)
