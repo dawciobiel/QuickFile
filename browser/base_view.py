@@ -1,51 +1,69 @@
+import abc
 from PyQt6.QtWidgets import QWidget
-from PyQt6.QtCore import QEvent # Import QEvent
+from PyQt6.QtCore import QEvent, pyqtSignal
 
-class AbstractFileView(QWidget):
+# This metaclass inherits from the metaclasses of both QWidget and ABC.
+# This resolves the metaclass conflict when a class needs to be both a QWidget and an ABC.
+class AbstractViewMeta(type(QWidget), abc.ABCMeta):
+    pass
+
+class AbstractFileView(QWidget, metaclass=AbstractViewMeta):
     """
     Abstract base class for file views (e.g., flat, tree).
-    Defines a common interface for the FolderBrowser to interact with.
+    Defines a common interface (contract) that all file views must implement.
     """
+    path_changed = pyqtSignal(str)
+
     def __init__(self, settings_manager, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
 
+    @abc.abstractmethod
     def set_path(self, path):
         """Sets the current path for the view."""
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def get_current_path(self):
         """Returns the current path of the view."""
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def refresh(self):
         """Refreshes the content of the view."""
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def get_selected_paths(self):
         """Returns a list of absolute paths for selected items."""
-        raise NotImplementedError
+        pass
         
+    @abc.abstractmethod
     def get_current_selected_path(self):
         """Returns the single, currently focused item's path."""
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def go_up(self):
         """Navigates one level up in the directory structure."""
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def update_view_settings(self):
         """Applies new settings (like show_dot_files) to the view/model."""
-        raise NotImplementedError
+        pass
         
+    @abc.abstractmethod
     def on_item_double_clicked(self, index):
         """Handles double-click on an item."""
-        raise NotImplementedError
+        pass
         
+    @abc.abstractmethod
     def toggle_selection(self):
         """Toggles the selection of the currently focused item."""
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def handle_key_event(self, event: QEvent):
         """Handles key press events specific to this view."""
-        raise NotImplementedError
+        pass

@@ -61,6 +61,7 @@ class TreeFileView(AbstractFileView):
     def set_path(self, path):
         self.model.set_root_path(path)
         self.view.setRootIndex(QModelIndex())
+        self.path_changed.emit(path)
 
     def get_current_path(self):
         return self.model.root_item.path
