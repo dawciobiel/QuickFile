@@ -22,7 +22,7 @@ from app.translation_manager import translation_manager # Import our new manager
 
 
 class ApplicationLogicHandler(QObject):
-    def __init__(self, main_window, file_manager, file_comparator, bookmarks_manager, archive_manager, directory_synchronizer):
+    def __init__(self, main_window, file_manager, file_comparator, bookmarks_manager, archive_manager, directory_synchronizer, theme_manager): # DODANO theme_manager
         super().__init__(main_window)
         self.main_window = main_window
         self.file_manager = file_manager
@@ -30,6 +30,7 @@ class ApplicationLogicHandler(QObject):
         self.bookmarks_manager = bookmarks_manager
         self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
+        self.theme_manager = theme_manager # PRZYPISANO theme_manager
 
         # Constants for repeated strings (from MenuPanel)
         self.ACTION_COMPARE = translation_manager.translate("MenuPanel", "Compare")

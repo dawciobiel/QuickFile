@@ -2,12 +2,14 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QRadio
 from PyQt6.QtCore import Qt
 from app.settings_manager import SettingsManager
 from app.translation_manager import translation_manager # Import our new manager
+from app.theme_manager import ThemeManager # Import ThemeManager
 
 class SettingsDialog(QDialog):
-    def __init__(self, parent, settings_manager: SettingsManager):
+    def __init__(self, parent, settings_manager: SettingsManager, theme_manager: ThemeManager):
         super().__init__(parent)
         self.setWindowTitle(translation_manager.translate("SettingsDialog", "Application Settings"))
         self.settings_manager = settings_manager
+        self.theme_manager = theme_manager # Store theme manager
 
         self.current_show_dot_files = self.settings_manager.get_setting("showDotFiles")
         self.current_file_permissions_display_mode = self.settings_manager.get_setting("file_permissions_display_mode")
@@ -15,6 +17,7 @@ class SettingsDialog(QDialog):
         self.current_show_gid_column = self.settings_manager.get_setting("show_gid_column")
         self.current_language_mode = self.settings_manager.get_setting("language_mode")
         self.current_manual_language = self.settings_manager.get_setting("manual_language")
+        self.current_theme = self.settings_manager.get_setting("theme", "dark") # Get current theme
 
         self.selected_show_dot_files = self.current_show_dot_files
         self.selected_file_permissions_display_mode = self.current_file_permissions_display_mode
@@ -22,6 +25,7 @@ class SettingsDialog(QDialog):
         self.selected_show_gid_column = self.current_show_gid_column
         self.selected_language_mode = self.current_language_mode
         self.selected_manual_language = self.current_manual_language
+        self.selected_theme = self.current_theme # Initialize selected theme
 
         self._init_ui()
 
@@ -107,6 +111,25 @@ class SettingsDialog(QDialog):
         language_group.setLayout(language_layout)
         main_layout.addWidget(language_group)
 
+        # Group box for Theme Settings
+        theme_group = QGroupBox(translation_manager.translate("SettingsDialog", "Theme Settings"))
+        theme_layout = QVBoxLayout()
+        self.theme_combo = QComboBox()
+        
+        # Populate theme combo box
+        available_themes = self.theme_manager.get_available_themes()
+        for theme_name in available_themes:
+            self.theme_combo.addItem(theme_name.capitalize(), theme_name) # Display capitalized name, store raw name
+        
+        # Select current theme
+        index = self.theme_combo.findData(self.current_theme)
+        if index != -1:
+            self.theme_combo.setCurrentIndex(index)
+        
+        self.theme_combo.currentIndexChanged.connect(self._set_selected_theme)
+        theme_layout.addWidget(self.theme_combo)
+        theme_group.setLayout(theme_layout)
+        main_layout.addWidget(theme_group)
 
         # Buttons
         button_layout = QHBoxLayout()
@@ -138,6 +161,9 @@ class SettingsDialog(QDialog):
     def _set_selected_manual_language(self, index):
         self.selected_manual_language = self.language_combo.itemData(index)
 
+    def _set_selected_theme(self, index):
+        self.selected_theme = self.theme_combo.itemData(index)
+
     def get_settings(self):
         return {
             "showDotFiles": self.selected_show_dot_files,
@@ -145,5 +171,6 @@ class SettingsDialog(QDialog):
             "show_uid_column": self.selected_show_uid_column,
             "show_gid_column": self.selected_show_gid_column,
             "language_mode": self.selected_language_mode,
-            "manual_language": self.selected_manual_language
+            "manual_language": self.selected_manual_language,
+            "theme": self.selected_theme # Return selected theme
         }
