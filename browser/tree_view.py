@@ -113,7 +113,7 @@ class TreeFileView(AbstractFileView):
             
             self.set_path(parent_path, select_item_name=current_dir_name) # Pass the name to select
             
-    def update_view_settings(self):
+    def update_view_settings(self): # Renamed from set_permissions_display_mode
         self.model.update_settings()
         header = self.view.header()
         header.setStretchLastSection(False)

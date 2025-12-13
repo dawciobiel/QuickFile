@@ -303,7 +303,7 @@ class ApplicationLogicHandler(QObject):
             dialog = CopyDialog(self.main_window, source_paths[0], destination_path)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 try:
-                    message = self.file_manager.copy_item_with_options(source_paths[0], destination_path, dialog.get_options())
+                    message = self.file_manager.copy_item_with_options(source_path[0], destination_path, dialog.get_options())
                     self.main_window.status_bar.showMessage(message)
                     self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
                 except (FileNotFoundError, FileExistsError, FileManagerError) as e:

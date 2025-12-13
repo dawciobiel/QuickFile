@@ -232,6 +232,38 @@ class FolderBrowser(QWidget):
 
         self.set_active_panel(self.left_panel_widget)
 
+    def set_file_permissions_display_mode(self, mode):
+        """
+        Sets the file permissions display mode for both panels.
+        """
+        self.left_panel_widget.file_view.update_view_settings()
+        self.right_panel_widget.file_view.update_view_settings()
+        self.refresh_all_views() # Refresh views to apply the new mode
+
+    def set_show_dot_files(self, show):
+        """
+        Sets whether to show dot files for both panels.
+        """
+        self.left_panel_widget.file_view.update_view_settings()
+        self.right_panel_widget.file_view.update_view_settings()
+        self.refresh_all_views()
+
+    def set_show_uid_column(self, show):
+        """
+        Sets whether to show the UID column for both panels.
+        """
+        self.left_panel_widget.file_view.update_view_settings()
+        self.right_panel_widget.file_view.update_view_settings()
+        self.refresh_all_views()
+
+    def set_show_gid_column(self, show):
+        """
+        Sets whether to show the GID column for both panels.
+        """
+        self.left_panel_widget.file_view.update_view_settings()
+        self.right_panel_widget.file_view.update_view_settings()
+        self.refresh_all_views()
+
     def load_panel_settings(self):
         left_path = self.settings_manager.get_setting("leftPanelPath", os.path.expanduser("~"))
         right_path = self.settings_manager.get_setting("rightPanelPath", os.path.expanduser("~"))
