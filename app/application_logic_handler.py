@@ -174,31 +174,58 @@ class ApplicationLogicHandler(QObject):
             self.main_window.folder_browser.navigate_to_path(dialog.selected_bookmark)
 
     def create_archive(self):
-        selected_path = self.main_window.folder_browser.get_current_selected_path()
-        if not selected_path:
-            show_error_message(self.main_window, self.ACTION_CREATE_ARCHIVE, translation_manager.translate("MenuPanel", "No file/folder selected for archiving."))
-            return
+        paths_to_archive = self.main_window.folder_browser.get_selected_paths()
+        
+        if not paths_to_archive:
+            # If no items are explicitly selected, use the item under the cursor
+            current_selected_path = self.main_window.folder_browser.get_current_selected_path()
+            if current_selected_path:
+                paths_to_archive = [current_selected_path]
+            else:
+                show_error_message(self.main_window, self.ACTION_CREATE_ARCHIVE, translation_manager.translate("MenuPanel", "No file/folder selected for archiving."))
+                return
+
+        # Determine the base directory for the archive name
+        # If multiple items, use the current directory of the active panel
+        # If single item, use its parent directory
+        if len(paths_to_archive) > 1:
+            base_dir = self.main_window.folder_browser.active_panel_widget.file_view.get_current_path()
+        else:
+            base_dir = os.path.dirname(paths_to_archive[0])
 
         archive_name, ok = QInputDialog.getText(self.main_window, self.ACTION_CREATE_ARCHIVE, translation_manager.translate("MenuPanel", "Archive name (without extension):"))
         if ok and archive_name:
-            archive_path = os.path.join(os.path.dirname(selected_path), archive_name + ".zip")
+            archive_path = os.path.join(base_dir, archive_name + ".zip")
             try:
-                message = self.archive_manager.create_zip_archive(selected_path, archive_path)
+                message = self.archive_manager.create_zip_archive(paths_to_archive, archive_path)
                 self.main_window.status_bar.showMessage(message)
                 self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
             except Exception as e:
                 show_error_message(self.main_window, self.ACTION_CREATE_ARCHIVE, str(e))
 
     def extract_archive(self):
-        selected_path = self.main_window.folder_browser.get_current_selected_path()
-        if not selected_path or not any(selected_path.endswith(ext) for ext in ['.zip', '.tar', '.gz', '.bz2', '.xz', '.rar']):
-            show_error_message(self.main_window, self.ACTION_EXTRACT_ARCHIVE, translation_manager.translate("MenuPanel", "No archive file selected or unsupported format."))
+        selected_archive_path = self.main_window.folder_browser.get_current_selected_path()
+        if not selected_archive_path:
+            show_error_message(self.main_window, self.ACTION_EXTRACT_ARCHIVE, translation_manager.translate("MenuPanel", "No archive file selected."))
             return
 
-        extract_path, ok = QInputDialog.getText(self.main_window, self.ACTION_EXTRACT_ARCHIVE, translation_manager.translate("MenuPanel", "Destination path:"), text=os.path.dirname(selected_path))
+        # Determine archive type based on extension
+        file_extension = os.path.splitext(selected_archive_path)[1].lower()
+        
+        extract_path, ok = QInputDialog.getText(self.main_window, self.ACTION_EXTRACT_ARCHIVE, translation_manager.translate("MenuPanel", "Destination path:"), text=os.path.dirname(selected_archive_path))
         if ok and extract_path:
             try:
-                message = self.archive_manager.extract_archive(selected_path, extract_path)
+                message = ""
+                if file_extension == '.zip':
+                    message = self.archive_manager.extract_zip_archive(selected_archive_path, extract_path)
+                elif file_extension in ['.tar', '.gz', '.bz2', '.xz']: # .tar.gz, .tar.bz2, .tar.xz
+                    message = self.archive_manager.extract_tar_archive(selected_archive_path, extract_path)
+                elif file_extension == '.rar':
+                    message = self.archive_manager.extract_rar_archive(selected_archive_path, extract_path)
+                else:
+                    show_error_message(self.main_window, self.ACTION_EXTRACT_ARCHIVE, translation_manager.translate("MenuPanel", "Unsupported archive format."))
+                    return
+
                 self.main_window.status_bar.showMessage(message)
                 self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
             except (UnrarNotInstalledError, Exception) as e:
@@ -294,23 +321,45 @@ class ApplicationLogicHandler(QObject):
             self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation(s)
 
     def move_selected_item(self):
-        selected_path = self.main_window.folder_browser.get_current_selected_path()
-        if not selected_path:
-            show_error_message(self.main_window, self.ACTION_MOVE, translation_manager.translate("MenuPanel", "No file/folder selected for moving."))
-            return
+        paths_to_move = self.main_window.folder_browser.get_selected_paths()
+        
+        if not paths_to_move:
+            # If no items are explicitly selected, use the item under the cursor
+            current_selected_path = self.main_window.folder_browser.get_current_selected_path()
+            if current_selected_path:
+                paths_to_move = [current_selected_path]
+            else:
+                show_error_message(self.main_window, self.ACTION_MOVE, translation_manager.translate("MenuPanel", "No file/folder selected for moving."))
+                return
 
         active_widget = self.main_window.folder_browser.active_panel_widget
         inactive_widget = self.main_window.folder_browser.right_panel_widget if active_widget == self.main_window.folder_browser.left_panel_widget else self.main_window.folder_browser.left_panel_widget
         destination_path = inactive_widget.file_view.get_current_path()
 
-        dialog = MoveDialog(self.main_window, selected_path, destination_path)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            try:
-                message = self.file_manager.move_item_with_options(selected_path, destination_path, dialog.get_options())
-                self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
-            except (FileNotFoundError, FileExistsError, IsADirectoryError, FileManagerError) as e:
-                show_error_message(self.main_window, self.ACTION_MOVE, str(e))
+        if len(paths_to_move) == 1:
+            dialog = MoveDialog(self.main_window, paths_to_move[0], destination_path)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                try:
+                    message = self.file_manager.move_item_with_options(paths_to_move[0], destination_path, dialog.get_options())
+                    self.main_window.status_bar.showMessage(message)
+                    self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
+                except (FileNotFoundError, FileExistsError, IsADirectoryError, FileManagerError) as e:
+                    show_error_message(self.main_window, self.ACTION_MOVE, str(e))
+        else:
+            all_successful = True
+            # For multiple items, use default options or a simplified dialog if needed
+            # For now, using default options (no overwrite, preserve timestamp)
+            options = {"overwrite": False, "preserve_timestamp": True} 
+            for source_path in paths_to_move:
+                try:
+                    self.file_manager.move_item_with_options(source_path, destination_path, options)
+                except (FileNotFoundError, FileExistsError, IsADirectoryError, FileManagerError) as e:
+                    show_error_message(self.main_window, self.ACTION_MOVE, f"Error moving {os.path.basename(source_path)}: {str(e)}")
+                    all_successful = False
+                    break # Stop on first error
+            if all_successful:
+                self.main_window.status_bar.showMessage(translation_manager.translate("ApplicationLogicHandler", f"Moved {len(paths_to_move)} items to '{destination_path}'"))
+            self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation(s)
 
     def paste_item_to_current_dir(self):
         active_widget = self.main_window.folder_browser.active_panel_widget
