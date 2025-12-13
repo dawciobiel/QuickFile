@@ -186,6 +186,11 @@ class TreeFileSystemModel(QAbstractItemModel):
             return ""
         return index.internalPointer().path
 
+    def fileName(self, index): # Added fileName method
+        if not index.isValid():
+            return ""
+        return index.internalPointer().data(0)
+
     def toggle_selection_by_index(self, index):
         if not index.isValid():
             return
