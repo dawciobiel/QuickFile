@@ -63,6 +63,9 @@ class KeyboardEventManager(QObject):
         elif key == Qt.Key.Key_B and modifiers == Qt.KeyboardModifier.ControlModifier:
             self.main_window.application_logic_handler.open_bookmark_dialog()
             return True
+        elif key == Qt.Key.Key_E and modifiers == Qt.KeyboardModifier.ControlModifier:
+            self.main_window.application_logic_handler.set_focus_on_path_edit()
+            return True
         
         # Delegate to active panel's file view for local handling
         if self.main_window.folder_browser.active_panel_widget:
