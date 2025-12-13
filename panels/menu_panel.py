@@ -125,7 +125,7 @@ class MenuPanel(QObject):
         settings_menu.addAction(settings_action)
 
     def open_general_settings_dialog(self):
-        dialog = SettingsDialog(self.main_window, self.main_window.settings_manager)
+        dialog = SettingsDialog(self.main_window, self.main_window.settings_manager, self.main_window.theme_manager)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_settings = dialog.get_settings()
             self.main_window.application_logic_handler.apply_general_settings(new_settings)
