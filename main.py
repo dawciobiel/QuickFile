@@ -14,6 +14,7 @@ from ui.main_window import MainWindow
 from utils.dialogs import show_error_message
 from utils.logger import setup_logging
 from app.translation_manager import translation_manager # Import our new manager
+from app.keyboard_event_handler import KeyboardEventManager # Import our new manager
 
 
 def global_exception_hook(exc_type, exc_value, exc_traceback):
@@ -49,6 +50,9 @@ if __name__ == "__main__":
     # The translation_manager instance is already created globally
 
     window = MainWindow()
-    app.installEventFilter(window.keyboard_event_handler) # Install the KeyboardEventHandler as the event filter
+    # Install the KeyboardEventManager as the global event filter
+    # window.keyboard_event_manager = KeyboardEventManager(window) # This is already done in MainWindow's __init__
+    app.installEventFilter(window.keyboard_event_manager) # Install the event filter
+
     window.show()
     app.exec()

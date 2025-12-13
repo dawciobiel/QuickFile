@@ -27,6 +27,37 @@
     "ApplicationLogicHandler.Error copying {item}: {error}": "Błąd kopiowania {item}: {error}",
     "ApplicationLogicHandler.Copied {count} items to '{destination}'": "Skopiowano {count} elementów do '{destination}'",
     "ApplicationLogicHandler.Error deleting {item}: {error}": "Błąd usuwania {item}: {error}",
+    "ApplicationLogicHandler.Language Change": "Zmiana języka",
+    "ApplicationLogicHandler.Language settings have been updated. Please restart the application for changes to take full effect.": "Ustawienia języka zostały zaktualizowane. Proszę ponownie uruchomić aplikację, aby zmiany w pełni zadziałały.",
+
+    "BookmarkDialog.Bookmarks": "Zakładki",
+    "BookmarkDialog.Filter bookmarks...": "Filtruj zakładki...",
+
+    "Buttons.OK": "OK",
+    "Buttons.Cancel": "Anuluj",
+
+    "CompareDialog.Comparison Results": "Wyniki porównania",
+    "CompareDialog.Comparing:": "Porównywanie:",
+    "CompareDialog.Left": "Lewy",
+    "CompareDialog.Right": "Prawy",
+    "CompareDialog.Different Files": "Różne pliki",
+    "CompareDialog.Left Only": "Tylko w lewym",
+    "CompareDialog.Right Only": "Tylko w prawym",
+    "CompareDialog.Same Files": "Identyczne pliki",
+    "CompareDialog.Common Dirs": "Wspólne katalogi",
+    "CompareDialog.Common Funny": "Wspólne inne",
+    "CompareDialog.Subdirectory:": "Podkatalog:",
+
+    "CopyDialog.Copy": "Kopiuj",
+    "CopyDialog.Source": "Źródło",
+    "CopyDialog.Destination": "Cel",
+    "CopyDialog.Overwrite existing files": "Nadpisz istniejące pliki",
+    "CopyDialog.Preserve original modification date": "Zachowaj oryginalną datę modyfikacji",
+
+    "DeleteDialog.Delete": "Usuń",
+    "DeleteDialog.Are you sure you want to delete:": "Czy na pewno chcesz usunąć:",
+    "DeleteDialog.Are you sure you want to delete <b>{count}</b> items?": "Czy na pewno chcesz usunąć <b>{count}</b> elementów?",
+    "DeleteDialog.This operation cannot be undone.": "Tej operacji nie można cofnąć.",
 
     "FlatFileSystemModel.Permission Error": "Błąd uprawnień",
     "FlatFileSystemModel.File": "Plik",
@@ -135,9 +166,18 @@
     "MenuPanel.Delete selected items": "Usuń wybrane elementy",
     "MenuPanel.Synchronize directories": "Synchronizuj katalogi",
 
+    "MoveDialog.Move": "Przenieś",
+    "MoveDialog.Source": "Źródło",
+    "MoveDialog.Destination": "Cel",
+    "MoveDialog.Overwrite existing files": "Nadpisz istniejące pliki",
+
     "PropertiesDialog.Properties": "Właściwości",
 
     "QMessageBox.Error": "Błąd",
+
+    "SearchDialog.Search Results": "Wyniki wyszukiwania",
+    "SearchDialog.No search results found.": "Nie znaleziono wyników.",
+    "SearchDialog.Close": "Zamknij",
 
     "SettingsDialog.Application Settings": "Ustawienia aplikacji",
     "SettingsDialog.Hidden Files (Dot Files)": "Ukryte pliki (pliki z kropką)",
@@ -148,6 +188,9 @@
     "SettingsDialog.Column Visibility": "Widoczność kolumn",
     "SettingsDialog.Show UID Column": "Pokaż kolumnę UID",
     "SettingsDialog.Show GID Column": "Pokaż kolumnę GID",
+    "SettingsDialog.Language Settings": "Ustawienia języka",
+    "SettingsDialog.Auto-detect language": "Wykryj język automatycznie",
+    "SettingsDialog.Manual language selection": "Ręczny wybór języka",
     "SettingsDialog.Save": "Zapisz",
     "SettingsDialog.Cancel": "Anuluj",
 

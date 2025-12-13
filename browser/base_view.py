@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QWidget
+from PyQt6.QtCore import QEvent # Import QEvent
 
 class AbstractFileView(QWidget):
     """
@@ -43,4 +44,8 @@ class AbstractFileView(QWidget):
         
     def toggle_selection(self):
         """Toggles the selection of the currently focused item."""
+        raise NotImplementedError
+
+    def handle_key_event(self, event: QEvent):
+        """Handles key press events specific to this view."""
         raise NotImplementedError
