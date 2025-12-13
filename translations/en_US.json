@@ -27,6 +27,37 @@
     "ApplicationLogicHandler.Error copying {item}: {error}": "Error copying {item}: {error}",
     "ApplicationLogicHandler.Copied {count} items to '{destination}'": "Copied {count} items to '{destination}'",
     "ApplicationLogicHandler.Error deleting {item}: {error}": "Error deleting {item}: {error}",
+    "ApplicationLogicHandler.Language Change": "Language Change",
+    "ApplicationLogicHandler.Language settings have been updated. Please restart the application for changes to take full effect.": "Language settings have been updated. Please restart the application for changes to take full effect.",
+
+    "BookmarkDialog.Bookmarks": "Bookmarks",
+    "BookmarkDialog.Filter bookmarks...": "Filter bookmarks...",
+
+    "Buttons.OK": "OK",
+    "Buttons.Cancel": "Cancel",
+
+    "CompareDialog.Comparison Results": "Comparison Results",
+    "CompareDialog.Comparing:": "Comparing:",
+    "CompareDialog.Left": "Left",
+    "CompareDialog.Right": "Right",
+    "CompareDialog.Different Files": "Different Files",
+    "CompareDialog.Left Only": "Left Only",
+    "CompareDialog.Right Only": "Right Only",
+    "CompareDialog.Same Files": "Same Files",
+    "CompareDialog.Common Dirs": "Common Dirs",
+    "CompareDialog.Common Funny": "Common Funny",
+    "CompareDialog.Subdirectory:": "Subdirectory:",
+
+    "CopyDialog.Copy": "Copy",
+    "CopyDialog.Source": "Source",
+    "CopyDialog.Destination": "Destination",
+    "CopyDialog.Overwrite existing files": "Overwrite existing files",
+    "CopyDialog.Preserve original modification date": "Preserve original modification date",
+
+    "DeleteDialog.Delete": "Delete",
+    "DeleteDialog.Are you sure you want to delete:": "Are you sure you want to delete:",
+    "DeleteDialog.Are you sure you want to delete <b>{count}</b> items?": "Are you sure you want to delete <b>{count}</b> items?",
+    "DeleteDialog.This operation cannot be undone.": "This operation cannot be undone.",
 
     "FlatFileSystemModel.Permission Error": "Permission Error",
     "FlatFileSystemModel.File": "File",
@@ -135,9 +166,18 @@
     "MenuPanel.Delete selected items": "Delete selected items",
     "MenuPanel.Synchronize directories": "Synchronize directories",
 
+    "MoveDialog.Move": "Move",
+    "MoveDialog.Source": "Source",
+    "MoveDialog.Destination": "Destination",
+    "MoveDialog.Overwrite existing files": "Overwrite existing files",
+
     "PropertiesDialog.Properties": "Properties",
 
     "QMessageBox.Error": "Error",
+
+    "SearchDialog.Search Results": "Search Results",
+    "SearchDialog.No search results found.": "No search results found.",
+    "SearchDialog.Close": "Close",
 
     "SettingsDialog.Application Settings": "Application Settings",
     "SettingsDialog.Hidden Files (Dot Files)": "Hidden Files (Dot Files)",
@@ -148,6 +188,9 @@
     "SettingsDialog.Column Visibility": "Column Visibility",
     "SettingsDialog.Show UID Column": "Show UID Column",
     "SettingsDialog.Show GID Column": "Show GID Column",
+    "SettingsDialog.Language Settings": "Language Settings",
+    "SettingsDialog.Auto-detect language": "Auto-detect language",
+    "SettingsDialog.Manual language selection": "Manual language selection",
     "SettingsDialog.Save": "Save",
     "SettingsDialog.Cancel": "Cancel",
 

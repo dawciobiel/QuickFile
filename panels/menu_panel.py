@@ -64,7 +64,6 @@ class MenuPanel(QObject):
         Helper to create a QAction. It accepts ALREADY TRANSLATED text.
         The shortcut_key is the stable, non-translated key.
         """
-        logging.debug(f"CREATE ACTION: visible_text='{visible_text}', shortcut_key='{shortcut_key}'")
         action = QAction(visible_text, self.main_window)
         if icon:
             action.setIcon(self.main_window.style().standardIcon(icon))

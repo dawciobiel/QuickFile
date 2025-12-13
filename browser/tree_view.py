@@ -23,24 +23,40 @@ class TreeFileView(AbstractFileView):
         self.update_view_settings()
         
         self.view.doubleClicked.connect(self.on_item_double_clicked)
-        self.view.installEventFilter(self)
+        # self.view.installEventFilter(self) # Removed, handled by KeyboardEventManager
 
-    def eventFilter(self, source, event):
-        if source is self.view and event.type() == QEvent.Type.KeyPress:
-            key = event.key()
-            if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
-                current_index = self.view.currentIndex()
-                if current_index.isValid():
-                    self.on_item_double_clicked(current_index)
-                return True
-            elif key == Qt.Key.Key_Insert:
-                self.toggle_selection()
-                return True
-            elif key == Qt.Key.Key_Backspace:
-                self.go_up()
-                return True
+    # def eventFilter(self, source, event): # Removed, logic moved to handle_key_event
+    #     if source is self.view and event.type() == QEvent.Type.KeyPress:
+    #         key = event.key()
+    #         if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
+    #             current_index = self.view.currentIndex()
+    #             if current_index.isValid():
+    #                 self.on_item_double_clicked(current_index)
+    #             return True
+    #         elif key == Qt.Key.Key_Insert:
+    #             self.toggle_selection()
+    #             return True
+    #         elif key == Qt.Key.Key_Backspace:
+    #             self.go_up()
+    #             return True
         
-        return super().eventFilter(source, event)
+    #     return super().eventFilter(source, event)
+
+    def handle_key_event(self, event: QEvent):
+        key = event.key()
+        if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
+            current_index = self.view.currentIndex()
+            if current_index.isValid():
+                self.on_item_double_clicked(current_index)
+            return True
+        elif key == Qt.Key.Key_Insert:
+            self.toggle_selection()
+            return True
+        elif key == Qt.Key.Key_Backspace:
+            self.go_up()
+            return True
+        # For other keys, let the default QTreeView handling take over (e.g., arrows, PageUp/Down)
+        return False # Event not handled by this view, propagate further
 
     def set_path(self, path):
         self.model.set_root_path(path)

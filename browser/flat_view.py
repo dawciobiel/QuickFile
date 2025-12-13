@@ -1,6 +1,7 @@
 import os
 from PyQt6.QtCore import Qt, QEvent
-from PyQt6.QtWidgets import QTableView, QVBoxLayout, QAbstractItemView
+from PyQt6.QtWidgets import QTableView, QVBoxLayout, QAbstractItemView, QHeaderView
+
 from browser.base_view import AbstractFileView
 from browser.flat_file_system_model import FlatFileSystemModel
 
@@ -25,7 +26,7 @@ class FlatFileView(AbstractFileView):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.view)
         
-        self._configure_headers()
+        self._configure_view()
         
         self.view.doubleClicked.connect(self.on_item_double_clicked)
         self.view.installEventFilter(self)
@@ -56,9 +57,27 @@ class FlatFileView(AbstractFileView):
         
         return super().eventFilter(source, event)
 
-    def _configure_headers(self):
+    def _configure_view(self):
         header = self.view.horizontalHeader()
-        # Configure header properties here if needed, e.g., resize modes
+        self.view.verticalHeader().setDefaultSectionSize(20) # Set row height
+        self.view.verticalHeader().hide() # Hide vertical header
+        
+        # Restore widths
+        setting_key = "table_column_widths"
+        saved_widths = self.settings_manager.get_setting(setting_key)
+        if saved_widths and len(saved_widths) == header.count():
+            for i, width in enumerate(saved_widths):
+                if width > 0:
+                    header.resizeSection(i, width)
+        else:
+            header.resizeSections(QHeaderView.ResizeMode.ResizeToContents)
+            
+        header.sectionResized.connect(self.on_header_section_resized)
+
+    def on_header_section_resized(self, section, old_size, new_size):
+        header = self.view.horizontalHeader()
+        column_widths = [header.sectionSize(i) for i in range(header.count())]
+        self.settings_manager.set_setting("table_column_widths", column_widths)
 
     def set_path(self, path):
         self.model.set_current_path(path)

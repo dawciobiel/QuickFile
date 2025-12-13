@@ -20,7 +20,7 @@ from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
 from utils.compare_dialog import CompareDialog
 from ui.ui_manager import UIManager
-from app.keyboard_event_handler import KeyboardEventHandler
+from app.keyboard_event_handler import KeyboardEventManager # Updated import
 from app.application_logic_handler import ApplicationLogicHandler
 
 
@@ -64,8 +64,8 @@ class MainWindow(QMainWindow):
         self.shortcuts_manager.apply_shortcuts()
         self.load_settings()
         
-        # Initialize KeyboardEventHandler
-        self.keyboard_event_handler = KeyboardEventHandler(self)
+        # Initialize KeyboardEventManager
+        self.keyboard_event_manager = KeyboardEventManager(self) # Updated class name
         # The event filter will be installed in main.py
 
     def load_settings(self):

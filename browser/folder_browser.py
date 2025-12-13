@@ -35,6 +35,9 @@ class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
+    ACTIVE_PANEL_STYLE = "border: 2px solid blue;"
+    INACTIVE_PANEL_STYLE = "border: 2px solid lightgray;"
+
     def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
@@ -53,11 +56,33 @@ class FolderBrowser(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
         
+        # Install event filters on the file views for focus detection
+        self.left_panel_widget.file_view.view.installEventFilter(self)
+        self.right_panel_widget.file_view.view.installEventFilter(self)
+
         self.set_active_panel(self.left_panel_widget)
 
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.Type.FocusIn:
+            if source is self.left_panel_widget.file_view.view:
+                self.set_active_panel(self.left_panel_widget)
+            elif source is self.right_panel_widget.file_view.view:
+                self.set_active_panel(self.right_panel_widget)
+        return super().eventFilter(source, event)
+
     def set_active_panel(self, panel_widget):
+        if self.active_panel_widget:
+            self.active_panel_widget.setStyleSheet(self.INACTIVE_PANEL_STYLE)
+        
         self.active_panel_widget = panel_widget
-        # Logic to indicate active panel (e.g., style sheets) can be added here
+        self.active_panel_widget.setStyleSheet(self.ACTIVE_PANEL_STYLE)
+        self.active_panel_widget.file_view.view.setFocus() # Ensure the view inside the panel has focus
+
+    def switch_active_panel(self):
+        if self.active_panel_widget == self.left_panel_widget:
+            self.set_active_panel(self.right_panel_widget)
+        else:
+            self.set_active_panel(self.left_panel_widget)
 
     def go_up_directory(self):
         if self.active_panel_widget:
@@ -71,12 +96,17 @@ class FolderBrowser(QWidget):
         if self.view_mode == mode:
             return
         self.view_mode = mode
+        self.settings_manager.set_setting("view_mode", mode) # Save the new view mode
         
         left_path = self.left_panel_widget.file_view.get_current_path()
         right_path = self.right_panel_widget.file_view.get_current_path()
 
         splitter = self.findChild(QSplitter)
         
+        # Uninstall event filters from old views before deleting
+        self.left_panel_widget.file_view.view.removeEventFilter(self)
+        self.right_panel_widget.file_view.view.removeEventFilter(self)
+
         self.left_panel_widget.deleteLater()
         self.right_panel_widget.deleteLater()
 
@@ -89,6 +119,10 @@ class FolderBrowser(QWidget):
         splitter.insertWidget(0, self.left_panel_widget)
         splitter.insertWidget(1, self.right_panel_widget)
         
+        # Re-install event filters on the new views
+        self.left_panel_widget.file_view.view.installEventFilter(self)
+        self.right_panel_widget.file_view.view.installEventFilter(self)
+
         self.set_active_panel(self.left_panel_widget)
 
     def load_panel_settings(self):
@@ -102,9 +136,15 @@ class FolderBrowser(QWidget):
         self.settings_manager.set_setting("rightPanelPath", self.right_panel_widget.file_view.get_current_path())
         
     def get_selected_paths(self):
-        if self.active_panel_widget:
-            return self.active_panel_widget.file_view.get_selected_paths()
-        return []
+        if not self.active_panel_widget:
+            return []
+            
+        selected = self.active_panel_widget.file_view.get_selected_paths()
+        if not selected:
+            current = self.active_panel_widget.file_view.get_current_selected_path()
+            if current:
+                return [current]
+        return selected
         
     def get_current_selected_path(self):
         if self.active_panel_widget:

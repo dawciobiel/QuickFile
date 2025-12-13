@@ -20,7 +20,6 @@ class FlatFileSystemModel(QAbstractTableModel):
         self._file_permissions_display_mode = file_permissions_display_mode
         self._show_uid_column = show_uid_column
         self._show_gid_column = show_gid_column
-        logging.debug(f"FlatFileSystemModel.__init__ called. Initial show_dot_files: {self._show_dot_files}")
         self._populate_items()
 
     def set_current_path(self, path):
@@ -39,7 +38,6 @@ class FlatFileSystemModel(QAbstractTableModel):
         self.endResetModel()
 
     def _populate_items(self):
-        logging.debug(f"FlatFileSystemModel._populate_items called. Current _show_dot_files: {self._show_dot_files}")
         dot_dot_item = []
         other_items = []
 
@@ -55,7 +53,6 @@ class FlatFileSystemModel(QAbstractTableModel):
         try:
             for item_name in os.listdir(self._current_path):
                 if not self._show_dot_files and item_name.startswith('.') and item_name != '..':
-                    logging.debug(f"Filtering out dot file: {item_name} (show_dot_files is False).")
                     continue
                 item_path = os.path.join(self._current_path, item_name)
                 is_dir = os.path.isdir(item_path)
@@ -70,7 +67,6 @@ class FlatFileSystemModel(QAbstractTableModel):
             other_items = []
 
         self._items = dot_dot_item + other_items
-        logging.debug(f"FlatFileSystemModel._populate_items finished. Total items: {len(self._items)}")
 
     def set_show_dot_files(self, new_dot_files_state):
         if self._show_dot_files == new_dot_files_state:
