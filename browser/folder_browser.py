@@ -1,6 +1,7 @@
 import logging
 import os
-from PyQt6.QtCore import Qt, pyqtSignal, QEvent
+import psutil
+from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QDir
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QLineEdit, QComboBox, QSizePolicy, QCompleter
 from PyQt6.QtGui import QFileSystemModel
 from browser.flat_view import FlatFileView
@@ -42,16 +43,83 @@ class PanelWidget(QWidget):
         # Connect signals for path synchronization
         self.file_view.path_changed.connect(self._on_path_changed)
         self.path_edit.returnPressed.connect(self.on_path_edited)
+        self.drive_combo.currentIndexChanged.connect(self._on_drive_selected) # Connect drive combo
+
+        self._populate_drive_combo() # Populate drives on init
+
+    def _populate_drive_combo(self):
+        """
+        Populates the drive combo box with available mounted drives and partitions.
+        """
+        self.drive_combo.clear()
+        
+        mount_points = set()
+
+        # Add QDir.drives() for Windows compatibility and common roots
+        for drive in QDir.drives():
+            mount_points.add(drive.path())
+
+        # Add psutil partitions for more comprehensive Linux/macOS mount points
+        try:
+            partitions = psutil.disk_partitions(all=False)
+            for p in partitions:
+                # Filter out common system/virtual filesystems
+                if p.mountpoint in ['/proc', '/sys', '/dev', '/run', '/snap'] or \
+                   p.fstype in ['squashfs', 'tmpfs', 'devtmpfs', 'proc', 'sysfs', 'cgroup', 'fuse.portal', 'overlay']:
+                    continue
+                
+                # Add typical user-mounted locations
+                if p.mountpoint.startswith(('/media', '/mnt', '/run/media', os.path.expanduser('~/'))):
+                    mount_points.add(p.mountpoint)
+                elif p.mountpoint == '/': # Always include root
+                    mount_points.add(p.mountpoint)
+                elif os.path.isdir(p.mountpoint) and os.path.ismount(p.mountpoint): # Check if it's a real mount point
+                    mount_points.add(p.mountpoint)
+
+        except Exception as e:
+            logging.warning(f"Failed to get disk partitions with psutil: {e}")
+
+        sorted_mount_points = sorted(list(mount_points))
+        for mp in sorted_mount_points:
+            self.drive_combo.addItem(mp)
+
+    def _on_drive_selected(self, index):
+        """
+        Handles selection change in the drive combo box.
+        """
+        if index >= 0:
+            selected_drive_path = self.drive_combo.itemText(index)
+            self.file_view.set_path(selected_drive_path)
 
     def _on_path_changed(self, new_path):
         """
         Updates the path in the line edit and sets the root for the completer.
         """
         self.path_edit.setText(new_path)
-        # The QFileSystemModel completer is smart enough to handle full paths.
-        # We set the root path to the current directory to help with relative completions,
-        # but it will still complete absolute paths correctly.
         self.completer_model.setRootPath(new_path)
+
+        # Update drive combo to reflect current drive if it's one of the listed drives
+        # Block signals to prevent recursive calls to _on_drive_selected
+        self.drive_combo.blockSignals(True)
+        
+        best_match_index = -1
+        longest_match_len = -1
+        for i in range(self.drive_combo.count()):
+            drive_path = self.drive_combo.itemText(i)
+            # Ensure drive_path ends with a separator for accurate matching, unless it's root
+            if drive_path != '/' and not drive_path.endswith(os.sep):
+                drive_path += os.sep
+            
+            if new_path.startswith(drive_path):
+                if len(drive_path) > longest_match_len:
+                    longest_match_len = len(drive_path)
+                    best_match_index = i
+        
+        if best_match_index != -1 and self.drive_combo.currentIndex() != best_match_index:
+            self.drive_combo.setCurrentIndex(best_match_index)
+        
+        self.drive_combo.blockSignals(False)
+
 
     def on_path_edited(self):
         """
