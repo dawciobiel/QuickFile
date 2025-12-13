@@ -470,3 +470,8 @@ class ApplicationLogicHandler(QObject):
 
     def apply_shortcuts_settings(self, new_shortcuts):
         self.main_window.shortcuts_manager.save_shortcuts(new_shortcuts)
+
+    def set_focus_on_path_edit(self):
+        active_panel_widget = self.main_window.folder_browser.active_panel_widget
+        if active_panel_widget:
+            active_panel_widget.path_edit.setFocus()
