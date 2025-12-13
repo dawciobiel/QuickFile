@@ -141,9 +141,9 @@ class FlatFileView(AbstractFileView):
             self.set_path(parent_path, select_item_name=current_dir_name) # Pass the name to select
             # logging.debug(f"[FlatFileView.go_up] Called set_path with parent_path and select_item_name.") # Removed logging
             
-    def update_view_settings(self):
-        self.model.set_show_dot_files(self.settings_manager.get_setting("showDotFiles", True))
+    def update_view_settings(self): # Renamed from set_permissions_display_mode
         self.model.set_file_permissions_display_mode(self.settings_manager.get_setting("file_permissions_display_mode", "symbolic"))
+        self.model.set_show_dot_files(self.settings_manager.get_setting("showDotFiles", True))
         self.model.set_show_uid_column(self.settings_manager.get_setting("show_uid_column", True))
         self.model.set_show_gid_column(self.settings_manager.get_setting("show_gid_column", True))
         self.refresh()
