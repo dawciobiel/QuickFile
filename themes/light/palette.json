@@ -1,0 +1,9 @@
+{
+    "@primaryBackgroundColor": "#f0f0f0",
+    "@secondaryBackgroundColor": "#ffffff",
+    "@textColor": "#333333",
+    "@accentColor": "#007bff",
+    "@borderColor": "#cccccc",
+    "@selectionColor": "#ffffff",
+    "@selectionBackgroundColor": "#007bff"
+}

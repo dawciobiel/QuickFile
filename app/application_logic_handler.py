@@ -22,7 +22,7 @@ from app.translation_manager import translation_manager # Import our new manager
 
 
 class ApplicationLogicHandler(QObject):
-    def __init__(self, main_window, file_manager, file_comparator, bookmarks_manager, archive_manager, directory_synchronizer):
+    def __init__(self, main_window, file_manager, file_comparator, bookmarks_manager, archive_manager, directory_synchronizer, theme_manager): # DODANO theme_manager
         super().__init__(main_window)
         self.main_window = main_window
         self.file_manager = file_manager
@@ -30,6 +30,7 @@ class ApplicationLogicHandler(QObject):
         self.bookmarks_manager = bookmarks_manager
         self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
+        self.theme_manager = theme_manager # PRZYPISANO theme_manager
 
         # Constants for repeated strings (from MenuPanel)
         self.ACTION_COMPARE = translation_manager.translate("MenuPanel", "Compare")
@@ -302,7 +303,7 @@ class ApplicationLogicHandler(QObject):
             dialog = CopyDialog(self.main_window, source_paths[0], destination_path)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 try:
-                    message = self.file_manager.copy_item_with_options(source_paths[0], destination_path, dialog.get_options())
+                    message = self.file_manager.copy_item_with_options(source_path[0], destination_path, dialog.get_options())
                     self.main_window.status_bar.showMessage(message)
                     self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
                 except (FileNotFoundError, FileExistsError, FileManagerError) as e:
@@ -422,6 +423,7 @@ class ApplicationLogicHandler(QObject):
         current_show_gid_column = self.main_window.settings_manager.get_setting("show_gid_column")
         current_language_mode = self.main_window.settings_manager.get_setting("language_mode")
         current_manual_language = self.main_window.settings_manager.get_setting("manual_language")
+        current_theme = self.main_window.settings_manager.get_setting("theme") # Get current theme
 
         settings_changed = False
 
@@ -464,6 +466,12 @@ class ApplicationLogicHandler(QObject):
                                     translation_manager.translate("ApplicationLogicHandler", "Language Change"),
                                     translation_manager.translate("ApplicationLogicHandler", "Language settings have been updated. Please restart the application for changes to take full effect."))
             
+        # Handle theme setting
+        if new_settings.get("theme") is not None and new_settings["theme"] != current_theme:
+            self.main_window.settings_manager.set_setting("theme", new_settings["theme"])
+            self.theme_manager.apply_theme(new_settings["theme"])
+            settings_changed = True
+
         if settings_changed and not language_settings_changed:
             # Refresh views if other settings changed, but not language (as language requires restart)
             self.main_window.folder_browser.refresh_all_views()

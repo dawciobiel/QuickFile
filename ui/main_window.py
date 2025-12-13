@@ -15,6 +15,7 @@ from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from app.shortcuts_manager import ShortcutsManager
 from app.settings_manager import SettingsManager
+from app.theme_manager import ThemeManager # Import ThemeManager
 from utils.dialogs import show_error_message
 from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
@@ -32,6 +33,7 @@ class MainWindow(QMainWindow):
 
         self.shortcuts_manager = ShortcutsManager(self)
         self.settings_manager = SettingsManager()
+        self.theme_manager = ThemeManager() # Initialize ThemeManager
         
         # Initialize all managers here without passing 'self' if they don't need it
         self.file_manager = FileManager()
@@ -47,7 +49,8 @@ class MainWindow(QMainWindow):
             file_comparator=self.file_comparator,
             bookmarks_manager=self.bookmarks_manager,
             archive_manager=self.archive_manager,
-            directory_synchronizer=self.directory_synchronizer
+            directory_synchronizer=self.directory_synchronizer,
+            theme_manager=self.theme_manager # Pass theme_manager
         )
 
         # Then initialize UIManager, passing managers as dependencies
@@ -67,6 +70,10 @@ class MainWindow(QMainWindow):
         # Initialize KeyboardEventManager
         self.keyboard_event_manager = KeyboardEventManager(self) # Updated class name
         # The event filter will be installed in main.py
+
+        # Apply initial theme
+        initial_theme = self.settings_manager.get_setting("theme", "dark") # Default to 'dark'
+        self.theme_manager.apply_theme(initial_theme)
 
     def load_settings(self):
         # Restore window geometry and state using SettingsManager
