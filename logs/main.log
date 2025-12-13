@@ -1,1 +1,2 @@
-2025-12-13 13:47:14,889 - root - INFO - Application started.
+2025-12-13 14:44:57,758 - root - INFO - Application started.
+2025-12-13 14:45:15,030 - root - ERROR - Permission error accessing /boot/efi: [Errno 13] Brak dostępu: '/boot/efi'
