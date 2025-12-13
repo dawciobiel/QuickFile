@@ -60,7 +60,8 @@ class ThemeManager:
 
         processed_qss = raw_qss
         for var, value in palette.items():
-            processed_qss = processed_qss.replace(var, value)
+            # Replace placeholders like @@variable_name@@ with actual color values
+            processed_qss = processed_qss.replace(f"@@{var}@@", value)
         
         QApplication.instance().setStyleSheet(processed_qss)
         self.current_theme_name = theme_name
