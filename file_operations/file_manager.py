@@ -31,6 +31,24 @@ class FileManager:
         
         return path
 
+    def _handle_destination_exists(self, destination_full_path, source_is_dir, overwrite_option, item_name):
+        """
+        Handles the scenario where the destination path already exists.
+        Removes the existing item if overwrite is allowed, otherwise raises an error.
+        """
+        if os.path.exists(destination_full_path):
+            if source_is_dir and os.path.isfile(destination_full_path):
+                raise IsADirectoryError(translation_manager.translate("FileManager", f"Cannot move/copy directory '{item_name}' to existing file '{destination_full_path}'."))
+            elif not overwrite_option:
+                raise FileExistsError(translation_manager.translate("FileManager", f"Item '{item_name}' already exists in the destination."))
+            else:
+                # If overwriting, remove existing item first
+                if os.path.isdir(destination_full_path):
+                    shutil.rmtree(destination_full_path)
+                else:
+                    os.remove(destination_full_path)
+                logging.info(f"Removed existing item at {destination_full_path} for overwrite.")
+
     def copy_item_with_options(self, source_path, destination_path, options):
         """Copies a file/folder with options."""
         try:
@@ -39,21 +57,13 @@ class FileManager:
 
             base_name = os.path.basename(source_path)
             destination_full_path = os.path.join(destination_path, base_name)
+            source_is_dir = os.path.isdir(source_path)
 
-            if os.path.exists(destination_full_path):
-                if not options.get("overwrite"):
-                    raise FileExistsError(translation_manager.translate("FileManager", f"File '{base_name}' already exists in the destination."))
-                else:
-                    # If overwriting, remove existing item first
-                    if os.path.isdir(destination_full_path):
-                        shutil.rmtree(destination_full_path)
-                    else:
-                        os.remove(destination_full_path)
-                    logging.info(f"Removed existing item at {destination_full_path} for overwrite.")
+            self._handle_destination_exists(destination_full_path, source_is_dir, options.get("overwrite"), base_name)
 
             copy_function = shutil.copy2 if options.get("preserve_timestamp") else shutil.copy
             
-            if os.path.isdir(source_path):
+            if source_is_dir:
                 shutil.copytree(source_path, destination_full_path, copy_function=copy_function)
             else:
                 copy_function(source_path, destination_full_path)
@@ -74,19 +84,9 @@ class FileManager:
 
             base_name = os.path.basename(source_path)
             destination_full_path = os.path.join(destination_path, base_name)
+            source_is_dir = os.path.isdir(source_path)
 
-            if os.path.exists(destination_full_path):
-                if os.path.isdir(source_path) and os.path.isfile(destination_full_path):
-                    raise IsADirectoryError(translation_manager.translate("FileManager", f"Cannot move directory '{base_name}' to existing file '{destination_full_path}'."))
-                elif not options.get("overwrite"):
-                    raise FileExistsError(translation_manager.translate("FileManager", f"Item '{base_name}' already exists in the destination."))
-                else:
-                    # If overwriting, remove existing item first
-                    if os.path.isdir(destination_full_path):
-                        shutil.rmtree(destination_full_path)
-                    else:
-                        os.remove(destination_full_path)
-                    logging.info(f"Removed existing item at {destination_full_path} for overwrite.")
+            self._handle_destination_exists(destination_full_path, source_is_dir, options.get("overwrite"), base_name)
                 
             shutil.move(source_path, destination_full_path)
 
@@ -148,6 +148,26 @@ class FileManager:
             base_name = os.path.basename(self.clipboard)
             destination_full_path = os.path.join(destination_path, base_name)
 
+            # For paste, we assume overwrite is always true if it's a cut operation,
+            # or if the user explicitly allows it for copy.
+            # For simplicity here, we'll just check if it exists and handle it.
+            # A more complex UI might ask for overwrite confirmation.
+            # For now, let's assume paste implies overwrite if the item is cut.
+            # If it's a copy, we might need an options dict for paste too.
+            # For now, let's keep it simple and assume no overwrite for copy-paste if exists.
+            
+            # Simplified overwrite logic for paste:
+            if os.path.exists(destination_full_path):
+                if self.is_cut_operation: # If cut, always overwrite
+                    if os.path.isdir(destination_full_path):
+                        shutil.rmtree(destination_full_path)
+                    else:
+                        os.remove(destination_full_path)
+                    logging.info(f"Removed existing item at {destination_full_path} for cut-paste overwrite.")
+                else: # If copy, raise error if exists
+                    raise FileExistsError(translation_manager.translate("FileManager", f"Item '{base_name}' already exists in the destination."))
+
+
             if self.is_cut_operation:
                 shutil.move(self.clipboard, destination_full_path)
                 message = translation_manager.translate("FileManager", f"Moved '{base_name}' to '{destination_full_path}'")
@@ -160,7 +180,7 @@ class FileManager:
 
             return message
 
-        except (ValueError, FileNotFoundError, NotADirectoryError, IsADirectoryError) as e:
+        except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError) as e:
             raise e
         except OSError as e:
             logging.exception(f"Error pasting item to {destination_path}: {e}")
