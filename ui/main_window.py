@@ -31,29 +31,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"QuickFile v{__version__}")
         self.resize(1200, 800)
 
-        self._initialize_managers()
-        
-        # Initialize UIManager, passing managers as dependencies
-        self.ui_manager = UIManager(
-            main_window=self,
-            settings_manager=self.settings_manager,
-            file_manager=self.file_manager,
-            file_comparator=self.file_comparator,
-            archive_manager=self.archive_manager,
-            directory_synchronizer=self.directory_synchronizer,
-            bookmarks_manager=self.bookmarks_manager
-        )
-
-        self.shortcuts_manager.apply_shortcuts()
-        self.load_settings()
-        
-        # The event filter will be installed in main.py
-        # Apply initial theme
-        initial_theme = self.settings_manager.get_setting("theme", "dark") # Default to 'dark'
-        self.theme_manager.apply_theme(initial_theme)
-
-    def _initialize_managers(self):
-        """Initializes all manager instances used by the application."""
+        # Initialize managers
         self.shortcuts_manager = ShortcutsManager(self)
         self.settings_manager = SettingsManager()
         self.theme_manager = ThemeManager()
@@ -64,6 +42,7 @@ class MainWindow(QMainWindow):
         self.directory_synchronizer = DirectorySynchronizer()
         self.bookmarks_manager = BookmarksManager()
 
+        # Initialize ApplicationLogicHandler FIRST, as UIManager depends on it
         self.application_logic_handler = ApplicationLogicHandler(
             main_window=self,
             file_manager=self.file_manager,
@@ -73,7 +52,32 @@ class MainWindow(QMainWindow):
             directory_synchronizer=self.directory_synchronizer,
             theme_manager=self.theme_manager
         )
-        self.keyboard_event_manager = KeyboardEventManager(self)
+
+        # Then initialize UIManager, passing managers as dependencies
+        self.ui_manager = UIManager(
+            main_window=self,
+            settings_manager=self.settings_manager,
+            file_manager=self.file_manager,
+            file_comparator=self.file_comparator,
+            archive_manager=self.archive_manager,
+            directory_synchronizer=self.directory_synchronizer,
+            bookmarks_manager=self.bookmarks_manager
+        )
+
+        # Initialize KeyboardEventManager AFTER ui_manager has set up folder_browser
+        self.keyboard_event_manager = KeyboardEventManager(
+            self,
+            self.application_logic_handler,
+            self.ui_manager.folder_browser
+        )
+
+        self.shortcuts_manager.apply_shortcuts()
+        self.load_settings()
+        
+        # The event filter will be installed in main.py
+        # Apply initial theme
+        initial_theme = self.settings_manager.get_setting("theme", "dark") # Default to 'dark'
+        self.theme_manager.apply_theme(initial_theme)
 
     def load_settings(self):
         # Restore window geometry and state using SettingsManager
