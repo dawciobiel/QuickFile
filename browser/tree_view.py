@@ -27,16 +27,12 @@ class TreeFileView(AbstractFileView):
         self.view.doubleClicked.connect(self.on_item_double_clicked)
 
     def handle_key_event(self, event: QEvent):
+        current_index = self.view.currentIndex()
+        if self._handle_common_key_events(event, current_index):
+            return True
+        
         key = event.key()
-        if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
-            current_index = self.view.currentIndex()
-            if current_index.isValid():
-                self.on_item_double_clicked(current_index)
-            return True
-        elif key == Qt.Key.Key_Insert:
-            self.toggle_selection()
-            return True
-        elif key == Qt.Key.Key_Backspace:
+        if key == Qt.Key.Key_Backspace:
             self.go_up()
             return True
         return False
@@ -80,14 +76,6 @@ class TreeFileView(AbstractFileView):
         if self.view.currentIndex().isValid():
             return self.model.filePath(self.view.currentIndex())
         return None
-
-    def go_up(self):
-        current_path = self.get_current_path()
-        parent_path = os.path.dirname(current_path)
-        
-        if parent_path != current_path:
-            current_dir_name = os.path.basename(current_path)
-            self.set_path(parent_path, select_item_name=current_dir_name)
             
     def update_view_settings(self):
         self.model.update_settings()
