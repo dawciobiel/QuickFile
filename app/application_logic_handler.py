@@ -18,11 +18,10 @@ from utils.move_dialog import MoveDialog
 from utils.delete_dialog import DeleteDialog
 from utils.sync_dialog import SyncDialog
 from utils.properties_dialog import PropertiesDialog
-from app.translation_manager import translation_manager # Import our new manager
-
+from app.translation_manager import translation_manager
 
 class ApplicationLogicHandler(QObject):
-    def __init__(self, main_window, file_manager, file_comparator, bookmarks_manager, archive_manager, directory_synchronizer, theme_manager): # DODANO theme_manager
+    def __init__(self, main_window, file_manager, file_comparator, bookmarks_manager, archive_manager, directory_synchronizer, theme_manager):
         super().__init__(main_window)
         self.main_window = main_window
         self.file_manager = file_manager
@@ -30,9 +29,9 @@ class ApplicationLogicHandler(QObject):
         self.bookmarks_manager = bookmarks_manager
         self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
-        self.theme_manager = theme_manager # PRZYPISANO theme_manager
+        self.theme_manager = theme_manager
+        self.theme_manager.theme_changed.connect(self.on_theme_changed)
 
-        # Constants for repeated strings (from MenuPanel)
         self.ACTION_COMPARE = translation_manager.translate("MenuPanel", "Compare")
         self.ACTION_PROPERTIES = translation_manager.translate("MenuPanel", "Properties")
         self.ACTION_EXIT = translation_manager.translate("MenuPanel", "Exit")
@@ -55,6 +54,9 @@ class ApplicationLogicHandler(QObject):
         self.ERROR_FILE_CREATION = translation_manager.translate("MenuPanel", "File Creation Error")
         self.ERROR_FOLDER_CREATION = translation_manager.translate("MenuPanel", "Folder Creation Error")
 
+    def on_theme_changed(self, theme_path):
+        self.main_window.folder_browser.left_panel_widget.file_view.model.load_file_styles(theme_path)
+        self.main_window.folder_browser.right_panel_widget.file_view.model.load_file_styles(theme_path)
 
     def _handle_f3_key(self):
         selected_path = self._get_selected_file_path()
@@ -66,12 +68,11 @@ class ApplicationLogicHandler(QObject):
     def _handle_f4_key(self):
         selected_path = self._get_selected_file_path()
         if selected_path:
-            self.open_file_externally(selected_path)  # Currently same as F3
+            self.open_file_externally(selected_path)
         else:
             self.main_window.status_bar.showMessage(translation_manager.translate("ApplicationLogicHandler", "No file selected for editing."))
 
     def add_bookmark(self):
-        """Adds the current directory of the active panel to bookmarks."""
         active_panel_widget = self.main_window.folder_browser.active_panel_widget
         if active_panel_widget:
             current_path = self.main_window.folder_browser.current_paths.get(active_panel_widget)
@@ -96,22 +97,20 @@ class ApplicationLogicHandler(QObject):
             self.main_window.status_bar.showMessage(translation_manager.translate("ApplicationLogicHandler", "Enter text to search."))
 
     def show_search_results(self, results):
-        """Displays search results in a dialog window."""
         dialog = SearchDialog(self.main_window, results)
         dialog.exec()
 
     def open_file_externally(self, file_path):
-        """Opens the file using the system's default application."""
         if not os.path.exists(file_path):
             show_error_message(self.main_window, translation_manager.translate("ApplicationLogicHandler", "File Opening Error"), translation_manager.translate("ApplicationLogicHandler", f"File '{file_path}' does not exist."))
             return
 
         try:
-            if os.name == 'nt':  # Windows
+            if os.name == 'nt':
                 os.startfile(file_path)
-            elif os.uname().sysname == 'Darwin':  # macOS
+            elif os.uname().sysname == 'Darwin':
                 subprocess.call(('open', file_path))
-            else:  # Linux
+            else:
                 subprocess.call(('xdg-open', file_path))
             self.main_window.status_bar.showMessage(translation_manager.translate("ApplicationLogicHandler", f"File opened: {file_path}"))
         except Exception as e:
@@ -119,7 +118,6 @@ class ApplicationLogicHandler(QObject):
             show_error_message(self.main_window, translation_manager.translate("ApplicationLogicHandler", "File Opening Error"), translation_manager.translate("ApplicationLogicHandler", f"Could not open file '{file_path}': {e}"))
 
     def _get_selected_file_path(self):
-        """Returns the path to the selected file, if it is a file."""
         selected_path = self.main_window.folder_browser.get_current_selected_path()
         if selected_path and os.path.isfile(selected_path):
             return selected_path
@@ -141,10 +139,8 @@ class ApplicationLogicHandler(QObject):
         is_right_dir = os.path.isdir(right_selected_path)
 
         if is_left_dir and is_right_dir:
-            # Compare directories
             self._compare_directories(left_selected_path, right_selected_path)
         elif not is_left_dir and not is_right_dir:
-            # Compare files
             self._compare_files(left_selected_path, right_selected_path)
         else:
             logging.warning("Comparison Error: User tried to compare a file with a directory.")
@@ -168,7 +164,6 @@ class ApplicationLogicHandler(QObject):
             QMessageBox.critical(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Directory Comparison Error"), translation_manager.translate("ApplicationLogicHandler", "Could not compare directories. Ensure both paths are valid directories."))
 
     def open_bookmark_dialog(self):
-        """Opens the bookmarks dialog."""
         bookmarks = self.bookmarks_manager.get_bookmarks()
         dialog = BookmarkDialog(bookmarks, self.main_window)
         if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_bookmark:
@@ -178,7 +173,6 @@ class ApplicationLogicHandler(QObject):
         paths_to_archive = self.main_window.folder_browser.get_selected_paths()
         
         if not paths_to_archive:
-            # If no items are explicitly selected, use the item under the cursor
             current_selected_path = self.main_window.folder_browser.get_current_selected_path()
             if current_selected_path:
                 paths_to_archive = [current_selected_path]
@@ -186,9 +180,6 @@ class ApplicationLogicHandler(QObject):
                 show_error_message(self.main_window, self.ACTION_CREATE_ARCHIVE, translation_manager.translate("MenuPanel", "No file/folder selected for archiving."))
                 return
 
-        # Determine the base directory for the archive name
-        # If multiple items, use the current directory of the active panel
-        # If single item, use its parent directory
         if len(paths_to_archive) > 1:
             base_dir = self.main_window.folder_browser.active_panel_widget.file_view.get_current_path()
         else:
@@ -200,7 +191,7 @@ class ApplicationLogicHandler(QObject):
             try:
                 message = self.archive_manager.create_zip_archive(paths_to_archive, archive_path)
                 self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
+                self.main_window.folder_browser.refresh_all_views()
             except Exception as e:
                 show_error_message(self.main_window, self.ACTION_CREATE_ARCHIVE, str(e))
 
@@ -210,7 +201,6 @@ class ApplicationLogicHandler(QObject):
             show_error_message(self.main_window, self.ACTION_EXTRACT_ARCHIVE, translation_manager.translate("MenuPanel", "No archive file selected."))
             return
 
-        # Determine archive type based on extension
         file_extension = os.path.splitext(selected_archive_path)[1].lower()
         
         extract_path, ok = QInputDialog.getText(self.main_window, self.ACTION_EXTRACT_ARCHIVE, translation_manager.translate("MenuPanel", "Destination path:"), text=os.path.dirname(selected_archive_path))
@@ -219,7 +209,7 @@ class ApplicationLogicHandler(QObject):
                 message = ""
                 if file_extension == '.zip':
                     message = self.archive_manager.extract_zip_archive(selected_archive_path, extract_path)
-                elif file_extension in ['.tar', '.gz', '.bz2', '.xz']: # .tar.gz, .tar.bz2, .tar.xz
+                elif file_extension in ['.tar', '.gz', '.bz2', '.xz']:
                     message = self.archive_manager.extract_tar_archive(selected_archive_path, extract_path)
                 elif file_extension == '.rar':
                     message = self.archive_manager.extract_rar_archive(selected_archive_path, extract_path)
@@ -228,7 +218,7 @@ class ApplicationLogicHandler(QObject):
                     return
 
                 self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
+                self.main_window.folder_browser.refresh_all_views()
             except (UnrarNotInstalledError, Exception) as e:
                 show_error_message(self.main_window, self.ACTION_EXTRACT_ARCHIVE, str(e))
 
@@ -253,7 +243,7 @@ class ApplicationLogicHandler(QObject):
                 try:
                     message = self.directory_synchronizer.synchronize(left_path, right_path, options)
                     self.main_window.status_bar.showMessage(message)
-                    self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
+                    self.main_window.folder_browser.refresh_all_views()
                 except Exception as e:
                     show_error_message(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Synchronization Error"), str(e))
 
@@ -285,7 +275,7 @@ class ApplicationLogicHandler(QObject):
                 else:
                     message = self.file_manager.create_directory(current_dir, name)
                 self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
+                self.main_window.folder_browser.refresh_all_views()
             except (FileNotFoundError, FileExistsError, ValueError, FileManagerError) as e:
                 show_error_message(self.main_window, title, str(e))
 
@@ -303,9 +293,9 @@ class ApplicationLogicHandler(QObject):
             dialog = CopyDialog(self.main_window, source_paths[0], destination_path)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 try:
-                    message = self.file_manager.copy_item_with_options(source_path[0], destination_path, dialog.get_options())
+                    message = self.file_manager.copy_item_with_options(source_paths[0], destination_path, dialog.get_options())
                     self.main_window.status_bar.showMessage(message)
-                    self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
+                    self.main_window.folder_browser.refresh_all_views()
                 except (FileNotFoundError, FileExistsError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_COPY, str(e))
         else:
@@ -316,16 +306,15 @@ class ApplicationLogicHandler(QObject):
                 except (FileNotFoundError, FileExistsError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_COPY, f"Error copying {os.path.basename(source_path)}: {str(e)}")
                     all_successful = False
-                    break # Stop on first error
+                    break
             if all_successful:
                 self.main_window.status_bar.showMessage(translation_manager.translate("ApplicationLogicHandler", f"Copied {len(source_paths)} items to '{destination_path}'"))
-            self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation(s)
+            self.main_window.folder_browser.refresh_all_views()
 
     def move_selected_item(self):
         paths_to_move = self.main_window.folder_browser.get_selected_paths()
         
         if not paths_to_move:
-            # If no items are explicitly selected, use the item under the cursor
             current_selected_path = self.main_window.folder_browser.get_current_selected_path()
             if current_selected_path:
                 paths_to_move = [current_selected_path]
@@ -343,13 +332,11 @@ class ApplicationLogicHandler(QObject):
                 try:
                     message = self.file_manager.move_item_with_options(paths_to_move[0], destination_path, dialog.get_options())
                     self.main_window.status_bar.showMessage(message)
-                    self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
+                    self.main_window.folder_browser.refresh_all_views()
                 except (FileNotFoundError, FileExistsError, IsADirectoryError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_MOVE, str(e))
         else:
             all_successful = True
-            # For multiple items, use default options or a simplified dialog if needed
-            # For now, using default options (no overwrite, preserve timestamp)
             options = {"overwrite": False, "preserve_timestamp": True} 
             for source_path in paths_to_move:
                 try:
@@ -357,10 +344,10 @@ class ApplicationLogicHandler(QObject):
                 except (FileNotFoundError, FileExistsError, IsADirectoryError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_MOVE, f"Error moving {os.path.basename(source_path)}: {str(e)}")
                     all_successful = False
-                    break # Stop on first error
+                    break
             if all_successful:
                 self.main_window.status_bar.showMessage(translation_manager.translate("ApplicationLogicHandler", f"Moved {len(paths_to_move)} items to '{destination_path}'"))
-            self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation(s)
+            self.main_window.folder_browser.refresh_all_views()
 
     def paste_item_to_current_dir(self):
         active_widget = self.main_window.folder_browser.active_panel_widget
@@ -374,7 +361,7 @@ class ApplicationLogicHandler(QObject):
         try:
             message = self.file_manager.paste_item(current_dir)
             self.main_window.status_bar.showMessage(message)
-            self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
+            self.main_window.folder_browser.refresh_all_views()
         except (ValueError, FileNotFoundError, FileManagerError) as e:
             show_error_message(self.main_window, self.ACTION_PASTE, str(e))
 
@@ -394,9 +381,9 @@ class ApplicationLogicHandler(QObject):
                 except (FileNotFoundError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_DELETE, f"Error deleting {os.path.basename(path)}: {str(e)}")
                     all_successful = False
-                    break # Stop on first error
+                    break
             if all_successful:
-                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation(s)
+                self.main_window.folder_browser.refresh_all_views()
 
     def rename_selected_item(self):
         selected_path = self.main_window.folder_browser.get_current_selected_path()
@@ -410,7 +397,7 @@ class ApplicationLogicHandler(QObject):
             try:
                 message = self.file_manager.rename_item(selected_path, new_name)
                 self.main_window.status_bar.showMessage(message)
-                self.main_window.folder_browser.refresh_all_views() # Refresh after successful operation
+                self.main_window.folder_browser.refresh_all_views()
             except (FileNotFoundError, FileExistsError, ValueError, FileManagerError) as e:
                 show_error_message(self.main_window, self.ACTION_RENAME, str(e))
         elif not new_name:
@@ -423,7 +410,7 @@ class ApplicationLogicHandler(QObject):
         current_show_gid_column = self.main_window.settings_manager.get_setting("show_gid_column")
         current_language_mode = self.main_window.settings_manager.get_setting("language_mode")
         current_manual_language = self.main_window.settings_manager.get_setting("manual_language")
-        current_theme = self.main_window.settings_manager.get_setting("theme") # Get current theme
+        current_theme = self.main_window.settings_manager.get_setting("theme")
 
         settings_changed = False
 
@@ -447,7 +434,6 @@ class ApplicationLogicHandler(QObject):
             self.main_window.folder_browser.set_show_gid_column(new_settings["show_gid_column"])
             settings_changed = True
             
-        # Handle language settings
         language_settings_changed = False
         if new_settings.get("language_mode") is not None and new_settings["language_mode"] != current_language_mode:
             self.main_window.settings_manager.set_setting("language_mode", new_settings["language_mode"])
@@ -460,20 +446,17 @@ class ApplicationLogicHandler(QObject):
             settings_changed = True
 
         if language_settings_changed:
-            # Inform translation manager about the change
             translation_manager.set_language(translation_manager._determine_effective_locale())
             QMessageBox.information(self.main_window, 
                                     translation_manager.translate("ApplicationLogicHandler", "Language Change"),
                                     translation_manager.translate("ApplicationLogicHandler", "Language settings have been updated. Please restart the application for changes to take full effect."))
             
-        # Handle theme setting
         if new_settings.get("theme") is not None and new_settings["theme"] != current_theme:
             self.main_window.settings_manager.set_setting("theme", new_settings["theme"])
             self.theme_manager.apply_theme(new_settings["theme"])
             settings_changed = True
 
         if settings_changed and not language_settings_changed:
-            # Refresh views if other settings changed, but not language (as language requires restart)
             self.main_window.folder_browser.refresh_all_views()
 
     def apply_shortcuts_settings(self, new_shortcuts):
