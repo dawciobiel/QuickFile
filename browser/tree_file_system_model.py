@@ -2,8 +2,11 @@ import os
 import pwd
 import grp
 import logging
+import json
 from PyQt6.QtCore import QAbstractItemModel, QModelIndex, Qt
-from app.translation_manager import translation_manager # Import our new manager
+from app.translation_manager import translation_manager
+
+FileStyleRole = Qt.ItemDataRole.UserRole + 1
 
 class TreeItem:
     def __init__(self, path, parent=None):
@@ -20,7 +23,7 @@ class TreeItem:
         return len(self.children)
 
     def columnCount(self):
-        return 7 # Name, Size, Type, Date Modified, Permissions, Owner, Group
+        return 7
 
     def data(self, column):
         if column == 0:
@@ -31,7 +34,7 @@ class TreeItem:
         except (OSError, FileNotFoundError):
             return None
 
-        if column == 1: # Size
+        if column == 1:
             if os.path.isdir(self.path):
                 return ""
             size = stat_info.st_size
@@ -39,12 +42,12 @@ class TreeItem:
             if size < 1024**2: return f"{size/1024:.1f} KB"
             if size < 1024**3: return f"{size/1024**2:.1f} MB"
             return f"{size/1024**3:.1f} GB"
-        elif column == 2: # Type
+        elif column == 2:
             return "Folder" if os.path.isdir(self.path) else "File"
-        elif column == 3: # Date Modified
+        elif column == 3:
             from datetime import datetime
             return datetime.fromtimestamp(stat_info.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-        elif column == 4: # Permissions
+        elif column == 4:
             mode = stat_info.st_mode
             perm = []
             perm.append('r' if (mode & 0o400) else '-')
@@ -57,12 +60,12 @@ class TreeItem:
             perm.append('w' if (mode & 0o002) else '-')
             perm.append('x' if (mode & 0o001) else '-')
             return "".join(perm)
-        elif column == 5: # Owner
+        elif column == 5:
             try:
                 return pwd.getpwuid(stat_info.st_uid).pw_name
             except KeyError:
                 return str(stat_info.st_uid)
-        elif column == 6: # Group
+        elif column == 6:
             try:
                 return grp.getgrgid(stat_info.st_gid).gr_name
             except KeyError:
@@ -93,7 +96,17 @@ class TreeFileSystemModel(QAbstractItemModel):
         super().__init__(parent)
         self.settings_manager = settings_manager
         self.root_item = TreeItem(self.settings_manager.get_setting("leftPanelPath", os.path.expanduser("~")))
+        self._file_styles = {}
         self.update_settings()
+
+    def load_file_styles(self, theme_path):
+        styles_path = os.path.join(theme_path, "file_styles.json")
+        if os.path.exists(styles_path):
+            with open(styles_path, 'r') as f:
+                self._file_styles = json.load(f)
+        else:
+            self._file_styles = {}
+        self.layoutChanged.emit()
 
     def update_settings(self):
         self.show_hidden = self.settings_manager.get_setting("showDotFiles", True)
@@ -143,6 +156,13 @@ class TreeFileSystemModel(QAbstractItemModel):
             return None
         
         item = index.internalPointer()
+
+        if role == FileStyleRole:
+            if not os.path.isdir(item.path):
+                extension = item.data(0).split('.')[-1].lower()
+                if extension in self._file_styles:
+                    return self._file_styles[extension]
+            return None
         
         if role == Qt.ItemDataRole.CheckStateRole and index.column() == 0:
             return Qt.CheckState.Checked if item.is_marked else Qt.CheckState.Unchecked
@@ -186,7 +206,7 @@ class TreeFileSystemModel(QAbstractItemModel):
             return ""
         return index.internalPointer().path
 
-    def fileName(self, index): # Added fileName method
+    def fileName(self, index):
         if not index.isValid():
             return ""
         return index.internalPointer().data(0)

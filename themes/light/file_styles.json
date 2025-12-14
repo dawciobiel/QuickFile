@@ -1,0 +1,48 @@
+{
+  "7z": { "foreground_color": "#d35400" },
+  "7zip": { "foreground_color": "#d35400" },
+  "gz": { "foreground_color": "#d35400" },
+  "rar": { "foreground_color": "#d35400" },
+  "tar.gz": { "foreground_color": "#d35400" },
+  "zip": { "foreground_color": "#d35400" },
+
+  "appimage": { "foreground_color": "#27ae60", "font_weight": "bold" },
+  "bash": { "foreground_color": "#27ae60", "font_weight": "bold" },
+  "bin": { "foreground_color": "#27ae60", "font_weight": "bold" },
+  "com": { "foreground_color": "#27ae60", "font_weight": "bold" },
+  "dll": { "foreground_color": "#27ae60", "font_weight": "bold" },
+  "exe": { "foreground_color": "#27ae60", "font_weight": "bold" },
+  "fish": { "foreground_color": "#27ae60", "font_weight": "bold" },
+  "sh": { "foreground_color": "#27ae60", "font_weight": "bold" },
+
+  "asm": { "foreground_color": "#2980b9" },
+  "bas": { "foreground_color": "#2980b9" },
+  "c": { "foreground_color": "#2980b9" },
+  "cpp": { "foreground_color": "#2980b9" },
+  "java": { "foreground_color": "#2980b9" },
+  "pas": { "foreground_color": "#2980b9" },
+  "py": { "foreground_color": "#2980b9" },
+
+  "bmp": { "foreground_color": "#8e44ad" },
+  "gif": { "foreground_color": "#8e44ad" },
+  "jpg": { "foreground_color": "#8e44ad" },
+  "jpeg": { "foreground_color": "#8e44ad" },
+  "png": { "foreground_color": "#8e44ad" },
+
+  "avi": { "foreground_color": "#16a085" },
+  "mkv": { "foreground_color": "#16a085" },
+  "mp4": { "foreground_color": "#16a085" },
+  "mov": { "foreground_color": "#16a085" },
+
+  "db": { "foreground_color": "#c0392b" },
+  "sql": { "foreground_color": "#c0392b" },
+
+  "ini": { "foreground_color": "#f39c12" },
+  "json": { "foreground_color": "#f39c12" },
+  "properties": { "foreground_color": "#f39c12" },
+  "xml": { "foreground_color": "#f39c12" },
+  "md": { "foreground_color": "#f39c12" },
+  "txt": { "foreground_color": "#f39c12" },
+
+  "bak": { "foreground_color": "#7f8c8d", "font_strikethrough": true }
+}

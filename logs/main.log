@@ -1,44 +1,67 @@
-2025-12-14 10:36:59,318 - root - INFO - Application started.
-2025-12-14 10:36:59,336 - root - INFO - Discovered themes: ['dark', 'light', 'mc_default', 'mc_gotar', 'mc_xoria256root-thin']
-2025-12-14 10:36:59,964 - root - INFO - Applied theme: mc_gotar
-2025-12-14 10:37:12,927 - root - INFO - Applied theme: mc_xoria256root-thin
-2025-12-14 10:37:25,510 - root - INFO - Applied theme: dark
-2025-12-14 10:37:33,679 - root - INFO - Applied theme: light
-2025-12-14 10:37:41,958 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel'
-2025-12-14 10:37:41,959 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 71 items.
-2025-12-14 10:37:41,970 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel' to '/'
-2025-12-14 10:37:41,970 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/'
-2025-12-14 10:37:41,970 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 21 items.
-2025-12-14 10:37:41,975 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel'
-2025-12-14 10:37:41,976 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 71 items.
-2025-12-14 10:37:41,986 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel' to '/'
-2025-12-14 10:37:41,987 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/'
-2025-12-14 10:37:41,987 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 21 items.
-2025-12-14 10:37:41,988 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/' to '/faq'
-2025-12-14 10:37:41,988 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/faq'
-2025-12-14 10:37:41,988 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 27 items.
-2025-12-14 10:37:41,989 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/' to '/home/dawciobiel'
-2025-12-14 10:37:41,989 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel'
-2025-12-14 10:37:41,990 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 71 items.
-2025-12-14 10:37:47,184 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel' to '/home'
-2025-12-14 10:37:47,184 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home'
-2025-12-14 10:37:47,185 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 2 items.
-2025-12-14 10:37:48,144 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home' to '/home/dawciobiel'
-2025-12-14 10:37:48,144 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel'
-2025-12-14 10:37:48,145 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 71 items.
-2025-12-14 10:37:55,973 - root - INFO - Applied theme: mc_xoria256root-thin
-2025-12-14 10:37:55,973 - root - DEBUG - [FlatFileSystemModel.refresh] Refreshing model for path '/faq'
-2025-12-14 10:37:55,973 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/faq'
-2025-12-14 10:37:55,974 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 27 items.
-2025-12-14 10:37:55,974 - root - DEBUG - [FlatFileSystemModel.refresh] Refreshing model for path '/home/dawciobiel'
-2025-12-14 10:37:55,974 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel'
-2025-12-14 10:37:55,974 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 71 items.
-2025-12-14 10:37:59,665 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel' to '/home'
-2025-12-14 10:37:59,665 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home'
-2025-12-14 10:37:59,665 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 2 items.
-2025-12-14 10:38:00,248 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home' to '/home/dawciobiel'
-2025-12-14 10:38:00,249 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel'
-2025-12-14 10:38:00,249 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 71 items.
-2025-12-14 10:38:03,872 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel' to '/home/dawciobiel/PycharmProjects'
-2025-12-14 10:38:03,873 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects'
-2025-12-14 10:38:03,873 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 9 items.
+2025-12-14 11:31:03,393 - root - INFO - Application started.
+2025-12-14 11:31:03,418 - root - INFO - Discovered themes: ['dark', 'light', 'mc_default', 'mc_gotar', 'mc_xoria256root-thin']
+2025-12-14 11:31:03,461 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel'
+2025-12-14 11:31:03,463 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 71 items.
+2025-12-14 11:31:03,472 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel' to '/'
+2025-12-14 11:31:03,472 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/'
+2025-12-14 11:31:03,472 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 21 items.
+2025-12-14 11:31:03,499 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel'
+2025-12-14 11:31:03,499 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 71 items.
+2025-12-14 11:31:03,503 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel' to '/'
+2025-12-14 11:31:03,503 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/'
+2025-12-14 11:31:03,503 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 21 items.
+2025-12-14 11:31:03,789 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/' to '/home/dawciobiel/PycharmProjects/QuickFile/themes/mc_xoria256root-thin'
+2025-12-14 11:31:03,790 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/themes/mc_xoria256root-thin'
+2025-12-14 11:31:03,790 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 4 items.
+2025-12-14 11:31:03,791 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/' to '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:03,791 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:03,791 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 8 items.
+2025-12-14 11:31:03,801 - root - INFO - Applied theme: mc_xoria256root-thin
+2025-12-14 11:31:08,003 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel/PycharmProjects/QuickFile/experiments' to '/home/dawciobiel/PycharmProjects/QuickFile'
+2025-12-14 11:31:08,003 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile'
+2025-12-14 11:31:08,004 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 35 items.
+2025-12-14 11:31:09,755 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel/PycharmProjects/QuickFile' to '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:09,755 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:09,755 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 8 items.
+2025-12-14 11:31:11,475 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel/PycharmProjects/QuickFile/experiments' to '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:11,475 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:11,475 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 35 items.
+2025-12-14 11:31:19,227 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types' to '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:19,227 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:19,227 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 8 items.
+2025-12-14 11:31:19,755 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel/PycharmProjects/QuickFile/experiments' to '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:19,755 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:19,756 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 35 items.
+2025-12-14 11:31:29,538 - root - INFO - Applied theme: mc_gotar
+2025-12-14 11:31:29,539 - root - DEBUG - [FlatFileSystemModel.refresh] Refreshing model for path '/home/dawciobiel/PycharmProjects/QuickFile/themes/mc_xoria256root-thin'
+2025-12-14 11:31:29,539 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/themes/mc_xoria256root-thin'
+2025-12-14 11:31:29,539 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 4 items.
+2025-12-14 11:31:29,539 - root - DEBUG - [FlatFileSystemModel.refresh] Refreshing model for path '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:29,539 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:29,539 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 35 items.
+2025-12-14 11:31:38,431 - root - INFO - Applied theme: mc_default
+2025-12-14 11:31:38,431 - root - DEBUG - [FlatFileSystemModel.refresh] Refreshing model for path '/home/dawciobiel/PycharmProjects/QuickFile/themes/mc_xoria256root-thin'
+2025-12-14 11:31:38,431 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/themes/mc_xoria256root-thin'
+2025-12-14 11:31:38,432 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 4 items.
+2025-12-14 11:31:38,432 - root - DEBUG - [FlatFileSystemModel.refresh] Refreshing model for path '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:38,432 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:38,432 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 35 items.
+2025-12-14 11:31:43,490 - root - INFO - Applied theme: dark
+2025-12-14 11:31:43,490 - root - DEBUG - [FlatFileSystemModel.refresh] Refreshing model for path '/home/dawciobiel/PycharmProjects/QuickFile/themes/mc_xoria256root-thin'
+2025-12-14 11:31:43,490 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/themes/mc_xoria256root-thin'
+2025-12-14 11:31:43,490 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 4 items.
+2025-12-14 11:31:43,490 - root - DEBUG - [FlatFileSystemModel.refresh] Refreshing model for path '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:43,490 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:43,491 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 35 items.
+2025-12-14 11:31:48,845 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types' to '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:48,845 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:48,845 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 8 items.
+2025-12-14 11:31:51,044 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel/PycharmProjects/QuickFile/experiments' to '/home/dawciobiel/PycharmProjects/QuickFile'
+2025-12-14 11:31:51,044 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile'
+2025-12-14 11:31:51,044 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 35 items.
+2025-12-14 11:31:51,659 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel/PycharmProjects/QuickFile' to '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:51,660 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments'
+2025-12-14 11:31:51,660 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 8 items.
+2025-12-14 11:31:52,572 - root - DEBUG - [FlatFileSystemModel.set_current_path] Changing path from '/home/dawciobiel/PycharmProjects/QuickFile/experiments' to '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:52,572 - root - DEBUG - [FlatFileSystemModel._populate_items] Populating items for path: '/home/dawciobiel/PycharmProjects/QuickFile/experiments/diff-file-types'
+2025-12-14 11:31:52,572 - root - DEBUG - [FlatFileSystemModel._populate_items] Populated 35 items.
