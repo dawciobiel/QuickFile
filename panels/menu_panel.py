@@ -1,6 +1,6 @@
 import logging
 import os
-from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog, QMessageBox
+from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog, QMessageBox, QToolBar
 from PyQt6.QtCore import QObject, pyqtSignal
 from file_operations.archive_manager import UnrarNotInstalledError
 from PyQt6.QtGui import QAction
@@ -44,11 +44,13 @@ class MenuPanel(QObject):
     KEY_CONFIGURE_SHORTCUTS = "action.configure_shortcuts"
     KEY_GENERAL_SETTINGS = "action.general_settings"
 
-    def __init__(self, main_window):
+    def __init__(self, main_window, toolbar: QToolBar):
         super().__init__(main_window)
         self.main_window = main_window
         self.menu_bar = main_window.menuBar()
-        self.toolbar = main_window.toolbar
+        self.toolbar = toolbar
+
+    def initialize_menus(self): # New public method
         self._create_menus()
 
     def _create_menus(self):
