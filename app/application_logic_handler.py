@@ -75,7 +75,7 @@ class ApplicationLogicHandler(QObject):
     def add_bookmark(self):
         active_panel_widget = self.main_window.folder_browser.active_panel_widget
         if active_panel_widget:
-            current_path = self.main_window.folder_browser.current_paths.get(active_panel_widget)
+            current_path = active_panel_widget.file_view.get_current_path()
             if current_path:
                 self.bookmarks_manager.add_bookmark(current_path)
                 self.main_window.status_bar.showMessage(translation_manager.translate("ApplicationLogicHandler", f"Bookmark added: {current_path}"))
@@ -86,7 +86,7 @@ class ApplicationLogicHandler(QObject):
     def start_file_search(self):
         search_text = self.main_window.search_input.text()
         if search_text:
-            current_path = self.main_window.folder_browser.current_paths.get(self.main_window.folder_browser.active_panel_widget)
+            current_path = self.main_window.folder_browser.active_panel_widget.file_view.get_current_path()
             try:
                 results, message = self.file_manager.search_files(current_path, search_text)
                 self.show_search_results(results)
