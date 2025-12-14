@@ -247,22 +247,23 @@ class ApplicationLogicHandler(QObject):
                 except Exception as e:
                     show_error_message(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Synchronization Error"), str(e))
 
-    def create_new_file(self):
-        self._create_new_item("file")
+    def create_new_file(self, current_dir=None):
+        self._create_new_item("file", current_dir)
 
-    def create_new_directory(self):
-        self._create_new_item("directory")
+    def create_new_directory(self, current_dir=None):
+        self._create_new_item("directory", current_dir)
 
-    def _create_new_item(self, item_type):
-        active_panel = self.main_window.folder_browser.active_panel_widget
-        if not active_panel:
-            show_error_message(self.main_window, self.ERROR_FILE_CREATION if item_type == "file" else self.ERROR_FOLDER_CREATION, self.ERROR_NO_ACTIVE_PANEL)
-            return
+    def _create_new_item(self, item_type, current_dir=None):
+        if current_dir is None:
+            active_panel = self.main_window.folder_browser.active_panel_widget
+            if not active_panel:
+                show_error_message(self.main_window, self.ERROR_FILE_CREATION if item_type == "file" else self.ERROR_FOLDER_CREATION, self.ERROR_NO_ACTIVE_PANEL)
+                return
 
-        current_dir = active_panel.file_view.get_current_path()
-        if not current_dir:
-            show_error_message(self.main_window, self.ERROR_FILE_CREATION if item_type == "file" else self.ERROR_FOLDER_CREATION, self.ERROR_NO_CURRENT_DIR)
-            return
+            current_dir = active_panel.file_view.get_current_path()
+            if not current_dir:
+                show_error_message(self.main_window, self.ERROR_FILE_CREATION if item_type == "file" else self.ERROR_FOLDER_CREATION, self.ERROR_NO_CURRENT_DIR)
+                return
 
         title = self.ACTION_NEW_FILE if item_type == "file" else self.ACTION_NEW_FOLDER
         label = translation_manager.translate("MenuPanel", "File name:") if item_type == "file" else translation_manager.translate("MenuPanel", "Folder name:")
@@ -300,9 +301,10 @@ class ApplicationLogicHandler(QObject):
                     show_error_message(self.main_window, self.ACTION_COPY, str(e))
         else:
             all_successful = True
+            options = {"overwrite": False, "preserve_timestamp": True} 
             for source_path in source_paths:
                 try:
-                    self.file_manager.copy_item_with_options(source_path, destination_path, {"overwrite": False, "preserve_timestamp": True})
+                    self.file_manager.copy_item_with_options(source_path, destination_path, options)
                 except (FileNotFoundError, FileExistsError, FileManagerError) as e:
                     show_error_message(self.main_window, self.ACTION_COPY, f"Error copying {os.path.basename(source_path)}: {str(e)}")
                     all_successful = False

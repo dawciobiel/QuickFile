@@ -325,3 +325,10 @@ class FolderBrowser(QWidget):
         if self.active_panel_widget:
             return self.active_panel_widget.file_view.get_current_selected_path()
         return None
+
+    def navigate_to_path(self, path):
+        """
+        Navigates the active panel to the specified path.
+        """
+        if self.active_panel_widget:
+            self.active_panel_widget.file_view.set_path(path)
