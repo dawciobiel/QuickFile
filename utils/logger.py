@@ -20,7 +20,7 @@ def setup_logging():
 
     # Configure the root logger
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.DEBUG) # Reverted to logging.DEBUG
 
     # Create a rotating file handler
     # 1MB per file, keep 5 backup files
