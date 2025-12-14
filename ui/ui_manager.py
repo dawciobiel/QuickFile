@@ -85,7 +85,7 @@ class UIManager(QObject):
         self.add_bookmark_button = self._create_add_bookmark_button()
         
         # Assign UI components to main_window for external access
-        self.main_window.folder_browser = self.folder_browser # Added this line
+        self.main_window.folder_browser = self.folder_browser
         self.main_window.search_input = self.search_input
         self.main_window.add_bookmark_button = self.add_bookmark_button
 
@@ -116,3 +116,13 @@ class UIManager(QObject):
         self.menu_panel.go_up_requested.connect(self.folder_browser.go_up_directory)
         self.menu_panel.refresh_requested.connect(self.folder_browser.refresh_all_views)
         self.menu_panel.view_mode_changed.connect(self.folder_browser.set_view_mode)
+
+    def load_panel_settings(self):
+        """Loads panel paths and active panel using FolderBrowser."""
+        if self.folder_browser:
+            self.folder_browser.load_panel_settings()
+
+    def save_panel_settings(self):
+        """Saves panel paths and active panel using FolderBrowser."""
+        if self.folder_browser:
+            self.folder_browser.save_panel_settings()
