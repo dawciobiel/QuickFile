@@ -1,139 +1,119 @@
-/* General styles */
-* {
-    background-color: @primaryBackgroundColor;
-    color: @textColor;
-    selection-background-color: @selectionBackgroundColor;
-    selection-color: @selectionColor;
-    border-color: @borderColor;
+
+QWidget {
+    background-color: @@background@@;
+    color: @@foreground@@;
 }
 
-QMainWindow {
-    background-color: @primaryBackgroundColor;
+QTableView, QTreeView {
+    background-color: @@secondary_background@@;
+    color: @@foreground@@;
+    selection-background-color: @@selection_background@@;
+    selection-color: @@selection_foreground@@;
+    border: 1px solid @@border@@;
+    gridline-color: @@border@@;
 }
 
-QSplitter::handle {
-    background-color: @borderColor;
+QTableView[activePanel="true"]::item:selected, QTreeView[activePanel="true"]::item:selected {
+    background-color: @@selection_background@@;
+    color: @@selection_foreground@@;
 }
 
-/* QLineEdit */
-QLineEdit {
-    border: 1px solid @borderColor;
+QTableView[activePanel="false"]::item:selected, QTreeView[activePanel="false"]::item:selected {
+    background-color: transparent;
+    color: @@foreground@@;
+}
+
+QLineEdit[activePanel="true"] {
+    background-color: @@selection_background@@;
+    color: @@selection_foreground@@;
+    border: 1px solid @@border@@;
     padding: 2px;
-    background-color: @secondaryBackgroundColor;
-    color: @textColor;
 }
 
-/* QComboBox */
+QLineEdit[activePanel="false"] {
+    background-color: @@secondary_background@@;
+    color: @@foreground@@;
+    border: 1px solid @@border@@;
+    padding: 2px;
+}
+
 QComboBox {
-    border: 1px solid @borderColor;
+    border: 1px solid @@border@@;
     padding: 2px;
-    background-color: @secondaryBackgroundColor;
-    color: @textColor;
+    background-color: @@secondary_background@@;
+    color: @@foreground@@;
 }
+
 QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: top right;
     width: 20px;
     border-left-width: 1px;
-    border-left-color: @borderColor;
+    border-left-color: @@border@@;
     border-left-style: solid;
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
 }
-QComboBox::down-arrow {
-    image: url(resources/icons/dark/arrow-down.png); /* Placeholder, will need actual icons */
-}
+
 QComboBox QAbstractItemView {
-    border: 1px solid @borderColor;
-    selection-background-color: @selectionBackgroundColor;
-    background-color: @secondaryBackgroundColor;
-    color: @textColor;
+    border: 1px solid @@border@@;
+    selection-background-color: @@selection_background@@;
+    background-color: @@secondary_background@@;
+    color: @@foreground@@;
 }
 
-/* QTableView & QTreeView */
-QTableView, QTreeView {
-    background-color: @secondaryBackgroundColor;
-    alternate-background-color: @primaryBackgroundColor;
-    border: 1px solid @borderColor;
-    gridline-color: @borderColor;
-    color: @textColor;
-}
-QTableView::item:selected, QTreeView::item:selected {
-    background-color: @selectionBackgroundColor;
-    color: @selectionColor;
-}
 QHeaderView::section {
-    background-color: @primaryBackgroundColor;
-    color: @textColor;
+    background-color: @@background@@;
+    color: @@foreground@@;
     padding: 4px;
-    border: 1px solid @borderColor;
+    border: 1px solid @@border@@;
 }
 
-/* QToolBar */
 QToolBar {
-    background-color: @primaryBackgroundColor;
+    background-color: @@background@@;
     border: none;
     spacing: 5px;
 }
+
 QToolButton {
     background-color: transparent;
     border: none;
     padding: 5px;
 }
+
 QToolButton:hover {
-    background-color: @secondaryBackgroundColor;
+    background-color: @@secondary_background@@;
 }
+
 QToolButton:pressed {
-    background-color: @selectionBackgroundColor;
+    background-color: @@selection_background@@;
 }
 
-/* QStatusBar */
 QStatusBar {
-    background-color: @primaryBackgroundColor;
-    color: @textColor;
-    border-top: 1px solid @borderColor;
+    background-color: @@background@@;
+    color: @@foreground@@;
+    border-top: 1px solid @@border@@;
 }
 
-/* QDialog */
 QDialog {
-    background-color: @primaryBackgroundColor;
-    color: @textColor;
+    background-color: @@background@@;
+    color: @@foreground@@;
 }
-QDialogButtonBox QPushButton {
-    background-color: @accentColor;
-    color: @textColor;
-    border: 1px solid @accentColor;
+
+QDialogButtonBox QPushButton, QMessageBox QPushButton {
+    background-color: @@accent@@;
+    color: @@foreground@@;
+    border: 1px solid @@accent@@;
     padding: 5px 15px;
     border-radius: 3px;
 }
-QDialogButtonBox QPushButton:hover {
-    background-color: @selectionBackgroundColor;
+
+QDialogButtonBox QPushButton:hover, QMessageBox QPushButton:hover {
+    background-color: @@selection_background@@;
 }
 
-/* QInputDialog */
-QInputDialog QLabel, QInputDialog QLineEdit {
-    color: @textColor;
-}
-QInputDialog QLineEdit {
-    background-color: @secondaryBackgroundColor;
-    border: 1px solid @borderColor;
+QTableView[activePanel="true"], QTreeView[activePanel="true"] {
+    border: 2px solid @@selection_background@@;
 }
 
-/* QMessageBox */
-QMessageBox {
-    background-color: @primaryBackgroundColor;
-    color: @textColor;
-}
-QMessageBox QLabel {
-    color: @textColor;
-}
-QMessageBox QPushButton {
-    background-color: @accentColor;
-    color: @textColor;
-    border: 1px solid @accentColor;
-    padding: 5px 15px;
-    border-radius: 3px;
-}
-QMessageBox QPushButton:hover {
-    background-color: @selectionBackgroundColor;
+QTableView[activePanel="false"], QTreeView[activePanel="false"] {
+    border: 2px solid @@border@@;
 }

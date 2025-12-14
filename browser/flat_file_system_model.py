@@ -1,13 +1,16 @@
 import logging
 import os
 import datetime
-import pwd # Import for UID to username conversion
-import grp # Import for GID to groupname conversion
+import pwd
+import grp
+import json
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QDir
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QFileIconProvider
 from utils.dialogs import show_error_message
-from app.translation_manager import translation_manager # Import our new manager
+from app.translation_manager import translation_manager
+
+FileStyleRole = Qt.ItemDataRole.UserRole + 1
 
 class FlatFileSystemModel(QAbstractTableModel):
     def __init__(self, parent=None, show_dot_files=True, file_permissions_display_mode="symbolic", show_uid_column=True, show_gid_column=True):
@@ -20,7 +23,17 @@ class FlatFileSystemModel(QAbstractTableModel):
         self._file_permissions_display_mode = file_permissions_display_mode
         self._show_uid_column = show_uid_column
         self._show_gid_column = show_gid_column
+        self._file_styles = {}
         self._populate_items()
+
+    def load_file_styles(self, theme_path):
+        styles_path = os.path.join(theme_path, "file_styles.json")
+        if os.path.exists(styles_path):
+            with open(styles_path, 'r') as f:
+                self._file_styles = json.load(f)
+        else:
+            self._file_styles = {}
+        self.layoutChanged.emit()
 
     def set_current_path(self, path):
         if self._current_path == path:
@@ -70,7 +83,7 @@ class FlatFileSystemModel(QAbstractTableModel):
             other_items = []
 
         self._items = dot_dot_item + other_items
-        logging.debug(f"[FlatFileSystemModel._populate_items] Populated {len(self._items)} items.") # Reduced logging detail
+        logging.debug(f"[FlatFileSystemModel._populate_items] Populated {len(self._items)} items.")
 
     def set_show_dot_files(self, new_dot_files_state):
         if self._show_dot_files == new_dot_files_state:
@@ -99,15 +112,15 @@ class FlatFileSystemModel(QAbstractTableModel):
         return len(self._items)
 
     def columnCount(self, parent=QModelIndex()):
-        base_columns = 4  # Name, Size, Type, Date Modified
+        base_columns = 4
         extra_columns = 0
         if self._show_uid_column or self._show_gid_column:
-            extra_columns += 1 # Permissions column
+            extra_columns += 1
         if self._show_uid_column:
             extra_columns += 1
         if self._show_gid_column:
             extra_columns += 1
-        return base_columns + extra_columns + 1 # +1 for the hidden selection column
+        return base_columns + extra_columns + 1
 
     def flags(self, index):
         default_flags = super().flags(index)
@@ -121,6 +134,13 @@ class FlatFileSystemModel(QAbstractTableModel):
 
         item_name, item_path, is_dir, is_selected = self._items[index.row()]
 
+        if role == FileStyleRole:
+            if not is_dir:
+                extension = item_name.split('.')[-1].lower()
+                if extension in self._file_styles:
+                    return self._file_styles[extension]
+            return None
+
         if role == Qt.ItemDataRole.CheckStateRole and index.column() == 0:
             if item_name == "..":
                 return None
@@ -129,7 +149,7 @@ class FlatFileSystemModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return item_name
-            elif index.column() == 1:  # Size
+            elif index.column() == 1:
                 if not is_dir:
                     try:
                         size_bytes = os.path.getsize(item_path)
@@ -140,24 +160,22 @@ class FlatFileSystemModel(QAbstractTableModel):
                     except OSError:
                         return "N/A"
                 return ""
-            elif index.column() == 2:  # Type
+            elif index.column() == 2:
                 if is_dir:
                     return "Folder"
                 else:
                     return translation_manager.translate("FlatFileSystemModel", "File")
-            elif index.column() == 3:  # Date Modified
+            elif index.column() == 3:
                 try:
                     mtime = os.path.getmtime(item_path)
                     return datetime.datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
                 except OSError:
                     return "N/A"
             
-            # New columns
             base_columns = 4
             current_col = base_columns
 
-            # Permissions column
-            if self._show_uid_column or self._show_gid_column: # Display permissions if owner/group are shown
+            if self._show_uid_column or self._show_gid_column:
                 if index.column() == current_col:
                     try:
                         stat_info = os.stat(item_path)
@@ -169,7 +187,6 @@ class FlatFileSystemModel(QAbstractTableModel):
                         return ""
                 current_col += 1
             
-            # UID column
             if self._show_uid_column:
                 if index.column() == current_col:
                     try:
@@ -179,7 +196,6 @@ class FlatFileSystemModel(QAbstractTableModel):
                         return ""
                 current_col += 1
             
-            # GID column
             if self._show_gid_column:
                 if index.column() == current_col:
                     try:
@@ -274,24 +290,19 @@ class FlatFileSystemModel(QAbstractTableModel):
         self.setData(index, new_check_state, Qt.ItemDataRole.CheckStateRole)
 
     def _get_file_permissions_symbolic(self, mode):
-        # Helper to convert numeric permissions to symbolic (rwx)
         perm = []
-        # Owner
         perm.append('r' if (mode & 0o400) else '_')
         perm.append('w' if (mode & 0o200) else '_')
         perm.append('x' if (mode & 0o100) else '_')
-        # Group
         perm.append('r' if (mode & 0o040) else '_')
         perm.append('w' if (mode & 0o020) else '_')
         perm.append('x' if (mode & 0o010) else '_')
-        # Others
         perm.append('r' if (mode & 0o004) else '_')
         perm.append('w' if (mode & 0o002) else '_')
         perm.append('x' if (mode & 0o001) else '_')
         return "".join(perm)
 
     def _get_file_permissions_numeric(self, mode):
-        # Helper to convert numeric permissions to octal (755)
         return oct(mode)[-3:]
 
     def _get_username_from_uid(self, uid):

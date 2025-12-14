@@ -10,16 +10,37 @@ QTableView, QTreeView {
     selection-background-color: @@selection_background@@;
     selection-color: @@selection_foreground@@;
     border: 1px solid @@border@@;
+    show-decoration-selected: 1; /* Highlight selection */
 }
 
-QTableView::item:selected, QTreeView::item:selected {
+QTableView {
+    gridline-color: transparent; /* Hide default grid lines */
+}
+
+QTableView::item {
+    border-bottom: 1px solid @@border@@; /* Dark horizontal line */
+    border-right: 1px solid #FFFFFF; /* White vertical line */
+}
+
+QTableView[activePanel="true"]::item:selected, QTreeView[activePanel="true"]::item:selected {
     background-color: @@selection_background@@;
     color: @@selection_foreground@@;
 }
 
-QLineEdit {
-    background-color: @@selection_background@@; /* Using selection_background for input fields for contrast */
+QTableView[activePanel="false"]::item:selected, QTreeView[activePanel="false"]::item:selected {
+    background-color: transparent;
+    color: @@foreground@@;
+}
+
+QLineEdit[activePanel="true"] {
+    background-color: @@selection_background@@;
     color: @@selection_foreground@@;
+    border: 1px solid @@border@@;
+}
+
+QLineEdit[activePanel="false"] {
+    background-color: @@background@@;
+    color: @@foreground@@;
     border: 1px solid @@border@@;
 }
 
@@ -48,7 +69,8 @@ QHeaderView::section {
     background-color: @@active_panel_background@@;
     color: @@accent@@;
     padding: 4px;
-    border: 1px solid @@border@@;
+    border-bottom: 1px solid @@border@@; /* Dark bottom border */
+    border-right: 1px solid #FFFFFF; /* White right border */
 }
 
 QSplitter::handle {
@@ -123,7 +145,7 @@ QStatusBar {
 
 /* Active panel indicator */
 QTableView[activePanel="true"], QTreeView[activePanel="true"] {
-    border: 2px solid @@accent@@;
+    border: 2px solid @@selection_background@@;
 }
 
 QTableView[activePanel="false"], QTreeView[activePanel="false"] {

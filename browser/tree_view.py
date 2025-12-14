@@ -3,6 +3,7 @@ from PyQt6.QtCore import QModelIndex, Qt, QEvent
 from PyQt6.QtWidgets import QTreeView, QVBoxLayout, QAbstractItemView, QHeaderView
 from browser.base_view import AbstractFileView
 from browser.tree_file_system_model import TreeFileSystemModel
+from browser.styling_delegate import FileStyleDelegate
 
 class TreeFileView(AbstractFileView):
     def __init__(self, settings_manager, parent=None):
@@ -12,6 +13,7 @@ class TreeFileView(AbstractFileView):
         
         self.view = QTreeView()
         self.view.setModel(self.model)
+        self.view.setItemDelegate(FileStyleDelegate(self.view))
         self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.view.setExpandsOnDoubleClick(False)
@@ -23,24 +25,6 @@ class TreeFileView(AbstractFileView):
         self.update_view_settings()
         
         self.view.doubleClicked.connect(self.on_item_double_clicked)
-        # self.view.installEventFilter(self) # Removed, handled by KeyboardEventManager
-
-    # def eventFilter(self, source, event): # Removed, logic moved to handle_key_event
-    #     if source is self.view and event.type() == QEvent.Type.KeyPress:
-    #         key = event.key()
-    #         if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
-    #             current_index = self.view.currentIndex()
-    #             if current_index.isValid():
-    #                 self.on_item_double_clicked(current_index)
-    #             return True
-    #         elif key == Qt.Key.Key_Insert:
-    #             self.toggle_selection()
-    #             return True
-    #         elif key == Qt.Key.Key_Backspace:
-    #             self.go_up()
-    #             return True
-        
-    #     return super().eventFilter(source, event)
 
     def handle_key_event(self, event: QEvent):
         key = event.key()
@@ -55,8 +39,7 @@ class TreeFileView(AbstractFileView):
         elif key == Qt.Key.Key_Backspace:
             self.go_up()
             return True
-        # For other keys, let the default QTreeView handling take over (e.g., arrows, PageUp/Down)
-        return False # Event not handled by this view, propagate further
+        return False
 
     def set_path(self, path, select_item_name=None):
         self.model.set_root_path(path)
@@ -64,9 +47,7 @@ class TreeFileView(AbstractFileView):
         self.path_changed.emit(path)
         
         if select_item_name:
-            # Find and select the item by name
             found_index = None
-            # Iterate through top-level items in the new root
             for row in range(self.model.rowCount(QModelIndex())):
                 index = self.model.index(row, 0, QModelIndex())
                 if self.model.fileName(index) == select_item_name:
@@ -76,13 +57,11 @@ class TreeFileView(AbstractFileView):
                 self.view.setCurrentIndex(found_index)
                 self.view.scrollTo(found_index, QAbstractItemView.ScrollHint.EnsureVisible)
             else:
-                # Fallback to first item if not found
                 first_index = self.model.index(0, 0)
                 if first_index.isValid():
                     self.view.setCurrentIndex(first_index)
                     self.view.scrollTo(first_index, QAbstractItemView.ScrollHint.EnsureVisible)
         else:
-            # Default to first item (root of the new path)
             first_index = self.model.index(0, 0)
             if first_index.isValid():
                 self.view.setCurrentIndex(first_index)
@@ -95,7 +74,6 @@ class TreeFileView(AbstractFileView):
         self.model.update_settings()
 
     def get_selected_paths(self):
-        # This needs to be implemented based on the is_marked flag in the model
         return []
 
     def get_current_selected_path(self):
@@ -108,12 +86,10 @@ class TreeFileView(AbstractFileView):
         parent_path = os.path.dirname(current_path)
         
         if parent_path != current_path:
-            # Remember the current directory name to select it in the parent view
             current_dir_name = os.path.basename(current_path)
+            self.set_path(parent_path, select_item_name=current_dir_name)
             
-            self.set_path(parent_path, select_item_name=current_dir_name) # Pass the name to select
-            
-    def update_view_settings(self): # Renamed from set_permissions_display_mode
+    def update_view_settings(self):
         self.model.update_settings()
         header = self.view.header()
         header.setStretchLastSection(False)
@@ -149,13 +125,11 @@ class TreeFileView(AbstractFileView):
                 self.view.collapse(index)
             else:
                 self.view.expand(index)
-        # else: emit signal to open file
 
     def toggle_selection(self):
         current_index = self.view.currentIndex()
         if current_index.isValid():
             self.model.toggle_selection_by_index(current_index)
-            # Move to the next item
             next_row = current_index.row() + 1
             parent = current_index.parent()
             if next_row < self.model.rowCount(parent):
