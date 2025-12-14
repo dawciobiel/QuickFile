@@ -47,6 +47,16 @@ class PanelWidget(QWidget):
 
         self._populate_drive_combo() # Populate drives on init
 
+    def set_active(self, is_active):
+        self.path_edit.setProperty("activePanel", is_active)
+        self.file_view.view.setProperty("activePanel", is_active)
+        
+        # Re-polish widgets to apply new styles
+        self.path_edit.style().unpolish(self.path_edit)
+        self.path_edit.style().polish(self.path_edit)
+        self.file_view.view.style().unpolish(self.file_view.view)
+        self.file_view.view.style().polish(self.file_view.view)
+
     def _populate_drive_combo(self):
         """
         Populates the drive combo box with available mounted drives and partitions.
@@ -142,9 +152,6 @@ class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
-    ACTIVE_PANEL_STYLE = "QTableView { border: 2px solid blue; } QTreeView { border: 2px solid blue; }"
-    INACTIVE_PANEL_STYLE = "QTableView { border: 2px solid lightgray; } QTreeView { border: 2px solid lightgray; }"
-
     def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
@@ -179,10 +186,10 @@ class FolderBrowser(QWidget):
 
     def set_active_panel(self, panel_widget):
         if self.active_panel_widget:
-            self.active_panel_widget.file_view.view.setStyleSheet(self.INACTIVE_PANEL_STYLE)
+            self.active_panel_widget.set_active(False)
         
         self.active_panel_widget = panel_widget
-        self.active_panel_widget.file_view.view.setStyleSheet(self.ACTIVE_PANEL_STYLE)
+        self.active_panel_widget.set_active(True)
         self.active_panel_widget.file_view.view.setFocus() # Ensure the view inside the panel has focus
 
     def switch_active_panel(self):
