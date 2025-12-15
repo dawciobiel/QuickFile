@@ -4,10 +4,12 @@ from PyQt6.QtWidgets import QTreeView, QVBoxLayout, QAbstractItemView, QHeaderVi
 from browser.base_view import AbstractFileView
 from browser.tree_file_system_model import TreeFileSystemModel
 from browser.styling_delegate import FileStyleDelegate
+from app.theme_manager import ThemeManager # Import ThemeManager
 
 class TreeFileView(AbstractFileView):
-    def __init__(self, settings_manager, parent=None):
+    def __init__(self, settings_manager, theme_manager: ThemeManager, parent=None):
         super().__init__(settings_manager, parent)
+        self.theme_manager = theme_manager # Store theme_manager
         
         self.model = TreeFileSystemModel(settings_manager, self)
         
@@ -101,6 +103,11 @@ class TreeFileView(AbstractFileView):
             header.resizeSections(QHeaderView.ResizeMode.ResizeToContents)
             
         header.sectionResized.connect(self.on_header_section_resized)
+
+        # Load file styles when view settings are updated
+        theme_path = self.theme_manager.get_theme_path() # Use self.theme_manager
+        if theme_path:
+            self.model.load_file_styles(theme_path)
 
     def on_header_section_resized(self, section, old_size, new_size):
         header = self.view.header()

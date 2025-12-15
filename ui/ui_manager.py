@@ -14,14 +14,16 @@ from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from app.shortcuts_manager import ShortcutsManager
 from app.settings_manager import SettingsManager
+from app.theme_manager import ThemeManager # Import ThemeManager
 from utils.dialogs import show_error_message
 from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
 from utils.compare_dialog import CompareDialog
 from app.translation_manager import translation_manager # Import our new manager
+from app.application_logic_handler import ApplicationLogicHandler # Import ApplicationLogicHandler
 
 class UIManager(QObject):
-    def __init__(self, main_window, settings_manager, file_manager, file_comparator, archive_manager, directory_synchronizer, bookmarks_manager):
+    def __init__(self, main_window, settings_manager, file_manager, file_comparator, archive_manager, directory_synchronizer, bookmarks_manager, theme_manager: ThemeManager):
         super().__init__(main_window)
         self.main_window = main_window
         self.settings_manager = settings_manager
@@ -30,6 +32,7 @@ class UIManager(QObject):
         self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
         self.bookmarks_manager = bookmarks_manager
+        self.theme_manager = theme_manager # Store theme_manager
 
         # Attributes to hold the created UI components
         self.folder_browser = None
@@ -47,6 +50,7 @@ class UIManager(QObject):
         return FolderBrowser(
             view_mode=self.settings_manager.get_setting("view_mode"),
             settings_manager=self.settings_manager,
+            theme_manager=self.theme_manager, # Pass theme_manager
             parent=self.main_window
         )
 
@@ -67,8 +71,8 @@ class UIManager(QObject):
         add_bookmark_button.setToolTip(translation_manager.translate("UIManager", "Add current directory to bookmarks"))
         return add_bookmark_button
 
-    def _create_menu_panel(self, toolbar: QToolBar):
-        return MenuPanel(self.main_window, toolbar)
+    def _create_menu_panel(self, toolbar: QToolBar, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager):
+        return MenuPanel(self.main_window, toolbar, application_logic_handler, shortcuts_manager)
 
     def _create_status_bar(self):
         status_bar = self.main_window.statusBar()
@@ -90,7 +94,7 @@ class UIManager(QObject):
         self.main_window.add_bookmark_button = self.add_bookmark_button
 
         # Create MenuPanel and then initialize its menus
-        self.menu_panel = self._create_menu_panel(self.toolbar)
+        self.menu_panel = self._create_menu_panel(self.toolbar, self.main_window.application_logic_handler, self.main_window.shortcuts_manager)
         self.menu_panel.initialize_menus() # Call the new initialization method
 
         self.status_bar = self._create_status_bar()

@@ -53,7 +53,7 @@ class ThemeManager(QObject):
         
         QApplication.instance().setStyleSheet(processed_qss)
         self.current_theme_name = theme_name
-        self.theme_changed.emit(os.path.join(self.themes_dir, theme_name))
+        self.theme_changed.emit(self.get_theme_path(theme_name)) # Emit full path
         logging.info(f"Applied theme: {theme_name}")
         return True
 
@@ -62,3 +62,14 @@ class ThemeManager(QObject):
 
     def get_current_theme_name(self):
         return self.current_theme_name
+
+    def get_theme_path(self, theme_name=None):
+        """
+        Returns the absolute path to the directory of the specified theme.
+        If theme_name is None, returns the path of the current theme.
+        """
+        if theme_name is None:
+            theme_name = self.current_theme_name
+        if theme_name:
+            return os.path.join(self.themes_dir, theme_name)
+        return None

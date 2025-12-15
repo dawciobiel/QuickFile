@@ -61,7 +61,8 @@ class MainWindow(QMainWindow):
             file_comparator=self.file_comparator,
             archive_manager=self.archive_manager,
             directory_synchronizer=self.directory_synchronizer,
-            bookmarks_manager=self.bookmarks_manager
+            bookmarks_manager=self.bookmarks_manager,
+            theme_manager=self.theme_manager # Pass theme_manager
         )
 
         # Initialize KeyboardEventManager AFTER ui_manager has set up folder_browser
