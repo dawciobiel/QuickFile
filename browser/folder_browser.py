@@ -7,13 +7,15 @@ from PyQt6.QtGui import QFileSystemModel
 from browser.flat_view import FlatFileView
 from browser.tree_view import TreeFileView
 from app.settings_manager import SettingsManager
+from app.theme_manager import ThemeManager # Import ThemeManager
 
 class PanelWidget(QWidget):
-    def __init__(self, settings_manager, initial_view_mode, folder_browser_event_filter, parent=None):
+    def __init__(self, settings_manager, initial_view_mode, folder_browser_event_filter, theme_manager: ThemeManager, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
         self._current_view_mode = initial_view_mode
         self._folder_browser_event_filter = folder_browser_event_filter
+        self.theme_manager = theme_manager # Store theme_manager
         
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -34,9 +36,9 @@ class PanelWidget(QWidget):
         self.completer.setModel(self.completer_model)
         self.path_edit.setCompleter(self.completer)
 
-        # Create both views
-        self.flat_file_view = FlatFileView(self.settings_manager, self)
-        self.tree_file_view = TreeFileView(self.settings_manager, self)
+        # Create both views, passing theme_manager
+        self.flat_file_view = FlatFileView(self.settings_manager, self.theme_manager, self)
+        self.tree_file_view = TreeFileView(self.settings_manager, self.theme_manager, self)
         
         self.layout.addWidget(self.flat_file_view)
         self.layout.addWidget(self.tree_file_view)
@@ -198,16 +200,17 @@ class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
-    def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, parent=None):
+    def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, theme_manager: ThemeManager = None, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
+        self.theme_manager = theme_manager # Store theme_manager
         self.view_mode = view_mode
         self.active_panel_widget = None
         self.current_paths = {}
 
-        # Pass self (FolderBrowser instance) as the event filter object
-        self.left_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self)
-        self.right_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self)
+        # Pass self (FolderBrowser instance) as the event filter object and theme_manager
+        self.left_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
+        self.right_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(self.left_panel_widget)

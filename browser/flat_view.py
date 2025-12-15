@@ -4,10 +4,12 @@ from PyQt6.QtWidgets import QTableView, QVBoxLayout, QAbstractItemView, QHeaderV
 from browser.base_view import AbstractFileView
 from browser.flat_file_system_model import FlatFileSystemModel
 from browser.styling_delegate import FileStyleDelegate
+from app.theme_manager import ThemeManager # Import ThemeManager
 
 class FlatFileView(AbstractFileView):
-    def __init__(self, settings_manager, parent=None):
+    def __init__(self, settings_manager, theme_manager: ThemeManager, parent=None):
         super().__init__(settings_manager, parent)
+        self.theme_manager = theme_manager # Store theme_manager
         
         self.model = FlatFileSystemModel(
             parent=self,
@@ -118,6 +120,12 @@ class FlatFileView(AbstractFileView):
         self.model.set_show_dot_files(self.settings_manager.get_setting("showDotFiles", True))
         self.model.set_show_uid_column(self.settings_manager.get_setting("show_uid_column", True))
         self.model.set_show_gid_column(self.settings_manager.get_setting("show_gid_column", True))
+        
+        # Load file styles when view settings are updated
+        theme_path = self.theme_manager.get_theme_path() # Use self.theme_manager
+        if theme_path:
+            self.model.load_file_styles(theme_path)
+
         self.refresh()
         
     def on_item_double_clicked(self, index):

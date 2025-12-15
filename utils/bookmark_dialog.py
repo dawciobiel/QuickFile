@@ -25,6 +25,9 @@ class BookmarkDialog(QDialog):
 
         self.populate_bookmarks()
 
+        # Set a new default size
+        self.resize(600, 400) # Increased width and a reasonable height
+
     def populate_bookmarks(self, filter_text=""):
         self.bookmarks_list.clear()
         for bookmark in self.bookmarks:
