@@ -15,13 +15,13 @@ date >> "$LOG_FILE"
 echo "================================================================================" >> "$LOG_FILE"
 
 # Uruchom pytest i przekieruj wyjście do pliku log
-# Używamy -s, aby zobaczyć printy w konsoli, jeśli testy przejdą, ale nadal zapisujemy do pliku
-# Używamy -v dla bardziej szczegółowego wyjścia
-# Możesz dodać --tb=no, aby ukryć tracebacki w konsoli, jeśli chcesz, ale w logu są przydatne
-pytest tests/test_properties_dialog.py "$@" | tee -a "$LOG_FILE"
+# -v: verbose (szczegółowe wyjście)
+# --show-capture=all: pokazuje wszystko (stdout, stderr, logi) nawet dla testów, które przeszły
+# --tb=long: pełny traceback
+pytest -v --show-capture=all --tb=long tests/test_copy_operation.py "$@" | tee -a "$LOG_FILE"
 
 # Sprawdź status wyjścia pytest
-if [ $? -eq 0 ]; then
+if [ ${PIPESTATUS[0]} -eq 0 ]; then
     echo "================================================================================" >> "$LOG_FILE"
     echo "All tests passed!" | tee -a "$LOG_FILE"
     echo "================================================================================" >> "$LOG_FILE"
