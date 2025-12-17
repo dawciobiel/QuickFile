@@ -1,0 +1,29 @@
+2025-12-17 16:26:07 [    INFO] Loaded translations for pl_PL (translation_manager.py:60)
+2025-12-17 16:26:07 [   ERROR] Error in copy_selected_item: No file/folder selected for copying. (application_logic_handler.py:39)
+Traceback (most recent call last):
+  File "/home/dawciobiel/PycharmProjects/QuickFile/app/application_logic_handler.py", line 35, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/dawciobiel/PycharmProjects/QuickFile/app/application_logic_handler.py", line 331, in copy_selected_item
+    raise ValueError(translation_manager.translate("MenuPanel", "No file/folder selected for copying."))
+ValueError: No file/folder selected for copying.
+2025-12-17 16:26:07 [   ERROR] Error in delete_selected_item: No file/folder selected for deletion. (application_logic_handler.py:39)
+Traceback (most recent call last):
+  File "/home/dawciobiel/PycharmProjects/QuickFile/app/application_logic_handler.py", line 35, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/dawciobiel/PycharmProjects/QuickFile/app/application_logic_handler.py", line 395, in delete_selected_item
+    raise ValueError(translation_manager.translate("MenuPanel", "No file/folder selected for deletion."))
+ValueError: No file/folder selected for deletion.
+2025-12-17 16:26:07 [   ERROR] Error in move_selected_item: No file/folder selected for moving. (application_logic_handler.py:39)
+Traceback (most recent call last):
+  File "/home/dawciobiel/PycharmProjects/QuickFile/app/application_logic_handler.py", line 35, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/dawciobiel/PycharmProjects/QuickFile/app/application_logic_handler.py", line 361, in move_selected_item
+    raise ValueError(translation_manager.translate("MenuPanel", "No file/folder selected for moving."))
+ValueError: No file/folder selected for moving.
+2025-12-17 16:26:07 [   ERROR] Error in show_properties_dialog: No file or folder selected. (application_logic_handler.py:39)
+Traceback (most recent call last):
+  File "/home/dawciobiel/PycharmProjects/QuickFile/app/application_logic_handler.py", line 35, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/dawciobiel/PycharmProjects/QuickFile/app/application_logic_handler.py", line 278, in show_properties_dialog
+    raise ValueError(translation_manager.translate("MenuPanel", "No file or folder selected."))
+ValueError: No file or folder selected.
