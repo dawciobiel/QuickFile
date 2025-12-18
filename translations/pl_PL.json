@@ -23,7 +23,7 @@
     "ApplicationLogicHandler.File '{path}' does not exist.": "Plik '{path}' nie istnieje.",
     "ApplicationLogicHandler.Could not open file '{path}': {error}": "Nie można otworzyć pliku '{path}': {error}",
     "ApplicationLogicHandler.Files '{file1}' and '{file2}' are identical.": "Pliki '{file1}' i '{file2}' są identyczne.",
-    "ApplicationLogicHandler.Files '{file1}' and '{file2}' are different.": "Pliki '{file1}' i '{file2}' są różne.",
+    "ApplicationLogicHandler.Files '{file1}' i '{file2}' are different.": "Pliki '{file1}' i '{file2}' są różne.",
     "ApplicationLogicHandler.Error copying {item}: {error}": "Błąd kopiowania {item}: {error}",
     "ApplicationLogicHandler.Copied {count} items to '{destination}'": "Skopiowano {count} elementów do '{destination}'",
     "ApplicationLogicHandler.Error deleting {item}: {error}": "Błąd usuwania {item}: {error}",
@@ -58,6 +58,8 @@
     "DeleteDialog.Are you sure you want to delete:": "Czy na pewno chcesz usunąć:",
     "DeleteDialog.Are you sure you want to delete <b>{count}</b> items?": "Czy na pewno chcesz usunąć <b>{count}</b> elementów?",
     "DeleteDialog.This operation cannot be undone.": "Tej operacji nie można cofnąć.",
+    "DeleteDialog.This operation cannot be undone if not moved to Trash.": "Tej operacji nie można cofnąć, jeśli nie zostanie przeniesiona do Kosza.",
+    "DeleteDialog.Move to Trash (if available)": "Przenieś do Kosza (jeśli dostępne)",
 
     "FlatFileSystemModel.Permission Error": "Błąd uprawnień",
     "FlatFileSystemModel.File": "Plik",

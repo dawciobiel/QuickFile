@@ -9,10 +9,14 @@
 - **New Feature:** Dodać button jako rozwijalną listę, z której można wybrać napęd i ewentualne zamontowane urządzenia. Ta rozwijalna lista powinna znajdować się nad panelem do przeglądania plików.
 - **New Feature:** Dodano nowe kolumny do widoków plików (flat i tree):
     - **Uprawnienia Pliku:** Wyświetla uprawnienia w formie symbolicznej (rwx) lub numerycznej (755), z możliwością wyboru w ustawieniach.
-    - **Właściciel (UID):** Wyświetla nazwę użytkownika będącego właścicielem pliku/katalogu.
+    - **Właściciel (UID):** Wyświetla nazwę użytkownika będącego właścicieela pliku/katalogu.
     - **Grupa (GID):** Wyświetla nazwę grupy będącej właścicielem pliku/katalogu.
     Ustawienia widoczności kolumn i trybu wyświetlania uprawnień są zapisywane.
     Dodano tłumaczenia dla nowych elementów interfejsu użytkownika.
+- **New Feature:** Funkcjonalność przenoszenia plików i folderów do kosza systemowego (Trash/Recycle Bin).
+    - Zmodyfikowano okno dialogowe usuwania (`DeleteDialog`) o opcję "Przenieś do Kosza (jeśli dostępne)".
+    - Zaktualizowano `FileManager` do używania biblioteki `send2trash` do przenoszenia do kosza lub permanentnego usuwania.
+    - Dodano obsługę błędów i testy jednostkowe dla nowej funkcjonalności.
 
 ## TODO List
 
