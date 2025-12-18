@@ -3,11 +3,11 @@ import os
 import zipfile
 import tarfile
 import shutil
-from unittest.mock import Mock
+from unittest.mock import MagicMock, patch
 import io
 
 # Import the ArchiveManager class and its exceptions
-from file_operations.archive_manager import ArchiveManager, ArchiveManagerError
+from file_operations.archive_manager import ArchiveManager, ArchiveManagerError, UnrarNotInstalledError
 
 @pytest.fixture
 def temp_dir(tmp_path):
@@ -150,6 +150,66 @@ def test_extract_tar_gz_archive(temp_dir):
     manager.extract_tar_archive(str(archive_path), str(extract_path))
 
     assert (extract_path / "file_in_tar_gz.txt").exists()
+
+# --- Testy wypakowywania archiwów RAR ---
+
+@patch('shutil.which')
+@patch('rarfile.RarFile')
+def test_extract_rar_archive_success(mock_rar_file, mock_shutil_which, temp_dir):
+    mock_shutil_which.return_value = "/usr/bin/unrar" # Simulate unrar being installed
+    
+    archive_path = temp_dir / "test.rar"
+    extract_path = temp_dir / "extracted_rar"
+    
+    # Create a dummy RAR file (rarfile needs a real file to open, even if mocked)
+    create_dummy_file(archive_path)
+
+    manager = ArchiveManager()
+    
+    # Configure the mock RarFile instance
+    mock_rar_instance = MagicMock()
+    mock_rar_file.return_value.__enter__.return_value = mock_rar_instance
+
+    result = manager.extract_rar_archive(str(archive_path), str(extract_path))
+
+    mock_shutil_which.assert_called_once_with('unrar')
+    mock_rar_file.assert_called_once_with(str(archive_path), 'r')
+    mock_rar_instance.extractall.assert_called_once_with(str(extract_path))
+    assert "Wypakowano archiwum RAR do:" in result
+
+@patch('shutil.which')
+def test_extract_rar_archive_unrar_not_installed(mock_shutil_which, temp_dir):
+    mock_shutil_which.return_value = None # Simulate unrar not being installed
+    
+    archive_path = temp_dir / "test.rar"
+    extract_path = temp_dir / "extracted_rar"
+
+    manager = ArchiveManager()
+    with pytest.raises(UnrarNotInstalledError, match="The 'unrar' tool is not installed or not in the system's PATH."):
+        manager.extract_rar_archive(str(archive_path), str(extract_path))
+    
+    mock_shutil_which.assert_called_once_with('unrar')
+
+@patch('shutil.which')
+@patch('rarfile.RarFile')
+def test_extract_rar_archive_error(mock_rar_file, mock_shutil_which, temp_dir):
+    mock_shutil_which.return_value = "/usr/bin/unrar" # Simulate unrar being installed
+    
+    archive_path = temp_dir / "corrupted.rar"
+    extract_path = temp_dir / "extracted_rar_error"
+    
+    create_dummy_file(archive_path) # Create a dummy file for rarfile to try and open
+
+    # Simulate an error during RarFile opening or extraction
+    mock_rar_file.side_effect = Exception("Simulated RAR extraction error")
+
+    manager = ArchiveManager()
+    with pytest.raises(ArchiveManagerError, match="Error extracting RAR archive: Simulated RAR extraction error"):
+        manager.extract_rar_archive(str(archive_path), str(extract_path))
+    
+    mock_shutil_which.assert_called_once_with('unrar')
+    mock_rar_file.assert_called_once_with(str(archive_path), 'r')
+
 
 # --- Testy obsługi błędów ---
 
