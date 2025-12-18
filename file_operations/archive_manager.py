@@ -33,7 +33,8 @@ class ArchiveManager:
                 for source_path in source_paths:
                     if not os.path.exists(source_path):
                         logging.warning(f"Source path '{source_path}' does not exist, skipping.")
-                        continue
+                        # Rzucamy wyjątek, jeśli ścieżka nie istnieje
+                        raise ArchiveManagerError(f"Source path '{source_path}' does not exist.")
 
                     if os.path.isdir(source_path):
                         # If archiving a directory, add its contents
@@ -77,6 +78,7 @@ class ArchiveManager:
         mode = "w:" + compression
         try:
             with tarfile.open(archive_path, mode) as tarf:
+                # Removed filter='data' from tarf.add as it expects a callable, not a string
                 tarf.add(source_path, arcname=os.path.basename(source_path))
             return f"TAR Archive created: {archive_path}"
         except Exception as e:
@@ -89,7 +91,8 @@ class ArchiveManager:
         """
         try:
             with tarfile.open(archive_path, "r:*") as tarf:
-                tarf.extractall(extract_path)
+                # filter='data' is correct for extractall in Python 3.14+
+                tarf.extractall(extract_path, filter='data')
             return f"Archive extracted to: {extract_path}"
         except Exception as e:
             logging.exception(f"Error extracting TAR archive {archive_path}: {e}")
