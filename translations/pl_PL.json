@@ -1,10 +1,4 @@
 {
-    "AboutDialog.About": "O programie",
-    "AboutDialog.QuickFile": "QuickFile",
-    "AboutDialog.Version: ": "Wersja: ",
-    "AboutDialog.Author: Dawid Bielecki": "Autor: Dawid Bielecki",
-    "AboutDialog.A powerful and efficient file manager with modern features.": "Potężny i wydajny menedżer plików z nowoczesnymi funkcjami.",
-
     "ApplicationLogicHandler.No file selected for preview.": "Nie wybrano pliku do podglądu.",
     "ApplicationLogicHandler.No file selected for editing.": "Nie wybrano pliku do edycji.",
     "ApplicationLogicHandler.Current directory:": "Bieżący katalog:",
@@ -100,7 +94,7 @@
     "FunctionKeyPanel.F8 Delete": "F8 Usuń",
     "FunctionKeyPanel.Delete selected files/directories": "Usuń wybrane pliki/katalogi",
     "FunctionKeyPanel.F9 Compare": "F9 Porównaj",
-    "FunctionKeyPanel.Compare items in both panels": "Porównaj elementy w obu panelach",
+  "FunctionKeyPanel.Compare items in obu panelach": "Porównaj elementy w obu panelach",
     "FunctionKeyPanel.F10 Exit": "F10 Wyjście",
     "FunctionKeyPanel.Exit the application": "Zakończ aplikację",
 
@@ -170,7 +164,7 @@
 
     "MoveDialog.Move": "Przenieś",
     "MoveDialog.Source": "Źródło",
-    "MoveDialog.Destination": "Cel",
+  "MoveDialog.Destination": "Miejsce docelowe",
     "MoveDialog.Overwrite existing files": "Nadpisz istniejące pliki",
 
     "PropertiesDialog.Properties": "Właściwości",

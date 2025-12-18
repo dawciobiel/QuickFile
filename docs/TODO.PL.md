@@ -17,12 +17,14 @@
     - Zmodyfikowano okno dialogowe usuwania (`DeleteDialog`) o opcję "Przenieś do Kosza (jeśli dostępne)".
     - Zaktualizowano `FileManager` do używania biblioteki `send2trash` do przenoszenia do kosza lub permanentnego usuwania.
     - Dodano obsługę błędów i testy jednostkowe dla nowej funkcjonalności.
+- **Refactoring:** Zawartość okna "About" jest teraz ładowana z plików HTML (`docs/about/about.html`, `docs/about/about_pl.html`).
+  - Zaimplementowano dynamiczne ładowanie treści w zależności od wybranego języka.
+  - Zastąpiono statyczne etykiety w `AboutDialog` komponentem `QTextBrowser` do wyświetlania sformatowanego tekstu i linków.
+  - Usunięto nieużywane klucze tłumaczeń z plików `en_US.json` i `pl_PL.json`.
 
 ## TODO List
 
 - **New Feature:** Manager-a do montowania napędów (np. USB, DVD, dysk itp.). Przemyśleć to wraz z opcją do zapamiętywania ścieżek do ulubionych napędów. 
-
-- **Refactoring:** Zawartość okna "About" powinna być czytana z pliku. Obecnie treść jest wpisana na sztywno w kodzie aplikacji i dodatkowo tłumaczona za pomocą wersji językowych. Zastanowić się jak to rozwiązać, bo treść tego okna powinna być tłumaczona na różne języki. Jednak jest to tylko tłumaczenie, a nie zawartość okna, jeżeli chodzi o np. odpowiednie sformatowanie i ułożenie wyświetlanego tekstu. Trzeba to przemyśleć. Być może użyć dodatkowo Qt Designer'a.
 
 - **New Feature:** Dodać przycisk z rozwijalną listą, który wyświetli ścieżki z listy katalogów dodanych do "Ulubionych".
 

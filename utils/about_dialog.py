@@ -1,11 +1,9 @@
 import logging
 import os
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
-from PyQt6.QtCore import Qt
-from app.translation_manager import translation_manager # Import our new manager
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QTextBrowser
+from PyQt6.QtCore import Qt, QUrl
+from app.translation_manager import translation_manager
 
-# We need to import __version__ here as well to display it.
-# Assuming __version__.py is accessible in the project root.
 try:
     from __version__ import __version__
 except ImportError:
@@ -20,40 +18,38 @@ class AboutDialog(QDialog):
 
         layout = QVBoxLayout()
 
-        # Application Name
-        app_name_label = QLabel(translation_manager.translate("AboutDialog", "QuickFile"))
-        app_name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        app_name_label.setStyleSheet("font-size: 24px; font-weight: bold;")
-        layout.addWidget(app_name_label)
+        self.text_browser = QTextBrowser()
+        self.text_browser.setOpenExternalLinks(True)
+        layout.addWidget(self.text_browser)
 
-        # Version
-        version_text = translation_manager.translate("AboutDialog", "Version: ") + __version__
-        version_label = QLabel(version_text)
-        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        version_label.setStyleSheet("font-size: 14px;")
-        layout.addWidget(version_label)
+        # Determine the current locale
+        current_locale = translation_manager.current_locale
 
-        # Author
-        author_label = QLabel(translation_manager.translate("AboutDialog", "Author: Dawid Bielecki"))
-        author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        author_label.setStyleSheet("font-size: 12px;")
-        layout.addWidget(author_label)
+        # Extract the language code (e.g., 'pl' from 'pl_PL')
+        lang_code = current_locale.split('_')[0].lower()
 
-        # URL
-        url_label = QLabel("URL: <a href='https://github.com/dawciobiel/QuickFile'>https://github.com/dawciobiel/QuickFile</a>")
-        url_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        url_label.setOpenExternalLinks(True)
-        url_label.setStyleSheet("font-size: 12px; color: blue;")
-        layout.addWidget(url_label)
+        # Construct the path to the HTML file
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        docs_path = os.path.join(base_path, '..', 'docs', 'about')
 
-        # Description (placeholder)
-        description_label = QLabel(translation_manager.translate("AboutDialog", "A powerful and efficient file manager with modern features."))
-        description_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        description_label.setWordWrap(True)
-        description_label.setStyleSheet("font-size: 12px;")
-        layout.addWidget(description_label)
+        # Use the extracted language code to select the correct HTML file
+        html_file_name = f'about_{lang_code}.html' if lang_code == 'pl' else 'about.html'
+        html_file_path = os.path.join(docs_path, html_file_name)
 
-        # OK Button
+        html_content = ""
+        try:
+            with open(html_file_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            html_content = html_content.replace('{VERSION}', __version__)
+        except FileNotFoundError:
+            logging.error(f"About dialog HTML file not found: {html_file_path}")
+            html_content = f"<h1>Error</h1><p>Could not load about information. Version: {__version__}</p>"
+        except Exception as e:
+            logging.error(f"Error loading about dialog HTML: {e}")
+            html_content = f"<h1>Error</h1><p>Could not load about information. Version: {__version__}</p>"
+
+        self.text_browser.setHtml(html_content)
+
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(self.accept)
         layout.addWidget(ok_button)
