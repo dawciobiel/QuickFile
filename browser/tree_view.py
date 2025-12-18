@@ -4,10 +4,12 @@ from PyQt6.QtWidgets import QTreeView, QVBoxLayout, QAbstractItemView, QHeaderVi
 from browser.base_view import AbstractFileView
 from browser.tree_file_system_model import TreeFileSystemModel
 from browser.styling_delegate import FileStyleDelegate
+from app.theme_manager import ThemeManager # Import ThemeManager
 
 class TreeFileView(AbstractFileView):
-    def __init__(self, settings_manager, parent=None):
+    def __init__(self, settings_manager, theme_manager: ThemeManager, parent=None):
         super().__init__(settings_manager, parent)
+        self.theme_manager = theme_manager # Store theme_manager
         
         self.model = TreeFileSystemModel(settings_manager, self)
         
@@ -27,16 +29,12 @@ class TreeFileView(AbstractFileView):
         self.view.doubleClicked.connect(self.on_item_double_clicked)
 
     def handle_key_event(self, event: QEvent):
+        current_index = self.view.currentIndex()
+        if self._handle_common_key_events(event, current_index):
+            return True
+        
         key = event.key()
-        if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
-            current_index = self.view.currentIndex()
-            if current_index.isValid():
-                self.on_item_double_clicked(current_index)
-            return True
-        elif key == Qt.Key.Key_Insert:
-            self.toggle_selection()
-            return True
-        elif key == Qt.Key.Key_Backspace:
+        if key == Qt.Key.Key_Backspace:
             self.go_up()
             return True
         return False
@@ -80,14 +78,6 @@ class TreeFileView(AbstractFileView):
         if self.view.currentIndex().isValid():
             return self.model.filePath(self.view.currentIndex())
         return None
-
-    def go_up(self):
-        current_path = self.get_current_path()
-        parent_path = os.path.dirname(current_path)
-        
-        if parent_path != current_path:
-            current_dir_name = os.path.basename(current_path)
-            self.set_path(parent_path, select_item_name=current_dir_name)
             
     def update_view_settings(self):
         self.model.update_settings()
@@ -113,6 +103,11 @@ class TreeFileView(AbstractFileView):
             header.resizeSections(QHeaderView.ResizeMode.ResizeToContents)
             
         header.sectionResized.connect(self.on_header_section_resized)
+
+        # Load file styles when view settings are updated
+        theme_path = self.theme_manager.get_theme_path() # Use self.theme_manager
+        if theme_path:
+            self.model.load_file_styles(theme_path)
 
     def on_header_section_resized(self, section, old_size, new_size):
         header = self.view.header()

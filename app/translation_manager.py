@@ -24,14 +24,29 @@ class TranslationManager:
         if language_mode == "manual":
             return self.settings_manager.get_setting("manual_language", "en_US")
         else: # auto
+            lang_code = None
             try:
-                sys_locale = locale.getdefaultlocale()[0]
-                if sys_locale:
-                    return sys_locale.replace('-', '_')
-                return "en_US"
+                # Try locale.getlocale() first
+                sys_locale_tuple = locale.getlocale()
+                if sys_locale_tuple and sys_locale_tuple[0]:
+                    lang_code = sys_locale_tuple[0]
+                else:
+                    # Fallback to environment variables if getlocale() doesn't return a specific language
+                    for env_var in ['LANGUAGE', 'LC_ALL', 'LANG']:
+                        if env_var in os.environ:
+                            env_lang = os.environ[env_var]
+                            # Take the first part if it's like "en_US.UTF-8"
+                            lang_code = env_lang.split('.')[0]
+                            break
             except Exception as e:
-                logging.warning(f"Could not detect system locale, defaulting to en_US: {e}")
-                return "en_US"
+                logging.warning(f"Could not detect system locale using locale.getlocale() or environment variables: {e}")
+
+            if lang_code:
+                # Ensure consistent format (e.g., en_US instead of en-US or en_US.UTF-8)
+                return lang_code.replace('-', '_').split('.')[0]
+            
+            logging.warning("Could not determine system locale, defaulting to en_US.")
+            return "en_US"
 
     def _load_translations(self, lang_code):
         self.translations = {} # Clear existing translations
@@ -79,14 +94,6 @@ class TranslationManager:
                 logging.error("Default English translation file 'en_US.json' not found!")
         else:
             logging.warning("No translations loaded, 'en_US.json' not found or errored.")
-
-    def set_language(self, lang_code):
-        """Dynamically changes the application language."""
-        if self.current_locale != lang_code:
-            logging.info(f"Changing language from {self.current_locale} to {lang_code}")
-            self._load_translations(lang_code)
-            # In a real application, you'd also need to re-translate all active UI elements.
-            # For now, we just load the new translations. UI refresh will happen on next redraw/explicit call.
 
     def translate(self, context, text):
         key = f"{context}.{text}"

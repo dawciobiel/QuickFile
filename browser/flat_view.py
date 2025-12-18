@@ -4,10 +4,12 @@ from PyQt6.QtWidgets import QTableView, QVBoxLayout, QAbstractItemView, QHeaderV
 from browser.base_view import AbstractFileView
 from browser.flat_file_system_model import FlatFileSystemModel
 from browser.styling_delegate import FileStyleDelegate
+from app.theme_manager import ThemeManager # Import ThemeManager
 
 class FlatFileView(AbstractFileView):
-    def __init__(self, settings_manager, parent=None):
+    def __init__(self, settings_manager, theme_manager: ThemeManager, parent=None):
         super().__init__(settings_manager, parent)
+        self.theme_manager = theme_manager # Store theme_manager
         
         self.model = FlatFileSystemModel(
             parent=self,
@@ -38,13 +40,12 @@ class FlatFileView(AbstractFileView):
         return super().eventFilter(source, event)
 
     def handle_key_event(self, event: QEvent):
-        key = event.key()
-        if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
-            current_index = self.view.currentIndex()
-            if current_index.isValid():
-                self.on_item_double_clicked(current_index)
+        current_index = self.view.currentIndex()
+        if self._handle_common_key_events(event, current_index):
             return True
-        elif key == Qt.Key.Key_Home:
+        
+        key = event.key()
+        if key == Qt.Key.Key_Home:
             first_index = self.model.index(0, 0)
             if first_index.isValid():
                 self.view.setCurrentIndex(first_index)
@@ -56,9 +57,6 @@ class FlatFileView(AbstractFileView):
                 if last_index.isValid():
                     self.view.setCurrentIndex(last_index)
                 return True
-        elif key == Qt.Key.Key_Insert:
-            self.toggle_selection()
-            return True
         return False
 
     def _configure_view(self):
@@ -116,20 +114,18 @@ class FlatFileView(AbstractFileView):
         if self.view.currentIndex().isValid():
             return self.model.filePath(self.view.currentIndex())
         return None
-
-    def go_up(self):
-        current_path = self.get_current_path()
-        parent_path = os.path.dirname(current_path)
-        
-        if parent_path != current_path:
-            current_dir_name = os.path.basename(current_path)
-            self.set_path(parent_path, select_item_name=current_dir_name)
             
     def update_view_settings(self):
         self.model.set_file_permissions_display_mode(self.settings_manager.get_setting("file_permissions_display_mode", "symbolic"))
         self.model.set_show_dot_files(self.settings_manager.get_setting("showDotFiles", True))
         self.model.set_show_uid_column(self.settings_manager.get_setting("show_uid_column", True))
         self.model.set_show_gid_column(self.settings_manager.get_setting("show_gid_column", True))
+        
+        # Load file styles when view settings are updated
+        theme_path = self.theme_manager.get_theme_path() # Use self.theme_manager
+        if theme_path:
+            self.model.load_file_styles(theme_path)
+
         self.refresh()
         
     def on_item_double_clicked(self, index):
