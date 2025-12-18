@@ -1,30 +1,21 @@
+import logging
 import os
 import subprocess
-import logging
 from functools import wraps
-from PyQt6.QtCore import QObject, Qt
-from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
-from bookmarks.bookmarks_manager import BookmarksManager
-from file_operations.file_manager import FileManager, FileManagerError
-from file_operations.file_comparator import FileComparator
-from file_operations.archive_manager import ArchiveManager, UnrarNotInstalledError
-from file_operations.directory_synchronizer import DirectorySynchronizer, DirectorySynchronizerError
-from file_operations.properties_manager import get_file_properties
-from utils.dialogs import show_error_message
-from utils.search_dialog import SearchDialog
-from utils.bookmark_dialog import BookmarkDialog
-from utils.compare_dialog import CompareDialog
-from utils.copy_dialog import CopyDialog
-from utils.move_dialog import MoveDialog
-from utils.delete_dialog import DeleteDialog
-from utils.sync_dialog import SyncDialog
-from utils.properties_dialog import PropertiesDialog
-from utils.shortcuts_dialog import ShortcutsDialog # Import ShortcutsDialog
-from utils.settings_dialog import SettingsDialog # Import SettingsDialog
-from app.translation_manager import translation_manager
-from app.ui_state_provider import UIStateProvider
+
+from PyQt6.QtCore import QObject
+from PyQt6.QtWidgets import QMessageBox
+
 from app.dialog_handler import DialogHandler
 from app.settings_handler import SettingsHandler
+from app.translation_manager import translation_manager
+from app.ui_state_provider import UIStateProvider
+from bookmarks.bookmarks_manager import BookmarksManager
+from file_operations.archive_manager import ArchiveManager, UnrarNotInstalledError
+from file_operations.directory_synchronizer import DirectorySynchronizer, DirectorySynchronizerError
+from file_operations.file_comparator import FileComparator
+from file_operations.file_manager import FileManager, FileManagerError
+from utils.dialogs import show_error_message
 
 
 def handle_app_logic_error(title_key):
@@ -257,7 +248,9 @@ class ApplicationLogicHandler(QObject):
 
     @handle_app_logic_error("Settings Error")
     def open_general_settings_dialog(self, checked=False): # Added checked=False
-        self.dialog_handler.open_general_settings_dialog()
+        new_settings = self.dialog_handler.open_general_settings_dialog()
+        if new_settings:
+            self.settings_handler.apply_general_settings(new_settings)
 
     @handle_app_logic_error("Shortcuts Error")
     def open_shortcuts_dialog(self, checked=False): # Added checked=False
