@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+import send2trash # Import send2trash
 from app.translation_manager import translation_manager # Import our new manager
 
 class FileManagerError(Exception):
@@ -98,16 +99,40 @@ class FileManager:
             logging.exception(f"Error moving item from {source_path} to {destination_full_path}: {e}")
             raise FileManagerError(translation_manager.translate("FileManager", f"Error moving item: {e}"))
 
-    def delete_item(self, item_path):
-        """Deletes a file/folder."""
+    def delete_item(self, item_path, move_to_trash=True):
+        """
+        Deletes a file/folder or moves it to the system trash.
+        If move_to_trash is True, attempts to move to trash. Otherwise, deletes permanently.
+        """
         try:
             self._validate_path(item_path, must_exist=True, name="Item path")
 
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
+            if move_to_trash:
+                try:
+                    send2trash.send2trash(item_path)
+                    return translation_manager.translate("FileManager", f"Moved to Trash: {item_path}")
+                except send2trash.TrashPermissionError as e:
+                    logging.warning(f"Permission error moving {item_path} to trash, deleting permanently: {e}")
+                    # Fallback to permanent delete if trash fails due to permissions
+                    if os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                    else:
+                        os.remove(item_path)
+                    return translation_manager.translate("FileManager", f"Deleted permanently (trash failed): {item_path}")
+                except Exception as e:
+                    logging.warning(f"Error moving {item_path} to trash, deleting permanently: {e}")
+                    # Fallback to permanent delete for other trash errors
+                    if os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                    else:
+                        os.remove(item_path)
+                    return translation_manager.translate("FileManager", f"Deleted permanently (trash failed): {item_path}")
             else:
-                os.remove(item_path)
-            return translation_manager.translate("FileManager", f"Deleted: {item_path}")
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                else:
+                    os.remove(item_path)
+                return translation_manager.translate("FileManager", f"Deleted permanently: {item_path}")
         except (ValueError, FileNotFoundError, NotADirectoryError, IsADirectoryError) as e:
             raise e
         except OSError as e:
@@ -210,7 +235,7 @@ class FileManager:
     def create_file(self, directory, file_name):
         """Creates a new, empty file."""
         try:
-            self._validate_path(directory, must_exist=True, is_directory=True, name="Directory")
+            self._validate_path(directory, must_exist=True, name="Directory")
             if not file_name:
                 raise ValueError(translation_manager.translate("FileManager", "File name cannot be empty."))
 
@@ -230,7 +255,7 @@ class FileManager:
     def create_directory(self, parent_directory, directory_name):
         """Creates a new folder."""
         try:
-            self._validate_path(parent_directory, must_exist=True, is_directory=True, name="Parent directory")
+            self._validate_path(parent_directory, must_exist=True, name="Parent directory")
             if not directory_name:
                 raise ValueError(translation_manager.translate("FileManager", "Folder name cannot be empty."))
 

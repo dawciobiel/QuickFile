@@ -37,7 +37,7 @@ def app_handler(qtbot, mocker):
     from app.application_logic_handler import ApplicationLogicHandler
     from app.ui_state_provider import UIStateProvider
     from app.dialog_handler import DialogHandler
-    from app.settings_handler import SettingsHandler
+    from app.settings_manager import SettingsManager # Corrected import
     from bookmarks.bookmarks_manager import BookmarksManager
     from file_operations.file_manager import FileManager
     from file_operations.file_comparator import FileComparator
@@ -61,9 +61,10 @@ def app_handler(qtbot, mocker):
 
     # Create instances of the new handlers, passing mocks as dependencies
     mock_ui_state_provider = UIStateProvider(mock_main_window.ui_manager.folder_browser)
-    mock_settings_manager = MagicMock() # Mock SettingsManager directly
+    mock_settings_manager = MagicMock(spec=SettingsManager) # Mock SettingsManager directly
     mock_shortcuts_manager = MagicMock() # Mock ShortcutsManager directly
-    mock_settings_handler = SettingsHandler(mock_main_window, mock_settings_manager, mock_shortcuts_manager, mock_theme_manager)
+    # Note: SettingsHandler is not directly used by DialogHandler, but SettingsManager is.
+    # We need to ensure that the mock_settings_manager passed to DialogHandler is of type SettingsManager.
 
     mock_dialog_handler = DialogHandler(
         main_window=mock_main_window,
@@ -73,7 +74,7 @@ def app_handler(qtbot, mocker):
         archive_manager=mock_archive_manager,
         directory_synchronizer=mock_directory_synchronizer,
         ui_state_provider=mock_ui_state_provider,
-        settings_handler=mock_settings_handler
+        settings_manager=mock_settings_manager # Corrected argument name
     )
 
     # Create the main handler instance
@@ -87,7 +88,7 @@ def app_handler(qtbot, mocker):
         theme_manager=mock_theme_manager,
         ui_state_provider=mock_ui_state_provider,
         dialog_handler=mock_dialog_handler,
-        settings_handler=mock_settings_handler
+        settings_handler=mock_settings_manager # ApplicationLogicHandler expects settings_handler, which is SettingsManager
     )
     mock_main_window.application_logic_handler = handler
     
@@ -100,6 +101,6 @@ def app_handler(qtbot, mocker):
     handler.theme_manager = mock_theme_manager
     handler.ui_state_provider = mock_ui_state_provider
     handler.dialog_handler = mock_dialog_handler
-    handler.settings_handler = mock_settings_handler
+    handler.settings_handler = mock_settings_manager
 
     return handler
