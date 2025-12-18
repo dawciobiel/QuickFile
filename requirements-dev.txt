@@ -4,3 +4,4 @@ pytest-qt
 pytest-mock
 ruff
 pipreqs
+send2trash

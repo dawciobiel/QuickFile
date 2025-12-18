@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QTextEdit
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QTextEdit, QCheckBox
 from app.translation_manager import translation_manager
 
 class DeleteDialog(QDialog):
@@ -21,7 +21,12 @@ class DeleteDialog(QDialog):
             files_to_delete_text.setReadOnly(True)
             self.layout.addWidget(files_to_delete_text)
 
-        self.layout.addWidget(QLabel(translation_manager.translate("DeleteDialog", "This operation cannot be undone.")))
+        # Add checkbox for moving to trash
+        self.move_to_trash_checkbox = QCheckBox(translation_manager.translate("DeleteDialog", "Move to Trash (if available)"))
+        self.move_to_trash_checkbox.setChecked(True) # Default to moving to trash
+        self.layout.addWidget(self.move_to_trash_checkbox)
+
+        self.layout.addWidget(QLabel(translation_manager.translate("DeleteDialog", "This operation cannot be undone if not moved to Trash.")))
 
         # OK/Cancel buttons
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -30,3 +35,7 @@ class DeleteDialog(QDialog):
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
         self.layout.addWidget(self.button_box)
+
+    def should_move_to_trash(self):
+        """Returns True if the 'Move to Trash' checkbox is checked, False otherwise."""
+        return self.move_to_trash_checkbox.isChecked()

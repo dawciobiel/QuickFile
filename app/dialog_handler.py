@@ -252,9 +252,14 @@ class DialogHandler:
 
         dialog = DeleteDialog(self.main_window, selected_paths)
         if dialog.exec() == QDialog.DialogCode.Accepted:
+            move_to_trash = dialog.should_move_to_trash() # Get the state of the checkbox
             all_successful = True
             for path in selected_paths:
-                self.file_manager.delete_item(path)
+                try:
+                    self.file_manager.delete_item(path, move_to_trash=move_to_trash) # Pass move_to_trash
+                except FileManagerError as e:
+                    logging.error(f"Error deleting item {path}: {e}")
+                    all_successful = False
             if all_successful:
                 self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", f"Deleted {len(selected_paths)} items."))
             self.ui_state_provider.folder_browser.refresh_all_views()
