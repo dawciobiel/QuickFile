@@ -1,6 +1,7 @@
 import abc
+import os
 from PyQt6.QtWidgets import QWidget
-from PyQt6.QtCore import QEvent, pyqtSignal
+from PyQt6.QtCore import QEvent, pyqtSignal, Qt, QModelIndex
 
 # This metaclass inherits from the metaclasses of both QWidget and ABC.
 # This resolves the metaclass conflict when a class needs to be both a QWidget and an ABC.
@@ -19,7 +20,7 @@ class AbstractFileView(QWidget, metaclass=AbstractViewMeta):
         self.settings_manager = settings_manager
 
     @abc.abstractmethod
-    def set_path(self, path):
+    def set_path(self, path, select_item_name=None):
         """Sets the current path for the view."""
         pass
 
@@ -43,10 +44,14 @@ class AbstractFileView(QWidget, metaclass=AbstractViewMeta):
         """Returns the single, currently focused item's path."""
         pass
 
-    @abc.abstractmethod
     def go_up(self):
         """Navigates one level up in the directory structure."""
-        pass
+        current_path = self.get_current_path()
+        parent_path = os.path.dirname(current_path)
+        
+        if parent_path != current_path:
+            current_dir_name = os.path.basename(current_path)
+            self.set_path(parent_path, select_item_name=current_dir_name)
 
     @abc.abstractmethod
     def update_view_settings(self):
@@ -54,7 +59,7 @@ class AbstractFileView(QWidget, metaclass=AbstractViewMeta):
         pass
         
     @abc.abstractmethod
-    def on_item_double_clicked(self, index):
+    def on_item_double_clicked(self, index: QModelIndex):
         """Handles double-click on an item."""
         pass
         
@@ -62,6 +67,21 @@ class AbstractFileView(QWidget, metaclass=AbstractViewMeta):
     def toggle_selection(self):
         """Toggles the selection of the currently focused item."""
         pass
+
+    def _handle_common_key_events(self, event: QEvent, current_index: QModelIndex):
+        """
+        Handles common key press events for file views.
+        Returns True if the event was handled, False otherwise.
+        """
+        key = event.key()
+        if key in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
+            if current_index.isValid():
+                self.on_item_double_clicked(current_index)
+            return True
+        elif key == Qt.Key.Key_Insert:
+            self.toggle_selection()
+            return True
+        return False
 
     @abc.abstractmethod
     def handle_key_event(self, event: QEvent):

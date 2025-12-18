@@ -7,12 +7,15 @@ from PyQt6.QtGui import QFileSystemModel
 from browser.flat_view import FlatFileView
 from browser.tree_view import TreeFileView
 from app.settings_manager import SettingsManager
+from app.theme_manager import ThemeManager # Import ThemeManager
 
 class PanelWidget(QWidget):
-    def __init__(self, settings_manager, view_mode, parent=None):
+    def __init__(self, settings_manager, initial_view_mode, folder_browser_event_filter, theme_manager: ThemeManager, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
-        self.view_mode = view_mode
+        self._current_view_mode = initial_view_mode
+        self._folder_browser_event_filter = folder_browser_event_filter
+        self.theme_manager = theme_manager # Store theme_manager
         
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -33,22 +36,36 @@ class PanelWidget(QWidget):
         self.completer.setModel(self.completer_model)
         self.path_edit.setCompleter(self.completer)
 
-        if self.view_mode == "flat":
-            self.file_view = FlatFileView(self.settings_manager, self)
-        else: # "tree"
-            self.file_view = TreeFileView(self.settings_manager, self)
+        # Create both views, passing theme_manager
+        self.flat_file_view = FlatFileView(self.settings_manager, self.theme_manager, self)
+        self.tree_file_view = TreeFileView(self.settings_manager, self.theme_manager, self)
         
-        self.layout.addWidget(self.file_view)
+        self.layout.addWidget(self.flat_file_view)
+        self.layout.addWidget(self.tree_file_view)
 
-        # Connect signals for path synchronization
-        self.file_view.path_changed.connect(self._on_path_changed)
+        # Set initial visibility
+        self.flat_file_view.setVisible(self._current_view_mode == "flat")
+        self.tree_file_view.setVisible(self._current_view_mode == "tree")
+
+        # Set the initially active file_view
+        self.file_view = self.flat_file_view if self._current_view_mode == "flat" else self.tree_file_view
+
+        # Connect signals from both views to path synchronization
+        self.flat_file_view.path_changed.connect(self._on_path_changed)
+        self.tree_file_view.path_changed.connect(self._on_path_changed)
+        
         self.path_edit.returnPressed.connect(self.on_path_edited)
         self.drive_combo.currentIndexChanged.connect(self._on_drive_selected) # Connect drive combo
 
         self._populate_drive_combo() # Populate drives on init
 
+        # Install event filter for the initially active view
+        if self._folder_browser_event_filter:
+            self.file_view.view.installEventFilter(self._folder_browser_event_filter)
+
     def set_active(self, is_active):
         self.path_edit.setProperty("activePanel", is_active)
+        # Use the currently active file_view
         self.file_view.view.setProperty("activePanel", is_active)
         
         # Re-polish widgets to apply new styles
@@ -148,19 +165,52 @@ class PanelWidget(QWidget):
             # If path is invalid, revert the line edit to the current path
             self.path_edit.setText(self.file_view.get_current_path())
 
+    def set_file_view_mode(self, mode):
+        if self._current_view_mode == mode:
+            return
+
+        current_path = self.file_view.get_current_path()
+        
+        # Remove event filter from the old view
+        if self._folder_browser_event_filter:
+            self.file_view.view.removeEventFilter(self._folder_browser_event_filter)
+
+        # Hide current view
+        self.file_view.setVisible(False)
+        
+        # Update current view mode and set new active view
+        self._current_view_mode = mode
+        if mode == "flat":
+            self.file_view = self.flat_file_view
+        else: # "tree"
+            self.file_view = self.tree_file_view
+        
+        # Show new view
+        self.file_view.setVisible(True)
+        self.file_view.set_path(current_path) # Set path for the new view
+        self.file_view.view.setFocus() # Ensure focus is on the new view
+        self.file_view.update_view_settings() # Apply settings to the new view
+
+        # Install event filter for the new view
+        if self._folder_browser_event_filter:
+            self.file_view.view.installEventFilter(self._folder_browser_event_filter)
+
+
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
-    def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, parent=None):
+    def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, theme_manager: ThemeManager = None, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
+        self.theme_manager = theme_manager # Store theme_manager
         self.view_mode = view_mode
         self.active_panel_widget = None
         self.current_paths = {}
 
-        self.left_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self)
-        self.right_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self)
+        # Pass self (FolderBrowser instance) as the event filter object and theme_manager
+        self.left_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
+        self.right_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(self.left_panel_widget)
@@ -170,14 +220,16 @@ class FolderBrowser(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
         
-        # Install event filters on the file views for focus detection
-        self.left_panel_widget.file_view.view.installEventFilter(self)
-        self.right_panel_widget.file_view.view.installEventFilter(self)
+        # The event filters are now installed by PanelWidget itself in its __init__
+        # and managed by set_file_view_mode. So, these lines are removed from FolderBrowser.__init__
+        # self.left_panel_widget.file_view.view.installEventFilter(self)
+        # self.right_panel_widget.file_view.view.installEventFilter(self)
 
         self.set_active_panel(self.left_panel_widget)
 
     def eventFilter(self, source, event):
         if event.type() == QEvent.Type.FocusIn:
+            # Check if the source is the *current* active view of either panel
             if source is self.left_panel_widget.file_view.view:
                 self.set_active_panel(self.left_panel_widget)
             elif source is self.right_panel_widget.file_view.view:
@@ -212,30 +264,8 @@ class FolderBrowser(QWidget):
         self.view_mode = mode
         self.settings_manager.set_setting("view_mode", mode) # Save the new view mode
         
-        left_path = self.left_panel_widget.file_view.get_current_path()
-        right_path = self.right_panel_widget.file_view.get_current_path()
-
-        splitter = self.findChild(QSplitter)
-        
-        # Uninstall event filters from old views before deleting
-        self.left_panel_widget.file_view.view.removeEventFilter(self)
-        self.right_panel_widget.file_view.view.removeEventFilter(self)
-
-        self.left_panel_widget.deleteLater()
-        self.right_panel_widget.deleteLater()
-
-        self.left_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self)
-        self.right_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self)
-        
-        self.left_panel_widget.file_view.set_path(left_path)
-        self.right_panel_widget.file_view.set_path(right_path)
-
-        splitter.insertWidget(0, self.left_panel_widget)
-        splitter.insertWidget(1, self.right_panel_widget)
-        
-        # Re-install event filters on the new views
-        self.left_panel_widget.file_view.view.installEventFilter(self)
-        self.right_panel_widget.file_view.view.installEventFilter(self)
+        self.left_panel_widget.set_file_view_mode(mode)
+        self.right_panel_widget.set_file_view_mode(mode)
 
         self.set_active_panel(self.left_panel_widget)
 
@@ -243,6 +273,7 @@ class FolderBrowser(QWidget):
         """
         Sets the file permissions display mode for both panels.
         """
+        # Call update_view_settings on the currently active file_view within each panel
         self.left_panel_widget.file_view.update_view_settings()
         self.right_panel_widget.file_view.update_view_settings()
         self.refresh_all_views() # Refresh views to apply the new mode
@@ -274,6 +305,7 @@ class FolderBrowser(QWidget):
     def load_panel_settings(self):
         left_path = self.settings_manager.get_setting("leftPanelPath", os.path.expanduser("~"))
         right_path = self.settings_manager.get_setting("rightPanelPath", os.path.expanduser("~"))
+        # Ensure set_path is called on the *current* file_view
         self.left_panel_widget.file_view.set_path(left_path)
         self.right_panel_widget.file_view.set_path(right_path)
 
@@ -296,3 +328,10 @@ class FolderBrowser(QWidget):
         if self.active_panel_widget:
             return self.active_panel_widget.file_view.get_current_selected_path()
         return None
+
+    def navigate_to_path(self, path):
+        """
+        Navigates the active panel to the specified path.
+        """
+        if self.active_panel_widget:
+            self.active_panel_widget.file_view.set_path(path)
