@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
             archive_manager=self.archive_manager,
             directory_synchronizer=self.directory_synchronizer,
             ui_state_provider=self.ui_state_provider,
-            settings_handler=self.settings_manager # Pass settings_manager as settings_handler
+            settings_manager=self.settings_manager # Corrected argument name to settings_manager
         )
 
         # Now that ui_state_provider and dialog_handler are initialized, update application_logic_handler
