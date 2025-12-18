@@ -43,8 +43,8 @@ class UIManager(QObject):
         self.status_bar = None
         self.function_key_panel = None
 
-        self._init_ui()
-        self._connect_signals()
+        # _init_ui and _connect_signals will be called externally by MainWindow
+        # to ensure correct initialization order with ApplicationLogicHandler
 
     def _create_folder_browser(self):
         return FolderBrowser(
@@ -82,7 +82,7 @@ class UIManager(QObject):
     def _create_function_key_panel(self):
         return FunctionKeyPanel(self.main_window)
 
-    def _init_ui(self):
+    def init_ui(self, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager): # Renamed and added parameters
         self.folder_browser = self._create_folder_browser()
         self.toolbar = self._create_toolbar()
         self.search_input = self._create_search_input()
@@ -94,7 +94,7 @@ class UIManager(QObject):
         self.main_window.add_bookmark_button = self.add_bookmark_button
 
         # Create MenuPanel and then initialize its menus
-        self.menu_panel = self._create_menu_panel(self.toolbar, self.main_window.application_logic_handler, self.main_window.shortcuts_manager)
+        self.menu_panel = self._create_menu_panel(self.toolbar, application_logic_handler, shortcuts_manager) # Use passed handler
         self.menu_panel.initialize_menus() # Call the new initialization method
 
         self.status_bar = self._create_status_bar()
@@ -112,11 +112,11 @@ class UIManager(QObject):
         layout.addWidget(self.folder_browser, 1)
         layout.addWidget(self.function_key_panel)
 
-    def _connect_signals(self):
-        self.search_input.returnPressed.connect(self.main_window.application_logic_handler.start_file_search)
-        self.folder_browser.file_selected.connect(self.main_window.application_logic_handler.open_file_externally)
-        self.folder_browser.current_directory_changed.connect(self.main_window.application_logic_handler.update_status_bar_path)
-        self.add_bookmark_button.clicked.connect(self.main_window.application_logic_handler.add_bookmark)
+    def connect_signals(self, application_logic_handler: ApplicationLogicHandler): # New method
+        self.search_input.returnPressed.connect(application_logic_handler.start_file_search)
+        self.folder_browser.file_selected.connect(application_logic_handler.open_file_externally)
+        self.folder_browser.current_directory_changed.connect(application_logic_handler.update_status_bar_path)
+        self.add_bookmark_button.clicked.connect(application_logic_handler.add_bookmark)
         self.menu_panel.go_up_requested.connect(self.folder_browser.go_up_directory)
         self.menu_panel.refresh_requested.connect(self.folder_browser.refresh_all_views)
         self.menu_panel.view_mode_changed.connect(self.folder_browser.set_view_mode)

@@ -23,6 +23,8 @@ from utils.compare_dialog import CompareDialog
 from ui.ui_manager import UIManager
 from app.keyboard_event_handler import KeyboardEventManager # Updated import
 from app.application_logic_handler import ApplicationLogicHandler
+from app.ui_state_provider import UIStateProvider # Import UIStateProvider
+from app.dialog_handler import DialogHandler # Import DialogHandler
 
 
 class MainWindow(QMainWindow):
@@ -42,17 +44,6 @@ class MainWindow(QMainWindow):
         self.directory_synchronizer = DirectorySynchronizer()
         self.bookmarks_manager = BookmarksManager()
 
-        # Initialize ApplicationLogicHandler FIRST, as UIManager depends on it
-        self.application_logic_handler = ApplicationLogicHandler(
-            main_window=self,
-            file_manager=self.file_manager,
-            file_comparator=self.file_comparator,
-            bookmarks_manager=self.bookmarks_manager,
-            archive_manager=self.archive_manager,
-            directory_synchronizer=self.directory_synchronizer,
-            theme_manager=self.theme_manager
-        )
-
         # Then initialize UIManager, passing managers as dependencies
         self.ui_manager = UIManager(
             main_window=self,
@@ -64,6 +55,43 @@ class MainWindow(QMainWindow):
             bookmarks_manager=self.bookmarks_manager,
             theme_manager=self.theme_manager # Pass theme_manager
         )
+        
+        # Initialize ApplicationLogicHandler
+        self.application_logic_handler = ApplicationLogicHandler(
+            main_window=self,
+            file_manager=self.file_manager,
+            file_comparator=self.file_comparator,
+            bookmarks_manager=self.bookmarks_manager,
+            archive_manager=self.archive_manager,
+            directory_synchronizer=self.directory_synchronizer,
+            theme_manager=self.theme_manager,
+            # Pass ui_state_provider, dialog_handler, and settings_handler
+            ui_state_provider=None,  # Temporary None value
+            dialog_handler=None,       # Temporary None value
+            settings_handler=self.settings_manager
+        )
+
+        # Initialize the UI
+        self.ui_manager.init_ui(self.application_logic_handler, self.shortcuts_manager)
+
+        # Initialize UIStateProvider and DialogHandler AFTER UIManager
+        self.ui_state_provider = UIStateProvider(self.ui_manager.folder_browser)
+        self.dialog_handler = DialogHandler(
+            main_window=self,
+            file_manager=self.file_manager,
+            file_comparator=self.file_comparator,
+            bookmarks_manager=self.bookmarks_manager,
+            archive_manager=self.archive_manager,
+            directory_synchronizer=self.directory_synchronizer,
+            ui_state_provider=self.ui_state_provider,
+            settings_handler=self.settings_manager # Pass settings_manager as settings_handler
+        )
+
+        # Now that ui_state_provider and dialog_handler are initialized, update application_logic_handler
+        self.application_logic_handler.ui_state_provider = self.ui_state_provider
+        self.application_logic_handler.dialog_handler = self.dialog_handler
+
+        self.ui_manager.connect_signals(self.application_logic_handler)
 
         # Initialize KeyboardEventManager AFTER ui_manager has set up folder_browser
         self.keyboard_event_manager = KeyboardEventManager(
