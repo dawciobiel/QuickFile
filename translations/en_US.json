@@ -1,10 +1,4 @@
 {
-    "AboutDialog.About": "About",
-    "AboutDialog.QuickFile": "QuickFile",
-    "AboutDialog.Version: ": "Version: ",
-    "AboutDialog.Author: Dawid Bielecki": "Author: Dawid Bielecki",
-    "AboutDialog.A powerful and efficient file manager with modern features.": "A powerful and efficient file manager with modern features.",
-
     "ApplicationLogicHandler.No file selected for preview.": "No file selected for preview.",
     "ApplicationLogicHandler.No file selected for editing.": "No file selected for editing.",
     "ApplicationLogicHandler.Current directory:": "Current directory:",
