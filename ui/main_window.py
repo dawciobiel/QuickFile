@@ -1,30 +1,20 @@
-import os
-import subprocess
-import logging
+from PyQt6.QtWidgets import QMainWindow
+
 from __version__ import __version__
-from PyQt6.QtCore import Qt, QSettings, QEvent
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLineEdit, QToolButton, QDialog, QMessageBox
-from PyQt6.QtGui import QFileSystemModel
+from app.application_logic_handler import ApplicationLogicHandler
+from app.dialog_handler import DialogHandler  # Import DialogHandler
+from app.keyboard_event_handler import KeyboardEventManager  # Updated import
+from app.settings_handler import SettingsHandler  # Import SettingsHandler
+from app.settings_manager import SettingsManager
+from app.shortcuts_manager import ShortcutsManager
+from app.theme_manager import ThemeManager  # Import ThemeManager
+from app.ui_state_provider import UIStateProvider  # Import UIStateProvider
 from bookmarks.bookmarks_manager import BookmarksManager
-from browser.folder_browser import FolderBrowser
-from panels.menu_panel import MenuPanel
-from panels.function_key_panel import FunctionKeyPanel
-from file_operations.file_manager import FileManager
-from file_operations.file_comparator import FileComparator
 from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
-from app.shortcuts_manager import ShortcutsManager
-from app.settings_manager import SettingsManager
-from app.theme_manager import ThemeManager # Import ThemeManager
-from utils.dialogs import show_error_message
-from utils.search_dialog import SearchDialog
-from utils.bookmark_dialog import BookmarkDialog
-from utils.compare_dialog import CompareDialog
+from file_operations.file_comparator import FileComparator
+from file_operations.file_manager import FileManager
 from ui.ui_manager import UIManager
-from app.keyboard_event_handler import KeyboardEventManager # Updated import
-from app.application_logic_handler import ApplicationLogicHandler
-from app.ui_state_provider import UIStateProvider # Import UIStateProvider
-from app.dialog_handler import DialogHandler # Import DialogHandler
 
 
 class MainWindow(QMainWindow):
@@ -43,6 +33,14 @@ class MainWindow(QMainWindow):
         self.archive_manager = ArchiveManager()
         self.directory_synchronizer = DirectorySynchronizer()
         self.bookmarks_manager = BookmarksManager()
+
+        # Initialize SettingsHandler
+        self.settings_handler = SettingsHandler(
+            main_window=self,
+            settings_manager=self.settings_manager,
+            shortcuts_manager=self.shortcuts_manager,
+            theme_manager=self.theme_manager
+        )
 
         # Then initialize UIManager, passing managers as dependencies
         self.ui_manager = UIManager(
@@ -68,7 +66,7 @@ class MainWindow(QMainWindow):
             # Pass ui_state_provider, dialog_handler, and settings_handler
             ui_state_provider=None,  # Temporary None value
             dialog_handler=None,       # Temporary None value
-            settings_handler=self.settings_manager
+            settings_handler=self.settings_handler  # Corrected to pass SettingsHandler instance
         )
 
         # Initialize the UI

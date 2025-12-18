@@ -1,26 +1,27 @@
 import logging
 import os
+
 from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
+
+from app.settings_manager import SettingsManager  # Corrected import from app.settings_manager
+from app.translation_manager import translation_manager
+from app.ui_state_provider import UIStateProvider
 from bookmarks.bookmarks_manager import BookmarksManager
-from file_operations.file_manager import FileManager, FileManagerError
+from file_operations.archive_manager import ArchiveManager
+from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
-from file_operations.archive_manager import ArchiveManager, UnrarNotInstalledError
-from file_operations.directory_synchronizer import DirectorySynchronizer, DirectorySynchronizerError
+from file_operations.file_manager import FileManager, FileManagerError
 from file_operations.properties_manager import get_file_properties
-from utils.dialogs import show_error_message
-from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
 from utils.compare_dialog import CompareDialog
 from utils.copy_dialog import CopyDialog
-from utils.move_dialog import MoveDialog
 from utils.delete_dialog import DeleteDialog
-from utils.sync_dialog import SyncDialog
+from utils.move_dialog import MoveDialog
 from utils.properties_dialog import PropertiesDialog
-from utils.shortcuts_dialog import ShortcutsDialog
+from utils.search_dialog import SearchDialog
 from utils.settings_dialog import SettingsDialog
-from app.translation_manager import translation_manager
-from app.ui_state_provider import UIStateProvider
-from app.settings_manager import SettingsManager # Corrected import from app.settings_manager
+from utils.shortcuts_dialog import ShortcutsDialog
+from utils.sync_dialog import SyncDialog
 
 
 class DialogHandler:
@@ -62,8 +63,8 @@ class DialogHandler:
         dialog = SettingsDialog(self.main_window, self.settings_manager, self.main_window.theme_manager)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_settings = dialog.get_settings()
-            # Apply settings via settings_manager
-            self.settings_manager.apply_general_settings(new_settings)
+            return new_settings  # Return new settings instead of applying them directly
+        return None  # Return None if dialog is cancelled
 
     def open_shortcuts_dialog(self, checked=False):
         # Pass self.main_window.shortcuts_manager (which is ShortcutsManager)
