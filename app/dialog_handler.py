@@ -20,14 +20,14 @@ from utils.shortcuts_dialog import ShortcutsDialog
 from utils.settings_dialog import SettingsDialog
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
-from app.settings_handler import SettingsHandler
+from app.settings_manager import SettingsManager # Corrected import from app.settings_manager
 
 
 class DialogHandler:
     def __init__(self, main_window, file_manager: FileManager, file_comparator: FileComparator,
                  bookmarks_manager: BookmarksManager, archive_manager: ArchiveManager,
                  directory_synchronizer: DirectorySynchronizer, ui_state_provider: UIStateProvider,
-                 settings_handler: SettingsHandler):
+                 settings_manager: SettingsManager): # Changed type hint to SettingsManager
         self.main_window = main_window
         self.file_manager = file_manager
         self.file_comparator = file_comparator
@@ -35,7 +35,7 @@ class DialogHandler:
         self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
         self.ui_state_provider = ui_state_provider
-        self.settings_handler = settings_handler
+        self.settings_manager = settings_manager # Stored as settings_manager
 
         # Action names for QInputDialog titles (translated)
         self.ACTION_CREATE_ARCHIVE = translation_manager.translate("MenuPanel", "Create Archive")
@@ -58,16 +58,20 @@ class DialogHandler:
             raise ValueError(f"Could not retrieve properties for: {selected_path}")
 
     def open_general_settings_dialog(self, checked=False):
-        dialog = SettingsDialog(self.main_window, self.settings_handler.settings_manager, self.settings_handler.theme_manager)
+        # Pass self.settings_manager (which is SettingsManager) and self.main_window.theme_manager
+        dialog = SettingsDialog(self.main_window, self.settings_manager, self.main_window.theme_manager)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_settings = dialog.get_settings()
-            self.settings_handler.apply_general_settings(new_settings)
+            # Apply settings via settings_manager
+            self.settings_manager.apply_general_settings(new_settings)
 
     def open_shortcuts_dialog(self, checked=False):
-        dialog = ShortcutsDialog(self.main_window, self.settings_handler.shortcuts_manager.shortcuts)
+        # Pass self.main_window.shortcuts_manager (which is ShortcutsManager)
+        dialog = ShortcutsDialog(self.main_window, self.main_window.shortcuts_manager.shortcuts)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_shortcuts = dialog.get_shortcuts()
-            self.settings_handler.apply_shortcuts_settings(new_shortcuts)
+            # Apply shortcuts via shortcuts_manager
+            self.main_window.shortcuts_manager.apply_shortcuts_settings(new_shortcuts)
 
     def show_search_results(self, results):
         dialog = SearchDialog(self.main_window, results)
