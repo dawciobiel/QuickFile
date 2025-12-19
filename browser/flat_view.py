@@ -138,6 +138,9 @@ class FlatFileView(AbstractFileView):
     def get_selected_paths(self):
         return self.model.get_selected_paths()
 
+    def get_insert_selected_paths(self):
+        return list(self._insert_selected_items)
+
     def get_current_selected_path(self):
         if self.view.currentIndex().isValid():
             return self.model.filePath(self.view.currentIndex())

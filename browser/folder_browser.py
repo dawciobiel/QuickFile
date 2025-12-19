@@ -334,13 +334,23 @@ class FolderBrowser(QWidget):
     def get_selected_paths(self):
         if not self.active_panel_widget:
             return []
-            
+
+        # Prioritize "Insert" selected paths
+        insert_selected = self.active_panel_widget.file_view.get_insert_selected_paths()
+        if insert_selected:
+            return insert_selected
+
+        # Fallback to checkbox-selected paths (for FlatFileView)
         selected = self.active_panel_widget.file_view.get_selected_paths()
-        if not selected:
-            current = self.active_panel_widget.file_view.get_current_selected_path()
-            if current:
-                return [current]
-        return selected
+        if selected:
+            return selected
+
+        # Fallback to the currently focused item if no other selection is made
+        current = self.active_panel_widget.file_view.get_current_selected_path()
+        if current:
+            return [current]
+
+        return []
         
     def get_current_selected_path(self):
         if self.active_panel_widget:
