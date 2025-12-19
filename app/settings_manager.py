@@ -1,8 +1,10 @@
 import json
 import os
 import shutil
+
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QMainWindow
+
 
 class SettingsManager:
     def __init__(self):
@@ -13,7 +15,7 @@ class SettingsManager:
         # Migrate old settings file if it exists
         old_settings_file = os.path.join(os.path.expanduser("~"), ".quickfile_settings.json")
         if os.path.exists(old_settings_file) and not os.path.exists(self.settings_file):
-            shutil.move(old_bookmarks_file, self.settings_file)
+            shutil.move(old_settings_file, self.settings_file)  # Corrected variable name here
 
         self.default_settings = {
             "view_mode": "flat",
@@ -27,7 +29,10 @@ class SettingsManager:
             "show_uid_column": True,
             "show_gid_column": True,
             "language_mode": "auto", # "auto" or "manual"
-            "manual_language": "en_US" # e.g., "en_US", "pl_PL"
+            "manual_language": "en_US",  # e.g., "en_US", "pl_PL"
+            "insert_selection_text_color": "#FFFFFF",  # Default white text for insert selection
+            "insert_selection_font_bold": False,
+            "insert_selection_font_italic": False
         }
         self.settings = self.load_settings_from_file()
 

@@ -1,17 +1,27 @@
 import os
+
+# import logging # Removed logging
 from PyQt6.QtCore import QModelIndex, Qt, QEvent
 from PyQt6.QtWidgets import QTreeView, QVBoxLayout, QAbstractItemView, QHeaderView
+
+from app.theme_manager import ThemeManager  # Import ThemeManager
 from browser.base_view import AbstractFileView
-from browser.tree_file_system_model import TreeFileSystemModel
 from browser.styling_delegate import FileStyleDelegate
-from app.theme_manager import ThemeManager # Import ThemeManager
+from browser.tree_file_system_model import TreeFileSystemModel
+
 
 class TreeFileView(AbstractFileView):
     def __init__(self, settings_manager, theme_manager: ThemeManager, parent=None):
         super().__init__(settings_manager, parent)
         self.theme_manager = theme_manager # Store theme_manager
-        
-        self.model = TreeFileSystemModel(settings_manager, self)
+
+        self._insert_selected_items = set()  # This will now store file paths (strings)
+
+        self.model = TreeFileSystemModel(
+            settings_manager,
+            self,
+            insert_selected_items=self._insert_selected_items  # Pass the set to the model
+        )
         
         self.view = QTreeView()
         self.view.setModel(self.model)
@@ -29,11 +39,26 @@ class TreeFileView(AbstractFileView):
         self.view.doubleClicked.connect(self.on_item_double_clicked)
 
     def handle_key_event(self, event: QEvent):
+        # logging.critical(f"[TreeFileView.handle_key_event] KeyPress event received. Key: {event.key()}") # Removed logging
         current_index = self.view.currentIndex()
+
+        key = event.key()
+        if key == Qt.Key.Key_Insert:
+            # logging.critical("[TreeFileView.handle_key_event] INSERT key detected. Toggling selection.") # Removed logging
+            self.toggle_insert_selection_for_current_item()
+
+            # Move to the next item after toggling insert selection
+            next_row = current_index.row() + 1
+            parent = current_index.parent()
+            if next_row < self.model.rowCount(parent):
+                next_index = self.model.index(next_row, current_index.column(), parent)
+                self.view.setCurrentIndex(next_index)
+                self.view.scrollTo(next_index, QAbstractItemView.ScrollHint.EnsureVisible)
+            return True  # Event handled
+
         if self._handle_common_key_events(event, current_index):
             return True
         
-        key = event.key()
         if key == Qt.Key.Key_Backspace:
             self.go_up()
             return True
@@ -43,7 +68,10 @@ class TreeFileView(AbstractFileView):
         self.model.set_root_path(path)
         self.view.setRootIndex(QModelIndex())
         self.path_changed.emit(path)
-        
+
+        # Clear insert selections when path changes
+        self._insert_selected_items.clear()
+
         if select_item_name:
             found_index = None
             for row in range(self.model.rowCount(QModelIndex())):
@@ -59,19 +87,18 @@ class TreeFileView(AbstractFileView):
                 if first_index.isValid():
                     self.view.setCurrentIndex(first_index)
                     self.view.scrollTo(first_index, QAbstractItemView.ScrollHint.EnsureVisible)
-        else:
-            first_index = self.model.index(0, 0)
-            if first_index.isValid():
-                self.view.setCurrentIndex(first_index)
-                self.view.scrollTo(first_index, QAbstractItemView.ScrollHint.EnsureVisible)
 
     def get_current_path(self):
         return self.model.root_item.path
 
     def refresh(self):
         self.model.update_settings()
+        # After refresh, ensure insert selections are still valid or clear them
+        # For simplicity, let's clear them on refresh for now.
+        self._insert_selected_items.clear()
 
     def get_selected_paths(self):
+        # Tree view does not support checkbox selection in this implementation
         return []
 
     def get_current_selected_path(self):
@@ -130,3 +157,20 @@ class TreeFileView(AbstractFileView):
             if next_row < self.model.rowCount(parent):
                 next_index = self.model.index(next_row, current_index.column(), parent)
                 self.view.setCurrentIndex(next_index)
+
+    def toggle_insert_selection_for_current_item(self):
+        # logging.critical("[TreeFileView.toggle_insert_selection_for_current_item] Called.") # Removed logging
+        current_index = self.view.currentIndex()
+        if current_index.isValid():
+            item_path = self.model.filePath(current_index)  # Get the file path
+
+            if item_path in self._insert_selected_items:
+                self._insert_selected_items.remove(item_path)
+                # logging.critical(f"[TreeFileView.toggle_insert_selection_for_current_item] Removed '{item_path}' from insert selection.") # Removed logging
+            else:
+                self._insert_selected_items.add(item_path)
+                # logging.critical(f"[TreeFileView.toggle_insert_selection_for_current_item] Added '{item_path}' to insert selection.") # Removed logging
+
+            # Force a full update of the view for diagnostic purposes
+            self.view.update()
+            # logging.critical("[TreeFileView.toggle_insert_selection_for_current_item] View updated.") # Removed logging
