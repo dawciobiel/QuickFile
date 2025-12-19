@@ -13,7 +13,7 @@ QuickFile is a modern file manager application built using Python and PyQt5, des
 - **Multi-Platform**: Designed to work on Windows, macOS, and Linux (tested on Manjaro).
 - **Customization**: Adjustable UI with resizable windows and tables.
 
-![Main Window Screenshot](resources/Snapshot_2025-12-01_11-32-59.png)
+![Main Window Screenshot](resources/quickfile-mainwindow_2025-12-19_04-52.png)
 
 ## Requirements
 
