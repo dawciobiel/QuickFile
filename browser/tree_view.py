@@ -101,6 +101,9 @@ class TreeFileView(AbstractFileView):
         # Tree view does not support checkbox selection in this implementation
         return []
 
+    def get_insert_selected_paths(self):
+        return list(self._insert_selected_items)
+
     def get_current_selected_path(self):
         if self.view.currentIndex().isValid():
             return self.model.filePath(self.view.currentIndex())
