@@ -21,6 +21,11 @@
   - Zaimplementowano dynamiczne ładowanie treści w zależności od wybranego języka.
   - Zastąpiono statyczne etykiety w `AboutDialog` komponentem `QTextBrowser` do wyświetlania sformatowanego tekstu i linków.
   - Usunięto nieużywane klucze tłumaczeń z plików `en_US.json` i `pl_PL.json`.
+- **New Feature:** Dodano możliwość ręcznego wyboru koloru tekstu oraz stylu czcionki (pogrubienie, kursywa) dla zaznaczenia pliku za pomocą
+  klawisza "Insert".
+  - Ustawienia te są konfigurowalne w oknie "Ustawienia" i są zapisywane.
+  - Zapewniono automatyczne przejście do następnego wiersza po naciśnięciu klawisza "Insert".
+  - Usunięto możliwość ustawiania koloru tła dla zaznaczenia "Insert", aby zachować spójność wizualną z motywami aplikacji.
 
 ## TODO List
 
@@ -40,8 +45,6 @@
 - **New Feature:** Stworzyć style dla aplikacji. Tak, aby można było w łatwy sposób zmienić kolorystykę całej aplikacji.
 
 - **New Feature:** Dodać możliwość definiowania kolorowania czcionki dla plików/folderów wg wzorca to jest według ich nazwy pliku lub rozszerzenia. Ew. można spróbować zmieniać nie kolor czcionki co kolor tła w komórce tabeli.
-
-- **New Feature:** Dodać możliwość ręcznego wyboru koloru zaznaczania pliku za pomocą klawisza "Insert". Wydaje mi się, że tutaj trzeba zmieniać kolor czcionki zaznaczonego pliku na kolor wybrany przez użytkownika. 
 
 - **New Feature:** Dodać kolejne funkcje aplikacji (tworzenie sum kontrolnych dla wybranych plików, sprawdzanie sum kontrolnych, obsługę FTP, NFS, SMB).
 
