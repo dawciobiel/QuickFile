@@ -29,28 +29,45 @@
 
 ## TODO List
 
+- **New Feature:** Dodać funkcjonalność naciśnięcia skrótu klawiszowego `Ctrl + /` które zmienia ścieżkę katalogu przeglądanego na katalog
+  główny w przeglądanym napędzie.
+
+- **New Feature:** Pokazywanie ilości wolnego miejsca.
+
+- **New Feature:** W dolnej części panelu przeglądania plików dodać pole podsumowania. Wyświetlające np. ilość i wielkość zaznaczonych
+  plików. Lub np. pełne dane pliku, na którym znajduje się kursor.
+
+- **New Feature:** Wyświetlenie konsoli na wybranej ścieżce. Jako pełne okno zewnętrznej aplikacji czy raczej wbudowana kontrolka w główne
+  okno aplikacji?
+
+- **New Feature:** Uruchomienie aplikacji w trybie `root`.
+
+- **New Feature:** Wykonanie pojedynczej akcji z uprawnieniami `root`. Można by to zaimplementować jako zaznaczaną opcje w oknie dialogowym.
+
+- **New Feature:** Tworzenie, modyfikacja dowiązań symbolicznych.
+
 - **Fix:** W trybie "tree" naciśnięcie klawiszy Home/End powinno przestawiać kursor tylko na początek/koniec listy plików w obecnie
   rozwiniętym katalogu. Obecnie klawisze ustawiają kursor na pierwszy/ostatni wiersz całej listy wyświetlonych wierszy na liście. Dopiero
   ponowne naciśnięcie klawisza Home/End powinno ustawić kursor na pierwszy lub ostatni element katalogu nadrzędnego.
 
-- **New Feature:** Dodać funkcjonalność naciśnięcia skrótu klawiszowego `Ctrl + /` które zmienia ścieżkę katalogu przeglądanego na katalog
-  główny w przeglądanym napędzie.
+- **New Feature:** Aplikacja powinna logować działania swojej pracy w formie listy: co robi z ew. z jakimi parametrami.
+
+- **New Feature:** Masowa zmiana nazwy plików/katalogów wg wzorca.
+
+- **New Feature:** Menu użytkownika do przypinania makr lub poleceń, które mają być wykonane. Np. seria poleceń w konsoli na danym katalogu
+  lub pliku.
+
+- **New Feature:** Większość operacji, które potrzebują czasu na zakończenie wykonywania powinna mieć możliwość bycia dodanym do Kolejki (
+  `F2` Queue).
 
 - **New Feature:** Manager-a do montowania napędów (np. USB, DVD, dysk itp.). Przemyśleć to wraz z opcją do zapamiętywania ścieżek do ulubionych napędów. 
 
 - **New Feature:** Dodać przycisk z rozwijalną listą, który wyświetli ścieżki z listy katalogów dodanych do "Ulubionych".
 
-- Kontrolka od przeglądania listowania plików/folderów musi być umieszczona w kontrolce "Tab Widget". W ten sposób będzie można mieć jednocześnie otwarte zakładki z różnymi katalogami bierzącymi.
-
-- **New Feature:** Stworzyć style dla aplikacji. Tak, aby można było w łatwy sposób zmienić kolorystykę całej aplikacji.
-
-- **New Feature:** Dodać możliwość definiowania kolorowania czcionki dla plików/folderów wg wzorca to jest według ich nazwy pliku lub rozszerzenia. Ew. można spróbować zmieniać nie kolor czcionki co kolor tła w komórce tabeli.
-
-- **New Feature:** Dodać kolejne funkcje aplikacji (tworzenie sum kontrolnych dla wybranych plików, sprawdzanie sum kontrolnych, obsługę FTP, NFS, SMB).
+- **New Feature:** Panel do przeglądania zawartości plików powinien być osadzony wewnątrz komponentu "Multi Tabs". W ten sposób będzie można
+  mieć otwartych jednocześnie wiele zakładek z katalogami.
 
 - **New Feature:** Dodać możliwość zapamiętania domyślnej lokalizacji paneli do przeglądania plików. Trzeba się zastanowić jaki rodzaj GUI do tej funkcji stworzyć.
-
-- **New Feature:** Panel do przeglądania zawartości plików powinien być osadzony wewnątrz komponentu "Multi Tabs".
 
 - **New Feature:** Wyszukiwanie plików powinno być możliwe w oknie dialogowym zamiast w "text field" w oknie głównym. Wyniki wyszukiwania powinny mieć możliwość być wyświetlone jako dodatkowa zakładka w panelu przeglądania plików.
 
@@ -62,6 +79,19 @@
     - katalog ~/Documents
     - katalog główny napędu :`/` .
 
+- **New Feature:** Wyświetlanie rozmiarów katalogów wraz z ich rekurencyjną zawartością. Sugerowana aktywacja za pomocą skrótu klawiszowego
+  `Ctrl + SPACEBAR`.
+
+- **New Feature:** Tworzenie i weryfikacja sum kontrolnych dla wybranych plików.
+
+- **New Feature:** Obsługa FTP, NFS, SMB.
+
+- **New Feature:** SFTP (SSH-FileTransfer).
+
+- **New Feature:** Podgląd zawartości pliku wewnątrz panelu. Np. pliku tekstowego lub grafiki. Ew. pliku binarnego za pomocą narzędzia
+  `xxd`.
+
+- **New Feature:** Okno Ustawień Aplikacji powinno być zrobione z użyciem "Multi Tabs" lub "Tree View".
 
 ## Testing Writestyle code assistant 
 {collapsible="true" default-state="expanded"}
