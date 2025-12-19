@@ -187,6 +187,10 @@
     "SettingsDialog.Manual language selection": "Manual language selection",
     "SettingsDialog.Save": "Save",
     "SettingsDialog.Cancel": "Cancel",
+  "SettingsDialog.Insert Selection Style": "Insert Selection Style",
+  "SettingsDialog.Text Color:": "Text Color:",
+  "SettingsDialog.Bold": "Bold",
+  "SettingsDialog.Italic": "Italic",
 
     "ShortcutsDialog.Keyboard Shortcuts": "Keyboard Shortcuts",
     "ShortcutsDialog.Save": "Save",

@@ -1,9 +1,13 @@
-import os
-import pwd
 import grp
-import logging
 import json
+import os
+# import logging # Removed logging
+import pwd
+
 from PyQt6.QtCore import QAbstractItemModel, QModelIndex, Qt
+from PyQt6.QtGui import QColor, QFont  # Import QColor and QFont
+
+from app.settings_manager import SettingsManager  # Import SettingsManager
 from app.translation_manager import translation_manager
 
 FileStyleRole = Qt.ItemDataRole.UserRole + 1
@@ -14,7 +18,7 @@ class TreeItem:
         self.parent = parent
         self.children = []
         self.is_populated = False
-        self.is_marked = False
+        self.is_marked = False  # This is for checkbox selection, not insert selection
 
     def child(self, row):
         return self.children[row]
@@ -92,11 +96,12 @@ class TreeItem:
             pass
 
 class TreeFileSystemModel(QAbstractItemModel):
-    def __init__(self, settings_manager, parent=None):
+    def __init__(self, settings_manager: SettingsManager, parent=None, insert_selected_items=None):  # Added insert_selected_items
         super().__init__(parent)
         self.settings_manager = settings_manager
         self.root_item = TreeItem(self.settings_manager.get_setting("leftPanelPath", os.path.expanduser("~")))
         self._file_styles = {}
+        self._insert_selected_items = insert_selected_items if insert_selected_items is not None else set()  # Initialize it
         self.update_settings()
 
     def load_file_styles(self, theme_path):
@@ -156,6 +161,26 @@ class TreeFileSystemModel(QAbstractItemModel):
             return None
         
         item = index.internalPointer()
+
+        # Check for Insert selection styling
+        # Compare item.path (string) with the set of insert-selected paths
+        if item.path in self._insert_selected_items and self.settings_manager:
+            # logging.warning(f"[TreeFileSystemModel.data] Item '{item.path}' is INSERT-SELECTED. Role: {role}") # Removed logging
+            if role == Qt.ItemDataRole.ForegroundRole:
+                color = QColor(self.settings_manager.get_setting("insert_selection_text_color"))
+                # logging.warning(f"[TreeFileSystemModel.data] Returning ForegroundRole: {color.name()}") # Removed logging
+                return color
+            # Removed BackgroundRole handling
+            # elif role == Qt.ItemDataRole.BackgroundRole:
+            #     color = QColor(self.settings_manager.get_setting("insert_selection_background_color"))
+            #     logging.warning(f"[TreeFileSystemModel.data] Returning BackgroundRole: {color.name()}")
+            #     return color
+            elif role == Qt.ItemDataRole.FontRole:
+                font = QFont()
+                font.setBold(self.settings_manager.get_setting("insert_selection_font_bold"))
+                font.setItalic(self.settings_manager.get_setting("insert_selection_font_italic"))
+                # logging.warning(f"[TreeFileSystemModel.data] Returning FontRole: Bold={font.bold()}, Italic={font.italic()}") # Removed logging
+                return font
 
         if role == FileStyleRole:
             if not os.path.isdir(item.path):

@@ -1,13 +1,16 @@
 import logging
 import os
+
 import psutil
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QDir
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QLineEdit, QComboBox, QSizePolicy, QCompleter
 from PyQt6.QtGui import QFileSystemModel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QLineEdit, QComboBox, QSizePolicy, QCompleter
+
+from app.settings_manager import SettingsManager
+from app.theme_manager import ThemeManager  # Import ThemeManager
 from browser.flat_view import FlatFileView
 from browser.tree_view import TreeFileView
-from app.settings_manager import SettingsManager
-from app.theme_manager import ThemeManager # Import ThemeManager
+
 
 class PanelWidget(QWidget):
     def __init__(self, settings_manager, initial_view_mode, folder_browser_event_filter, theme_manager: ThemeManager, parent=None):
@@ -195,6 +198,13 @@ class PanelWidget(QWidget):
         if self._folder_browser_event_filter:
             self.file_view.view.installEventFilter(self._folder_browser_event_filter)
 
+    def toggle_insert_selection(self):
+        """
+        Toggles the 'Insert' selection state for the currently selected item in the active file view.
+        """
+        if self.file_view:
+            self.file_view.toggle_insert_selection_for_current_item()
+
 
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
@@ -234,6 +244,14 @@ class FolderBrowser(QWidget):
                 self.set_active_panel(self.left_panel_widget)
             elif source is self.right_panel_widget.file_view.view:
                 self.set_active_panel(self.right_panel_widget)
+            return False  # Continue processing event
+        elif event.type() == QEvent.Type.KeyPress:
+            # logging.critical(f"[FolderBrowser.eventFilter] KeyPress event received. Key: {event.key()}") # Log all key presses
+            if event.key() == Qt.Key.Key_Insert:
+                # logging.critical(f"[FolderBrowser.eventFilter] INSERT key detected!") # Log when INSERT is detected
+                if self.active_panel_widget:
+                    self.active_panel_widget.toggle_insert_selection()
+                return True  # Event handled
         return super().eventFilter(source, event)
 
     def set_active_panel(self, panel_widget):

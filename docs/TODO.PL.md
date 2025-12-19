@@ -24,6 +24,13 @@
 
 ## TODO List
 
+- **Fix:** W trybie "tree" naciśnięcie klawiszy Home/End powinno przestawiać kursor tylko na początek/koniec listy plików w obecnie
+  rozwiniętym katalogu. Obecnie klawisze ustawiają kursor na pierwszy/ostatni wiersz całej listy wyświetlonych wierszy na liście. Dopiero
+  ponowne naciśnięcie klawisza Home/End powinno ustawić kursor na pierwszy lub ostatni element katalogu nadrzędnego.
+
+- **New Feature:** Dodać funkcjonalność naciśnięcia skrótu klawiszowego `Ctrl + /` które zmienia ścieżkę katalogu przeglądanego na katalog
+  główny w przeglądanym napędzie.
+
 - **New Feature:** Manager-a do montowania napędów (np. USB, DVD, dysk itp.). Przemyśleć to wraz z opcją do zapamiętywania ścieżek do ulubionych napędów. 
 
 - **New Feature:** Dodać przycisk z rozwijalną listą, który wyświetli ścieżki z listy katalogów dodanych do "Ulubionych".

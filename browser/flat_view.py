@@ -1,22 +1,30 @@
 import os
+
+# import logging # Removed logging
 from PyQt6.QtCore import Qt, QEvent
 from PyQt6.QtWidgets import QTableView, QVBoxLayout, QAbstractItemView, QHeaderView
+
+from app.theme_manager import ThemeManager  # Import ThemeManager
 from browser.base_view import AbstractFileView
 from browser.flat_file_system_model import FlatFileSystemModel
 from browser.styling_delegate import FileStyleDelegate
-from app.theme_manager import ThemeManager # Import ThemeManager
+
 
 class FlatFileView(AbstractFileView):
     def __init__(self, settings_manager, theme_manager: ThemeManager, parent=None):
         super().__init__(settings_manager, parent)
         self.theme_manager = theme_manager # Store theme_manager
-        
+
+        self._insert_selected_items = set()  # This will now store file paths (strings)
+
         self.model = FlatFileSystemModel(
             parent=self,
             show_dot_files=self.settings_manager.get_setting("showDotFiles", True),
             file_permissions_display_mode=self.settings_manager.get_setting("file_permissions_display_mode", "symbolic"),
             show_uid_column=self.settings_manager.get_setting("show_uid_column", True),
-            show_gid_column=self.settings_manager.get_setting("show_gid_column", True)
+            show_gid_column=self.settings_manager.get_setting("show_gid_column", True),
+            insert_selected_items=self._insert_selected_items,  # Pass the set to the model
+            settings_manager=self.settings_manager  # Pass settings_manager to the model
         )
         
         self.view = QTableView()
@@ -40,11 +48,25 @@ class FlatFileView(AbstractFileView):
         return super().eventFilter(source, event)
 
     def handle_key_event(self, event: QEvent):
+        # logging.critical(f"[FlatFileView.handle_key_event] KeyPress event received. Key: {event.key()}") # Removed logging
         current_index = self.view.currentIndex()
+
+        key = event.key()
+        if key == Qt.Key.Key_Insert:
+            # logging.critical("[FlatFileView.handle_key_event] INSERT key detected. Toggling selection.") # Removed logging
+            self.toggle_insert_selection_for_current_item()
+
+            # Move to the next item after toggling insert selection
+            next_row = current_index.row() + 1
+            if next_row < self.model.rowCount():
+                next_index = self.model.index(next_row, current_index.column())
+                self.view.setCurrentIndex(next_index)
+                self.view.scrollTo(next_index, QAbstractItemView.ScrollHint.EnsureVisible)
+            return True  # Event handled
+        
         if self._handle_common_key_events(event, current_index):
             return True
         
-        key = event.key()
         if key == Qt.Key.Key_Home:
             first_index = self.model.index(0, 0)
             if first_index.isValid():
@@ -83,7 +105,10 @@ class FlatFileView(AbstractFileView):
     def set_path(self, path, select_item_name=None):
         self.model.set_current_path(path)
         self.path_changed.emit(path)
-        
+
+        # Clear insert selections when path changes
+        self._insert_selected_items.clear()
+
         found_index = None
         if select_item_name:
             for row in range(self.model.rowCount()):
@@ -106,6 +131,9 @@ class FlatFileView(AbstractFileView):
 
     def refresh(self):
         self.model.refresh()
+        # After refresh, ensure insert selections are still valid or clear them
+        # For simplicity, let's clear them on refresh for now.
+        self._insert_selected_items.clear()
 
     def get_selected_paths(self):
         return self.model.get_selected_paths()
@@ -145,3 +173,20 @@ class FlatFileView(AbstractFileView):
             if next_row < self.model.rowCount():
                 next_index = self.model.index(next_row, current_index.column())
                 self.view.setCurrentIndex(next_index)
+
+    def toggle_insert_selection_for_current_item(self):
+        # logging.critical("[FlatFileView.toggle_insert_selection_for_current_item] Called.") # Removed logging
+        current_index = self.view.currentIndex()
+        if current_index.isValid():
+            item_path = self.model.filePath(current_index)  # Get the file path
+
+            if item_path in self._insert_selected_items:
+                self._insert_selected_items.remove(item_path)
+                # logging.critical(f"[FlatFileView.toggle_insert_selection_for_current_item] Removed '{item_path}' from insert selection.") # Removed logging
+            else:
+                self._insert_selected_items.add(item_path)
+                # logging.critical(f"[FlatFileView.toggle_insert_selection_for_current_item] Added '{item_path}' to insert selection.") # Removed logging
+
+            # Force a full update of the view for diagnostic purposes
+            self.view.update()
+            # logging.critical("[FlatFileView.toggle_insert_selection_for_current_item] View updated.") # Removed logging

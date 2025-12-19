@@ -1,31 +1,49 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QRadioButton, QPushButton, QCheckBox, QComboBox
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QColor, QPixmap, QIcon  # Import QPixmap, QPainter, and QIcon
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QRadioButton, QPushButton, QCheckBox, QComboBox, QColorDialog, \
+    QLabel
+
 from app.settings_manager import SettingsManager
-from app.translation_manager import translation_manager # Import our new manager
-from app.theme_manager import ThemeManager # Import ThemeManager
+from app.theme_manager import ThemeManager
+from app.translation_manager import translation_manager
+
 
 class SettingsDialog(QDialog):
     def __init__(self, parent, settings_manager: SettingsManager, theme_manager: ThemeManager):
         super().__init__(parent)
         self.setWindowTitle(translation_manager.translate("SettingsDialog", "Application Settings"))
         self.settings_manager = settings_manager
-        self.theme_manager = theme_manager # Store theme manager
+        self.theme_manager = theme_manager
 
+        # Load current settings
         self.current_show_dot_files = self.settings_manager.get_setting("showDotFiles")
         self.current_file_permissions_display_mode = self.settings_manager.get_setting("file_permissions_display_mode")
         self.current_show_uid_column = self.settings_manager.get_setting("show_uid_column")
         self.current_show_gid_column = self.settings_manager.get_setting("show_gid_column")
         self.current_language_mode = self.settings_manager.get_setting("language_mode")
         self.current_manual_language = self.settings_manager.get_setting("manual_language")
-        self.current_theme = self.settings_manager.get_setting("theme", "dark") # Get current theme
+        self.current_theme = self.settings_manager.get_setting("theme", "dark")
 
+        # New settings for Insert selection style
+        self.current_insert_selection_text_color = self.settings_manager.get_setting("insert_selection_text_color")
+        # self.current_insert_selection_background_color = self.settings_manager.get_setting("insert_selection_background_color") # Removed
+        self.current_insert_selection_font_bold = self.settings_manager.get_setting("insert_selection_font_bold")
+        self.current_insert_selection_font_italic = self.settings_manager.get_setting("insert_selection_font_italic")
+
+        # Initialize selected settings with current values
         self.selected_show_dot_files = self.current_show_dot_files
         self.selected_file_permissions_display_mode = self.current_file_permissions_display_mode
         self.selected_show_uid_column = self.current_show_uid_column
         self.selected_show_gid_column = self.current_show_gid_column
         self.selected_language_mode = self.current_language_mode
         self.selected_manual_language = self.current_manual_language
-        self.selected_theme = self.current_theme # Initialize selected theme
+        self.selected_theme = self.current_theme
+
+        # Selected settings for Insert selection style
+        self.selected_insert_selection_text_color = self.current_insert_selection_text_color
+        # self.selected_insert_selection_background_color = self.current_insert_selection_background_color # Removed
+        self.selected_insert_selection_font_bold = self.current_insert_selection_font_bold
+        self.selected_insert_selection_font_italic = self.current_insert_selection_font_italic
 
         self._init_ui()
 
@@ -87,9 +105,7 @@ class SettingsDialog(QDialog):
         self.language_combo = QComboBox()
         self.language_combo.addItem("English (en_US)", "en_US")
         self.language_combo.addItem("Polski (pl_PL)", "pl_PL")
-        # Add more languages here as needed
         
-        # Select current manual language
         index = self.language_combo.findData(self.current_manual_language)
         if index != -1:
             self.language_combo.setCurrentIndex(index)
@@ -116,12 +132,10 @@ class SettingsDialog(QDialog):
         theme_layout = QVBoxLayout()
         self.theme_combo = QComboBox()
         
-        # Populate theme combo box
         available_themes = self.theme_manager.get_available_themes()
         for theme_name in available_themes:
-            self.theme_combo.addItem(theme_name.capitalize(), theme_name) # Display capitalized name, store raw name
+            self.theme_combo.addItem(theme_name.capitalize(), theme_name)
         
-        # Select current theme
         index = self.theme_combo.findData(self.current_theme)
         if index != -1:
             self.theme_combo.setCurrentIndex(index)
@@ -130,6 +144,50 @@ class SettingsDialog(QDialog):
         theme_layout.addWidget(self.theme_combo)
         theme_group.setLayout(theme_layout)
         main_layout.addWidget(theme_group)
+
+        # New Group box for Insert Selection Style
+        insert_selection_group = QGroupBox(translation_manager.translate("SettingsDialog", "Insert Selection Style"))
+        insert_selection_layout = QVBoxLayout()
+
+        # Text Color
+        text_color_layout = QHBoxLayout()
+        text_color_layout.addWidget(QLabel(translation_manager.translate("SettingsDialog", "Text Color:")))
+        self.insert_text_color_button = QPushButton("")
+        self.insert_text_color_button.setFixedSize(QSize(30, 20))
+        self._update_color_button_icon(self.insert_text_color_button, self.selected_insert_selection_text_color)
+        self.insert_text_color_button.clicked.connect(self._pick_insert_text_color)
+        text_color_layout.addWidget(self.insert_text_color_button)
+        text_color_layout.addStretch()
+        insert_selection_layout.addLayout(text_color_layout)
+
+        # Removed Background Color controls
+        # bg_color_layout = QHBoxLayout()
+        # bg_color_layout.addWidget(QLabel(translation_manager.translate("SettingsDialog", "Background Color:")))
+        # self.insert_bg_color_button = QPushButton("")
+        # self.insert_bg_color_button.setFixedSize(QSize(30, 20))
+        # self._update_color_button_icon(self.insert_bg_color_button, self.selected_insert_selection_background_color)
+        # self.insert_bg_color_button.clicked.connect(self._pick_insert_background_color)
+        # bg_color_layout.addWidget(self.insert_bg_color_button)
+        # bg_color_layout.addStretch()
+        # insert_selection_layout.addLayout(bg_color_layout)
+
+        # Font Styles
+        font_style_layout = QHBoxLayout()
+        self.insert_font_bold_checkbox = QCheckBox(translation_manager.translate("SettingsDialog", "Bold"))
+        self.insert_font_bold_checkbox.setChecked(self.current_insert_selection_font_bold)
+        self.insert_font_bold_checkbox.stateChanged.connect(self._set_selected_insert_font_bold)
+        font_style_layout.addWidget(self.insert_font_bold_checkbox)
+
+        self.insert_font_italic_checkbox = QCheckBox(translation_manager.translate("SettingsDialog", "Italic"))
+        self.insert_font_italic_checkbox.setChecked(self.current_insert_selection_font_italic)
+        self.insert_font_italic_checkbox.stateChanged.connect(self._set_selected_insert_font_italic)
+        font_style_layout.addWidget(self.insert_font_italic_checkbox)
+        font_style_layout.addStretch()
+        insert_selection_layout.addLayout(font_style_layout)
+
+        insert_selection_group.setLayout(insert_selection_layout)
+        main_layout.addWidget(insert_selection_group)
+
 
         # Buttons
         button_layout = QHBoxLayout()
@@ -141,6 +199,24 @@ class SettingsDialog(QDialog):
 
         self.save_button.clicked.connect(self.accept)
         self.cancel_button.clicked.connect(self.reject)
+
+    def _update_color_button_icon(self, button: QPushButton, color_hex: str):
+        pixmap = QPixmap(button.size())  # Create an empty QPixmap
+        pixmap.fill(QColor(color_hex))  # Fill it with the color
+        button.setIcon(QIcon(pixmap))  # Set the pixmap as the button's icon
+
+    def _pick_insert_text_color(self):
+        color = QColorDialog.getColor(QColor(self.selected_insert_selection_text_color), self)
+        if color.isValid():
+            self.selected_insert_selection_text_color = color.name()
+            self._update_color_button_icon(self.insert_text_color_button, self.selected_insert_selection_text_color)
+
+    # Removed _pick_insert_background_color method
+    # def _pick_insert_background_color(self):
+    #     color = QColorDialog.getColor(QColor(self.selected_insert_selection_background_color), self)
+    #     if color.isValid():
+    #         self.selected_insert_selection_background_color = color.name()
+    #         self._update_color_button_icon(self.insert_bg_color_button, self.selected_insert_selection_background_color)
 
     def _set_selected_show_dot_files(self, state):
         self.selected_show_dot_files = (state == Qt.CheckState.Checked.value)
@@ -164,6 +240,12 @@ class SettingsDialog(QDialog):
     def _set_selected_theme(self, index):
         self.selected_theme = self.theme_combo.itemData(index)
 
+    def _set_selected_insert_font_bold(self, state):
+        self.selected_insert_selection_font_bold = (state == Qt.CheckState.Checked.value)
+
+    def _set_selected_insert_font_italic(self, state):
+        self.selected_insert_selection_font_italic = (state == Qt.CheckState.Checked.value)
+
     def get_settings(self):
         return {
             "showDotFiles": self.selected_show_dot_files,
@@ -172,5 +254,9 @@ class SettingsDialog(QDialog):
             "show_gid_column": self.selected_show_gid_column,
             "language_mode": self.selected_language_mode,
             "manual_language": self.selected_manual_language,
-            "theme": self.selected_theme # Return selected theme
+            "theme": self.selected_theme,
+            "insert_selection_text_color": self.selected_insert_selection_text_color,
+            # "insert_selection_background_color": self.selected_insert_selection_background_color, # Removed
+            "insert_selection_font_bold": self.selected_insert_selection_font_bold,
+            "insert_selection_font_italic": self.selected_insert_selection_font_italic
         }
