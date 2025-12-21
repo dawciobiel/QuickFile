@@ -1,7 +1,16 @@
+# Base runtime dependencies
 -r requirements.txt
+
+# Testing framework and plugins
 pytest
-pytest-qt
-pytest-mock
-ruff
-pipreqs
-send2trash
+pytest-qt        # Qt-specific test helpers
+pytest-mock      # Mocking utilities for pytest
+
+# Code quality and static analysis
+ruff             # Linter and formatter
+
+# Tooling
+pipreqs          # Auto-generate requirements from imports
+send2trash       # Safe file deletion used in development
+pyinstaller      # Build standalone executables for distribution
+
