@@ -1,21 +1,10 @@
-import logging
-import os
-from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog, QMessageBox, QToolBar
 from PyQt6.QtCore import QObject, pyqtSignal
-from file_operations.archive_manager import UnrarNotInstalledError
 from PyQt6.QtGui import QAction
-from utils.copy_dialog import CopyDialog
-from utils.move_dialog import MoveDialog
-from utils.delete_dialog import DeleteDialog
-from utils.sync_dialog import SyncDialog
-from utils.shortcuts_dialog import ShortcutsDialog
-from utils.settings_dialog import SettingsDialog
-from utils.dialogs import show_error_message
-from utils.properties_dialog import PropertiesDialog
-from file_operations.properties_manager import get_file_properties
+from PyQt6.QtWidgets import QStyle, QToolBar
+
+from app.application_logic_handler import ApplicationLogicHandler  # Import ApplicationLogicHandler
+from app.shortcuts_manager import ShortcutsManager  # Import ShortcutsManager
 from app.translation_manager import translation_manager
-from app.shortcuts_manager import ShortcutsManager # Import ShortcutsManager
-from app.application_logic_handler import ApplicationLogicHandler # Import ApplicationLogicHandler
 
 
 class MenuPanel(QObject):
@@ -240,7 +229,14 @@ class MenuPanel(QObject):
         self.toolbar.addSeparator()
 
         # Search
-        search_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Search"), tooltip_text=translation_manager.translate("MenuPanel", "Search for files and directories"), icon=QStyle.StandardPixmap.SP_FileDialogDetailedView, slot=self.main_window.search_input.setFocus, shortcut_key=self.KEY_SEARCH, add_to_toolbar=True)
+        search_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Search"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Search for files and directories"),
+            icon=QStyle.StandardPixmap.SP_FileDialogDetailedView,
+            slot=self.application_logic_handler.start_file_search,  # Corrected slot
+            shortcut_key=self.KEY_SEARCH,
+            add_to_toolbar=True
+        )
         operations_menu.addAction(search_action)
         # self.toolbar.addAction(search_action) # Handled by add_to_toolbar
         operations_menu.addSeparator()
