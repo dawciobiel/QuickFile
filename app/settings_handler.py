@@ -22,17 +22,16 @@ class SettingsHandler:
 
         # Apply specific settings that require immediate UI updates
         if "showDotFiles" in new_settings:
-            # The FolderBrowser's create_file_view method uses settings_manager.get_setting("showDotFiles")
-            # So, refreshing the views should pick up the new setting.
-            self.main_window.ui_manager.folder_browser.refresh_all_views()
+            self.main_window.ui_manager.folder_browser.set_show_dot_files(new_settings["showDotFiles"])
 
-        if "file_permissions_display_mode" in new_settings or \
-                "show_uid_column" in new_settings or \
-                "show_gid_column" in new_settings:
-            # These settings affect how file details are displayed.
-            # Calling update_view_settings on file_view will refresh the model and delegate.
-            self.main_window.ui_manager.folder_browser.left_panel_widget.file_view.update_view_settings()
-            self.main_window.ui_manager.folder_browser.right_panel_widget.file_view.update_view_settings()
+        if "file_permissions_display_mode" in new_settings:
+            self.main_window.ui_manager.folder_browser.set_file_permissions_display_mode(new_settings["file_permissions_display_mode"])
+
+        if "show_uid_column" in new_settings:
+            self.main_window.ui_manager.folder_browser.set_show_uid_column(new_settings["show_uid_column"])
+
+        if "show_gid_column" in new_settings:
+            self.main_window.ui_manager.folder_browser.set_show_gid_column(new_settings["show_gid_column"])
 
         if "language_mode" in new_settings or "manual_language" in new_settings:
             # For language changes, we typically need to restart the application.
