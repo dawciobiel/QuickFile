@@ -15,7 +15,7 @@ class UIStateProvider:
         if active_panel:
             return active_panel
         # Fallback to the left panel if no panel has focus
-        return self.folder_browser.left_panel_widget
+        return self.folder_browser.get_left_panel_widget()
 
     def get_active_panel_path(self):
         """Returns the current path of the active panel."""
@@ -27,10 +27,10 @@ class UIStateProvider:
     def get_inactive_panel_path(self):
         """Returns the current path of the inactive panel."""
         active_panel = self.get_active_panel_widget()
-        if active_panel == self.folder_browser.left_panel_widget:
-            return self.folder_browser.right_panel_widget.file_view.get_current_path()
-        elif active_panel == self.folder_browser.right_panel_widget:
-            return self.folder_browser.left_panel_widget.file_view.get_current_path()
+        if active_panel == self.folder_browser.get_left_panel_widget():
+            return self.folder_browser.get_right_panel_widget().file_view.get_current_path()
+        elif active_panel == self.folder_browser.get_right_panel_widget():
+            return self.folder_browser.get_left_panel_widget().file_view.get_current_path()
         return None
 
     def get_selected_paths(self):

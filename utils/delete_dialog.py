@@ -1,40 +1,34 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QTextEdit, QCheckBox
+from PyQt6 import uic
+from PyQt6.QtWidgets import QDialog
+
 from app.translation_manager import translation_manager
+
 
 class DeleteDialog(QDialog):
     def __init__(self, parent, item_paths):
         super().__init__(parent)
-        self.setWindowTitle(translation_manager.translate("DeleteDialog", "Delete"))
 
-        self.layout = QVBoxLayout(self)
+        # Load the UI from the .ui file
+        uic.loadUi("ui/delete_dialog.ui", self)
+        
+        self.setWindowTitle(translation_manager.translate("DeleteDialog", "Delete"))
 
         if len(item_paths) == 1:
             # Single item view
-            self.layout.addWidget(QLabel(translation_manager.translate("DeleteDialog", "Are you sure you want to delete:") + f" <b>{item_paths[0]}</b>?"))
+            self.confirmation_label.setText(
+                translation_manager.translate("DeleteDialog", "Are you sure you want to delete:") + f" <b>{item_paths[0]}</b>?")
+            self.files_list_text.hide()
+            self.resize(400, 200)  # Adjust size for single item
         else:
             # Multiple items view
-            self.layout.addWidget(QLabel(translation_manager.translate("DeleteDialog", f"Are you sure you want to delete <b>{len(item_paths)}</b> items?")))
-            
-            # Add a scrollable text area with the list of files
-            files_to_delete_text = QTextEdit()
-            files_to_delete_text.setPlainText("\n".join(item_paths))
-            files_to_delete_text.setReadOnly(True)
-            self.layout.addWidget(files_to_delete_text)
+            self.confirmation_label.setText(
+                translation_manager.translate("DeleteDialog", f"Are you sure you want to delete <b>{len(item_paths)}</b> items?"))
+            self.files_list_text.setPlainText("\n".join(item_paths))
+            self.files_list_text.show()
 
-        # Add checkbox for moving to trash
-        self.move_to_trash_checkbox = QCheckBox(translation_manager.translate("DeleteDialog", "Move to Trash (if available)"))
-        self.move_to_trash_checkbox.setChecked(True) # Default to moving to trash
-        self.layout.addWidget(self.move_to_trash_checkbox)
-
-        self.layout.addWidget(QLabel(translation_manager.translate("DeleteDialog", "This operation cannot be undone if not moved to Trash.")))
-
-        # OK/Cancel buttons
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.button_box.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "OK"))
-        self.button_box.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("Buttons", "Cancel"))
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-        self.layout.addWidget(self.button_box)
+        # Translate other widgets
+        self.move_to_trash_checkbox.setText(translation_manager.translate("DeleteDialog", "Move to Trash (if available)"))
+        self.warning_label.setText(translation_manager.translate("DeleteDialog", "This operation cannot be undone if not moved to Trash."))
 
     def should_move_to_trash(self):
         """Returns True if the 'Move to Trash' checkbox is checked, False otherwise."""
