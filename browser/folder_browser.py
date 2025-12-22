@@ -2,17 +2,19 @@ import logging
 import os
 
 import psutil
+from PyQt6 import uic
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QDir
 from PyQt6.QtGui import QFileSystemModel
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QLineEdit, QComboBox, QSizePolicy, QCompleter
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter
 
 from app.settings_manager import SettingsManager
-from app.theme_manager import ThemeManager  # Import ThemeManager
+from app.theme_manager import ThemeManager
 from browser.flat_view import FlatFileView
 from browser.tree_view import TreeFileView
 
 
 class PanelWidget(QWidget):
+    # ... (cała klasa PanelWidget na razie bez zmian) ...
     def __init__(self, settings_manager, initial_view_mode, folder_browser_event_filter, theme_manager: ThemeManager, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
@@ -212,46 +214,38 @@ class FolderBrowser(QWidget):
 
     def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, theme_manager: ThemeManager = None, parent=None):
         super().__init__(parent)
+
+        # Load the UI from the .ui file
+        uic.loadUi("ui/folder_browser.ui", self)
+
         self.settings_manager = settings_manager
-        self.theme_manager = theme_manager # Store theme_manager
+        self.theme_manager = theme_manager
         self.view_mode = view_mode
         self.active_panel_widget = None
         self.current_paths = {}
 
-        # Pass self (FolderBrowser instance) as the event filter object and theme_manager
+        # Create the panel widgets
         self.left_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
         self.right_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
 
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.addWidget(self.left_panel_widget)
-        splitter.addWidget(self.right_panel_widget)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(splitter)
-        
-        # The event filters are now installed by PanelWidget itself in its __init__
-        # and managed by set_file_view_mode. So, these lines are removed from FolderBrowser.__init__
-        # self.left_panel_widget.file_view.view.installEventFilter(self)
-        # self.right_panel_widget.file_view.view.installEventFilter(self)
+        # Add panel widgets to the tab widgets from the .ui file
+        self.leftTabWidget.addTab(self.left_panel_widget, "Tab 1")
+        self.rightTabWidget.addTab(self.right_panel_widget, "Tab 1")
 
         self.set_active_panel(self.left_panel_widget)
 
     def eventFilter(self, source, event):
         if event.type() == QEvent.Type.FocusIn:
-            # Check if the source is the *current* active view of either panel
             if source is self.left_panel_widget.file_view.view:
                 self.set_active_panel(self.left_panel_widget)
             elif source is self.right_panel_widget.file_view.view:
                 self.set_active_panel(self.right_panel_widget)
-            return False  # Continue processing event
+            return False
         elif event.type() == QEvent.Type.KeyPress:
-            # logging.critical(f"[FolderBrowser.eventFilter] KeyPress event received. Key: {event.key()}") # Log all key presses
             if event.key() == Qt.Key.Key_Insert:
-                # logging.critical(f"[FolderBrowser.eventFilter] INSERT key detected!") # Log when INSERT is detected
                 if self.active_panel_widget:
                     self.active_panel_widget.toggle_insert_selection()
-                return True  # Event handled
+                return True
         return super().eventFilter(source, event)
 
     def set_active_panel(self, panel_widget):
@@ -260,7 +254,7 @@ class FolderBrowser(QWidget):
         
         self.active_panel_widget = panel_widget
         self.active_panel_widget.set_active(True)
-        self.active_panel_widget.file_view.view.setFocus() # Ensure the view inside the panel has focus
+        self.active_panel_widget.file_view.view.setFocus()
 
     def switch_active_panel(self):
         if self.active_panel_widget == self.left_panel_widget:
@@ -280,7 +274,7 @@ class FolderBrowser(QWidget):
         if self.view_mode == mode:
             return
         self.view_mode = mode
-        self.settings_manager.set_setting("view_mode", mode) # Save the new view mode
+        self.settings_manager.set_setting("view_mode", mode)
         
         self.left_panel_widget.set_file_view_mode(mode)
         self.right_panel_widget.set_file_view_mode(mode)
@@ -288,34 +282,21 @@ class FolderBrowser(QWidget):
         self.set_active_panel(self.left_panel_widget)
 
     def set_file_permissions_display_mode(self, mode):
-        """
-        Sets the file permissions display mode for both panels.
-        """
-        # Call update_view_settings on the currently active file_view within each panel
         self.left_panel_widget.file_view.update_view_settings()
         self.right_panel_widget.file_view.update_view_settings()
-        self.refresh_all_views() # Refresh views to apply the new mode
+        self.refresh_all_views()
 
     def set_show_dot_files(self, show):
-        """
-        Sets whether to show dot files for both panels.
-        """
         self.left_panel_widget.file_view.update_view_settings()
         self.right_panel_widget.file_view.update_view_settings()
         self.refresh_all_views()
 
     def set_show_uid_column(self, show):
-        """
-        Sets whether to show the UID column for both panels.
-        """
         self.left_panel_widget.file_view.update_view_settings()
         self.right_panel_widget.file_view.update_view_settings()
         self.refresh_all_views()
 
     def set_show_gid_column(self, show):
-        """
-        Sets whether to show the GID column for both panels.
-        """
         self.left_panel_widget.file_view.update_view_settings()
         self.right_panel_widget.file_view.update_view_settings()
         self.refresh_all_views()
@@ -323,7 +304,6 @@ class FolderBrowser(QWidget):
     def load_panel_settings(self):
         left_path = self.settings_manager.get_setting("leftPanelPath", os.path.expanduser("~"))
         right_path = self.settings_manager.get_setting("rightPanelPath", os.path.expanduser("~"))
-        # Ensure set_path is called on the *current* file_view
         self.left_panel_widget.file_view.set_path(left_path)
         self.right_panel_widget.file_view.set_path(right_path)
 
@@ -335,17 +315,14 @@ class FolderBrowser(QWidget):
         if not self.active_panel_widget:
             return []
 
-        # Prioritize "Insert" selected paths
         insert_selected = self.active_panel_widget.file_view.get_insert_selected_paths()
         if insert_selected:
             return insert_selected
 
-        # Fallback to checkbox-selected paths (for FlatFileView)
         selected = self.active_panel_widget.file_view.get_selected_paths()
         if selected:
             return selected
 
-        # Fallback to the currently focused item if no other selection is made
         current = self.active_panel_widget.file_view.get_current_selected_path()
         if current:
             return [current]
@@ -358,8 +335,5 @@ class FolderBrowser(QWidget):
         return None
 
     def navigate_to_path(self, path):
-        """
-        Navigates the active panel to the specified path.
-        """
         if self.active_panel_widget:
             self.active_panel_widget.file_view.set_path(path)
