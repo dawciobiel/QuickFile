@@ -72,7 +72,7 @@ class DialogHandler:
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_shortcuts = dialog.get_shortcuts()
             # Apply shortcuts via shortcuts_manager
-            self.main_window.shortcuts_manager.apply_shortcuts_settings(new_shortcuts)
+            self.main_window.shortcuts_manager.save_shortcuts(new_shortcuts)
 
     def show_search_results(self, results):
         dialog = SearchDialog(self.main_window, results)
@@ -146,8 +146,8 @@ class DialogHandler:
             self.ui_state_provider.folder_browser.refresh_all_views()
 
     def synchronize_directories(self, checked=False):
-        left_path = self.ui_state_provider.folder_browser.left_panel_widget.file_view.get_current_path()
-        right_path = self.ui_state_provider.folder_browser.right_panel_widget.file_view.get_current_path()
+        left_path = self.ui_state_provider.folder_browser.get_left_panel_widget().file_view.get_current_path()
+        right_path = self.ui_state_provider.folder_browser.get_right_panel_widget().file_view.get_current_path()
         if left_path and right_path:
             dialog = SyncDialog(self.main_window, left_path, right_path)
             if dialog.exec() == QDialog.DialogCode.Accepted:

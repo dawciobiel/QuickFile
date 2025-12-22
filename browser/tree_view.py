@@ -145,11 +145,14 @@ class TreeFileView(AbstractFileView):
         self.settings_manager.set_setting("tree_column_widths", column_widths)
         
     def on_item_double_clicked(self, index):
-        if os.path.isdir(self.model.filePath(index)):
+        path = self.model.filePath(index)
+        if os.path.isdir(path):
             if self.view.isExpanded(index):
                 self.view.collapse(index)
             else:
                 self.view.expand(index)
+        else:  # It's a file
+            self.file_selected.emit(path)
 
     def toggle_selection(self):
         current_index = self.view.currentIndex()

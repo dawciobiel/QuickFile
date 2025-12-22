@@ -167,6 +167,8 @@ class FlatFileView(AbstractFileView):
             self.go_up()
         elif os.path.isdir(path):
             self.set_path(path)
+        else:  # It's a file
+            self.file_selected.emit(path)
         
     def toggle_selection(self):
         current_index = self.view.currentIndex()

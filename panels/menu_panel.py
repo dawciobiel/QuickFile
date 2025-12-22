@@ -2,8 +2,8 @@ from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QStyle, QToolBar
 
-from app.application_logic_handler import ApplicationLogicHandler  # Import ApplicationLogicHandler
-from app.shortcuts_manager import ShortcutsManager  # Import ShortcutsManager
+from app.application_logic_handler import ApplicationLogicHandler
+from app.shortcuts_manager import ShortcutsManager
 from app.translation_manager import translation_manager
 
 
@@ -34,6 +34,9 @@ class MenuPanel(QObject):
     KEY_TREE_VIEW = "action.tree_view"
     KEY_CONFIGURE_SHORTCUTS = "action.configure_shortcuts"
     KEY_GENERAL_SETTINGS = "action.general_settings"
+    # New keys for tabs
+    KEY_NEW_TAB = "action.new_tab"
+    KEY_CLOSE_TAB = "action.close_tab"
 
     def __init__(self, main_window, toolbar: QToolBar, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager):
         super().__init__(main_window)
@@ -89,6 +92,8 @@ class MenuPanel(QObject):
 
     def _create_view_menu(self):
         view_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "View"))
+
+        # View modes
         flat_view_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "Flat View"),
             tooltip_text=translation_manager.translate("MenuPanel", "Flat View"),
@@ -103,6 +108,23 @@ class MenuPanel(QObject):
         )
         view_menu.addAction(flat_view_action)
         view_menu.addAction(tree_view_action)
+        view_menu.addSeparator()
+
+        # Tabs
+        new_tab_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "New Tab"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Open a new tab"),
+            slot=self.application_logic_handler.open_new_tab,
+            shortcut_key=self.KEY_NEW_TAB
+        )
+        close_tab_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Close Tab"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Close current tab"),
+            slot=self.application_logic_handler.close_current_tab,
+            shortcut_key=self.KEY_CLOSE_TAB
+        )
+        view_menu.addAction(new_tab_action)
+        view_menu.addAction(close_tab_action)
 
     def _create_settings_menu(self):
         settings_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Settings"))

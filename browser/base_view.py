@@ -1,7 +1,9 @@
 import abc
 import os
-from PyQt6.QtWidgets import QWidget
+
 from PyQt6.QtCore import QEvent, pyqtSignal, Qt, QModelIndex
+from PyQt6.QtWidgets import QWidget
+
 
 # This metaclass inherits from the metaclasses of both QWidget and ABC.
 # This resolves the metaclass conflict when a class needs to be both a QWidget and an ABC.
@@ -14,6 +16,7 @@ class AbstractFileView(QWidget, metaclass=AbstractViewMeta):
     Defines a common interface (contract) that all file views must implement.
     """
     path_changed = pyqtSignal(str)
+    file_selected = pyqtSignal(str)
 
     def __init__(self, settings_manager, parent=None):
         super().__init__(parent)

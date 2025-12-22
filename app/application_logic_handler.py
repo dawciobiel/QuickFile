@@ -16,6 +16,7 @@ from file_operations.directory_synchronizer import DirectorySynchronizer, Direct
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager, FileManagerError
 from utils.dialogs import show_error_message
+from utils.search_dialog import SearchDialog
 
 
 def handle_app_logic_error(title_key):
@@ -83,13 +84,8 @@ class ApplicationLogicHandler(QObject):
     def _get_active_panel_widget(self):
         """
         Returns the currently active PanelWidget.
-        If no panel is explicitly active, defaults to the left panel.
         """
-        active_panel = self.main_window.ui_manager.folder_browser.active_panel_widget
-        if active_panel:
-            return active_panel
-        # Fallback to the left panel if no panel has focus
-        return self.main_window.ui_manager.folder_browser.left_panel_widget
+        return self.main_window.ui_manager.folder_browser.active_panel_widget
 
     def _get_active_panel_path(self):
         """Returns the current path of the active panel, or None if no active panel."""
@@ -100,11 +96,9 @@ class ApplicationLogicHandler(QObject):
 
     def _get_inactive_panel_path(self):
         """Returns the current path of the inactive panel, or None if no inactive panel."""
-        active_panel = self._get_active_panel_widget()
-        if active_panel == self.main_window.ui_manager.folder_browser.left_panel_widget:
-            return self.main_window.ui_manager.folder_browser.right_panel_widget.file_view.get_current_path()
-        elif active_panel == self.main_window.ui_manager.folder_browser.right_panel_widget:
-            return self.main_window.ui_manager.folder_browser.left_panel_widget.file_view.get_current_path()
+        inactive_panel = self.main_window.ui_manager.folder_browser.get_inactive_panel_widget()
+        if inactive_panel:
+            return inactive_panel.file_view.get_current_path()
         return None
 
     def _get_selected_file_path(self):
@@ -115,10 +109,7 @@ class ApplicationLogicHandler(QObject):
         return None
 
     def on_theme_changed(self, theme_path):
-        # Instead of calling load_file_styles on the model,
-        # call update_view_settings on the file_view, which will refresh the model and delegate.
-        self.main_window.ui_manager.folder_browser.left_panel_widget.file_view.update_view_settings()
-        self.main_window.ui_manager.folder_browser.right_panel_widget.file_view.update_view_settings()
+        self.main_window.ui_manager.folder_browser.refresh_all_views()
 
     @handle_app_logic_error("Preview Error")
     def _handle_f3_key(self, checked=False):
@@ -151,17 +142,19 @@ class ApplicationLogicHandler(QObject):
 
     @handle_app_logic_error("Search Error")
     def start_file_search(self, checked=False):
-        search_text = self.main_window.search_input.text()
-        if search_text:
-            current_path = self.ui_state_provider.get_active_panel_path()
-            if not current_path:
-                show_error_message(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Search Error"), self.ERROR_NO_CURRENT_DIR)
-                return
-            results, message = self.file_manager.search_files(current_path, search_text)
-            self.dialog_handler.show_search_results(results)
-            self.main_window.statusBar().showMessage(message)
-        else:
-            self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", "Enter text to search."))
+        current_path = self.ui_state_provider.get_active_panel_path()
+        if not current_path:
+            show_error_message(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Search Error"),
+                               self.ERROR_NO_CURRENT_DIR)
+            return
+
+        # Open the search dialog directly
+        dialog = SearchDialog(current_path, self.file_manager, self.main_window)
+        if dialog.exec():
+            # If the user clicked "Go to", navigate to the selected file
+            selected_file = dialog.selected_file
+            if selected_file:
+                self.main_window.ui_manager.folder_browser.navigate_to_path(os.path.dirname(selected_file))
 
     @handle_app_logic_error("File Opening Error")
     def open_file_externally(self, file_path):
@@ -181,8 +174,18 @@ class ApplicationLogicHandler(QObject):
         self._compare_selected_items_logic()
 
     def _compare_selected_items_logic(self):
-        left_selected_path = self.ui_state_provider.folder_browser.left_panel_widget.file_view.get_current_path()
-        right_selected_path = self.ui_state_provider.folder_browser.right_panel_widget.file_view.get_current_path()
+        left_panel = self.main_window.ui_manager.folder_browser.get_left_panel_widget()
+        right_panel = self.main_window.ui_manager.folder_browser.get_right_panel_widget()
+
+        if not left_panel or not right_panel:
+            logging.warning("Comparison Error: One or both panels are missing.")
+            QMessageBox.warning(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Comparison Error"),
+                                translation_manager.translate("ApplicationLogicHandler",
+                                                              "Cannot perform comparison, one or both panels are missing."))
+            return
+
+        left_selected_path = left_panel.file_view.get_current_path()
+        right_selected_path = right_panel.file_view.get_current_path()
 
         if not left_selected_path or not right_selected_path:
             logging.warning("Comparison Error: User tried to compare without selecting items in both panels.")
@@ -266,3 +269,13 @@ class ApplicationLogicHandler(QObject):
         active_panel_widget = self.ui_state_provider.get_active_panel_widget()
         if active_panel_widget:
             active_panel_widget.path_edit.setFocus()
+
+    @handle_app_logic_error("Tab Error")
+    def open_new_tab(self, checked=False):
+        """Opens a new tab in the active panel."""
+        self.main_window.ui_manager.folder_browser.add_new_tab()
+
+    @handle_app_logic_error("Tab Error")
+    def close_current_tab(self, checked=False):
+        """Closes the current tab in the active panel."""
+        self.main_window.ui_manager.folder_browser.close_current_tab()

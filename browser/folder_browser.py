@@ -5,7 +5,7 @@ import psutil
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QDir
 from PyQt6.QtGui import QFileSystemModel
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter, QTabWidget
 
 from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
@@ -14,7 +14,6 @@ from browser.tree_view import TreeFileView
 
 
 class PanelWidget(QWidget):
-    # ... (cała klasa PanelWidget na razie bez zmian) ...
     def __init__(self, settings_manager, initial_view_mode, folder_browser_event_filter, theme_manager: ThemeManager, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
@@ -224,22 +223,123 @@ class FolderBrowser(QWidget):
         self.active_panel_widget = None
         self.current_paths = {}
 
-        # Create the panel widgets
-        self.left_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
-        self.right_panel_widget = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
+        # Initialize tabs
+        self._init_tab_widget(self.leftTabWidget)
+        self._init_tab_widget(self.rightTabWidget)
 
-        # Add panel widgets to the tab widgets from the .ui file
-        self.leftTabWidget.addTab(self.left_panel_widget, "Tab 1")
-        self.rightTabWidget.addTab(self.right_panel_widget, "Tab 1")
+        # Create initial panels
+        self.add_new_tab(self.leftTabWidget, os.path.expanduser("~"))
+        self.add_new_tab(self.rightTabWidget, os.path.expanduser("~"))
 
-        self.set_active_panel(self.left_panel_widget)
+        # Set initial active panel
+        self.set_active_panel(self.leftTabWidget.currentWidget())
+
+    def _init_tab_widget(self, tab_widget: QTabWidget):
+        tab_widget.setTabsClosable(True)
+        tab_widget.tabCloseRequested.connect(lambda index: self._close_tab_at_index(tab_widget, index))
+        tab_widget.currentChanged.connect(lambda index: self._on_tab_changed(tab_widget, index))
+
+    def _create_panel_widget(self, path):
+        panel = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
+        panel.file_view.set_path(path)
+
+        # Connect signals
+        panel.file_view.path_changed.connect(lambda new_path: self._update_tab_title(panel, new_path))
+        panel.file_view.file_selected.connect(self.file_selected.emit)
+        panel.file_view.path_changed.connect(self.current_directory_changed.emit)
+
+        return panel
+
+    def add_new_tab(self, target_tab_widget=None, path=None):
+        """
+        Adds a new tab to the specified tab widget (or the active one).
+        """
+        if target_tab_widget is None:
+            # Determine active tab widget based on active panel
+            if self.active_panel_widget:
+                target_tab_widget = self._get_parent_tab_widget(self.active_panel_widget)
+            else:
+                target_tab_widget = self.leftTabWidget  # Default
+
+        if path is None:
+            # Use current path of active panel if available
+            if self.active_panel_widget:
+                path = self.active_panel_widget.file_view.get_current_path()
+            else:
+                path = os.path.expanduser("~")
+
+        panel = self._create_panel_widget(path)
+        index = target_tab_widget.addTab(panel, os.path.basename(path) or path)
+        target_tab_widget.setCurrentIndex(index)
+
+        # Ensure the new panel becomes active
+        self.set_active_panel(panel)
+
+    def close_current_tab(self):
+        if self.active_panel_widget:
+            tab_widget = self._get_parent_tab_widget(self.active_panel_widget)
+            if tab_widget and tab_widget.count() > 1:
+                index = tab_widget.indexOf(self.active_panel_widget)
+                self._close_tab_at_index(tab_widget, index)
+
+    def _close_tab_at_index(self, tab_widget, index):
+        if tab_widget.count() > 1:
+            widget = tab_widget.widget(index)
+            tab_widget.removeTab(index)
+            widget.deleteLater()
+
+            # If we closed the active panel, set the new current one as active
+            if widget == self.active_panel_widget:
+                self.set_active_panel(tab_widget.currentWidget())
+
+    def _on_tab_changed(self, tab_widget, index):
+        if index >= 0:
+            panel = tab_widget.widget(index)
+            self.set_active_panel(panel)
+
+    def _update_tab_title(self, panel, path):
+        tab_widget = self._get_parent_tab_widget(panel)
+        if tab_widget:
+            index = tab_widget.indexOf(panel)
+            if index >= 0:
+                tab_widget.setTabText(index, os.path.basename(path) or path)
+
+    def _get_parent_tab_widget(self, panel):
+        # Helper to find which QTabWidget a panel belongs to
+        parent = panel.parent()
+        while parent:
+            if isinstance(parent, QTabWidget):
+                return parent
+            parent = parent.parent()
+        return None
+
+    def get_inactive_panel_widget(self):
+        """Returns the active widget of the opposite tab widget."""
+        if not self.active_panel_widget:
+            return None
+
+        current_tab_widget = self._get_parent_tab_widget(self.active_panel_widget)
+        if current_tab_widget == self.leftTabWidget:
+            return self.rightTabWidget.currentWidget()
+        elif current_tab_widget == self.rightTabWidget:
+            return self.leftTabWidget.currentWidget()
+        return None
+
+    def get_left_panel_widget(self):
+        return self.leftTabWidget.currentWidget()
+
+    def get_right_panel_widget(self):
+        return self.rightTabWidget.currentWidget()
 
     def eventFilter(self, source, event):
         if event.type() == QEvent.Type.FocusIn:
-            if source is self.left_panel_widget.file_view.view:
-                self.set_active_panel(self.left_panel_widget)
-            elif source is self.right_panel_widget.file_view.view:
-                self.set_active_panel(self.right_panel_widget)
+            # Find which panel this source belongs to
+            widget = source
+            while widget:
+                if isinstance(widget, PanelWidget):
+                    self.set_active_panel(widget)
+                    break
+                widget = widget.parent()
             return False
         elif event.type() == QEvent.Type.KeyPress:
             if event.key() == Qt.Key.Key_Insert:
@@ -249,67 +349,89 @@ class FolderBrowser(QWidget):
         return super().eventFilter(source, event)
 
     def set_active_panel(self, panel_widget):
-        if self.active_panel_widget:
+        if self.active_panel_widget and self.active_panel_widget != panel_widget:
             self.active_panel_widget.set_active(False)
         
         self.active_panel_widget = panel_widget
-        self.active_panel_widget.set_active(True)
-        self.active_panel_widget.file_view.view.setFocus()
+        if self.active_panel_widget:
+            self.active_panel_widget.set_active(True)
+            self.active_panel_widget.file_view.view.setFocus()
 
     def switch_active_panel(self):
-        if self.active_panel_widget == self.left_panel_widget:
-            self.set_active_panel(self.right_panel_widget)
+        current_tab_widget = self._get_parent_tab_widget(self.active_panel_widget)
+        if current_tab_widget == self.leftTabWidget:
+            target_widget = self.rightTabWidget
         else:
-            self.set_active_panel(self.left_panel_widget)
+            target_widget = self.leftTabWidget
+
+        self.set_active_panel(target_widget.currentWidget())
 
     def go_up_directory(self):
         if self.active_panel_widget:
             self.active_panel_widget.file_view.go_up()
 
     def refresh_all_views(self):
-        self.left_panel_widget.file_view.refresh()
-        self.right_panel_widget.file_view.refresh()
+        for i in range(self.leftTabWidget.count()):
+            self.leftTabWidget.widget(i).file_view.refresh()
+        for i in range(self.rightTabWidget.count()):
+            self.rightTabWidget.widget(i).file_view.refresh()
 
     def set_view_mode(self, mode):
         if self.view_mode == mode:
             return
         self.view_mode = mode
         self.settings_manager.set_setting("view_mode", mode)
-        
-        self.left_panel_widget.set_file_view_mode(mode)
-        self.right_panel_widget.set_file_view_mode(mode)
 
-        self.set_active_panel(self.left_panel_widget)
+        for i in range(self.leftTabWidget.count()):
+            self.leftTabWidget.widget(i).set_file_view_mode(mode)
+        for i in range(self.rightTabWidget.count()):
+            self.rightTabWidget.widget(i).set_file_view_mode(mode)
+
+        if self.active_panel_widget:
+            self.set_active_panel(self.active_panel_widget)
 
     def set_file_permissions_display_mode(self, mode):
-        self.left_panel_widget.file_view.update_view_settings()
-        self.right_panel_widget.file_view.update_view_settings()
+        for i in range(self.leftTabWidget.count()):
+            self.leftTabWidget.widget(i).file_view.update_view_settings()
+        for i in range(self.rightTabWidget.count()):
+            self.rightTabWidget.widget(i).file_view.update_view_settings()
         self.refresh_all_views()
 
     def set_show_dot_files(self, show):
-        self.left_panel_widget.file_view.update_view_settings()
-        self.right_panel_widget.file_view.update_view_settings()
+        for i in range(self.leftTabWidget.count()):
+            self.leftTabWidget.widget(i).file_view.update_view_settings()
+        for i in range(self.rightTabWidget.count()):
+            self.rightTabWidget.widget(i).file_view.update_view_settings()
         self.refresh_all_views()
 
     def set_show_uid_column(self, show):
-        self.left_panel_widget.file_view.update_view_settings()
-        self.right_panel_widget.file_view.update_view_settings()
+        for i in range(self.leftTabWidget.count()):
+            self.leftTabWidget.widget(i).file_view.update_view_settings()
+        for i in range(self.rightTabWidget.count()):
+            self.rightTabWidget.widget(i).file_view.update_view_settings()
         self.refresh_all_views()
 
     def set_show_gid_column(self, show):
-        self.left_panel_widget.file_view.update_view_settings()
-        self.right_panel_widget.file_view.update_view_settings()
+        for i in range(self.leftTabWidget.count()):
+            self.leftTabWidget.widget(i).file_view.update_view_settings()
+        for i in range(self.rightTabWidget.count()):
+            self.rightTabWidget.widget(i).file_view.update_view_settings()
         self.refresh_all_views()
 
     def load_panel_settings(self):
         left_path = self.settings_manager.get_setting("leftPanelPath", os.path.expanduser("~"))
         right_path = self.settings_manager.get_setting("rightPanelPath", os.path.expanduser("~"))
-        self.left_panel_widget.file_view.set_path(left_path)
-        self.right_panel_widget.file_view.set_path(right_path)
+
+        if self.leftTabWidget.count() > 0:
+            self.leftTabWidget.widget(0).file_view.set_path(left_path)
+        if self.rightTabWidget.count() > 0:
+            self.rightTabWidget.widget(0).file_view.set_path(right_path)
 
     def save_panel_settings(self):
-        self.settings_manager.set_setting("leftPanelPath", self.left_panel_widget.file_view.get_current_path())
-        self.settings_manager.set_setting("rightPanelPath", self.right_panel_widget.file_view.get_current_path())
+        if self.leftTabWidget.currentWidget():
+            self.settings_manager.set_setting("leftPanelPath", self.leftTabWidget.currentWidget().file_view.get_current_path())
+        if self.rightTabWidget.currentWidget():
+            self.settings_manager.set_setting("rightPanelPath", self.rightTabWidget.currentWidget().file_view.get_current_path())
         
     def get_selected_paths(self):
         if not self.active_panel_widget:
