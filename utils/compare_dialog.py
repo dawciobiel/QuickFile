@@ -1,7 +1,7 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QLabel, QTabWidget, QWidget
-from PyQt6.QtCore import Qt
-from app.translation_manager import translation_manager # Import our new manager
-import os
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QLabel, QTabWidget
+
+from app.translation_manager import translation_manager
+
 
 class CompareDialog(QDialog):
     def __init__(self, parent=None, report=None, path1="", path2=""):
@@ -9,7 +9,7 @@ class CompareDialog(QDialog):
         self.setWindowTitle(translation_manager.translate("CompareDialog", "Comparison Results") + f": {path1} vs {path2}")
         self.setGeometry(100, 100, 800, 600)
 
-        self.report = report
+        self.report = report if report else {}
         self.path1 = path1
         self.path2 = path2
 
@@ -17,77 +17,39 @@ class CompareDialog(QDialog):
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
+        self.setLayout(main_layout)
 
-        # Display paths
         path_label = QLabel(translation_manager.translate("CompareDialog", "Comparing:") + f"\n{translation_manager.translate('CompareDialog', 'Left')}: {self.path1}\n{translation_manager.translate('CompareDialog', 'Right')}: {self.path2}")
         main_layout.addWidget(path_label)
 
         self.tab_widget = QTabWidget()
         main_layout.addWidget(self.tab_widget)
 
-        self._add_tab(translation_manager.translate("CompareDialog", "Different Files"), self.report.get("diff_files", []))
-        self._add_tab(translation_manager.translate("CompareDialog", "Left Only"), self.report.get("left_only", []))
-        self._add_tab(translation_manager.translate("CompareDialog", "Right Only"), self.report.get("right_only", []))
-        self._add_tab(translation_manager.translate("CompareDialog", "Same Files"), self.report.get("same_files", []))
-        self._add_tab(translation_manager.translate("CompareDialog", "Common Dirs"), self.report.get("common_dirs", []))
-        self._add_tab(translation_manager.translate("CompareDialog", "Common Funny"), self.report.get("common_funny", []))
+        self._populate_tabs(self.tab_widget, self.report)
 
-        # Handle subdirectories recursively
-        if self.report.get("subdirs"):
-            self._add_subdir_tabs(self.report["subdirs"], self.tab_widget, f"{self.path1}/", f"{self.path2}/")
+    def _populate_tabs(self, parent_tab_widget, report_data):
+        self._add_report_tab(parent_tab_widget, "Different Files", report_data.get("diff_files", []))
+        self._add_report_tab(parent_tab_widget, "Left Only", report_data.get("left_only", []))
+        self._add_report_tab(parent_tab_widget, "Right Only", report_data.get("right_only", []))
+        self._add_report_tab(parent_tab_widget, "Same Files", report_data.get("same_files", []))
+        self._add_report_tab(parent_tab_widget, "Common Dirs", report_data.get("common_dirs", []))
+        self._add_report_tab(parent_tab_widget, "Common Funny", report_data.get("common_funny", []))
 
-    def _add_tab(self, title, items):
+        if "subdirs" in report_data:
+            for subdir_name, subdir_report in report_data["subdirs"].items():
+                subdir_tab_widget = QTabWidget()
+                self._populate_tabs(subdir_tab_widget, subdir_report)
+                parent_tab_widget.addTab(subdir_tab_widget, subdir_name)
+
+    def _add_report_tab(self, tab_widget, title_key, items):
         if not items:
             return
 
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
+        translated_title = translation_manager.translate("CompareDialog", title_key)
         tree = QTreeWidget()
-        tree.setHeaderLabels([title])
+        tree.setHeaderLabels([translated_title])
 
         for item in items:
             QTreeWidgetItem(tree, [item])
-        
-        layout.addWidget(tree)
-        self.tab_widget.addTab(tab, title)
 
-    def _add_subdir_tabs(self, subdirs_report, parent_tab_widget, current_path1, current_path2):
-        for subdir_name, subdir_report in subdirs_report.items():
-            subdir_path1 = os.path.join(current_path1, subdir_name)
-            subdir_path2 = os.path.join(current_path2, subdir_name)
-
-            subdir_tab = QWidget()
-            subdir_layout = QVBoxLayout(subdir_tab)
-            
-            subdir_label = QLabel(translation_manager.translate("CompareDialog", "Subdirectory:") + f" {subdir_name}")
-            subdir_layout.addWidget(subdir_label)
-
-            subdir_tab_widget = QTabWidget()
-            subdir_layout.addWidget(subdir_tab_widget)
-
-            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Different Files"), subdir_report.get("diff_files", []))
-            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Left Only"), subdir_report.get("left_only", []))
-            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Right Only"), subdir_report.get("right_only", []))
-            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Same Files"), subdir_report.get("same_files", []))
-            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Common Dirs"), subdir_report.get("common_dirs", []))
-            self._add_tab_to_widget(subdir_tab_widget, translation_manager.translate("CompareDialog", "Common Funny"), subdir_report.get("common_funny", []))
-
-            if subdir_report.get("subdirs"):
-                self._add_subdir_tabs(subdir_report["subdirs"], subdir_tab_widget, subdir_path1, subdir_path2)
-
-            parent_tab_widget.addTab(subdir_tab, subdir_name)
-
-    def _add_tab_to_widget(self, tab_widget, title, items):
-        if not items:
-            return
-
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
-        tree = QTreeWidget()
-        tree.setHeaderLabels([title])
-
-        for item in items:
-            QTreeWidgetItem(tree, [item])
-        
-        layout.addWidget(tree)
-        tab_widget.addTab(tab, title)
+        tab_widget.addTab(tree, translated_title)
