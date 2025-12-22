@@ -88,7 +88,8 @@ class ApplicationLogicHandler(QObject):
         return self.main_window.ui_manager.folder_browser.active_panel_widget
 
     def _get_active_panel_path(self):
-        """Returns the current path of the active panel, or None if no active panel."""
+        """
+        Returns the current path of the active panel, or None if no active panel."""
         active_panel = self._get_active_panel_widget()
         if active_panel:
             return active_panel.file_view.get_current_path()
@@ -102,7 +103,8 @@ class ApplicationLogicHandler(QObject):
         return None
 
     def _get_selected_file_path(self):
-        """Returns the path of the single selected file in the active panel, or None."""
+        """
+        Returns the path of the single selected file in the active panel, or None."""
         selected_path = self.main_window.ui_manager.folder_browser.get_current_selected_path()
         if selected_path and os.path.isfile(selected_path):
             return selected_path
