@@ -14,7 +14,7 @@
             <string>QuickFile</string>
         </property>
         <widget class="QWidget" name="centralwidget">
-            <layout class="QVBoxLayout" name="verticalLayout">
+            <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0">
                 <property name="spacing">
                     <number>0</number>
                 </property>
@@ -31,7 +31,6 @@
                     <number>0</number>
                 </property>
                 <item>
-                    <!-- This is a placeholder for our custom FolderBrowser widget. -->
                     <widget class="QWidget" name="folder_browser_placeholder">
                         <property name="sizePolicy">
                             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
@@ -42,7 +41,6 @@
                     </widget>
                 </item>
                 <item>
-                    <!-- This is a placeholder for our custom FunctionKeyPanel widget. -->
                     <widget class="QWidget" name="function_key_panel_placeholder">
                         <property name="sizePolicy">
                             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
