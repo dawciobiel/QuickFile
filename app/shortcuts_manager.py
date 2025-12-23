@@ -32,6 +32,8 @@ class ShortcutsManager:
             "Create Archive": "",
             "Extract Archive": "",
             "Open Bookmarks": "Ctrl+B",
+            "New Tab": "Ctrl+T",
+            "Close Tab": "Ctrl+W",
         }
         self.shortcuts = self.load_shortcuts()
 

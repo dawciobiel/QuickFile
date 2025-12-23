@@ -45,6 +45,8 @@ class MenuPanel(QObject):
     KEY_TREE_VIEW = "action.tree_view"
     KEY_CONFIGURE_SHORTCUTS = "action.configure_shortcuts"
     KEY_GENERAL_SETTINGS = "action.general_settings"
+    KEY_NEW_TAB = "action.new_tab"
+    KEY_CLOSE_TAB = "action.close_tab"
 
     def __init__(self, main_window, toolbar: QToolBar, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager):
         super().__init__(main_window)
@@ -132,11 +134,21 @@ class MenuPanel(QObject):
         settings_menu.addAction(shortcuts_action)
         settings_menu.addAction(settings_action)
 
-    # Removed open_general_settings_dialog and open_shortcuts_dialog from here
-
     def _create_file_menu(self):
         file_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "File"))
         
+        new_tab_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "New Tab"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Open a new tab"),
+            slot=self.application_logic_handler.new_tab,
+            shortcut_key=self.KEY_NEW_TAB
+        )
+        close_tab_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Close Tab"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Close the current tab"),
+            slot=self.application_logic_handler.close_tab,
+            shortcut_key=self.KEY_CLOSE_TAB
+        )
         compare_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "Compare"),
             tooltip_text=translation_manager.translate("MenuPanel", "Compare selected items"),
@@ -159,12 +171,13 @@ class MenuPanel(QObject):
             shortcut_key=self.KEY_EXIT
         )
 
+        file_menu.addAction(new_tab_action)
+        file_menu.addAction(close_tab_action)
+        file_menu.addSeparator()
         file_menu.addAction(compare_action)
         file_menu.addAction(properties_action)
         file_menu.addSeparator()
         file_menu.addAction(exit_action)
-        
-        # self.toolbar.addAction(properties_action) # Handled by add_to_toolbar
 
     def _create_archive_menu(self):
         archive_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Archive"))
@@ -187,7 +200,6 @@ class MenuPanel(QObject):
         operations_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Operations"))
         self.toolbar.addSeparator()
 
-        # --- Go Up ---
         go_up_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "Go Up"),
             tooltip_text=translation_manager.translate("MenuPanel", "Go to parent directory"),
@@ -196,10 +208,8 @@ class MenuPanel(QObject):
             shortcut_key=self.KEY_GO_UP,
             add_to_toolbar=True
         )
-        # self.toolbar.addAction(go_up_action) # Handled by add_to_toolbar
         operations_menu.addAction(go_up_action)
 
-        # --- Refresh ---
         refresh_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "Refresh"),
             tooltip_text=translation_manager.translate("MenuPanel", "Refresh the current view"),
@@ -208,14 +218,10 @@ class MenuPanel(QObject):
             shortcut_key=self.KEY_REFRESH,
             add_to_toolbar=True
         )
-        # self.toolbar.addAction(refresh_action) # Handled by add_to_toolbar
         operations_menu.addAction(refresh_action)
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
-        # --- Other Operations ---
-        
-        # New File
         new_file_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "New File"),
             tooltip_text=translation_manager.translate("MenuPanel", "Create a new empty file"),
@@ -226,7 +232,6 @@ class MenuPanel(QObject):
         )
         operations_menu.addAction(new_file_action)
 
-        # New Folder
         new_folder_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "New Folder"),
             tooltip_text=translation_manager.translate("MenuPanel", "Create a new directory"),
@@ -239,46 +244,30 @@ class MenuPanel(QObject):
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
-        # Search
         search_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Search"), tooltip_text=translation_manager.translate("MenuPanel", "Search for files and directories"), icon=QStyle.StandardPixmap.SP_FileDialogDetailedView, slot=self.main_window.search_input.setFocus, shortcut_key=self.KEY_SEARCH, add_to_toolbar=True)
         operations_menu.addAction(search_action)
-        # self.toolbar.addAction(search_action) # Handled by add_to_toolbar
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
-        # Copy
         copy_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Copy"), tooltip_text=translation_manager.translate("MenuPanel", "Copy selected items"), icon=QStyle.StandardPixmap.SP_FileLinkIcon, slot=self.application_logic_handler.copy_selected_item, shortcut_key=self.KEY_COPY, add_to_toolbar=True)
         operations_menu.addAction(copy_action)
-        # self.toolbar.addAction(copy_action) # Handled by add_to_toolbar
 
-        # Paste
         paste_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Paste"), tooltip_text=translation_manager.translate("MenuPanel", "Paste items from clipboard"), icon=QStyle.StandardPixmap.SP_FileIcon, slot=self.application_logic_handler.paste_item_to_current_dir, shortcut_key=self.KEY_PASTE, add_to_toolbar=True)
         operations_menu.addAction(paste_action)
-        # self.toolbar.addAction(paste_action) # Handled by add_to_toolbar
 
-        # Move
         move_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Move"), tooltip_text=translation_manager.translate("MenuPanel", "Move selected items"), icon=QStyle.StandardPixmap.SP_DirLinkIcon, slot=self.application_logic_handler.move_selected_item, shortcut_key=self.KEY_MOVE, add_to_toolbar=True)
         operations_menu.addAction(move_action)
-        # self.toolbar.addAction(move_action) # Handled by add_to_toolbar
 
-        # Rename
         rename_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Rename"), tooltip_text=translation_manager.translate("MenuPanel", "Rename selected item"), icon=QStyle.StandardPixmap.SP_LineEditClearButton, slot=self.application_logic_handler.rename_selected_item, shortcut_key=self.KEY_RENAME, add_to_toolbar=True)
         operations_menu.addAction(rename_action)
-        # self.toolbar.addAction(rename_action) # Handled by add_to_toolbar
 
-        # Delete
         delete_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Delete"), tooltip_text=translation_manager.translate("MenuPanel", "Delete selected items"), icon=QStyle.StandardPixmap.SP_TrashIcon, slot=self.application_logic_handler.delete_selected_item, shortcut_key=self.KEY_DELETE, add_to_toolbar=True)
         operations_menu.addAction(delete_action)
-        # self.toolbar.addAction(delete_action) # Handled by add_to_toolbar
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
-        # Compare
         compare_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Compare"), tooltip_text=translation_manager.translate("MenuPanel", "Compare selected items"), icon=QStyle.StandardPixmap.SP_FileDialogToParent, slot=self.application_logic_handler.compare_selected_items, shortcut_key=self.KEY_COMPARE, add_to_toolbar=True)
         operations_menu.addAction(compare_action)
-        # self.toolbar.addAction(compare_action) # Handled by add_to_toolbar
 
-        # Synchronize
         sync_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Synchronize"), tooltip_text=translation_manager.translate("MenuPanel", "Synchronize directories"), icon=QStyle.StandardPixmap.SP_DirLinkIcon, slot=self.application_logic_handler.synchronize_directories, shortcut_key=self.KEY_SYNCHRONIZE, add_to_toolbar=True)
         operations_menu.addAction(sync_action)
-        # self.toolbar.addAction(sync_action) # Handled by add_to_toolbar
