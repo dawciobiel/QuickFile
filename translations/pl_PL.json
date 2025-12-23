@@ -30,6 +30,8 @@
 
     "FavoritesDialog.Favorites": "Ulubione",
     "FavoritesDialog.Filter favorites...": "Filtruj ulubione...",
+    "FavoritesDialog.Delete": "Usuń",
+    "FavoritesDialog.Close": "Zamknij",
 
     "Buttons.OK": "OK",
     "Buttons.Cancel": "Anuluj",
