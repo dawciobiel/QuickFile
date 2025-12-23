@@ -1,32 +1,29 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QCheckBox, QDialogButtonBox
+from PyQt6 import uic
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox
 from app.translation_manager import translation_manager
 
 class CopyDialog(QDialog):
     def __init__(self, parent, source_path, destination_path):
         super().__init__(parent)
+        uic.loadUi("ui/file_operation_dialog.ui", self)
         self.setWindowTitle(translation_manager.translate("CopyDialog", "Copy"))
 
-        self.layout = QVBoxLayout(self)
+        self._init_ui(source_path, destination_path)
 
-        # Etykiety informacyjne
-        self.layout.addWidget(QLabel(f"<b>{translation_manager.translate('CopyDialog', 'Source')}:</b> {source_path}"))
-        self.layout.addWidget(QLabel(f"<b>{translation_manager.translate('CopyDialog', 'Destination')}:</b> {destination_path}"))
+    def _init_ui(self, source_path, destination_path):
+        # Set labels
+        self.source_path_label.setText(source_path)
+        self.destination_path_label.setText(destination_path)
 
-        # Opcje
-        self.overwrite_checkbox = QCheckBox(translation_manager.translate("CopyDialog", "Overwrite existing files"))
-        self.preserve_timestamp_checkbox = QCheckBox(translation_manager.translate("CopyDialog", "Preserve original modification date"))
-        self.preserve_timestamp_checkbox.setChecked(True)  # Domyślnie zaznaczone
+        # Configure options
+        self.overwrite_checkbox.setText(translation_manager.translate("CopyDialog", "Overwrite existing files"))
+        self.preserve_timestamp_checkbox.setText(translation_manager.translate("CopyDialog", "Preserve original modification date"))
+        self.preserve_timestamp_checkbox.setChecked(True)
+        self.preserve_timestamp_checkbox.setVisible(True)
 
-        self.layout.addWidget(self.overwrite_checkbox)
-        self.layout.addWidget(self.preserve_timestamp_checkbox)
-
-        # OK/Cancel buttons
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.button_box.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "OK"))
-        self.button_box.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("Buttons", "Cancel"))
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-        self.layout.addWidget(self.button_box)
+        # Configure buttons
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "OK"))
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("Buttons", "Cancel"))
 
     def get_options(self):
         """Returns a dictionary with selected options."""
