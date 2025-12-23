@@ -1,5 +1,5 @@
 from PyQt6 import uic
-from PyQt6.QtWidgets import QMainWindow
+from PyQt6.QtWidgets import QMainWindow, QApplication
 
 from __version__ import __version__
 from app.application_logic_handler import ApplicationLogicHandler
@@ -120,5 +120,9 @@ class MainWindow(QMainWindow):
         self.ui_manager.save_panel_settings()
 
     def closeEvent(self, event):
+        # Remove the global event filter to prevent SIGSEGV
+        if hasattr(self, 'keyboard_event_manager'):
+            QApplication.instance().removeEventFilter(self.keyboard_event_manager)
+
         self.save_settings()
         super().closeEvent(event)
