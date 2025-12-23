@@ -31,8 +31,13 @@ class SettingsHandler:
                 "show_gid_column" in new_settings:
             # These settings affect how file details are displayed.
             # Calling update_view_settings on file_view will refresh the model and delegate.
-            self.main_window.ui_manager.folder_browser.left_panel_widget.file_view.update_view_settings()
-            self.main_window.ui_manager.folder_browser.right_panel_widget.file_view.update_view_settings()
+            left_panel = self.main_window.ui_manager.folder_browser.get_left_panel_widget()
+            right_panel = self.main_window.ui_manager.folder_browser.get_right_panel_widget()
+            
+            if left_panel:
+                left_panel.file_view.update_view_settings()
+            if right_panel:
+                right_panel.file_view.update_view_settings()
 
         if "language_mode" in new_settings or "manual_language" in new_settings:
             # For language changes, we typically need to restart the application.

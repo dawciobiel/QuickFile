@@ -1,7 +1,7 @@
+from PyQt6 import uic
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QColor, QPixmap, QIcon  # Import QPixmap, QPainter, and QIcon
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QRadioButton, QPushButton, QCheckBox, QComboBox, QColorDialog, \
-    QLabel
+from PyQt6.QtGui import QColor, QPixmap, QIcon
+from PyQt6.QtWidgets import QDialog, QPushButton, QColorDialog, QDialogButtonBox
 
 from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
@@ -11,6 +11,7 @@ from app.translation_manager import translation_manager
 class SettingsDialog(QDialog):
     def __init__(self, parent, settings_manager: SettingsManager, theme_manager: ThemeManager):
         super().__init__(parent)
+        uic.loadUi("ui/settings_dialog.ui", self)
         self.setWindowTitle(translation_manager.translate("SettingsDialog", "Application Settings"))
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager
@@ -26,7 +27,6 @@ class SettingsDialog(QDialog):
 
         # New settings for Insert selection style
         self.current_insert_selection_text_color = self.settings_manager.get_setting("insert_selection_text_color")
-        # self.current_insert_selection_background_color = self.settings_manager.get_setting("insert_selection_background_color") # Removed
         self.current_insert_selection_font_bold = self.settings_manager.get_setting("insert_selection_font_bold")
         self.current_insert_selection_font_italic = self.settings_manager.get_setting("insert_selection_font_italic")
 
@@ -41,31 +41,17 @@ class SettingsDialog(QDialog):
 
         # Selected settings for Insert selection style
         self.selected_insert_selection_text_color = self.current_insert_selection_text_color
-        # self.selected_insert_selection_background_color = self.current_insert_selection_background_color # Removed
         self.selected_insert_selection_font_bold = self.current_insert_selection_font_bold
         self.selected_insert_selection_font_italic = self.current_insert_selection_font_italic
 
         self._init_ui()
 
     def _init_ui(self):
-        main_layout = QVBoxLayout(self)
-
-        # Group box for dot files
-        dot_files_group = QGroupBox(translation_manager.translate("SettingsDialog", "Hidden Files (Dot Files)"))
-        dot_files_layout = QVBoxLayout()
-        self.show_dot_files_checkbox = QCheckBox(translation_manager.translate("SettingsDialog", "Show files and folders starting with '.'"))
+        # 1. Dot Files
         self.show_dot_files_checkbox.setChecked(self.current_show_dot_files)
         self.show_dot_files_checkbox.stateChanged.connect(self._set_selected_show_dot_files)
-        dot_files_layout.addWidget(self.show_dot_files_checkbox)
-        dot_files_group.setLayout(dot_files_layout)
-        main_layout.addWidget(dot_files_group)
 
-        # Group box for File Permissions Display
-        permissions_group = QGroupBox(translation_manager.translate("SettingsDialog", "File Permissions Display"))
-        permissions_layout = QVBoxLayout()
-        self.symbolic_permissions_radio = QRadioButton(translation_manager.translate("SettingsDialog", "Symbolic (rwx)"))
-        self.numeric_permissions_radio = QRadioButton(translation_manager.translate("SettingsDialog", "Numeric (755)"))
-
+        # 2. File Permissions Display
         if self.current_file_permissions_display_mode == "symbolic":
             self.symbolic_permissions_radio.setChecked(True)
         else:
@@ -74,35 +60,14 @@ class SettingsDialog(QDialog):
         self.symbolic_permissions_radio.toggled.connect(lambda: self._set_selected_file_permissions_display_mode("symbolic"))
         self.numeric_permissions_radio.toggled.connect(lambda: self._set_selected_file_permissions_display_mode("numeric"))
 
-        permissions_layout.addWidget(self.symbolic_permissions_radio)
-        permissions_layout.addWidget(self.numeric_permissions_radio)
-        permissions_group.setLayout(permissions_layout)
-        main_layout.addWidget(permissions_group)
-
-        # Group box for Column Visibility
-        columns_group = QGroupBox(translation_manager.translate("SettingsDialog", "Column Visibility"))
-        columns_layout = QVBoxLayout()
-        self.show_uid_checkbox = QCheckBox(translation_manager.translate("SettingsDialog", "Show UID Column"))
+        # 3. Column Visibility
         self.show_uid_checkbox.setChecked(self.current_show_uid_column)
         self.show_uid_checkbox.stateChanged.connect(self._set_selected_show_uid_column)
-        columns_layout.addWidget(self.show_uid_checkbox)
 
-        self.show_gid_checkbox = QCheckBox(translation_manager.translate("SettingsDialog", "Show GID Column"))
         self.show_gid_checkbox.setChecked(self.current_show_gid_column)
         self.show_gid_checkbox.stateChanged.connect(self._set_selected_show_gid_column)
-        columns_layout.addWidget(self.show_gid_checkbox)
-
-        columns_group.setLayout(columns_layout)
-        main_layout.addWidget(columns_group)
         
-        # Group box for Language Settings
-        language_group = QGroupBox(translation_manager.translate("SettingsDialog", "Language Settings"))
-        language_layout = QVBoxLayout()
-
-        self.auto_language_radio = QRadioButton(translation_manager.translate("SettingsDialog", "Auto-detect language"))
-        self.manual_language_radio = QRadioButton(translation_manager.translate("SettingsDialog", "Manual language selection"))
-        
-        self.language_combo = QComboBox()
+        # 4. Language Settings
         self.language_combo.addItem("English (en_US)", "en_US")
         self.language_combo.addItem("Polski (pl_PL)", "pl_PL")
         
@@ -120,18 +85,8 @@ class SettingsDialog(QDialog):
         else:
             self.manual_language_radio.setChecked(True)
             self.language_combo.setEnabled(True)
-            
-        language_layout.addWidget(self.auto_language_radio)
-        language_layout.addWidget(self.manual_language_radio)
-        language_layout.addWidget(self.language_combo)
-        language_group.setLayout(language_layout)
-        main_layout.addWidget(language_group)
 
-        # Group box for Theme Settings
-        theme_group = QGroupBox(translation_manager.translate("SettingsDialog", "Theme Settings"))
-        theme_layout = QVBoxLayout()
-        self.theme_combo = QComboBox()
-        
+        # 5. Theme Settings
         available_themes = self.theme_manager.get_available_themes()
         for theme_name in available_themes:
             self.theme_combo.addItem(theme_name.capitalize(), theme_name)
@@ -141,64 +96,26 @@ class SettingsDialog(QDialog):
             self.theme_combo.setCurrentIndex(index)
         
         self.theme_combo.currentIndexChanged.connect(self._set_selected_theme)
-        theme_layout.addWidget(self.theme_combo)
-        theme_group.setLayout(theme_layout)
-        main_layout.addWidget(theme_group)
 
-        # New Group box for Insert Selection Style
-        insert_selection_group = QGroupBox(translation_manager.translate("SettingsDialog", "Insert Selection Style"))
-        insert_selection_layout = QVBoxLayout()
-
+        # 6. Insert Selection Style
         # Text Color
-        text_color_layout = QHBoxLayout()
-        text_color_layout.addWidget(QLabel(translation_manager.translate("SettingsDialog", "Text Color:")))
-        self.insert_text_color_button = QPushButton("")
         self.insert_text_color_button.setFixedSize(QSize(30, 20))
         self._update_color_button_icon(self.insert_text_color_button, self.selected_insert_selection_text_color)
         self.insert_text_color_button.clicked.connect(self._pick_insert_text_color)
-        text_color_layout.addWidget(self.insert_text_color_button)
-        text_color_layout.addStretch()
-        insert_selection_layout.addLayout(text_color_layout)
-
-        # Removed Background Color controls
-        # bg_color_layout = QHBoxLayout()
-        # bg_color_layout.addWidget(QLabel(translation_manager.translate("SettingsDialog", "Background Color:")))
-        # self.insert_bg_color_button = QPushButton("")
-        # self.insert_bg_color_button.setFixedSize(QSize(30, 20))
-        # self._update_color_button_icon(self.insert_bg_color_button, self.selected_insert_selection_background_color)
-        # self.insert_bg_color_button.clicked.connect(self._pick_insert_background_color)
-        # bg_color_layout.addWidget(self.insert_bg_color_button)
-        # bg_color_layout.addStretch()
-        # insert_selection_layout.addLayout(bg_color_layout)
 
         # Font Styles
-        font_style_layout = QHBoxLayout()
-        self.insert_font_bold_checkbox = QCheckBox(translation_manager.translate("SettingsDialog", "Bold"))
         self.insert_font_bold_checkbox.setChecked(self.current_insert_selection_font_bold)
         self.insert_font_bold_checkbox.stateChanged.connect(self._set_selected_insert_font_bold)
-        font_style_layout.addWidget(self.insert_font_bold_checkbox)
 
-        self.insert_font_italic_checkbox = QCheckBox(translation_manager.translate("SettingsDialog", "Italic"))
         self.insert_font_italic_checkbox.setChecked(self.current_insert_selection_font_italic)
         self.insert_font_italic_checkbox.stateChanged.connect(self._set_selected_insert_font_italic)
-        font_style_layout.addWidget(self.insert_font_italic_checkbox)
-        font_style_layout.addStretch()
-        insert_selection_layout.addLayout(font_style_layout)
 
-        insert_selection_group.setLayout(insert_selection_layout)
-        main_layout.addWidget(insert_selection_group)
-
-
-        # Buttons
-        button_layout = QHBoxLayout()
-        self.save_button = QPushButton(translation_manager.translate("SettingsDialog", "Save"))
-        self.cancel_button = QPushButton(translation_manager.translate("SettingsDialog", "Cancel"))
-        button_layout.addWidget(self.save_button)
-        button_layout.addWidget(self.cancel_button)
-        main_layout.addLayout(button_layout)
-
-        self.save_button.clicked.connect(self.accept)
-        self.cancel_button.clicked.connect(self.reject)
+        # 7. Buttons (handled by QDialogButtonBox in .ui)
+        # We don't need to manually connect accept/reject as they are connected in .ui signals/slots
+        # But we might want to customize the text if needed, though standard buttons are usually localized by Qt.
+        # If we want to force our translations:
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Save).setText(translation_manager.translate("SettingsDialog", "Save"))
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("SettingsDialog", "Cancel"))
 
     def _update_color_button_icon(self, button: QPushButton, color_hex: str):
         pixmap = QPixmap(button.size())  # Create an empty QPixmap
@@ -210,13 +127,6 @@ class SettingsDialog(QDialog):
         if color.isValid():
             self.selected_insert_selection_text_color = color.name()
             self._update_color_button_icon(self.insert_text_color_button, self.selected_insert_selection_text_color)
-
-    # Removed _pick_insert_background_color method
-    # def _pick_insert_background_color(self):
-    #     color = QColorDialog.getColor(QColor(self.selected_insert_selection_background_color), self)
-    #     if color.isValid():
-    #         self.selected_insert_selection_background_color = color.name()
-    #         self._update_color_button_icon(self.insert_bg_color_button, self.selected_insert_selection_background_color)
 
     def _set_selected_show_dot_files(self, state):
         self.selected_show_dot_files = (state == Qt.CheckState.Checked.value)
@@ -256,7 +166,6 @@ class SettingsDialog(QDialog):
             "manual_language": self.selected_manual_language,
             "theme": self.selected_theme,
             "insert_selection_text_color": self.selected_insert_selection_text_color,
-            # "insert_selection_background_color": self.selected_insert_selection_background_color, # Removed
             "insert_selection_font_bold": self.selected_insert_selection_font_bold,
             "insert_selection_font_italic": self.selected_insert_selection_font_italic
         }
