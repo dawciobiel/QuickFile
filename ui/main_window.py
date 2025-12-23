@@ -1,14 +1,15 @@
+from PyQt6 import uic
 from PyQt6.QtWidgets import QMainWindow
 
 from __version__ import __version__
 from app.application_logic_handler import ApplicationLogicHandler
-from app.dialog_handler import DialogHandler  # Import DialogHandler
-from app.keyboard_event_handler import KeyboardEventManager  # Updated import
-from app.settings_handler import SettingsHandler  # Import SettingsHandler
+from app.dialog_handler import DialogHandler
+from app.keyboard_event_handler import KeyboardEventManager
+from app.settings_handler import SettingsHandler
 from app.settings_manager import SettingsManager
 from app.shortcuts_manager import ShortcutsManager
-from app.theme_manager import ThemeManager  # Import ThemeManager
-from app.ui_state_provider import UIStateProvider  # Import UIStateProvider
+from app.theme_manager import ThemeManager
+from app.ui_state_provider import UIStateProvider
 from bookmarks.bookmarks_manager import BookmarksManager
 from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
@@ -20,8 +21,8 @@ from ui.ui_manager import UIManager
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        uic.loadUi("ui/main_window.ui", self)
         self.setWindowTitle(f"QuickFile v{__version__}")
-        self.resize(1200, 800)
 
         # Initialize managers
         self.shortcuts_manager = ShortcutsManager(self)
@@ -51,7 +52,7 @@ class MainWindow(QMainWindow):
             archive_manager=self.archive_manager,
             directory_synchronizer=self.directory_synchronizer,
             bookmarks_manager=self.bookmarks_manager,
-            theme_manager=self.theme_manager # Pass theme_manager
+            theme_manager=self.theme_manager
         )
         
         # Initialize ApplicationLogicHandler
@@ -63,10 +64,9 @@ class MainWindow(QMainWindow):
             archive_manager=self.archive_manager,
             directory_synchronizer=self.directory_synchronizer,
             theme_manager=self.theme_manager,
-            # Pass ui_state_provider, dialog_handler, and settings_handler
-            ui_state_provider=None,  # Temporary None value
-            dialog_handler=None,       # Temporary None value
-            settings_handler=self.settings_handler  # Corrected to pass SettingsHandler instance
+            ui_state_provider=None,
+            dialog_handler=None,
+            settings_handler=self.settings_handler
         )
 
         # Initialize the UI
@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
             archive_manager=self.archive_manager,
             directory_synchronizer=self.directory_synchronizer,
             ui_state_provider=self.ui_state_provider,
-            settings_manager=self.settings_manager # Corrected argument name to settings_manager
+            settings_manager=self.settings_manager
         )
 
         # Now that ui_state_provider and dialog_handler are initialized, update application_logic_handler
@@ -101,9 +101,8 @@ class MainWindow(QMainWindow):
         self.shortcuts_manager.apply_shortcuts()
         self.load_settings()
         
-        # The event filter will be installed in main.py
         # Apply initial theme
-        initial_theme = self.settings_manager.get_setting("theme", "dark") # Default to 'dark'
+        initial_theme = self.settings_manager.get_setting("theme", "dark")
         self.theme_manager.apply_theme(initial_theme)
 
     def load_settings(self):

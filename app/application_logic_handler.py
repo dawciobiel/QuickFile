@@ -89,7 +89,7 @@ class ApplicationLogicHandler(QObject):
         if active_panel:
             return active_panel
         # Fallback to the left panel if no panel has focus
-        return self.main_window.ui_manager.folder_browser.left_panel_widget
+        return self.main_window.ui_manager.folder_browser.get_left_panel_widget()
 
     def _get_active_panel_path(self):
         """Returns the current path of the active panel, or None if no active panel."""
@@ -101,10 +101,13 @@ class ApplicationLogicHandler(QObject):
     def _get_inactive_panel_path(self):
         """Returns the current path of the inactive panel, or None if no inactive panel."""
         active_panel = self._get_active_panel_widget()
-        if active_panel == self.main_window.ui_manager.folder_browser.left_panel_widget:
-            return self.main_window.ui_manager.folder_browser.right_panel_widget.file_view.get_current_path()
-        elif active_panel == self.main_window.ui_manager.folder_browser.right_panel_widget:
-            return self.main_window.ui_manager.folder_browser.left_panel_widget.file_view.get_current_path()
+        left_panel = self.main_window.ui_manager.folder_browser.get_left_panel_widget()
+        right_panel = self.main_window.ui_manager.folder_browser.get_right_panel_widget()
+        
+        if active_panel == left_panel:
+            return right_panel.file_view.get_current_path()
+        elif active_panel == right_panel:
+            return left_panel.file_view.get_current_path()
         return None
 
     def _get_selected_file_path(self):
@@ -117,8 +120,13 @@ class ApplicationLogicHandler(QObject):
     def on_theme_changed(self, theme_path):
         # Instead of calling load_file_styles on the model,
         # call update_view_settings on the file_view, which will refresh the model and delegate.
-        self.main_window.ui_manager.folder_browser.left_panel_widget.file_view.update_view_settings()
-        self.main_window.ui_manager.folder_browser.right_panel_widget.file_view.update_view_settings()
+        left_panel = self.main_window.ui_manager.folder_browser.get_left_panel_widget()
+        right_panel = self.main_window.ui_manager.folder_browser.get_right_panel_widget()
+        
+        if left_panel:
+            left_panel.file_view.update_view_settings()
+        if right_panel:
+            right_panel.file_view.update_view_settings()
 
     @handle_app_logic_error("Preview Error")
     def _handle_f3_key(self, checked=False):
@@ -181,8 +189,11 @@ class ApplicationLogicHandler(QObject):
         self._compare_selected_items_logic()
 
     def _compare_selected_items_logic(self):
-        left_selected_path = self.ui_state_provider.folder_browser.left_panel_widget.file_view.get_current_path()
-        right_selected_path = self.ui_state_provider.folder_browser.right_panel_widget.file_view.get_current_path()
+        left_panel = self.ui_state_provider.folder_browser.get_left_panel_widget()
+        right_panel = self.ui_state_provider.folder_browser.get_right_panel_widget()
+        
+        left_selected_path = left_panel.file_view.get_current_path() if left_panel else None
+        right_selected_path = right_panel.file_view.get_current_path() if right_panel else None
 
         if not left_selected_path or not right_selected_path:
             logging.warning("Comparison Error: User tried to compare without selecting items in both panels.")

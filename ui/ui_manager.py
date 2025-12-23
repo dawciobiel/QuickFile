@@ -14,13 +14,13 @@ from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from app.shortcuts_manager import ShortcutsManager
 from app.settings_manager import SettingsManager
-from app.theme_manager import ThemeManager # Import ThemeManager
+from app.theme_manager import ThemeManager
 from utils.dialogs import show_error_message
 from utils.search_dialog import SearchDialog
 from utils.bookmark_dialog import BookmarkDialog
 from utils.compare_dialog import CompareDialog
-from app.translation_manager import translation_manager # Import our new manager
-from app.application_logic_handler import ApplicationLogicHandler # Import ApplicationLogicHandler
+from app.translation_manager import translation_manager
+from app.application_logic_handler import ApplicationLogicHandler
 
 class UIManager(QObject):
     def __init__(self, main_window, settings_manager, file_manager, file_comparator, archive_manager, directory_synchronizer, bookmarks_manager, theme_manager: ThemeManager):
@@ -32,9 +32,8 @@ class UIManager(QObject):
         self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
         self.bookmarks_manager = bookmarks_manager
-        self.theme_manager = theme_manager # Store theme_manager
+        self.theme_manager = theme_manager
 
-        # Attributes to hold the created UI components
         self.folder_browser = None
         self.toolbar = None
         self.search_input = None
@@ -43,22 +42,13 @@ class UIManager(QObject):
         self.status_bar = None
         self.function_key_panel = None
 
-        # _init_ui and _connect_signals will be called externally by MainWindow
-        # to ensure correct initialization order with ApplicationLogicHandler
-
     def _create_folder_browser(self):
         return FolderBrowser(
             view_mode=self.settings_manager.get_setting("view_mode"),
             settings_manager=self.settings_manager,
-            theme_manager=self.theme_manager, # Pass theme_manager
+            theme_manager=self.theme_manager,
             parent=self.main_window
         )
-
-    def _create_toolbar(self):
-        toolbar = self.main_window.addToolBar(translation_manager.translate("UIManager", "Main Tools"))
-        toolbar.setObjectName("mainToolbar")
-        toolbar.setMovable(False)
-        return toolbar
 
     def _create_search_input(self):
         search_input = QLineEdit(self.main_window)
@@ -74,45 +64,54 @@ class UIManager(QObject):
     def _create_menu_panel(self, toolbar: QToolBar, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager):
         return MenuPanel(self.main_window, toolbar, application_logic_handler, shortcuts_manager)
 
-    def _create_status_bar(self):
-        status_bar = self.main_window.statusBar()
-        status_bar.showMessage(translation_manager.translate("UIManager", "Ready"))
-        return status_bar
-
     def _create_function_key_panel(self):
         return FunctionKeyPanel(self.main_window)
 
-    def init_ui(self, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager): # Renamed and added parameters
+    def init_ui(self, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager):
+        # 1. Setup Toolbar
+        self.toolbar = self.main_window.findChild(QToolBar, "mainToolbar")
+        if not self.toolbar:
+            self.toolbar = self.main_window.addToolBar(translation_manager.translate("UIManager", "Main Tools"))
+            self.toolbar.setObjectName("mainToolbar")
+        
+        self.main_window.mainToolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+
+        # 2. Create Components
         self.folder_browser = self._create_folder_browser()
-        self.toolbar = self._create_toolbar()
+        self.function_key_panel = self._create_function_key_panel()
         self.search_input = self._create_search_input()
         self.add_bookmark_button = self._create_add_bookmark_button()
-        
-        # Assign UI components to main_window for external access
+
+        # 3. Expose components to MainWindow (MUST be done before initializing menus)
         self.main_window.folder_browser = self.folder_browser
         self.main_window.search_input = self.search_input
         self.main_window.add_bookmark_button = self.add_bookmark_button
 
-        # Create MenuPanel and then initialize its menus
-        self.menu_panel = self._create_menu_panel(self.toolbar, application_logic_handler, shortcuts_manager) # Use passed handler
-        self.menu_panel.initialize_menus() # Call the new initialization method
+        # 4. Replace Placeholders
+        central_widget_layout = self.main_window.centralwidget.layout()
+        if central_widget_layout:
+            folder_browser_placeholder = self.main_window.findChild(QWidget, "folder_browser_placeholder")
+            if folder_browser_placeholder:
+                central_widget_layout.replaceWidget(folder_browser_placeholder, self.folder_browser)
+                folder_browser_placeholder.deleteLater()
+            
+            function_key_panel_placeholder = self.main_window.findChild(QWidget, "function_key_panel_placeholder")
+            if function_key_panel_placeholder:
+                central_widget_layout.replaceWidget(function_key_panel_placeholder, self.function_key_panel)
+                function_key_panel_placeholder.deleteLater()
 
-        self.status_bar = self._create_status_bar()
-        self.function_key_panel = self._create_function_key_panel()
+        # 5. Setup Menu Panel
+        self.menu_panel = self._create_menu_panel(self.toolbar, application_logic_handler, shortcuts_manager)
+        self.menu_panel.initialize_menus()
 
+        # 6. Add widgets to Toolbar
         self.toolbar.addWidget(self.search_input)
         self.toolbar.addWidget(self.add_bookmark_button)
+        
+        self.status_bar = self.main_window.statusBar()
+        self.status_bar.showMessage(translation_manager.translate("UIManager", "Ready"))
 
-        central_widget = QWidget(self.main_window)
-        self.main_window.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        layout.addWidget(self.folder_browser, 1)
-        layout.addWidget(self.function_key_panel)
-
-    def connect_signals(self, application_logic_handler: ApplicationLogicHandler): # New method
+    def connect_signals(self, application_logic_handler: ApplicationLogicHandler):
         self.search_input.returnPressed.connect(application_logic_handler.start_file_search)
         self.folder_browser.file_selected.connect(application_logic_handler.open_file_externally)
         self.folder_browser.current_directory_changed.connect(application_logic_handler.update_status_bar_path)
@@ -122,11 +121,9 @@ class UIManager(QObject):
         self.menu_panel.view_mode_changed.connect(self.folder_browser.set_view_mode)
 
     def load_panel_settings(self):
-        """Loads panel paths and active panel using FolderBrowser."""
         if self.folder_browser:
             self.folder_browser.load_panel_settings()
 
     def save_panel_settings(self):
-        """Saves panel paths and active panel using FolderBrowser."""
         if self.folder_browser:
             self.folder_browser.save_panel_settings()
