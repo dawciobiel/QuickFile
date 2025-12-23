@@ -146,8 +146,12 @@ class DialogHandler:
             self.ui_state_provider.folder_browser.refresh_all_views()
 
     def synchronize_directories(self, checked=False):
-        left_path = self.ui_state_provider.folder_browser.left_panel_widget.file_view.get_current_path()
-        right_path = self.ui_state_provider.folder_browser.right_panel_widget.file_view.get_current_path()
+        left_panel = self.ui_state_provider.folder_browser.get_left_panel_widget()
+        right_panel = self.ui_state_provider.folder_browser.get_right_panel_widget()
+        
+        left_path = left_panel.file_view.get_current_path() if left_panel else None
+        right_path = right_panel.file_view.get_current_path() if right_panel else None
+
         if left_path and right_path:
             dialog = SyncDialog(self.main_window, left_path, right_path)
             if dialog.exec() == QDialog.DialogCode.Accepted:
