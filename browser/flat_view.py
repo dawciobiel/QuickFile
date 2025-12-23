@@ -1,7 +1,7 @@
 import os
 
 # import logging # Removed logging
-from PyQt6.QtCore import Qt, QEvent
+from PyQt6.QtCore import Qt, QEvent, pyqtSignal
 from PyQt6.QtWidgets import QTableView, QVBoxLayout, QAbstractItemView, QHeaderView
 
 from app.theme_manager import ThemeManager  # Import ThemeManager
@@ -11,6 +11,9 @@ from browser.styling_delegate import FileStyleDelegate
 
 
 class FlatFileView(AbstractFileView):
+    insert_selection_changed = pyqtSignal()
+    file_selected = pyqtSignal(str) # Added missing signal
+
     def __init__(self, settings_manager, theme_manager: ThemeManager, parent=None):
         super().__init__(settings_manager, parent)
         self.theme_manager = theme_manager # Store theme_manager
@@ -108,6 +111,7 @@ class FlatFileView(AbstractFileView):
 
         # Clear insert selections when path changes
         self._insert_selected_items.clear()
+        self.insert_selection_changed.emit()
 
         found_index = None
         if select_item_name:
@@ -134,6 +138,7 @@ class FlatFileView(AbstractFileView):
         # After refresh, ensure insert selections are still valid or clear them
         # For simplicity, let's clear them on refresh for now.
         self._insert_selected_items.clear()
+        self.insert_selection_changed.emit()
 
     def get_selected_paths(self):
         return self.model.get_selected_paths()
@@ -167,6 +172,8 @@ class FlatFileView(AbstractFileView):
             self.go_up()
         elif os.path.isdir(path):
             self.set_path(path)
+        else:
+            self.file_selected.emit(path) # Emit signal for files
         
     def toggle_selection(self):
         current_index = self.view.currentIndex()
@@ -192,4 +199,5 @@ class FlatFileView(AbstractFileView):
 
             # Force a full update of the view for diagnostic purposes
             self.view.update()
+            self.insert_selection_changed.emit()
             # logging.critical("[FlatFileView.toggle_insert_selection_for_current_item] View updated.") # Removed logging

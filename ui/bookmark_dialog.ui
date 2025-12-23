@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>BookmarkDialog</class>
+    <widget class="QDialog" name="BookmarkDialog">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>600</width>
+                <height>400</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>Bookmarks</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+            <item>
+                <widget class="QLineEdit" name="filter_input">
+                    <property name="placeholderText">
+                        <string>Filter bookmarks...</string>
+                    </property>
+                </widget>
+            </item>
+            <item>
+                <widget class="QListWidget" name="bookmarks_list"/>
+            </item>
+        </layout>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>

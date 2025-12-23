@@ -1,7 +1,7 @@
 import os
 
 # import logging # Removed logging
-from PyQt6.QtCore import QModelIndex, Qt, QEvent
+from PyQt6.QtCore import QModelIndex, Qt, QEvent, pyqtSignal
 from PyQt6.QtWidgets import QTreeView, QVBoxLayout, QAbstractItemView, QHeaderView
 
 from app.theme_manager import ThemeManager  # Import ThemeManager
@@ -11,6 +11,9 @@ from browser.tree_file_system_model import TreeFileSystemModel
 
 
 class TreeFileView(AbstractFileView):
+    insert_selection_changed = pyqtSignal()
+    file_selected = pyqtSignal(str) # Added missing signal
+
     def __init__(self, settings_manager, theme_manager: ThemeManager, parent=None):
         super().__init__(settings_manager, parent)
         self.theme_manager = theme_manager # Store theme_manager
@@ -71,6 +74,7 @@ class TreeFileView(AbstractFileView):
 
         # Clear insert selections when path changes
         self._insert_selected_items.clear()
+        self.insert_selection_changed.emit()
 
         if select_item_name:
             found_index = None
@@ -96,6 +100,7 @@ class TreeFileView(AbstractFileView):
         # After refresh, ensure insert selections are still valid or clear them
         # For simplicity, let's clear them on refresh for now.
         self._insert_selected_items.clear()
+        self.insert_selection_changed.emit()
 
     def get_selected_paths(self):
         # Tree view does not support checkbox selection in this implementation
@@ -145,11 +150,14 @@ class TreeFileView(AbstractFileView):
         self.settings_manager.set_setting("tree_column_widths", column_widths)
         
     def on_item_double_clicked(self, index):
-        if os.path.isdir(self.model.filePath(index)):
+        path = self.model.filePath(index)
+        if os.path.isdir(path):
             if self.view.isExpanded(index):
                 self.view.collapse(index)
             else:
                 self.view.expand(index)
+        else:
+            self.file_selected.emit(path) # Emit signal for files
 
     def toggle_selection(self):
         current_index = self.view.currentIndex()
@@ -176,4 +184,5 @@ class TreeFileView(AbstractFileView):
 
             # Force a full update of the view for diagnostic purposes
             self.view.update()
+            self.insert_selection_changed.emit()
             # logging.critical("[TreeFileView.toggle_insert_selection_for_current_item] View updated.") # Removed logging
