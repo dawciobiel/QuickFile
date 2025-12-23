@@ -1,6 +1,7 @@
 import logging
 import os
 import subprocess
+import shlex
 from functools import wraps
 
 from PyQt6.QtCore import QObject
@@ -19,10 +20,6 @@ from utils.dialogs import show_error_message
 
 
 def handle_app_logic_error(title_key):
-    """
-    A decorator to wrap application logic methods, catching common exceptions
-    and displaying an error message to the user.
-    """
     def decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -58,67 +55,15 @@ class ApplicationLogicHandler(QObject):
 
         self.theme_manager.theme_changed.connect(self.on_theme_changed)
 
-        self.ACTION_COMPARE = translation_manager.translate("MenuPanel", "Compare")
-        self.ACTION_PROPERTIES = translation_manager.translate("MenuPanel", "Properties")
-        self.ACTION_EXIT = translation_manager.translate("MenuPanel", "Exit")
-        self.ACTION_CREATE_ARCHIVE = translation_manager.translate("MenuPanel", "Create Archive")
-        self.ACTION_EXTRACT_ARCHIVE = translation_manager.translate("MenuPanel", "Extract Archive")
-        self.ACTION_GO_UP = translation_manager.translate("MenuPanel", "Go Up")
-        self.ACTION_REFRESH = translation_manager.translate("MenuPanel", "Refresh")
-        self.ACTION_NEW_FILE = translation_manager.translate("MenuPanel", "New File")
-        self.ACTION_NEW_FOLDER = translation_manager.translate("MenuPanel", "New Folder")
-        self.ACTION_SEARCH = translation_manager.translate("MenuPanel", "Search")
-        self.ACTION_COPY = translation_manager.translate("MenuPanel", "Copy")
-        self.ACTION_PASTE = translation_manager.translate("MenuPanel", "Paste")
-        self.ACTION_MOVE = translation_manager.translate("MenuPanel", "Move")
-        self.ACTION_RENAME = translation_manager.translate("MenuPanel", "Rename")
-        self.ACTION_DELETE = translation_manager.translate("MenuPanel", "Delete")
-        self.ACTION_SYNCHRONIZE = translation_manager.translate("MenuPanel", "Synchronize")
-
-        self.ERROR_NO_ACTIVE_PANEL = translation_manager.translate("MenuPanel", "No active panel.")
-        self.ERROR_NO_CURRENT_DIR = translation_manager.translate("MenuPanel", "Could not determine current directory for active panel.")
-        self.ERROR_FILE_CREATION = translation_manager.translate("MenuPanel", "File Creation Error")
-        self.ERROR_FOLDER_CREATION = translation_manager.translate("MenuPanel", "Folder Creation Error")
-
-    def _get_active_panel_widget(self):
-        """
-        Returns the currently active PanelWidget.
-        If no panel is explicitly active, defaults to the left panel.
-        """
-        active_panel = self.main_window.ui_manager.folder_browser.active_panel_widget
-        if active_panel:
-            return active_panel
-        return self.main_window.ui_manager.folder_browser.get_left_panel_widget()
-
     def _get_active_panel_path(self):
-        """Returns the current path of the active panel, or None if no active panel."""
-        active_panel = self._get_active_panel_widget()
+        active_panel = self.ui_state_provider.get_active_panel_widget()
         if active_panel:
             return active_panel.file_view.get_current_path()
         return None
 
-    def _get_inactive_panel_path(self):
-        """Returns the current path of the inactive panel, or None if no inactive panel."""
-        active_panel = self._get_active_panel_widget()
-        left_panel = self.main_window.ui_manager.folder_browser.get_left_panel_widget()
-        right_panel = self.main_window.ui_manager.folder_browser.get_right_panel_widget()
-        
-        if active_panel == left_panel:
-            return right_panel.file_view.get_current_path()
-        elif active_panel == right_panel:
-            return left_panel.file_view.get_current_path()
-        return None
-
-    def _get_selected_file_path(self):
-        """Returns the path of the single selected file in the active panel, or None."""
-        selected_path = self.main_window.ui_manager.folder_browser.get_current_selected_path()
-        if selected_path and os.path.isfile(selected_path):
-            return selected_path
-        return None
-
     def on_theme_changed(self, theme_path):
-        left_panel = self.main_window.ui_manager.folder_browser.get_left_panel_widget()
-        right_panel = self.main_window.ui_manager.folder_browser.get_right_panel_widget()
+        left_panel = self.ui_state_provider.folder_browser.get_left_panel_widget()
+        right_panel = self.ui_state_provider.folder_browser.get_right_panel_widget()
         
         if left_panel:
             left_panel.file_view.update_view_settings()
@@ -133,11 +78,28 @@ class ApplicationLogicHandler(QObject):
     def close_tab(self, checked=False):
         self.main_window.ui_manager.folder_browser.close_current_tab()
 
+    def _run_external_command(self, command_template, file_path):
+        if not file_path:
+            return
+        command = command_template.replace("%f", shlex.quote(file_path))
+        try:
+            subprocess.Popen(shlex.split(command))
+        except Exception as e:
+            show_error_message(self.main_window, "Error", f"Failed to run command: {command}\n{e}")
+
+    @handle_app_logic_error("File Opening Error")
+    def open_file_externally(self, file_path):
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File '{file_path}' does not exist.")
+        command = self.main_window.settings_manager.get_setting("editor_command")
+        self._run_external_command(command, file_path)
+
     @handle_app_logic_error("Preview Error")
     def _handle_f3_key(self, checked=False):
         selected_path = self.ui_state_provider.get_selected_file_path()
         if selected_path:
-            self.open_file_externally(selected_path)
+            command = self.main_window.settings_manager.get_setting("viewer_command")
+            self._run_external_command(command, selected_path)
         else:
             self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", "No file selected for preview."))
 
@@ -145,75 +107,40 @@ class ApplicationLogicHandler(QObject):
     def _handle_f4_key(self, checked=False):
         selected_path = self.ui_state_provider.get_selected_file_path()
         if selected_path:
-            self.open_file_externally(selected_path)
+            command = self.main_window.settings_manager.get_setting("editor_command")
+            self._run_external_command(command, selected_path)
         else:
             self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", "No file selected for editing."))
 
     @handle_app_logic_error("Favorite Error")
     def add_favorite(self, checked=False):
-        current_path = self.ui_state_provider.get_active_panel_path()
+        current_path = self._get_active_panel_path()
         if current_path:
             self.favorites_manager.add_favorite(current_path)
             self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", f"Favorite added: {current_path}"))
         else:
-            show_error_message(self.main_window, "Favorite Error", self.ERROR_NO_CURRENT_DIR)
+            show_error_message(self.main_window, "Favorite Error", "Could not determine current directory.")
 
     def update_status_bar_path(self, path):
-        self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", "Current directory:") + f" {path}")
+        self.main_window.statusBar().showMessage(f"Current directory: {path}")
 
     @handle_app_logic_error("Search Error")
     def start_file_search(self, checked=False):
         search_text = self.main_window.search_input.text()
         if search_text:
-            current_path = self.ui_state_provider.get_active_panel_path()
+            current_path = self._get_active_panel_path()
             if not current_path:
-                show_error_message(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Search Error"), self.ERROR_NO_CURRENT_DIR)
+                show_error_message(self.main_window, "Search Error", "Could not determine current directory.")
                 return
             results, message = self.file_manager.search_files(current_path, search_text)
             self.dialog_handler.show_search_results(results)
             self.main_window.statusBar().showMessage(message)
         else:
-            self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", "Enter text to search."))
-
-    @handle_app_logic_error("File Opening Error")
-    def open_file_externally(self, file_path):
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(translation_manager.translate("ApplicationLogicHandler", f"File '{file_path}' does not exist."))
-
-        if os.name == 'nt':
-            os.startfile(file_path)
-        elif os.uname().sysname == 'Darwin':
-            subprocess.call(('open', file_path))
-        else:
-            subprocess.call(('xdg-open', file_path))
-        self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", f"File opened: {file_path}"))
+            self.main_window.statusBar().showMessage("Enter text to search.")
 
     @handle_app_logic_error("Comparison Error")
     def compare_selected_items(self, checked=False):
-        self._compare_selected_items_logic()
-
-    def _compare_selected_items_logic(self):
-        left_panel = self.ui_state_provider.folder_browser.get_left_panel_widget()
-        right_panel = self.ui_state_provider.folder_browser.get_right_panel_widget()
-        
-        left_selected_path = left_panel.file_view.get_current_path() if left_panel else None
-        right_selected_path = right_panel.file_view.get_current_path() if right_panel else None
-
-        if not left_selected_path or not right_selected_path:
-            logging.warning("Comparison Error: User tried to compare without selecting items in both panels.")
-            QMessageBox.warning(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Comparison Error"), translation_manager.translate("ApplicationLogicHandler", "Please select items in both panels to compare."))
-            return
-
-        is_left_dir = os.path.isdir(left_selected_path)
-        is_right_dir = os.path.isdir(right_selected_path)
-
-        if is_left_dir and is_right_dir:
-            self.dialog_handler._compare_directories(left_selected_path, right_selected_path)
-        elif not is_left_dir and not is_right_dir:
-            self.dialog_handler._compare_files(left_selected_path, right_selected_path)
-        else:
-            logging.warning("Comparison Error: User tried to compare a file with a directory.")
-            QMessageBox.warning(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Comparison Error"), translation_manager.translate("ApplicationLogicHandler", "Cannot compare a file with a directory. Please select two files or two directories."))
+        self.dialog_handler.compare_selected_items()
 
     @handle_app_logic_error("Open Favorite Error")
     def open_favorites_dialog(self, checked=False):
@@ -270,12 +197,6 @@ class ApplicationLogicHandler(QObject):
     @handle_app_logic_error("Shortcuts Error")
     def open_shortcuts_dialog(self, checked=False):
         self.dialog_handler.open_shortcuts_dialog()
-
-    def apply_general_settings(self, new_settings: dict):
-        self.settings_handler.apply_general_settings(new_settings)
-
-    def apply_shortcuts_settings(self, new_shortcuts):
-        self.settings_handler.apply_shortcuts_settings(new_shortcuts)
 
     def set_focus_on_path_edit(self):
         active_panel_widget = self.ui_state_provider.get_active_panel_widget()

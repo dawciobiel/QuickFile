@@ -7,7 +7,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>450</width>
-                <height>400</height>
+                <height>450</height>
             </rect>
         </property>
         <property name="windowTitle">
@@ -58,6 +58,35 @@
                                     <layout class="QVBoxLayout" name="verticalLayout_4">
                                         <item>
                                             <widget class="QComboBox" name="theme_combo"/>
+                                        </item>
+                                    </layout>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QGroupBox" name="external_editors_group">
+                                    <property name="title">
+                                        <string>External Editors</string>
+                                    </property>
+                                    <layout class="QFormLayout" name="formLayout_2">
+                                        <item row="0" column="0">
+                                            <widget class="QLabel" name="viewer_label">
+                                                <property name="text">
+                                                    <string>Viewer (F3):</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item row="0" column="1">
+                                            <widget class="QLineEdit" name="viewer_command_edit"/>
+                                        </item>
+                                        <item row="1" column="0">
+                                            <widget class="QLabel" name="editor_label">
+                                                <property name="text">
+                                                    <string>Editor (F4):</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item row="1" column="1">
+                                            <widget class="QLineEdit" name="editor_command_edit"/>
                                         </item>
                                     </layout>
                                 </widget>

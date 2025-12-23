@@ -207,6 +207,9 @@
   "SettingsDialog.Background Color:": "Kolor tła:",
   "SettingsDialog.Bold": "Pogrubienie",
   "SettingsDialog.Italic": "Kursywa",
+    "SettingsDialog.External Editors": "Edytory zewnętrzne",
+    "SettingsDialog.Viewer (F3):": "Podgląd (F3):",
+    "SettingsDialog.Editor (F4):": "Edytor (F4):",
 
     "ShortcutsDialog.Keyboard Shortcuts": "Skróty klawiszowe",
     "ShortcutsDialog.Save": "Zapisz",
