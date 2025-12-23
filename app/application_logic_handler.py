@@ -128,6 +128,14 @@ class ApplicationLogicHandler(QObject):
         if right_panel:
             right_panel.file_view.update_view_settings()
 
+    @handle_app_logic_error("Tab Error")
+    def new_tab(self, checked=False):
+        self.main_window.ui_manager.folder_browser.add_new_tab()
+
+    @handle_app_logic_error("Tab Error")
+    def close_tab(self, checked=False):
+        self.main_window.ui_manager.folder_browser.close_current_tab()
+
     @handle_app_logic_error("Preview Error")
     def _handle_f3_key(self, checked=False):
         selected_path = self.ui_state_provider.get_selected_file_path()

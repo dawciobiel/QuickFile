@@ -1,5 +1,6 @@
 {
     "ApplicationLogicHandler.Unexpected Error": "Nieoczekiwany błąd",
+    "ApplicationLogicHandler.Tab Error": "Błąd karty",
     "ApplicationLogicHandler.No file selected for preview.": "Nie wybrano pliku do podglądu.",
     "ApplicationLogicHandler.No file selected for editing.": "Nie wybrano pliku do edycji.",
     "ApplicationLogicHandler.Current directory:": "Bieżący katalog:",
@@ -124,6 +125,10 @@
     "MenuPanel.Rename": "Zmień nazwę",
     "MenuPanel.Delete": "Usuń",
     "MenuPanel.Synchronize": "Synchronizuj",
+    "MenuPanel.New Tab": "Nowa karta",
+    "MenuPanel.Close Tab": "Zamknij kartę",
+    "MenuPanel.Open a new tab": "Otwórz nową kartę",
+    "MenuPanel.Close the current tab": "Zamknij bieżącą kartę",
     "MenuPanel.No active panel.": "Brak aktywnego panelu.",
     "MenuPanel.Could not determine current directory for active panel.": "Nie można ustalić bieżącego katalogu dla aktywnego panelu.",
     "MenuPanel.File Creation Error": "Błąd tworzenia pliku",
