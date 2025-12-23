@@ -1,4 +1,5 @@
 {
+    "ApplicationLogicHandler.Unexpected Error": "Nieoczekiwany błąd",
     "ApplicationLogicHandler.No file selected for preview.": "Nie wybrano pliku do podglądu.",
     "ApplicationLogicHandler.No file selected for editing.": "Nie wybrano pliku do edycji.",
     "ApplicationLogicHandler.Current directory:": "Bieżący katalog:",
