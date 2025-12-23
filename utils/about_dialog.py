@@ -1,7 +1,7 @@
 import logging
 import os
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QTextBrowser
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6 import uic
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox
 from app.translation_manager import translation_manager
 
 try:
@@ -13,14 +13,13 @@ except ImportError:
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+        uic.loadUi("ui/about_dialog.ui", self)
         self.setWindowTitle(translation_manager.translate("AboutDialog", "About"))
-        self.setFixedSize(400, 250)
+        
+        self._init_ui()
 
-        layout = QVBoxLayout()
-
-        self.text_browser = QTextBrowser()
-        self.text_browser.setOpenExternalLinks(True)
-        layout.addWidget(self.text_browser)
+    def _init_ui(self):
+        self.textBrowser.setOpenExternalLinks(True)
 
         # Determine the current locale
         current_locale = translation_manager.current_locale
@@ -48,10 +47,7 @@ class AboutDialog(QDialog):
             logging.error(f"Error loading about dialog HTML: {e}")
             html_content = f"<h1>Error</h1><p>Could not load about information. Version: {__version__}</p>"
 
-        self.text_browser.setHtml(html_content)
-
-        ok_button = QPushButton("OK")
-        ok_button.clicked.connect(self.accept)
-        layout.addWidget(ok_button)
-
-        self.setLayout(layout)
+        self.textBrowser.setHtml(html_content)
+        
+        # Configure button text if needed (standard buttons are usually localized)
+        # self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText("OK")
