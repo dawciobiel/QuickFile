@@ -205,19 +205,17 @@ class FolderBrowser(QWidget):
         self.current_paths = {}
         self._init_tab_widget(self.leftTabWidget)
         self._init_tab_widget(self.rightTabWidget)
-        self.add_new_tab(self.leftTabWidget, os.path.expanduser("~"))
-        self.add_new_tab(self.rightTabWidget, os.path.expanduser("~"))
-        self.set_active_panel(self.leftTabWidget.currentWidget())
+        self.load_panel_settings()
 
     def _init_tab_widget(self, tab_widget: QTabWidget):
         tab_widget.setTabsClosable(True)
-        tab_widget.tabCloseRequested.connect(lambda index: self._close_tab_at_index(tab_widget, index))
-        tab_widget.currentChanged.connect(lambda index: self._on_tab_changed(tab_widget, index))
+        tab_widget.tabCloseRequested.connect(lambda index, tw=tab_widget: self._close_tab_at_index(tw, index))
+        tab_widget.currentChanged.connect(lambda index, tw=tab_widget: self._on_tab_changed(tw, index))
 
     def _create_panel_widget(self, path):
         panel = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
         panel.file_view.set_path(path)
-        panel.file_view.path_changed.connect(lambda new_path: self._update_tab_title(panel, new_path))
+        panel.file_view.path_changed.connect(lambda new_path, p=panel: self._update_tab_title(p, new_path))
         panel.file_view.file_selected.connect(self.file_selected.emit)
         panel.file_view.path_changed.connect(self.current_directory_changed.emit)
         return panel
@@ -378,25 +376,49 @@ class FolderBrowser(QWidget):
             self.rightTabWidget.widget(0).file_view.set_path(right_path)
 
     def load_panel_settings(self):
-        left_path = self.settings_manager.get_setting("leftPanelPath", os.path.expanduser("~"))
-        right_path = self.settings_manager.get_setting("rightPanelPath", os.path.expanduser("~"))
-        self.set_panel_paths(left_path, right_path)
+        # Clear existing tabs before loading
+        while self.leftTabWidget.count() > 0:
+            self.leftTabWidget.removeTab(0)
+        while self.rightTabWidget.count() > 0:
+            self.rightTabWidget.removeTab(0)
 
-    def get_left_panel_path(self):
-        if self.leftTabWidget.currentWidget():
-            return self.leftTabWidget.currentWidget().file_view.get_current_path()
-        return os.path.expanduser("~")
+        home_path = os.path.expanduser("~")
+        left_tabs = self.settings_manager.get_setting("leftPanelTabs", [home_path])
+        right_tabs = self.settings_manager.get_setting("rightPanelTabs", [home_path])
+        left_active_tab = self.settings_manager.get_setting("leftPanelActiveTab", 0)
+        right_active_tab = self.settings_manager.get_setting("rightPanelActiveTab", 0)
 
-    def get_right_panel_path(self):
-        if self.rightTabWidget.currentWidget():
-            return self.rightTabWidget.currentWidget().file_view.get_current_path()
-        return os.path.expanduser("~")
+        for path in left_tabs:
+            self.add_new_tab(self.leftTabWidget, path)
+        self.leftTabWidget.setCurrentIndex(left_active_tab)
+
+        for path in right_tabs:
+            self.add_new_tab(self.rightTabWidget, path)
+        self.rightTabWidget.setCurrentIndex(right_active_tab)
+
+        # Set initial active panel
+        last_active_panel = self.settings_manager.get_setting("lastActivePanel", "left")
+        if last_active_panel == "right":
+            self.set_active_panel(self.rightTabWidget.currentWidget())
+        else:
+            self.set_active_panel(self.leftTabWidget.currentWidget())
 
     def save_panel_settings(self):
-        if self.leftTabWidget.currentWidget():
-            self.settings_manager.set_setting("leftPanelPath", self.leftTabWidget.currentWidget().file_view.get_current_path())
-        if self.rightTabWidget.currentWidget():
-            self.settings_manager.set_setting("rightPanelPath", self.rightTabWidget.currentWidget().file_view.get_current_path())
+        left_tabs = [self.leftTabWidget.widget(i).file_view.get_current_path() for i in range(self.leftTabWidget.count())]
+        right_tabs = [self.rightTabWidget.widget(i).file_view.get_current_path() for i in range(self.rightTabWidget.count())]
+        
+        self.settings_manager.set_setting("leftPanelTabs", left_tabs)
+        self.settings_manager.set_setting("rightPanelTabs", right_tabs)
+        self.settings_manager.set_setting("leftPanelActiveTab", self.leftTabWidget.currentIndex())
+        self.settings_manager.set_setting("rightPanelActiveTab", self.rightTabWidget.currentIndex())
+
+        active_widget = self.active_panel_widget
+        if active_widget:
+            parent_tab_widget = self._get_parent_tab_widget(active_widget)
+            if parent_tab_widget == self.rightTabWidget:
+                self.settings_manager.set_setting("lastActivePanel", "right")
+            else:
+                self.settings_manager.set_setting("lastActivePanel", "left")
         
     def get_selected_paths(self):
         if not self.active_panel_widget:
