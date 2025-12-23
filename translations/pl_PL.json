@@ -212,6 +212,8 @@
     "SettingsDialog.External Editors": "Edytory zewnętrzne",
     "SettingsDialog.Viewer (F3):": "Podgląd (F3):",
     "SettingsDialog.Editor (F4):": "Edytor (F4):",
+    "SettingsDialog.Startup": "Uruchamianie",
+    "SettingsDialog.Bring window to front on startup": "Umieść okno na pierwszy plan",
 
     "ShortcutsDialog.Keyboard Shortcuts": "Skróty klawiszowe",
     "ShortcutsDialog.Save": "Zapisz",

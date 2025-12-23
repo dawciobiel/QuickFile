@@ -25,6 +25,7 @@ class SettingsDialog(QDialog):
         self.current_theme = self.settings_manager.get_setting("theme", "dark")
         self.current_viewer_command = self.settings_manager.get_setting("viewer_command")
         self.current_editor_command = self.settings_manager.get_setting("editor_command")
+        self.current_bring_to_front = self.settings_manager.get_setting("bringToFrontOnStartup")
 
         self.current_insert_selection_text_color = self.settings_manager.get_setting("insert_selection_text_color")
         self.current_insert_selection_font_bold = self.settings_manager.get_setting("insert_selection_font_bold")
@@ -35,6 +36,10 @@ class SettingsDialog(QDialog):
         self._init_ui()
 
     def _init_ui(self):
+        # General Tab
+        self.language_group.setTitle(translation_manager.translate("SettingsDialog", "Language Settings"))
+        self.auto_language_radio.setText(translation_manager.translate("SettingsDialog", "Auto-detect language"))
+        self.manual_language_radio.setText(translation_manager.translate("SettingsDialog", "Manual language selection"))
         self.language_combo.addItem("English (en_US)", "en_US")
         self.language_combo.addItem("Polski (pl_PL)", "pl_PL")
         index = self.language_combo.findData(self.current_manual_language)
@@ -45,6 +50,7 @@ class SettingsDialog(QDialog):
         else:
             self.manual_language_radio.setChecked(True)
         
+        self.theme_group.setTitle(translation_manager.translate("SettingsDialog", "Theme"))
         available_themes = self.theme_manager.get_available_themes()
         for theme_name in available_themes:
             self.theme_combo.addItem(theme_name.capitalize(), theme_name)
@@ -52,23 +58,47 @@ class SettingsDialog(QDialog):
         if index != -1:
             self.theme_combo.setCurrentIndex(index)
 
+        self.external_editors_group.setTitle(translation_manager.translate("SettingsDialog", "External Editors"))
+        self.viewer_label.setText(translation_manager.translate("SettingsDialog", "Viewer (F3):"))
+        self.editor_label.setText(translation_manager.translate("SettingsDialog", "Editor (F4):"))
         self.viewer_command_edit.setText(self.current_viewer_command)
         self.editor_command_edit.setText(self.current_editor_command)
 
+        self.startup_group.setTitle(translation_manager.translate("SettingsDialog", "Startup"))
+        self.bring_to_front_checkbox.setText(translation_manager.translate("SettingsDialog", "Bring window to front on startup"))
+        self.bring_to_front_checkbox.setChecked(self.current_bring_to_front)
+
+        # View Tab
+        self.dot_files_group.setTitle(translation_manager.translate("SettingsDialog", "Hidden Files (Dot Files)"))
+        self.show_dot_files_checkbox.setText(translation_manager.translate("SettingsDialog", "Show files and folders starting with '.'"))
         self.show_dot_files_checkbox.setChecked(self.current_show_dot_files)
+        
+        self.permissions_group.setTitle(translation_manager.translate("SettingsDialog", "File Permissions Display"))
+        self.symbolic_permissions_radio.setText(translation_manager.translate("SettingsDialog", "Symbolic (rwx)"))
+        self.numeric_permissions_radio.setText(translation_manager.translate("SettingsDialog", "Numeric (755)"))
         if self.current_file_permissions_display_mode == "symbolic":
             self.symbolic_permissions_radio.setChecked(True)
         else:
             self.numeric_permissions_radio.setChecked(True)
+
+        self.columns_group.setTitle(translation_manager.translate("SettingsDialog", "Column Visibility"))
+        self.show_uid_checkbox.setText(translation_manager.translate("SettingsDialog", "Show UID Column"))
+        self.show_gid_checkbox.setText(translation_manager.translate("SettingsDialog", "Show GID Column"))
         self.show_uid_checkbox.setChecked(self.current_show_uid_column)
         self.show_gid_checkbox.setChecked(self.current_show_gid_column)
 
+        # Appearance Tab
+        self.insert_selection_group.setTitle(translation_manager.translate("SettingsDialog", "Insert Selection Style"))
+        self.label.setText(translation_manager.translate("SettingsDialog", "Text Color:"))
+        self.insert_font_bold_checkbox.setText(translation_manager.translate("SettingsDialog", "Bold"))
+        self.insert_font_italic_checkbox.setText(translation_manager.translate("SettingsDialog", "Italic"))
         self.insert_text_color_button.setFixedSize(QSize(30, 20))
         self._update_color_button_icon(self.insert_text_color_button, self.selected_insert_selection_text_color)
         self.insert_text_color_button.clicked.connect(self._pick_insert_text_color)
         self.insert_font_bold_checkbox.setChecked(self.current_insert_selection_font_bold)
         self.insert_font_italic_checkbox.setChecked(self.current_insert_selection_font_italic)
 
+        # Buttons
         self.buttonBox.button(QDialogButtonBox.StandardButton.Save).setText(translation_manager.translate("SettingsDialog", "Save"))
         self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("SettingsDialog", "Cancel"))
 
@@ -94,6 +124,7 @@ class SettingsDialog(QDialog):
             "theme": self.theme_combo.currentData(),
             "viewer_command": self.viewer_command_edit.text(),
             "editor_command": self.editor_command_edit.text(),
+            "bringToFrontOnStartup": self.bring_to_front_checkbox.isChecked(),
             "insert_selection_text_color": self.selected_insert_selection_text_color,
             "insert_selection_font_bold": self.insert_font_bold_checkbox.isChecked(),
             "insert_selection_font_italic": self.insert_font_italic_checkbox.isChecked()

@@ -92,6 +92,22 @@
                                 </widget>
                             </item>
                             <item>
+                                <widget class="QGroupBox" name="startup_group">
+                                    <property name="title">
+                                        <string>Startup</string>
+                                    </property>
+                                    <layout class="QVBoxLayout" name="verticalLayout_11">
+                                        <item>
+                                            <widget class="QCheckBox" name="bring_to_front_checkbox">
+                                                <property name="text">
+                                                    <string>Bring window to front on startup</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                    </layout>
+                                </widget>
+                            </item>
+                            <item>
                                 <spacer name="verticalSpacer">
                                     <property name="orientation">
                                         <enum>Qt::Vertical</enum>
