@@ -10,7 +10,7 @@ from app.dialog_handler import DialogHandler
 from app.settings_handler import SettingsHandler
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
-from bookmarks.bookmarks_manager import BookmarksManager
+from favorites.favorites_manager import FavoritesManager
 from file_operations.archive_manager import ArchiveManager, UnrarNotInstalledError
 from file_operations.directory_synchronizer import DirectorySynchronizer, DirectorySynchronizerError
 from file_operations.file_comparator import FileComparator
@@ -40,21 +40,21 @@ def handle_app_logic_error(title_key):
 
 class ApplicationLogicHandler(QObject):
     def __init__(self, main_window, file_manager: FileManager, file_comparator: FileComparator,
-                 bookmarks_manager: BookmarksManager, archive_manager: ArchiveManager,
+                 favorites_manager: FavoritesManager, archive_manager: ArchiveManager,
                  directory_synchronizer: DirectorySynchronizer, theme_manager,
                  ui_state_provider: UIStateProvider, dialog_handler: DialogHandler,
-                 settings_handler: SettingsHandler): # Added new dependencies
+                 settings_handler: SettingsHandler):
         super().__init__(main_window)
         self.main_window = main_window
         self.file_manager = file_manager
         self.file_comparator = file_comparator
-        self.bookmarks_manager = bookmarks_manager
+        self.favorites_manager = favorites_manager
         self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
         self.theme_manager = theme_manager
-        self.ui_state_provider = ui_state_provider # Store new dependency
-        self.dialog_handler = dialog_handler       # Store new dependency
-        self.settings_handler = settings_handler   # Store new dependency
+        self.ui_state_provider = ui_state_provider
+        self.dialog_handler = dialog_handler
+        self.settings_handler = settings_handler
 
         self.theme_manager.theme_changed.connect(self.on_theme_changed)
 
@@ -88,7 +88,6 @@ class ApplicationLogicHandler(QObject):
         active_panel = self.main_window.ui_manager.folder_browser.active_panel_widget
         if active_panel:
             return active_panel
-        # Fallback to the left panel if no panel has focus
         return self.main_window.ui_manager.folder_browser.get_left_panel_widget()
 
     def _get_active_panel_path(self):
@@ -118,8 +117,6 @@ class ApplicationLogicHandler(QObject):
         return None
 
     def on_theme_changed(self, theme_path):
-        # Instead of calling load_file_styles on the model,
-        # call update_view_settings on the file_view, which will refresh the model and delegate.
         left_panel = self.main_window.ui_manager.folder_browser.get_left_panel_widget()
         right_panel = self.main_window.ui_manager.folder_browser.get_right_panel_widget()
         
@@ -152,15 +149,14 @@ class ApplicationLogicHandler(QObject):
         else:
             self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", "No file selected for editing."))
 
-    @handle_app_logic_error("Bookmark Error")
-    def add_bookmark(self, checked=False):
+    @handle_app_logic_error("Favorite Error")
+    def add_favorite(self, checked=False):
         current_path = self.ui_state_provider.get_active_panel_path()
         if current_path:
-            self.bookmarks_manager.add_bookmark(current_path)
-            self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", f"Bookmark added: {current_path}"))
+            self.favorites_manager.add_favorite(current_path)
+            self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", f"Favorite added: {current_path}"))
         else:
-            show_error_message(self.main_window, self.ACTION_CREATE_ARCHIVE, self.ERROR_NO_CURRENT_DIR)
-
+            show_error_message(self.main_window, "Favorite Error", self.ERROR_NO_CURRENT_DIR)
 
     def update_status_bar_path(self, path):
         self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", "Current directory:") + f" {path}")
@@ -219,9 +215,9 @@ class ApplicationLogicHandler(QObject):
             logging.warning("Comparison Error: User tried to compare a file with a directory.")
             QMessageBox.warning(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Comparison Error"), translation_manager.translate("ApplicationLogicHandler", "Cannot compare a file with a directory. Please select two files or two directories."))
 
-    @handle_app_logic_error("Open Bookmark Error")
-    def open_bookmark_dialog(self, checked=False):
-        self.dialog_handler.open_bookmark_dialog()
+    @handle_app_logic_error("Open Favorite Error")
+    def open_favorites_dialog(self, checked=False):
+        self.dialog_handler.open_favorites_dialog()
 
     @handle_app_logic_error("Create Archive Error")
     def create_archive(self, checked=False):
@@ -232,7 +228,7 @@ class ApplicationLogicHandler(QObject):
         self.dialog_handler.extract_archive()
 
     @handle_app_logic_error("Properties Error")
-    def show_properties_dialog(self, checked=False): # Added checked=False
+    def show_properties_dialog(self, checked=False):
         self.dialog_handler.show_properties_dialog()
 
     @handle_app_logic_error("Synchronization Error")
@@ -266,13 +262,13 @@ class ApplicationLogicHandler(QObject):
         self.dialog_handler.rename_selected_item()
 
     @handle_app_logic_error("Settings Error")
-    def open_general_settings_dialog(self, checked=False): # Added checked=False
+    def open_general_settings_dialog(self, checked=False):
         new_settings = self.dialog_handler.open_general_settings_dialog()
         if new_settings:
             self.settings_handler.apply_general_settings(new_settings)
 
     @handle_app_logic_error("Shortcuts Error")
-    def open_shortcuts_dialog(self, checked=False): # Added checked=False
+    def open_shortcuts_dialog(self, checked=False):
         self.dialog_handler.open_shortcuts_dialog()
 
     def apply_general_settings(self, new_settings: dict):

@@ -10,7 +10,7 @@ from app.settings_manager import SettingsManager
 from app.shortcuts_manager import ShortcutsManager
 from app.theme_manager import ThemeManager
 from app.ui_state_provider import UIStateProvider
-from bookmarks.bookmarks_manager import BookmarksManager
+from favorites.favorites_manager import FavoritesManager
 from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
         self.file_comparator = FileComparator()
         self.archive_manager = ArchiveManager()
         self.directory_synchronizer = DirectorySynchronizer()
-        self.bookmarks_manager = BookmarksManager()
+        self.favorites_manager = FavoritesManager()
 
         # Initialize SettingsHandler
         self.settings_handler = SettingsHandler(
@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
             file_comparator=self.file_comparator,
             archive_manager=self.archive_manager,
             directory_synchronizer=self.directory_synchronizer,
-            bookmarks_manager=self.bookmarks_manager,
+            favorites_manager=self.favorites_manager,
             theme_manager=self.theme_manager
         )
         
@@ -60,7 +60,7 @@ class MainWindow(QMainWindow):
             main_window=self,
             file_manager=self.file_manager,
             file_comparator=self.file_comparator,
-            bookmarks_manager=self.bookmarks_manager,
+            favorites_manager=self.favorites_manager,
             archive_manager=self.archive_manager,
             directory_synchronizer=self.directory_synchronizer,
             theme_manager=self.theme_manager,
@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
             main_window=self,
             file_manager=self.file_manager,
             file_comparator=self.file_comparator,
-            bookmarks_manager=self.bookmarks_manager,
+            favorites_manager=self.favorites_manager,
             archive_manager=self.archive_manager,
             directory_synchronizer=self.directory_synchronizer,
             ui_state_provider=self.ui_state_provider,
