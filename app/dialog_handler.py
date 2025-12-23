@@ -3,16 +3,16 @@ import os
 
 from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 
-from app.settings_manager import SettingsManager  # Corrected import from app.settings_manager
+from app.settings_manager import SettingsManager
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
-from bookmarks.bookmarks_manager import BookmarksManager
+from favorites.favorites_manager import FavoritesManager
 from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager, FileManagerError
 from file_operations.properties_manager import get_file_properties
-from utils.bookmark_dialog import BookmarkDialog
+from utils.favorites_dialog import FavoritesDialog
 from utils.compare_dialog import CompareDialog
 from utils.copy_dialog import CopyDialog
 from utils.delete_dialog import DeleteDialog
@@ -26,26 +26,24 @@ from utils.sync_dialog import SyncDialog
 
 class DialogHandler:
     def __init__(self, main_window, file_manager: FileManager, file_comparator: FileComparator,
-                 bookmarks_manager: BookmarksManager, archive_manager: ArchiveManager,
+                 favorites_manager: FavoritesManager, archive_manager: ArchiveManager,
                  directory_synchronizer: DirectorySynchronizer, ui_state_provider: UIStateProvider,
-                 settings_manager: SettingsManager): # Changed type hint to SettingsManager
+                 settings_manager: SettingsManager):
         self.main_window = main_window
         self.file_manager = file_manager
         self.file_comparator = file_comparator
-        self.bookmarks_manager = bookmarks_manager
+        self.favorites_manager = favorites_manager
         self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
         self.ui_state_provider = ui_state_provider
-        self.settings_manager = settings_manager # Stored as settings_manager
+        self.settings_manager = settings_manager
 
-        # Action names for QInputDialog titles (translated)
         self.ACTION_CREATE_ARCHIVE = translation_manager.translate("MenuPanel", "Create Archive")
         self.ACTION_EXTRACT_ARCHIVE = translation_manager.translate("MenuPanel", "Extract Archive")
         self.ACTION_NEW_FILE = translation_manager.translate("MenuPanel", "New File")
         self.ACTION_NEW_FOLDER = translation_manager.translate("MenuPanel", "New Folder")
         self.ACTION_RENAME = translation_manager.translate("MenuPanel", "Rename")
 
-        # Error messages (translated)
         self.ERROR_NO_CURRENT_DIR = translation_manager.translate("MenuPanel", "Could not determine current directory for active panel.")
 
     def show_properties_dialog(self, checked=False):
@@ -59,19 +57,16 @@ class DialogHandler:
             raise ValueError(f"Could not retrieve properties for: {selected_path}")
 
     def open_general_settings_dialog(self, checked=False):
-        # Pass self.settings_manager (which is SettingsManager) and self.main_window.theme_manager
         dialog = SettingsDialog(self.main_window, self.settings_manager, self.main_window.theme_manager)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_settings = dialog.get_settings()
-            return new_settings  # Return new settings instead of applying them directly
-        return None  # Return None if dialog is cancelled
+            return new_settings
+        return None
 
     def open_shortcuts_dialog(self, checked=False):
-        # Pass self.main_window.shortcuts_manager (which is ShortcutsManager)
         dialog = ShortcutsDialog(self.main_window, self.main_window.shortcuts_manager.shortcuts)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_shortcuts = dialog.get_shortcuts()
-            # Apply shortcuts via shortcuts_manager
             self.main_window.shortcuts_manager.apply_shortcuts_settings(new_shortcuts)
 
     def show_search_results(self, results):
@@ -95,11 +90,11 @@ class DialogHandler:
             logging.error("Directory Comparison Error: Could not compare directories. Ensure both paths are valid directories.")
             QMessageBox.critical(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Directory Comparison Error"), translation_manager.translate("ApplicationLogicHandler", "Could not compare directories. Ensure both paths are valid directories."))
 
-    def open_bookmark_dialog(self, checked=False):
-        bookmarks = self.bookmarks_manager.get_bookmarks()
-        dialog = BookmarkDialog(bookmarks, self.main_window)
-        if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_bookmark:
-            self.ui_state_provider.folder_browser.navigate_to_path(dialog.selected_bookmark)
+    def open_favorites_dialog(self, checked=False):
+        favorites = self.favorites_manager.get_favorites()
+        dialog = FavoritesDialog(favorites, self.main_window)
+        if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_favorite:
+            self.ui_state_provider.folder_browser.navigate_to_path(dialog.selected_favorite)
 
     def create_archive(self, checked=False):
         paths_to_archive = self.ui_state_provider.get_selected_paths()
@@ -151,7 +146,7 @@ class DialogHandler:
         
         left_path = left_panel.file_view.get_current_path() if left_panel else None
         right_path = right_panel.file_view.get_current_path() if right_panel else None
-
+        
         if left_path and right_path:
             dialog = SyncDialog(self.main_window, left_path, right_path)
             if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -257,11 +252,11 @@ class DialogHandler:
 
         dialog = DeleteDialog(self.main_window, selected_paths)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            move_to_trash = dialog.should_move_to_trash() # Get the state of the checkbox
+            move_to_trash = dialog.should_move_to_trash()
             all_successful = True
             for path in selected_paths:
                 try:
-                    self.file_manager.delete_item(path, move_to_trash=move_to_trash) # Pass move_to_trash
+                    self.file_manager.delete_item(path, move_to_trash=move_to_trash)
                 except FileManagerError as e:
                     logging.error(f"Error deleting item {path}: {e}")
                     all_successful = False

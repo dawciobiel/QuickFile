@@ -14,8 +14,8 @@ from utils.dialogs import show_error_message
 from utils.properties_dialog import PropertiesDialog
 from file_operations.properties_manager import get_file_properties
 from app.translation_manager import translation_manager
-from app.shortcuts_manager import ShortcutsManager # Import ShortcutsManager
-from app.application_logic_handler import ApplicationLogicHandler # Import ApplicationLogicHandler
+from app.shortcuts_manager import ShortcutsManager
+from app.application_logic_handler import ApplicationLogicHandler
 
 
 class MenuPanel(QObject):
@@ -23,7 +23,6 @@ class MenuPanel(QObject):
     refresh_requested = pyqtSignal()
     view_mode_changed = pyqtSignal(str)
 
-    # --- Stable, Non-Translated Action Keys for Shortcuts and Logic ---
     KEY_COMPARE = "action.compare"
     KEY_PROPERTIES = "action.properties"
     KEY_EXIT = "action.exit"
@@ -47,6 +46,8 @@ class MenuPanel(QObject):
     KEY_GENERAL_SETTINGS = "action.general_settings"
     KEY_NEW_TAB = "action.new_tab"
     KEY_CLOSE_TAB = "action.close_tab"
+    KEY_ADD_FAVORITE = "action.add_favorite"
+    KEY_SHOW_FAVORITES = "action.show_favorites"
 
     def __init__(self, main_window, toolbar: QToolBar, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager):
         super().__init__(main_window)
@@ -62,16 +63,13 @@ class MenuPanel(QObject):
     def _create_menus(self):
         self._create_file_menu()
         self._create_operations_menu()
+        self._create_favorites_menu()
         self._create_archive_menu()
         self._create_view_menu()
         self._create_settings_menu()
         self._create_help_menu()
 
     def _create_action(self, visible_text, tooltip_text, icon=None, slot=None, shortcut_key=None, add_to_toolbar=False):
-        """
-        Helper to create a QAction. It accepts ALREADY TRANSLATED text.
-        The shortcut_key is the stable, non-translated key.
-        """
         action = QAction(visible_text, self.main_window)
         if icon:
             action.setIcon(self.main_window.style().standardIcon(icon))
@@ -122,13 +120,13 @@ class MenuPanel(QObject):
         shortcuts_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "Configure Shortcuts"),
             tooltip_text=translation_manager.translate("MenuPanel", "Configure Shortcuts"),
-            slot=self.application_logic_handler.open_shortcuts_dialog, # Delegated
+            slot=self.application_logic_handler.open_shortcuts_dialog,
             shortcut_key=self.KEY_CONFIGURE_SHORTCUTS
         )
         settings_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "General Settings"),
             tooltip_text=translation_manager.translate("MenuPanel", "General Settings"),
-            slot=self.application_logic_handler.open_general_settings_dialog, # Delegated
+            slot=self.application_logic_handler.open_general_settings_dialog,
             shortcut_key=self.KEY_GENERAL_SETTINGS
         )
         settings_menu.addAction(shortcuts_action)
@@ -178,6 +176,23 @@ class MenuPanel(QObject):
         file_menu.addAction(properties_action)
         file_menu.addSeparator()
         file_menu.addAction(exit_action)
+
+    def _create_favorites_menu(self):
+        favorites_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Favorites"))
+        add_favorite_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Add to favorites"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Add current directory to favorites"),
+            slot=self.application_logic_handler.add_favorite,
+            shortcut_key=self.KEY_ADD_FAVORITE
+        )
+        show_favorites_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Show favorites"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Show favorites list"),
+            slot=self.application_logic_handler.open_favorites_dialog,
+            shortcut_key=self.KEY_SHOW_FAVORITES
+        )
+        favorites_menu.addAction(add_favorite_action)
+        favorites_menu.addAction(show_favorites_action)
 
     def _create_archive_menu(self):
         archive_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Archive"))
