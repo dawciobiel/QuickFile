@@ -1,6 +1,6 @@
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QColor, QPixmap, QIcon
+from PyQt6.QtGui import QColor, QPixmap, QIcon, QStandardItemModel, QStandardItem
 from PyQt6.QtWidgets import QDialog, QPushButton, QColorDialog, QDialogButtonBox
 
 from app.settings_manager import SettingsManager
@@ -16,6 +16,35 @@ class SettingsDialog(QDialog):
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager
 
+        self.pages = {}
+        self.items = {}
+
+        self._setup_tree_model()
+        self._load_current_settings()
+        self._init_ui()
+        self._connect_signals()
+
+    def _setup_tree_model(self):
+        self.tree_model = QStandardItemModel()
+        self.category_tree.setModel(self.tree_model)
+        self.category_tree.setHeaderHidden(True)
+
+        general_item = QStandardItem(translation_manager.translate("SettingsDialog", "General"))
+        self.items[general_item.text()] = general_item
+        self.pages[general_item.text()] = self.general_page
+        self.tree_model.appendRow(general_item)
+
+        view_item = QStandardItem(translation_manager.translate("SettingsDialog", "View"))
+        self.items[view_item.text()] = view_item
+        self.pages[view_item.text()] = self.view_page
+        self.tree_model.appendRow(view_item)
+
+        appearance_item = QStandardItem(translation_manager.translate("SettingsDialog", "Appearance"))
+        self.items[appearance_item.text()] = appearance_item
+        self.pages[appearance_item.text()] = self.appearance_page
+        self.tree_model.appendRow(appearance_item)
+
+    def _load_current_settings(self):
         self.current_show_dot_files = self.settings_manager.get_setting("showDotFiles")
         self.current_file_permissions_display_mode = self.settings_manager.get_setting("file_permissions_display_mode")
         self.current_show_uid_column = self.settings_manager.get_setting("show_uid_column")
@@ -26,17 +55,12 @@ class SettingsDialog(QDialog):
         self.current_viewer_command = self.settings_manager.get_setting("viewer_command")
         self.current_editor_command = self.settings_manager.get_setting("editor_command")
         self.current_bring_to_front = self.settings_manager.get_setting("bringToFrontOnStartup")
-
         self.current_insert_selection_text_color = self.settings_manager.get_setting("insert_selection_text_color")
         self.current_insert_selection_font_bold = self.settings_manager.get_setting("insert_selection_font_bold")
         self.current_insert_selection_font_italic = self.settings_manager.get_setting("insert_selection_font_italic")
-        
         self.selected_insert_selection_text_color = self.current_insert_selection_text_color
 
-        self._init_ui()
-
     def _init_ui(self):
-        # General Tab
         self.language_group.setTitle(translation_manager.translate("SettingsDialog", "Language Settings"))
         self.auto_language_radio.setText(translation_manager.translate("SettingsDialog", "Auto-detect language"))
         self.manual_language_radio.setText(translation_manager.translate("SettingsDialog", "Manual language selection"))
@@ -68,7 +92,6 @@ class SettingsDialog(QDialog):
         self.bring_to_front_checkbox.setText(translation_manager.translate("SettingsDialog", "Bring window to front on startup"))
         self.bring_to_front_checkbox.setChecked(self.current_bring_to_front)
 
-        # View Tab
         self.dot_files_group.setTitle(translation_manager.translate("SettingsDialog", "Hidden Files (Dot Files)"))
         self.show_dot_files_checkbox.setText(translation_manager.translate("SettingsDialog", "Show files and folders starting with '.'"))
         self.show_dot_files_checkbox.setChecked(self.current_show_dot_files)
@@ -87,20 +110,30 @@ class SettingsDialog(QDialog):
         self.show_uid_checkbox.setChecked(self.current_show_uid_column)
         self.show_gid_checkbox.setChecked(self.current_show_gid_column)
 
-        # Appearance Tab
         self.insert_selection_group.setTitle(translation_manager.translate("SettingsDialog", "Insert Selection Style"))
         self.label.setText(translation_manager.translate("SettingsDialog", "Text Color:"))
         self.insert_font_bold_checkbox.setText(translation_manager.translate("SettingsDialog", "Bold"))
         self.insert_font_italic_checkbox.setText(translation_manager.translate("SettingsDialog", "Italic"))
         self.insert_text_color_button.setFixedSize(QSize(30, 20))
         self._update_color_button_icon(self.insert_text_color_button, self.selected_insert_selection_text_color)
-        self.insert_text_color_button.clicked.connect(self._pick_insert_text_color)
         self.insert_font_bold_checkbox.setChecked(self.current_insert_selection_font_bold)
         self.insert_font_italic_checkbox.setChecked(self.current_insert_selection_font_italic)
 
-        # Buttons
         self.buttonBox.button(QDialogButtonBox.StandardButton.Save).setText(translation_manager.translate("SettingsDialog", "Save"))
         self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("SettingsDialog", "Cancel"))
+
+        self.category_tree.setCurrentIndex(self.tree_model.index(0, 0))
+
+    def _connect_signals(self):
+        self.category_tree.selectionModel().currentRowChanged.connect(self.change_page)
+        self.insert_text_color_button.clicked.connect(self._pick_insert_text_color)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+    def change_page(self, current, previous):
+        item = self.tree_model.itemFromIndex(current)
+        if item.text() in self.pages:
+            self.stackedWidget.setCurrentWidget(self.pages[item.text()])
 
     def _update_color_button_icon(self, button: QPushButton, color_hex: str):
         pixmap = QPixmap(button.size())

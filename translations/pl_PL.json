@@ -191,6 +191,10 @@
     "SearchDialog.Close": "Zamknij",
 
     "SettingsDialog.Application Settings": "Ustawienia aplikacji",
+    "SettingsDialog.General": "Ogólne",
+    "SettingsDialog.View": "Widok",
+    "SettingsDialog.Appearance": "Wygląd",
+    "SettingsDialog.Theme": "Motyw",
     "SettingsDialog.Hidden Files (Dot Files)": "Ukryte pliki (pliki z kropką)",
     "SettingsDialog.Show files and folders starting with '.':": "Pokaż pliki i foldery zaczynające się od '.'",
     "SettingsDialog.File Permissions Display": "Wyświetlanie uprawnień pliku",
@@ -213,7 +217,7 @@
     "SettingsDialog.Viewer (F3):": "Podgląd (F3):",
     "SettingsDialog.Editor (F4):": "Edytor (F4):",
     "SettingsDialog.Startup": "Uruchamianie",
-    "SettingsDialog.Bring window to front on startup": "Umieść okno na pierwszy plan",
+    "SettingsDialog.Bring window to front on startup": "Wysuń okno na pierwszy plan przy starcie",
 
     "ShortcutsDialog.Keyboard Shortcuts": "Skróty klawiszowe",
     "ShortcutsDialog.Save": "Zapisz",

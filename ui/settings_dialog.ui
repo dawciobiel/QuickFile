@@ -1,344 +1,315 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
-    <class>SettingsDialog</class>
-    <widget class="QDialog" name="SettingsDialog">
-        <property name="geometry">
-            <rect>
-                <x>0</x>
-                <y>0</y>
-                <width>450</width>
-                <height>450</height>
-            </rect>
-        </property>
-        <property name="windowTitle">
-            <string>Settings</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout">
-            <item>
-                <widget class="QTabWidget" name="tabWidget">
-                    <property name="currentIndex">
-                        <number>0</number>
-                    </property>
-                    <widget class="QWidget" name="general_tab">
-                        <attribute name="title">
-                            <string>General</string>
-                        </attribute>
-                        <layout class="QVBoxLayout" name="verticalLayout_2">
-                            <item>
-                                <widget class="QGroupBox" name="language_group">
-                                    <property name="title">
-                                        <string>Language</string>
-                                    </property>
-                                    <layout class="QVBoxLayout" name="verticalLayout_3">
-                                        <item>
-                                            <widget class="QRadioButton" name="auto_language_radio">
-                                                <property name="text">
-                                                    <string>Auto-detect</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                        <item>
-                                            <widget class="QRadioButton" name="manual_language_radio">
-                                                <property name="text">
-                                                    <string>Manual selection</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                        <item>
-                                            <widget class="QComboBox" name="language_combo"/>
-                                        </item>
-                                    </layout>
-                                </widget>
-                            </item>
-                            <item>
-                                <widget class="QGroupBox" name="theme_group">
-                                    <property name="title">
-                                        <string>Theme</string>
-                                    </property>
-                                    <layout class="QVBoxLayout" name="verticalLayout_4">
-                                        <item>
-                                            <widget class="QComboBox" name="theme_combo"/>
-                                        </item>
-                                    </layout>
-                                </widget>
-                            </item>
-                            <item>
-                                <widget class="QGroupBox" name="external_editors_group">
-                                    <property name="title">
-                                        <string>External Editors</string>
-                                    </property>
-                                    <layout class="QFormLayout" name="formLayout_2">
-                                        <item row="0" column="0">
-                                            <widget class="QLabel" name="viewer_label">
-                                                <property name="text">
-                                                    <string>Viewer (F3):</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                        <item row="0" column="1">
-                                            <widget class="QLineEdit" name="viewer_command_edit"/>
-                                        </item>
-                                        <item row="1" column="0">
-                                            <widget class="QLabel" name="editor_label">
-                                                <property name="text">
-                                                    <string>Editor (F4):</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                        <item row="1" column="1">
-                                            <widget class="QLineEdit" name="editor_command_edit"/>
-                                        </item>
-                                    </layout>
-                                </widget>
-                            </item>
-                            <item>
-                                <widget class="QGroupBox" name="startup_group">
-                                    <property name="title">
-                                        <string>Startup</string>
-                                    </property>
-                                    <layout class="QVBoxLayout" name="verticalLayout_11">
-                                        <item>
-                                            <widget class="QCheckBox" name="bring_to_front_checkbox">
-                                                <property name="text">
-                                                    <string>Bring window to front on startup</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                    </layout>
-                                </widget>
-                            </item>
-                            <item>
-                                <spacer name="verticalSpacer">
-                                    <property name="orientation">
-                                        <enum>Qt::Vertical</enum>
-                                    </property>
-                                    <property name="sizeHint" stdset="0">
-                                        <size>
-                                            <width>20</width>
-                                            <height>40</height>
-                                        </size>
-                                    </property>
-                                </spacer>
-                            </item>
-                        </layout>
-                    </widget>
-                    <widget class="QWidget" name="view_tab">
-                        <attribute name="title">
-                            <string>View</string>
-                        </attribute>
-                        <layout class="QVBoxLayout" name="verticalLayout_5">
-                            <item>
-                                <widget class="QGroupBox" name="dot_files_group">
-                                    <property name="title">
-                                        <string>Hidden Files (Dot Files)</string>
-                                    </property>
-                                    <layout class="QVBoxLayout" name="verticalLayout_6">
-                                        <item>
-                                            <widget class="QCheckBox" name="show_dot_files_checkbox">
-                                                <property name="text">
-                                                    <string>Show files and folders starting with '.'</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                    </layout>
-                                </widget>
-                            </item>
-                            <item>
-                                <widget class="QGroupBox" name="permissions_group">
-                                    <property name="title">
-                                        <string>File Permissions Display</string>
-                                    </property>
-                                    <layout class="QVBoxLayout" name="verticalLayout_7">
-                                        <item>
-                                            <widget class="QRadioButton" name="symbolic_permissions_radio">
-                                                <property name="text">
-                                                    <string>Symbolic (rwx)</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                        <item>
-                                            <widget class="QRadioButton" name="numeric_permissions_radio">
-                                                <property name="text">
-                                                    <string>Numeric (755)</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                    </layout>
-                                </widget>
-                            </item>
-                            <item>
-                                <widget class="QGroupBox" name="columns_group">
-                                    <property name="title">
-                                        <string>Column Visibility</string>
-                                    </property>
-                                    <layout class="QVBoxLayout" name="verticalLayout_8">
-                                        <item>
-                                            <widget class="QCheckBox" name="show_uid_checkbox">
-                                                <property name="text">
-                                                    <string>Show UID Column</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                        <item>
-                                            <widget class="QCheckBox" name="show_gid_checkbox">
-                                                <property name="text">
-                                                    <string>Show GID Column</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                    </layout>
-                                </widget>
-                            </item>
-                            <item>
-                                <spacer name="verticalSpacer_2">
-                                    <property name="orientation">
-                                        <enum>Qt::Vertical</enum>
-                                    </property>
-                                    <property name="sizeHint" stdset="0">
-                                        <size>
-                                            <width>20</width>
-                                            <height>40</height>
-                                        </size>
-                                    </property>
-                                </spacer>
-                            </item>
-                        </layout>
-                    </widget>
-                    <widget class="QWidget" name="appearance_tab">
-                        <attribute name="title">
-                            <string>Appearance</string>
-                        </attribute>
-                        <layout class="QVBoxLayout" name="verticalLayout_9">
-                            <item>
-                                <widget class="QGroupBox" name="insert_selection_group">
-                                    <property name="title">
-                                        <string>Insert Selection Style</string>
-                                    </property>
-                                    <layout class="QVBoxLayout" name="verticalLayout_10">
-                                        <item>
-                                            <layout class="QHBoxLayout" name="horizontalLayout">
-                                                <item>
-                                                    <widget class="QLabel" name="label">
-                                                        <property name="text">
-                                                            <string>Text Color:</string>
-                                                        </property>
-                                                    </widget>
-                                                </item>
-                                                <item>
-                                                    <widget class="QPushButton" name="insert_text_color_button">
-                                                        <property name="text">
-                                                            <string/>
-                                                        </property>
-                                                    </widget>
-                                                </item>
-                                                <item>
-                                                    <spacer name="horizontalSpacer">
-                                                        <property name="orientation">
-                                                            <enum>Qt::Horizontal</enum>
-                                                        </property>
-                                                        <property name="sizeHint" stdset="0">
-                                                            <size>
-                                                                <width>40</width>
-                                                                <height>20</height>
-                                                            </size>
-                                                        </property>
-                                                    </spacer>
-                                                </item>
-                                            </layout>
-                                        </item>
-                                        <item>
-                                            <layout class="QHBoxLayout" name="horizontalLayout_2">
-                                                <item>
-                                                    <widget class="QCheckBox" name="insert_font_bold_checkbox">
-                                                        <property name="text">
-                                                            <string>Bold</string>
-                                                        </property>
-                                                    </widget>
-                                                </item>
-                                                <item>
-                                                    <widget class="QCheckBox" name="insert_font_italic_checkbox">
-                                                        <property name="text">
-                                                            <string>Italic</string>
-                                                        </property>
-                                                    </widget>
-                                                </item>
-                                                <item>
-                                                    <spacer name="horizontalSpacer_2">
-                                                        <property name="orientation">
-                                                            <enum>Qt::Horizontal</enum>
-                                                        </property>
-                                                        <property name="sizeHint" stdset="0">
-                                                            <size>
-                                                                <width>40</width>
-                                                                <height>20</height>
-                                                            </size>
-                                                        </property>
-                                                    </spacer>
-                                                </item>
-                                            </layout>
-                                        </item>
-                                    </layout>
-                                </widget>
-                            </item>
-                            <item>
-                                <spacer name="verticalSpacer_3">
-                                    <property name="orientation">
-                                        <enum>Qt::Vertical</enum>
-                                    </property>
-                                    <property name="sizeHint" stdset="0">
-                                        <size>
-                                            <width>20</width>
-                                            <height>40</height>
-                                        </size>
-                                    </property>
-                                </spacer>
-                            </item>
-                        </layout>
-                    </widget>
-                </widget>
-            </item>
-            <item>
-                <widget class="QDialogButtonBox" name="buttonBox">
-                    <property name="standardButtons">
-                        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
-                    </property>
-                </widget>
-            </item>
-        </layout>
+ <class>SettingsDialog</class>
+ <widget class="QDialog" name="SettingsDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>550</width>
+    <height>450</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Settings</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QSplitter" name="splitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <widget class="QTreeView" name="category_tree">
+      <property name="maximumSize">
+       <size>
+        <width>150</width>
+        <height>16777215</height>
+       </size>
+      </property>
+     </widget>
+     <widget class="QStackedWidget" name="stackedWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="general_page">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QGroupBox" name="language_group">
+          <property name="title">
+           <string>Language</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <widget class="QRadioButton" name="auto_language_radio">
+             <property name="text">
+              <string>Auto-detect</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="manual_language_radio">
+             <property name="text">
+              <string>Manual selection</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="language_combo"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="theme_group">
+          <property name="title">
+           <string>Theme</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <widget class="QComboBox" name="theme_combo"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="external_editors_group">
+          <property name="title">
+           <string>External Editors</string>
+          </property>
+          <layout class="QFormLayout" name="formLayout_2">
+           <item row="0" column="0">
+            <widget class="QLabel" name="viewer_label">
+             <property name="text">
+              <string>Viewer (F3):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="viewer_command_edit"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="editor_label">
+             <property name="text">
+              <string>Editor (F4):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="editor_command_edit"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="startup_group">
+          <property name="title">
+           <string>Startup</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_11">
+           <item>
+            <widget class="QCheckBox" name="bring_to_front_checkbox">
+             <property name="text">
+              <string>Bring window to front on startup</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="view_page">
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="QGroupBox" name="dot_files_group">
+          <property name="title">
+           <string>Hidden Files (Dot Files)</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <widget class="QCheckBox" name="show_dot_files_checkbox">
+             <property name="text">
+              <string>Show files and folders starting with '.'</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="permissions_group">
+          <property name="title">
+           <string>File Permissions Display</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_7">
+           <item>
+            <widget class="QRadioButton" name="symbolic_permissions_radio">
+             <property name="text">
+              <string>Symbolic (rwx)</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="numeric_permissions_radio">
+             <property name="text">
+              <string>Numeric (755)</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="columns_group">
+          <property name="title">
+           <string>Column Visibility</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_8">
+           <item>
+            <widget class="QCheckBox" name="show_uid_checkbox">
+             <property name="text">
+              <string>Show UID Column</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="show_gid_checkbox">
+             <property name="text">
+              <string>Show GID Column</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="appearance_page">
+       <layout class="QVBoxLayout" name="verticalLayout_9">
+        <item>
+         <widget class="QGroupBox" name="insert_selection_group">
+          <property name="title">
+           <string>Insert Selection Style</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_10">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout">
+             <item>
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>Text Color:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="insert_text_color_button">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <widget class="QCheckBox" name="insert_font_bold_checkbox">
+               <property name="text">
+                <string>Bold</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="insert_font_italic_checkbox">
+               <property name="text">
+                <string>Italic</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </widget>
-    <resources/>
-    <connections>
-        <connection>
-            <sender>buttonBox</sender>
-            <signal>accepted()</signal>
-            <receiver>SettingsDialog</receiver>
-            <slot>accept()</slot>
-            <hints>
-                <hint type="sourcelabel">
-                    <x>248</x>
-                    <y>254</y>
-                </hint>
-                <hint type="destinationlabel">
-                    <x>157</x>
-                    <y>274</y>
-                </hint>
-            </hints>
-        </connection>
-        <connection>
-            <sender>buttonBox</sender>
-            <signal>rejected()</signal>
-            <receiver>SettingsDialog</receiver>
-            <slot>reject()</slot>
-            <hints>
-                <hint type="sourcelabel">
-                    <x>316</x>
-                    <y>260</y>
-                </hint>
-                <hint type="destinationlabel">
-                    <x>286</x>
-                    <y>274</y>
-                </hint>
-            </hints>
-        </connection>
-    </connections>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
 </ui>
