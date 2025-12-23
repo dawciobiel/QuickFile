@@ -34,5 +34,8 @@ def setup_logging():
     # Add the handlers to the logger
     logger.addHandler(file_handler)
 
+    # Suppress debug logs from PyQt6.uic
+    logging.getLogger("PyQt6.uic").setLevel(logging.WARNING)
+
     # Return the logger instance
     return logger
