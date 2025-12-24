@@ -1,25 +1,37 @@
 import os
 from PyQt6 import uic
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QPushButton
 from app.translation_manager import translation_manager
 from app.background_task_manager import BackgroundTaskManager
+from file_operations.file_manager import OperationCancelledError
 
 class CopyDialog(QDialog):
-    def __init__(self, parent, source_path, destination_path, file_manager, background_task_manager: BackgroundTaskManager):
+    def __init__(self, parent, source_paths, destination_path, file_manager, background_task_manager: BackgroundTaskManager):
         super().__init__(parent)
         uic.loadUi("ui/file_operation_dialog.ui", self)
         self.setWindowTitle(translation_manager.translate("CopyDialog", "Copy"))
         
-        self.source_path = source_path
+        # Ensure source_paths is a list
+        if isinstance(source_paths, str):
+            self.source_paths = [source_paths]
+        else:
+            self.source_paths = source_paths
+            
         self.destination_path = destination_path
         self.file_manager = file_manager
         self.background_task_manager = background_task_manager
+        self.is_paused = False
         
         self._init_options_ui()
 
     def _init_options_ui(self):
         self.stackedWidget.setCurrentWidget(self.options_page)
-        self.source_path_label.setText(self.source_path)
+        
+        if len(self.source_paths) == 1:
+            self.source_path_label.setText(self.source_paths[0])
+        else:
+            self.source_path_label.setText(translation_manager.translate("CopyDialog", f"{len(self.source_paths)} items selected"))
+            
         self.destination_path_label.setText(self.destination_path)
 
         self.overwrite_checkbox.setText(translation_manager.translate("CopyDialog", "Overwrite existing files"))
@@ -41,12 +53,20 @@ class CopyDialog(QDialog):
             "preserve_timestamp": self.preserve_timestamp_checkbox.isChecked(),
         }
         
-        signals = self.background_task_manager.run_task(
-            self.file_manager.copy_item_with_options,
-            self.source_path,
-            self.destination_path,
-            options
-        )
+        if len(self.source_paths) == 1:
+            signals = self.background_task_manager.run_task(
+                self.file_manager.copy_item_with_options,
+                self.source_paths[0],
+                self.destination_path,
+                options
+            )
+        else:
+            signals = self.background_task_manager.run_task(
+                self.file_manager.copy_items_batch,
+                self.source_paths,
+                self.destination_path,
+                options
+            )
         
         signals.progress.connect(self.update_progress)
         signals.finished.connect(self.on_finished)
@@ -54,10 +74,30 @@ class CopyDialog(QDialog):
 
     def _init_progress_ui(self):
         self.stackedWidget.setCurrentWidget(self.progress_page)
-        self.progress_label.setText(f"Copying {os.path.basename(self.source_path)}...")
+        if len(self.source_paths) == 1:
+            self.progress_label.setText(f"Copying {os.path.basename(self.source_paths[0])}...")
+        else:
+            self.progress_label.setText(translation_manager.translate("CopyDialog", "Copying selected items..."))
+
         self.buttonBox.clear()
+        
+        # Add Pause button
+        self.pause_button = QPushButton(translation_manager.translate("Buttons", "Pause"))
+        self.pause_button.clicked.connect(self.toggle_pause)
+        self.buttonBox.addButton(self.pause_button, QDialogButtonBox.ButtonRole.ActionRole)
+
         self.cancel_button = self.buttonBox.addButton(QDialogButtonBox.StandardButton.Cancel)
         self.cancel_button.clicked.connect(self.background_task_manager.cancel_current_task)
+
+    def toggle_pause(self):
+        if self.is_paused:
+            self.background_task_manager.resume_current_task()
+            self.pause_button.setText(translation_manager.translate("Buttons", "Pause"))
+            self.is_paused = False
+        else:
+            self.background_task_manager.pause_current_task()
+            self.pause_button.setText(translation_manager.translate("Buttons", "Resume"))
+            self.is_paused = True
 
     def update_progress(self, value):
         self.progressBar.setValue(value)
@@ -68,5 +108,10 @@ class CopyDialog(QDialog):
     def on_error(self, error_tuple):
         from utils.dialogs import show_error_message
         exctype, value, traceback_str = error_tuple
-        show_error_message(self, "Copy Error", str(value))
-        self.reject()
+        
+        if issubclass(exctype, OperationCancelledError):
+            # Operation was cancelled by user, just close the dialog
+            self.reject()
+        else:
+            show_error_message(self, "Copy Error", str(value))
+            self.reject()

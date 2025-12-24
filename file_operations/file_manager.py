@@ -7,6 +7,10 @@ from app.translation_manager import translation_manager
 class FileManagerError(Exception):
     pass
 
+class OperationCancelledError(Exception):
+    """Exception raised when an operation is cancelled by the user."""
+    pass
+
 class FileManager:
     def __init__(self):
         self.clipboard = None
@@ -37,11 +41,16 @@ class FileManager:
                     os.remove(destination_full_path)
                 logging.info(f"Removed existing item at {destination_full_path} for overwrite.")
 
-    def _copy_file_with_progress(self, src, dst, progress_callback=None, total_size=0, copied_so_far=0):
+    def _copy_file_with_progress(self, src, dst, progress_callback=None, total_size=0, copied_so_far=0, task_context=None):
         try:
             with open(src, 'rb') as fsrc:
                 with open(dst, 'wb') as fdst:
                     while True:
+                        if task_context:
+                            if task_context.is_cancelled:
+                                raise OperationCancelledError("Operation cancelled by user.")
+                            task_context.wait_if_paused()
+                        
                         buf = fsrc.read(1024 * 1024)
                         if not buf:
                             break
@@ -52,10 +61,18 @@ class FileManager:
                             progress_callback.emit(progress)
             shutil.copystat(src, dst)
             return copied_so_far
+        except OperationCancelledError:
+            # Clean up the partially copied file
+            if os.path.exists(dst):
+                try:
+                    os.remove(dst)
+                except OSError:
+                    pass
+            raise
         except Exception as e:
             raise OSError(f"Error copying file {src} to {dst}: {e}")
 
-    def copy_item_with_options(self, source_path, destination_path, options, progress_callback=None):
+    def copy_item_with_options(self, source_path, destination_path, options, progress_callback=None, task_context=None):
         try:
             self._validate_path(source_path, must_exist=True, name="Source path")
             self._validate_path(destination_path, must_exist=True, is_directory=True, name="Destination path")
@@ -78,39 +95,55 @@ class FileManager:
                 shutil.copystat(source_path, destination_full_path)
 
                 for dirpath, dirnames, filenames in os.walk(source_path):
+                    if task_context:
+                        if task_context.is_cancelled:
+                            raise OperationCancelledError("Operation cancelled by user.")
+                        task_context.wait_if_paused()
+
                     rel_path = os.path.relpath(dirpath, source_path)
                     dest_dir = os.path.join(destination_full_path, rel_path)
                     os.makedirs(dest_dir, exist_ok=True)
                     shutil.copystat(dirpath, dest_dir)
 
                     for filename in filenames:
+                        if task_context:
+                            if task_context.is_cancelled:
+                                raise OperationCancelledError("Operation cancelled by user.")
+                            task_context.wait_if_paused()
+
                         src_file = os.path.join(dirpath, filename)
                         dst_file = os.path.join(dest_dir, filename)
-                        copied_size = self._copy_file_with_progress(src_file, dst_file, progress_callback, total_size, copied_size)
+                        copied_size = self._copy_file_with_progress(src_file, dst_file, progress_callback, total_size, copied_size, task_context)
             else:
                 total_size = os.path.getsize(source_path)
-                self._copy_file_with_progress(source_path, destination_full_path, progress_callback, total_size, 0)
+                self._copy_file_with_progress(source_path, destination_full_path, progress_callback, total_size, 0, task_context)
 
             return translation_manager.translate("FileManager", f"Copied '{base_name}' to '{destination_path}'")
 
-        except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError) as e:
+        except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError, OperationCancelledError) as e:
             raise e
         except OSError as e:
             logging.exception(f"Error copying item from {source_path} to {destination_full_path}: {e}")
             raise FileManagerError(translation_manager.translate("FileManager", f"Error copying item: {e}"))
 
-    def copy_items_batch(self, source_paths, destination_path, options, progress_callback=None):
+    def copy_items_batch(self, source_paths, destination_path, options, progress_callback=None, task_context=None):
         total_items = len(source_paths)
         for i, source_path in enumerate(source_paths):
+            if task_context:
+                if task_context.is_cancelled:
+                    raise OperationCancelledError("Operation cancelled by user.")
+                task_context.wait_if_paused()
             try:
-                self.copy_item_with_options(source_path, destination_path, options)
+                self.copy_item_with_options(source_path, destination_path, options, task_context=task_context)
                 if progress_callback:
                     progress_callback.emit(int((i + 1) / total_items * 100))
+            except OperationCancelledError:
+                raise
             except Exception as e:
                 logging.error(f"Failed to copy {source_path}: {e}")
         return f"Batch copy completed."
 
-    def move_item_with_options(self, source_path, destination_path, options, progress_callback=None):
+    def move_item_with_options(self, source_path, destination_path, options, progress_callback=None, task_context=None):
         try:
             self._validate_path(source_path, must_exist=True, name="Source path")
             self._validate_path(destination_path, must_exist=True, is_directory=True, name="Destination path")
@@ -122,23 +155,50 @@ class FileManager:
             self._handle_destination_exists(destination_full_path, source_is_dir, options.get("overwrite"), base_name)
             
             if os.stat(source_path).st_dev != os.stat(destination_path).st_dev:
-                self.copy_item_with_options(source_path, destination_path, options, progress_callback)
+                # Cross-device move: copy then delete
+                self.copy_item_with_options(source_path, destination_path, options, progress_callback, task_context)
+                
+                # Check cancellation before deleting source
+                if task_context and task_context.is_cancelled:
+                     raise OperationCancelledError("Operation cancelled by user.")
+
                 if os.path.isdir(source_path):
                     shutil.rmtree(source_path)
                 else:
                     os.remove(source_path)
             else:
+                # Same device move (rename)
+                if task_context and task_context.is_cancelled:
+                     raise OperationCancelledError("Operation cancelled by user.")
+                
                 shutil.move(source_path, destination_full_path)
                 if progress_callback:
                     progress_callback.emit(100)
 
             return translation_manager.translate("FileManager", f"Moved '{base_name}' to '{destination_full_path}'")
 
-        except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError) as e:
+        except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError, OperationCancelledError) as e:
             raise e
         except OSError as e:
             logging.exception(f"Error moving item from {source_path} to {destination_full_path}: {e}")
             raise FileManagerError(translation_manager.translate("FileManager", f"Error moving item: {e}"))
+
+    def move_items_batch(self, source_paths, destination_path, options, progress_callback=None, task_context=None):
+        total_items = len(source_paths)
+        for i, source_path in enumerate(source_paths):
+            if task_context:
+                if task_context.is_cancelled:
+                    raise OperationCancelledError("Operation cancelled by user.")
+                task_context.wait_if_paused()
+            try:
+                self.move_item_with_options(source_path, destination_path, options, task_context=task_context)
+                if progress_callback:
+                    progress_callback.emit(int((i + 1) / total_items * 100))
+            except OperationCancelledError:
+                raise
+            except Exception as e:
+                logging.error(f"Failed to move {source_path}: {e}")
+        return f"Batch move completed."
 
     def delete_item(self, item_path, move_to_trash=True):
         try:
@@ -167,9 +227,13 @@ class FileManager:
             logging.exception(f"Error deleting item {item_path}: {e}")
             raise FileManagerError(translation_manager.translate("FileManager", f"Error deleting item: {e}"))
 
-    def delete_items_batch(self, item_paths, move_to_trash=True, progress_callback=None):
+    def delete_items_batch(self, item_paths, move_to_trash=True, progress_callback=None, task_context=None):
         total_items = len(item_paths)
         for i, item_path in enumerate(item_paths):
+            if task_context:
+                if task_context.is_cancelled:
+                    raise OperationCancelledError("Operation cancelled by user.")
+                task_context.wait_if_paused()
             try:
                 self.delete_item(item_path, move_to_trash)
                 if progress_callback:

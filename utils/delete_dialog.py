@@ -2,6 +2,7 @@ from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QDialogButtonBox
 from app.translation_manager import translation_manager
 from app.background_task_manager import BackgroundTaskManager
+from file_operations.file_manager import OperationCancelledError
 import os
 
 class DeleteDialog(QDialog):
@@ -56,5 +57,9 @@ class DeleteDialog(QDialog):
     def on_error(self, error_tuple):
         from utils.dialogs import show_error_message
         exctype, value, traceback_str = error_tuple
-        show_error_message(self, "Delete Error", str(value))
-        self.reject()
+        
+        if issubclass(exctype, OperationCancelledError):
+            self.reject()
+        else:
+            show_error_message(self, "Delete Error", str(value))
+            self.reject()
