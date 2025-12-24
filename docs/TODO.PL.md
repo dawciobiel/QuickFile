@@ -11,7 +11,7 @@
 - [ ] **Ulepszenie paska postępu**:
     - Zapewnienie płynnych aktualizacji dla wszystkich operacji.
     - Pełna obsługa błędów z informacją zwrotną dla użytkownika.
-    - Implementacja mechanizmu pauzy, wznowienia i anulowania zadań.
+    - [x] Implementacja mechanizmu pauzy, wznowienia i anulowania zadań.
 
 - [ ] **Rozszerzenie wielowątkowości**: Zastosowanie mechanizmu zadań w tle dla operacji:
     - Synchronizacji katalogów

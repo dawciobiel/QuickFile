@@ -1,5 +1,32 @@
 # Postępy prac z Gemini AI
 
+## Data: 2025-12-23 (Aktualizacja 3)
+
+### Postępy prac:
+- **Naprawa obsługi wielu plików (Insert)**:
+    - Naprawiono błąd, w którym kopiowany lub przenoszony był tylko jeden plik, mimo zaznaczenia wielu (np. za pomocą klawisza `Insert`).
+    - Zaktualizowano `DialogHandler`, aby przekazywał pełną listę zaznaczonych ścieżek do dialogów `CopyDialog` i `MoveDialog`.
+    - Dostosowano `CopyDialog` i `MoveDialog` do obsługi listy plików zamiast pojedynczej ścieżki.
+    - Dodano metodę `move_items_batch` w `FileManager` do wsadowego przenoszenia plików z obsługą paska postępu, anulowania i pauzy.
+
+## Data: 2025-12-23 (Aktualizacja 2)
+
+### Postępy prac:
+- **Pauza i wznowienie operacji w tle**:
+    - Rozszerzono `BackgroundTaskManager` o klasę `TaskContext`, która obsługuje zarówno anulowanie, jak i pauzowanie zadań.
+    - Zaimplementowano metody `pause()` i `resume()` w `TaskContext` przy użyciu `QMutex` i `QWaitCondition`.
+    - Zaktualizowano `FileManager`, aby sprawdzał stan pauzy w pętlach kopiowania plików (`task_context.wait_if_paused()`).
+    - Dodano przycisk "Pauza" (zmieniający się na "Wznów") do dialogów `CopyDialog` i `MoveDialog`.
+
+## Data: 2025-12-23 (Aktualizacja 1)
+
+### Postępy prac:
+- **Anulowanie operacji w tle**:
+    - Zaimplementowano mechanizm anulowania operacji kopiowania, przenoszenia i usuwania plików.
+    - Dodano klasę `CancellationToken` w `BackgroundTaskManager` do zarządzania stanem anulowania.
+    - Zmodyfikowano `FileManager` (metody `copy_item_with_options`, `move_item_with_options`, `delete_items_batch`), aby obsługiwały przerywanie operacji i czyszczenie niepełnych plików.
+    - Zaktualizowano dialogi `CopyDialog` i `MoveDialog`, podłączając przycisk "Anuluj" do nowej logiki.
+
 ## Data: 2025-12-23
 
 ### Postępy prac:

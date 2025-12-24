@@ -154,7 +154,8 @@ class DialogHandler:
         if not destination_path:
             raise ValueError("No inactive panel path to copy to.")
 
-        dialog = CopyDialog(self.main_window, source_paths[0], destination_path, self.file_manager, self.background_task_manager)
+        # Pass the entire list of source paths
+        dialog = CopyDialog(self.main_window, source_paths, destination_path, self.file_manager, self.background_task_manager)
         dialog.exec()
         self.ui_state_provider.folder_browser.refresh_all_views()
 
@@ -166,7 +167,8 @@ class DialogHandler:
         if not destination_path:
             raise ValueError("No inactive panel path to move to.")
         
-        dialog = MoveDialog(self.main_window, paths_to_move[0], destination_path, self.file_manager, self.background_task_manager)
+        # Pass the entire list of paths to move
+        dialog = MoveDialog(self.main_window, paths_to_move, destination_path, self.file_manager, self.background_task_manager)
         dialog.exec()
         self.ui_state_provider.folder_browser.refresh_all_views()
 
