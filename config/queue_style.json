@@ -1,0 +1,39 @@
+{
+  "columns": [
+    {
+      "id": "progress",
+      "name": "Progress",
+      "visible": true
+    },
+    {
+      "id": "type",
+      "name": "Type",
+      "visible": true
+    },
+    {
+      "id": "status",
+      "name": "Status",
+      "visible": true
+    },
+    {
+      "id": "actions",
+      "name": "Actions",
+      "visible": true
+    },
+    {
+      "id": "source",
+      "name": "Source",
+      "visible": true
+    },
+    {
+      "id": "current",
+      "name": "Current",
+      "visible": true
+    },
+    {
+      "id": "output",
+      "name": "Output",
+      "visible": true
+    }
+  ]
+}

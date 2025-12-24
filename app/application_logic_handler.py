@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import QMessageBox
 from app.background_task_manager import BackgroundTaskManager
 from app.dialog_handler import DialogHandler
 from app.settings_handler import SettingsHandler
+from app.task_queue_manager import TaskQueueManager
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
 from favorites.favorites_manager import FavoritesManager
@@ -41,7 +42,8 @@ class ApplicationLogicHandler(QObject):
                  favorites_manager: FavoritesManager, archive_manager: ArchiveManager,
                  directory_synchronizer: DirectorySynchronizer, theme_manager,
                  ui_state_provider: UIStateProvider, dialog_handler: DialogHandler,
-                 settings_handler: SettingsHandler, background_task_manager: BackgroundTaskManager):
+                 settings_handler: SettingsHandler, background_task_manager: BackgroundTaskManager,
+                 task_queue_manager: TaskQueueManager = None):
         super().__init__(main_window)
         self.main_window = main_window
         self.file_manager = file_manager
@@ -54,6 +56,7 @@ class ApplicationLogicHandler(QObject):
         self.dialog_handler = dialog_handler
         self.settings_handler = settings_handler
         self.background_task_manager = background_task_manager
+        self.task_queue_manager = task_queue_manager
 
         self.theme_manager.theme_changed.connect(self.on_theme_changed)
 

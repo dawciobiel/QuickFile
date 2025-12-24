@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 
 from app.background_task_manager import BackgroundTaskManager
 from app.settings_manager import SettingsManager
+from app.task_queue_manager import TaskQueueManager, Task, TaskType
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
 from favorites.favorites_manager import FavoritesManager
@@ -29,7 +30,8 @@ class DialogHandler:
     def __init__(self, main_window, file_manager: FileManager, file_comparator: FileComparator,
                  favorites_manager: FavoritesManager, archive_manager: ArchiveManager,
                  directory_synchronizer: DirectorySynchronizer, ui_state_provider: UIStateProvider,
-                 settings_manager: SettingsManager, background_task_manager: BackgroundTaskManager):
+                 settings_manager: SettingsManager, background_task_manager: BackgroundTaskManager,
+                 task_queue_manager: TaskQueueManager = None):
         self.main_window = main_window
         self.file_manager = file_manager
         self.file_comparator = file_comparator
@@ -39,6 +41,7 @@ class DialogHandler:
         self.ui_state_provider = ui_state_provider
         self.settings_manager = settings_manager
         self.background_task_manager = background_task_manager
+        self.task_queue_manager = task_queue_manager
 
     def show_properties_dialog(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
@@ -118,15 +121,16 @@ class DialogHandler:
     def synchronize_directories(self, checked=False):
         left_path = self.ui_state_provider.folder_browser.get_left_panel_widget().file_view.get_current_path()
         right_path = self.ui_state_provider.folder_browser.get_right_panel_widget().file_view.get_current_path()
-        if left_path and right_path:
-            dialog = SyncDialog(self.main_window, left_path, right_path)
-            if dialog.exec() == QDialog.DialogCode.Accepted:
-                options = dialog.get_options()
-                message = self.directory_synchronizer.synchronize(left_path, right_path, options)
-                self.main_window.statusBar().showMessage(message)
-                self.ui_state_provider.folder_browser.refresh_all_views()
-        else:
+        if not (left_path and right_path):
             raise ValueError("Both panels must have valid paths for synchronization.")
+            
+        dialog = SyncDialog(self.main_window, left_path, right_path)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            options = dialog.get_options()
+            task = Task(TaskType.SYNC, source_paths=[left_path], destination_path=right_path, options=options)
+            self.task_queue_manager.add_task(task)
+            self.main_window.statusBar().showMessage("Added sync task to queue.")
+            self.ui_state_provider.folder_browser.refresh_all_views()
 
     def create_new_file(self, current_dir=None, checked=False):
         if not current_dir:
@@ -154,10 +158,13 @@ class DialogHandler:
         if not destination_path:
             raise ValueError("No inactive panel path to copy to.")
 
-        # Pass the entire list of source paths
-        dialog = CopyDialog(self.main_window, source_paths, destination_path, self.file_manager, self.background_task_manager)
-        dialog.exec()
-        self.ui_state_provider.folder_browser.refresh_all_views()
+        dialog = CopyDialog(self.main_window, source_paths, destination_path)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            options = dialog.get_options()
+            task = Task(TaskType.COPY, source_paths, destination_path, options)
+            self.task_queue_manager.add_task(task)
+            self.main_window.statusBar().showMessage(f"Added copy task to queue.")
+            self.ui_state_provider.folder_browser.refresh_all_views()
 
     def move_selected_item(self, checked=False):
         paths_to_move = self.ui_state_provider.get_selected_paths()
@@ -167,10 +174,13 @@ class DialogHandler:
         if not destination_path:
             raise ValueError("No inactive panel path to move to.")
         
-        # Pass the entire list of paths to move
-        dialog = MoveDialog(self.main_window, paths_to_move, destination_path, self.file_manager, self.background_task_manager)
-        dialog.exec()
-        self.ui_state_provider.folder_browser.refresh_all_views()
+        dialog = MoveDialog(self.main_window, paths_to_move, destination_path)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            options = dialog.get_options()
+            task = Task(TaskType.MOVE, paths_to_move, destination_path, options)
+            self.task_queue_manager.add_task(task)
+            self.main_window.statusBar().showMessage(f"Added move task to queue.")
+            self.ui_state_provider.folder_browser.refresh_all_views()
 
     def paste_item_to_current_dir(self, checked=False):
         current_dir = self.ui_state_provider.get_active_panel_path()
@@ -185,9 +195,12 @@ class DialogHandler:
         if not selected_paths:
             raise ValueError("No file/folder selected for deletion.")
         
-        dialog = DeleteDialog(self.main_window, selected_paths, self.file_manager, self.background_task_manager)
+        dialog = DeleteDialog(self.main_window, selected_paths)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.main_window.statusBar().showMessage(f"Deleted {len(selected_paths)} items.")
+            options = dialog.get_options()
+            task = Task(TaskType.DELETE, selected_paths, options=options)
+            self.task_queue_manager.add_task(task)
+            self.main_window.statusBar().showMessage(f"Added delete task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
 
     def rename_selected_item(self, checked=False):

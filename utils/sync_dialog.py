@@ -1,30 +1,30 @@
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QDialogButtonBox
+
 from app.translation_manager import translation_manager
 
+
 class SyncDialog(QDialog):
-    def __init__(self, parent, source_dir, dest_dir):
+    def __init__(self, parent, left_path, right_path):
         super().__init__(parent)
         uic.loadUi("ui/sync_dialog.ui", self)
-        self.setWindowTitle(translation_manager.translate("SyncDialog", "Directory Synchronization"))
+        self.setWindowTitle(translation_manager.translate("SyncDialog", "Synchronize Directories"))
 
-        self.source_dir = source_dir
-        self.dest_dir = dest_dir
+        self.left_path_label.setText(left_path)
+        self.right_path_label.setText(right_path)
 
-        self._init_ui()
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "OK"))
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("Buttons", "Cancel"))
 
-    def _init_ui(self):
-        # Set path labels
-        self.source_dir_label.setText(self.source_dir)
-        self.dest_dir_label.setText(self.dest_dir)
-
-        # Configure buttons
-        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("SyncDialog", "Synchronize"))
-        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("SyncDialog", "Cancel"))
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
 
     def get_options(self):
         return {
-            "two_way": self.two_way_sync_checkbox.isChecked(),
-            "delete": self.delete_files_checkbox.isChecked(),
+            "two_way": self.two_way_radio.isChecked(),
+            "left_to_right": self.left_to_right_radio.isChecked(),
+            "right_to_left": self.right_to_left_radio.isChecked(),
             "include_subdirs": self.include_subdirs_checkbox.isChecked(),
+            "delete": self.delete_files_checkbox.isChecked(),
+            "by_content": self.compare_by_content_checkbox.isChecked()
         }

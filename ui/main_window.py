@@ -8,6 +8,7 @@ from app.keyboard_event_handler import KeyboardEventManager
 from app.settings_handler import SettingsHandler
 from app.settings_manager import SettingsManager
 from app.shortcuts_manager import ShortcutsManager
+from app.task_queue_manager import TaskQueueManager
 from app.theme_manager import ThemeManager
 from app.ui_state_provider import UIStateProvider
 from favorites.favorites_manager import FavoritesManager
@@ -15,25 +16,27 @@ from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager
+from panels.task_queue_panel import TaskQueuePanel
 from ui.progress_bar_manager import ProgressBarManager
 from ui.ui_manager import UIManager
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, background_task_manager):
+    def __init__(self, background_task_manager, task_queue_manager: TaskQueueManager, file_manager: FileManager, directory_synchronizer: DirectorySynchronizer):
         super().__init__()
         uic.loadUi("ui/main_window.ui", self)
         self.setWindowTitle(f"QuickFile v{__version__}")
         self.background_task_manager = background_task_manager
+        self.task_queue_manager = task_queue_manager
+        self.file_manager = file_manager
+        self.directory_synchronizer = directory_synchronizer
 
         self.shortcuts_manager = ShortcutsManager(self)
         self.settings_manager = SettingsManager()
-        self.theme_manager = ThemeManager()
+        self.theme_manager = ThemeManager(self.settings_manager)
         
-        self.file_manager = FileManager()
         self.file_comparator = FileComparator()
         self.archive_manager = ArchiveManager()
-        self.directory_synchronizer = DirectorySynchronizer()
         self.favorites_manager = FavoritesManager()
 
         self.settings_handler = SettingsHandler(
@@ -65,7 +68,8 @@ class MainWindow(QMainWindow):
             ui_state_provider=None,
             dialog_handler=None,
             settings_handler=self.settings_handler,
-            background_task_manager=self.background_task_manager
+            background_task_manager=self.background_task_manager,
+            task_queue_manager=self.task_queue_manager
         )
 
         self.ui_manager.init_ui(self.application_logic_handler, self.shortcuts_manager)
@@ -80,7 +84,8 @@ class MainWindow(QMainWindow):
             directory_synchronizer=self.directory_synchronizer,
             ui_state_provider=self.ui_state_provider,
             settings_manager=self.settings_manager,
-            background_task_manager=self.background_task_manager
+            background_task_manager=self.background_task_manager,
+            task_queue_manager=self.task_queue_manager
         )
 
         self.application_logic_handler.ui_state_provider = self.ui_state_provider
@@ -109,6 +114,9 @@ class MainWindow(QMainWindow):
         
         initial_theme = self.settings_manager.get_setting("theme", "dark")
         self.theme_manager.apply_theme(initial_theme)
+        
+        self.task_queue_panel = TaskQueuePanel(self.task_queue_manager)
+        self.ui_manager.folder_browser.add_custom_tab(self.task_queue_panel, "Queue", "right")
 
     def load_settings(self):
         self.settings_manager.load_window_settings(self)

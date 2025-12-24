@@ -11,6 +11,9 @@ from PyQt6.QtCore import Qt
 from __version__ import __version__
 
 from app.background_task_manager import BackgroundTaskManager
+from app.task_queue_manager import TaskQueueManager
+from file_operations.directory_synchronizer import DirectorySynchronizer
+from file_operations.file_manager import FileManager
 from ui.main_window import MainWindow
 from utils.dialogs import show_error_message
 from utils.logger import setup_logging
@@ -38,7 +41,16 @@ if __name__ == "__main__":
     app = QApplication([])
 
     background_task_manager = BackgroundTaskManager()
-    window = MainWindow(background_task_manager=background_task_manager)
+    file_manager = FileManager()
+    directory_synchronizer = DirectorySynchronizer()
+    task_queue_manager = TaskQueueManager(background_task_manager, file_manager, directory_synchronizer)
+    
+    window = MainWindow(
+        background_task_manager=background_task_manager, 
+        task_queue_manager=task_queue_manager,
+        file_manager=file_manager,
+        directory_synchronizer=directory_synchronizer
+    )
     app.installEventFilter(window.keyboard_event_manager)
 
     window.show()

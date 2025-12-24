@@ -13,13 +13,28 @@ QTableView, QTreeView {
     gridline-color: @@border@@;
 }
 
-QTableView[activePanel="true"]::item:selected, QTreeView[activePanel="true"]::item:selected {
+/* Active panel selection */
+QTableView[activePanel="true"]::item:selected,
+QTreeView[activePanel="true"]::item:selected {
     background-color: @@selection_background@@;
     color: @@selection_foreground@@;
 }
 
-QTableView[activePanel="false"]::item:selected, QTreeView[activePanel="false"]::item:selected {
-    background-color: transparent;
+/* Inactive panel selection - keep it subtle */
+QTableView[activePanel="false"]::item:selected,
+QTreeView[activePanel="false"]::item:selected {
+    background-color: @@inactive_selection_background@@;
+    color: @@foreground@@;
+}
+
+/* General selection for other table views (like Queue) */
+QTableView::item:selected {
+    background-color: @@selection_background@@;
+}
+
+/* Inactive selection for other table views */
+QTableView::item:selected:!active {
+    background-color: @@inactive_selection_background@@;
     color: @@foreground@@;
 }
 
