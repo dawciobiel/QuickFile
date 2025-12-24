@@ -24,7 +24,6 @@ class KeyboardEventManager(QObject):
             (Qt.Key.Key_F8, Qt.KeyboardModifier.NoModifier): self.application_logic_handler.delete_selected_item,
             (Qt.Key.Key_F9, Qt.KeyboardModifier.NoModifier): self.application_logic_handler.compare_selected_items,
             (Qt.Key.Key_F10, Qt.KeyboardModifier.NoModifier): self.main_window.close,
-            (Qt.Key.Key_B, Qt.KeyboardModifier.ControlModifier): self.application_logic_handler.open_favorites_dialog,
             (Qt.Key.Key_E, Qt.KeyboardModifier.ControlModifier): self.application_logic_handler.set_focus_on_path_edit,
         }
         

@@ -9,6 +9,7 @@
 2. **Incorrect Selection:** Czasami na aktywnym panelu (niezależnie lewy czy prawy) pliki/foldery nie są zaznaczane za pomocą klawisza
    Insert. Problem znika, jeżeli przejdzie się do innego katalogu. Być może problem również zniknie w momencie zastosowania akcji "
    Odświeżanie".
+3. **Incorrect file-types rows style:** Czasami po uruchomieniu aplikacji w trybie "flat" wiersze panelu do przeglądania plików nie są kolorowane wg rozszerzenia plików.
 
 ## Naprawione (Fixed)
 
