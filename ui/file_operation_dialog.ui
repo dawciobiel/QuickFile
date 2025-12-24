@@ -1,129 +1,138 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
-    <class>FileOperationDialog</class>
-    <widget class="QDialog" name="FileOperationDialog">
-        <property name="geometry">
-            <rect>
-                <x>0</x>
-                <y>0</y>
-                <width>400</width>
-                <height>200</height>
-            </rect>
-        </property>
-        <property name="windowTitle">
-            <string>File Operation</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout">
-            <item>
-                <layout class="QFormLayout" name="formLayout">
-                    <item row="0" column="0">
-                        <widget class="QLabel" name="source_label_title">
-                            <property name="text">
-                                <string>Source:</string>
-                            </property>
-                        </widget>
-                    </item>
-                    <item row="0" column="1">
-                        <widget class="QLabel" name="source_path_label">
-                            <property name="text">
-                                <string>/path/to/source</string>
-                            </property>
-                        </widget>
-                    </item>
-                    <item row="1" column="0">
-                        <widget class="QLabel" name="destination_label_title">
-                            <property name="text">
-                                <string>Destination:</string>
-                            </property>
-                        </widget>
-                    </item>
-                    <item row="1" column="1">
-                        <widget class="QLabel" name="destination_path_label">
-                            <property name="text">
-                                <string>/path/to/destination</string>
-                            </property>
-                        </widget>
-                    </item>
-                </layout>
-            </item>
-            <item>
-                <widget class="QGroupBox" name="options_group">
-                    <property name="title">
-                        <string>Options</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_2">
-                        <item>
-                            <widget class="QCheckBox" name="overwrite_checkbox">
-                                <property name="text">
-                                    <string>Overwrite existing files</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QCheckBox" name="preserve_timestamp_checkbox">
-                                <property name="text">
-                                    <string>Preserve original modification date</string>
-                                </property>
-                            </widget>
-                        </item>
-                    </layout>
-                </widget>
-            </item>
-            <item>
-                <spacer name="verticalSpacer">
-                    <property name="orientation">
-                        <enum>Qt::Vertical</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                        <size>
-                            <width>20</width>
-                            <height>40</height>
-                        </size>
-                    </property>
-                </spacer>
-            </item>
-            <item>
-                <widget class="QDialogButtonBox" name="buttonBox">
-                    <property name="standardButtons">
-                        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-                    </property>
-                </widget>
-            </item>
+ <class>FileOperationDialog</class>
+ <widget class="QDialog" name="FileOperationDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>450</width>
+    <height>220</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>File Operation</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QStackedWidget" name="stackedWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="options_page">
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="source_label_title">
+           <property name="text">
+            <string>Source:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="source_path_label">
+           <property name="text">
+            <string>/path/to/source</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="destination_label_title">
+           <property name="text">
+            <string>Destination:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="destination_path_label">
+           <property name="text">
+            <string>/path/to/destination</string>
+           </property>
+          </widget>
+         </item>
         </layout>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="options_group">
+         <property name="title">
+          <string>Options</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QCheckBox" name="overwrite_checkbox">
+            <property name="text">
+             <string>Overwrite existing files</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="preserve_timestamp_checkbox">
+            <property name="text">
+             <string>Preserve original modification date</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="progress_page">
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QLabel" name="progress_label">
+         <property name="text">
+          <string>Copying...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBar">
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
     </widget>
-    <resources/>
-    <connections>
-        <connection>
-            <sender>buttonBox</sender>
-            <signal>accepted()</signal>
-            <receiver>FileOperationDialog</receiver>
-            <slot>accept()</slot>
-            <hints>
-                <hint type="sourcelabel">
-                    <x>248</x>
-                    <y>254</y>
-                </hint>
-                <hint type="destinationlabel">
-                    <x>157</x>
-                    <y>274</y>
-                </hint>
-            </hints>
-        </connection>
-        <connection>
-            <sender>buttonBox</sender>
-            <signal>rejected()</signal>
-            <receiver>FileOperationDialog</receiver>
-            <slot>reject()</slot>
-            <hints>
-                <hint type="sourcelabel">
-                    <x>316</x>
-                    <y>260</y>
-                </hint>
-                <hint type="destinationlabel">
-                    <x>286</x>
-                    <y>274</y>
-                </hint>
-            </hints>
-        </connection>
-    </connections>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
 </ui>

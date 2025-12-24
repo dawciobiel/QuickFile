@@ -3,6 +3,7 @@ import os
 
 from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 
+from app.background_task_manager import BackgroundTaskManager
 from app.settings_manager import SettingsManager
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
@@ -28,7 +29,7 @@ class DialogHandler:
     def __init__(self, main_window, file_manager: FileManager, file_comparator: FileComparator,
                  favorites_manager: FavoritesManager, archive_manager: ArchiveManager,
                  directory_synchronizer: DirectorySynchronizer, ui_state_provider: UIStateProvider,
-                 settings_manager: SettingsManager):
+                 settings_manager: SettingsManager, background_task_manager: BackgroundTaskManager):
         self.main_window = main_window
         self.file_manager = file_manager
         self.file_comparator = file_comparator
@@ -37,14 +38,7 @@ class DialogHandler:
         self.directory_synchronizer = directory_synchronizer
         self.ui_state_provider = ui_state_provider
         self.settings_manager = settings_manager
-
-        self.ACTION_CREATE_ARCHIVE = translation_manager.translate("MenuPanel", "Create Archive")
-        self.ACTION_EXTRACT_ARCHIVE = translation_manager.translate("MenuPanel", "Extract Archive")
-        self.ACTION_NEW_FILE = translation_manager.translate("MenuPanel", "New File")
-        self.ACTION_NEW_FOLDER = translation_manager.translate("MenuPanel", "New Folder")
-        self.ACTION_RENAME = translation_manager.translate("MenuPanel", "Rename")
-
-        self.ERROR_NO_CURRENT_DIR = translation_manager.translate("MenuPanel", "Could not determine current directory for active panel.")
+        self.background_task_manager = background_task_manager
 
     def show_properties_dialog(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
@@ -76,9 +70,9 @@ class DialogHandler:
     def _compare_files(self, file1_path, file2_path):
         are_identical = self.file_comparator.compare_files(file1_path, file2_path)
         if are_identical:
-            QMessageBox.information(self.main_window, translation_manager.translate("ApplicationLogicHandler", "File Comparison Result"), translation_manager.translate("ApplicationLogicHandler", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are identical."))
+            QMessageBox.information(self.main_window, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are identical.")
         else:
-            QMessageBox.information(self.main_window, translation_manager.translate("ApplicationLogicHandler", "File Comparison Result"), translation_manager.translate("ApplicationLogicHandler", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are different."))
+            QMessageBox.information(self.main_window, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are different.")
 
     def _compare_directories(self, dir1_path, dir2_path):
         dircmp_obj = self.file_comparator.compare_directories(dir1_path, dir2_path)
@@ -87,8 +81,8 @@ class DialogHandler:
             dialog = CompareDialog(self.main_window, report, dir1_path, dir2_path)
             dialog.exec()
         else:
-            logging.error("Directory Comparison Error: Could not compare directories. Ensure both paths are valid directories.")
-            QMessageBox.critical(self.main_window, translation_manager.translate("ApplicationLogicHandler", "Directory Comparison Error"), translation_manager.translate("ApplicationLogicHandler", "Could not compare directories. Ensure both paths are valid directories."))
+            logging.error("Directory Comparison Error: Could not compare directories.")
+            QMessageBox.critical(self.main_window, "Directory Comparison Error", "Could not compare directories. Ensure both paths are valid directories.")
 
     def open_favorites_dialog(self, checked=False):
         favorites = self.favorites_manager.get_favorites()
@@ -98,20 +92,13 @@ class DialogHandler:
 
     def create_archive(self, checked=False):
         paths_to_archive = self.ui_state_provider.get_selected_paths()
-        
         if not paths_to_archive:
-            current_selected_path = self.ui_state_provider.get_current_selected_path()
-            if current_selected_path:
-                paths_to_archive = [current_selected_path]
-            else:
-                raise ValueError(translation_manager.translate("MenuPanel", "No file/folder selected for archiving."))
-
+            raise ValueError("No file/folder selected for archiving.")
         if len(paths_to_archive) > 1:
             base_dir = self.ui_state_provider.get_active_panel_path()
         else:
             base_dir = os.path.dirname(paths_to_archive[0])
-
-        archive_name, ok = QInputDialog.getText(self.main_window, self.ACTION_CREATE_ARCHIVE, translation_manager.translate("MenuPanel", "Archive name (without extension):"))
+        archive_name, ok = QInputDialog.getText(self.main_window, "Create Archive", "Archive name (without extension):")
         if ok and archive_name:
             archive_path = os.path.join(base_dir, archive_name + ".zip")
             message = self.archive_manager.create_zip_archive(paths_to_archive, archive_path)
@@ -121,32 +108,16 @@ class DialogHandler:
     def extract_archive(self, checked=False):
         selected_archive_path = self.ui_state_provider.get_current_selected_path()
         if not selected_archive_path:
-            raise ValueError(translation_manager.translate("MenuPanel", "No archive file selected."))
-
-        file_extension = os.path.splitext(selected_archive_path)[1].lower()
-        
-        extract_path, ok = QInputDialog.getText(self.main_window, self.ACTION_EXTRACT_ARCHIVE, translation_manager.translate("MenuPanel", "Destination path:"), text=os.path.dirname(selected_archive_path))
+            raise ValueError("No archive file selected.")
+        extract_path, ok = QInputDialog.getText(self.main_window, "Extract Archive", "Destination path:", text=os.path.dirname(selected_archive_path))
         if ok and extract_path:
-            message = ""
-            if file_extension == '.zip':
-                message = self.archive_manager.extract_zip_archive(selected_archive_path, extract_path)
-            elif file_extension in ['.tar', '.gz', '.bz2', '.xz']:
-                message = self.archive_manager.extract_tar_archive(selected_archive_path, extract_path)
-            elif file_extension == '.rar':
-                message = self.archive_manager.extract_rar_archive(selected_archive_path, extract_path)
-            else:
-                raise ValueError(translation_manager.translate("MenuPanel", "Unsupported archive format."))
-
+            message = self.archive_manager.extract_archive(selected_archive_path, extract_path)
             self.main_window.statusBar().showMessage(message)
             self.ui_state_provider.folder_browser.refresh_all_views()
 
     def synchronize_directories(self, checked=False):
-        left_panel = self.ui_state_provider.folder_browser.get_left_panel_widget()
-        right_panel = self.ui_state_provider.folder_browser.get_right_panel_widget()
-        
-        left_path = left_panel.file_view.get_current_path() if left_panel else None
-        right_path = right_panel.file_view.get_current_path() if right_panel else None
-        
+        left_path = self.ui_state_provider.folder_browser.get_left_panel_widget().file_view.get_current_path()
+        right_path = self.ui_state_provider.folder_browser.get_right_panel_widget().file_view.get_current_path()
         if left_path and right_path:
             dialog = SyncDialog(self.main_window, left_path, right_path)
             if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -155,92 +126,54 @@ class DialogHandler:
                 self.main_window.statusBar().showMessage(message)
                 self.ui_state_provider.folder_browser.refresh_all_views()
         else:
-            raise ValueError(translation_manager.translate("ApplicationLogicHandler", "Both panels must have valid paths for synchronization."))
+            raise ValueError("Both panels must have valid paths for synchronization.")
 
     def create_new_file(self, current_dir=None, checked=False):
-        self._create_new_item("file", current_dir)
-
-    def create_new_directory(self, current_dir=None, checked=False):
-        self._create_new_item("directory", current_dir)
-
-    def _create_new_item(self, item_type, current_dir=None):
-        if current_dir is None:
-            current_dir = self.ui_state_provider.get_active_panel_path()
-        
         if not current_dir:
-            raise ValueError(self.ERROR_NO_CURRENT_DIR)
-
-        title = self.ACTION_NEW_FILE if item_type == "file" else self.ACTION_NEW_FOLDER
-        label = translation_manager.translate("MenuPanel", "File name:") if item_type == "file" else translation_manager.translate("MenuPanel", "Folder name:")
-        name, ok = QInputDialog.getText(self.main_window, title, label)
-
+            current_dir = self.ui_state_provider.get_active_panel_path()
+        name, ok = QInputDialog.getText(self.main_window, "New File", "File name:")
         if ok and name:
-            if item_type == "file":
-                message = self.file_manager.create_file(current_dir, name)
-            else:
-                message = self.file_manager.create_directory(current_dir, name)
+            message = self.file_manager.create_file(current_dir, name)
             self.main_window.statusBar().showMessage(message)
             self.ui_state_provider.folder_browser.refresh_all_views()
-        elif ok and not name:
-            raise ValueError(translation_manager.translate("MenuPanel", "Name cannot be empty."))
+
+    def create_new_directory(self, current_dir=None, checked=False):
+        if not current_dir:
+            current_dir = self.ui_state_provider.get_active_panel_path()
+        name, ok = QInputDialog.getText(self.main_window, "New Folder", "Folder name:")
+        if ok and name:
+            message = self.file_manager.create_directory(current_dir, name)
+            self.main_window.statusBar().showMessage(message)
+            self.ui_state_provider.folder_browser.refresh_all_views()
 
     def copy_selected_item(self, checked=False):
         source_paths = self.ui_state_provider.get_selected_paths()
         if not source_paths:
-            raise ValueError(translation_manager.translate("MenuPanel", "No file/folder selected for copying."))
-
+            raise ValueError("No file/folder selected for copying.")
         destination_path = self.ui_state_provider.get_inactive_panel_path()
         if not destination_path:
-            raise ValueError(translation_manager.translate("MenuPanel", "No inactive panel path to copy to."))
+            raise ValueError("No inactive panel path to copy to.")
 
-        if len(source_paths) == 1:
-            dialog = CopyDialog(self.main_window, source_paths[0], destination_path)
-            if dialog.exec() == QDialog.DialogCode.Accepted:
-                message = self.file_manager.copy_item_with_options(source_paths[0], destination_path, dialog.get_options())
-                self.main_window.statusBar().showMessage(message)
-                self.ui_state_provider.folder_browser.refresh_all_views()
-        else:
-            all_successful = True
-            options = {"overwrite": False, "preserve_timestamp": True} 
-            for source_path in source_paths:
-                self.file_manager.copy_item_with_options(source_path, destination_path, options)
-            if all_successful:
-                self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", f"Copied {len(source_paths)} items to '{destination_path}'"))
-            self.ui_state_provider.folder_browser.refresh_all_views()
+        dialog = CopyDialog(self.main_window, source_paths[0], destination_path, self.file_manager, self.background_task_manager)
+        dialog.exec()
+        self.ui_state_provider.folder_browser.refresh_all_views()
 
     def move_selected_item(self, checked=False):
         paths_to_move = self.ui_state_provider.get_selected_paths()
-        
         if not paths_to_move:
-            current_selected_path = self.ui_state_provider.get_current_selected_path()
-            if current_selected_path:
-                paths_to_move = [current_selected_path]
-            else:
-                raise ValueError(translation_manager.translate("MenuPanel", "No file/folder selected for moving."))
-
+            raise ValueError("No file/folder selected for moving.")
         destination_path = self.ui_state_provider.get_inactive_panel_path()
         if not destination_path:
-            raise ValueError(translation_manager.translate("MenuPanel", "No inactive panel path to move to."))
-
-        if len(paths_to_move) == 1:
-            dialog = MoveDialog(self.main_window, paths_to_move[0], destination_path)
-            if dialog.exec() == QDialog.DialogCode.Accepted:
-                message = self.file_manager.move_item_with_options(paths_to_move[0], destination_path, dialog.get_options())
-                self.main_window.statusBar().showMessage(message)
-                self.ui_state_provider.folder_browser.refresh_all_views()
-        else:
-            all_successful = True
-            options = {"overwrite": False, "preserve_timestamp": True} 
-            for source_path in paths_to_move:
-                self.file_manager.move_item_with_options(source_path, destination_path, options)
-            if all_successful:
-                self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", f"Moved {len(paths_to_move)} items to '{destination_path}'"))
-            self.ui_state_provider.folder_browser.refresh_all_views()
+            raise ValueError("No inactive panel path to move to.")
+        
+        dialog = MoveDialog(self.main_window, paths_to_move[0], destination_path, self.file_manager, self.background_task_manager)
+        dialog.exec()
+        self.ui_state_provider.folder_browser.refresh_all_views()
 
     def paste_item_to_current_dir(self, checked=False):
         current_dir = self.ui_state_provider.get_active_panel_path()
         if not current_dir:
-            raise ValueError(self.ERROR_NO_CURRENT_DIR)
+            raise ValueError("Could not determine current directory for active panel.")
         message = self.file_manager.paste_item(current_dir)
         self.main_window.statusBar().showMessage(message)
         self.ui_state_provider.folder_browser.refresh_all_views()
@@ -248,32 +181,20 @@ class DialogHandler:
     def delete_selected_item(self, checked=False):
         selected_paths = self.ui_state_provider.get_selected_paths()
         if not selected_paths:
-            raise ValueError(translation_manager.translate("MenuPanel", "No file/folder selected for deletion."))
-
-        dialog = DeleteDialog(self.main_window, selected_paths)
+            raise ValueError("No file/folder selected for deletion.")
+        
+        dialog = DeleteDialog(self.main_window, selected_paths, self.file_manager, self.background_task_manager)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            move_to_trash = dialog.should_move_to_trash()
-            all_successful = True
-            for path in selected_paths:
-                try:
-                    self.file_manager.delete_item(path, move_to_trash=move_to_trash)
-                except FileManagerError as e:
-                    logging.error(f"Error deleting item {path}: {e}")
-                    all_successful = False
-            if all_successful:
-                self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", f"Deleted {len(selected_paths)} items."))
+            self.main_window.statusBar().showMessage(f"Deleted {len(selected_paths)} items.")
             self.ui_state_provider.folder_browser.refresh_all_views()
 
     def rename_selected_item(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
         if not selected_path:
-            raise ValueError(translation_manager.translate("MenuPanel", "No file/folder selected for renaming."))
-
+            raise ValueError("No file/folder selected for renaming.")
         old_name = os.path.basename(selected_path)
-        new_name, ok = QInputDialog.getText(self.main_window, self.ACTION_RENAME, translation_manager.translate("MenuPanel", "New name:"), text=old_name)
+        new_name, ok = QInputDialog.getText(self.main_window, "Rename", "New name:", text=old_name)
         if ok and new_name:
             message = self.file_manager.rename_item(selected_path, new_name)
             self.main_window.statusBar().showMessage(message)
             self.ui_state_provider.folder_browser.refresh_all_views()
-        elif ok and not new_name:
-            raise ValueError(translation_manager.translate("MenuPanel", "New name cannot be empty."))

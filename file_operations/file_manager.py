@@ -1,11 +1,10 @@
 import logging
 import os
 import shutil
-import send2trash # Import send2trash
-from app.translation_manager import translation_manager # Import our new manager
+import send2trash
+from app.translation_manager import translation_manager
 
 class FileManagerError(Exception):
-    """Custom exception for FileManager errors."""
     pass
 
 class FileManager:
@@ -14,44 +13,49 @@ class FileManager:
         self.is_cut_operation = False
 
     def _validate_path(self, path, must_exist=True, is_directory=False, is_file=False, name="Path"):
-        """
-        Validates a given path based on specified criteria.
-        Raises appropriate exceptions with translated messages.
-        """
         if not path:
             raise ValueError(translation_manager.translate("FileManager", f"{name} cannot be empty."))
-
         if must_exist and not os.path.exists(path):
             raise FileNotFoundError(translation_manager.translate("FileManager", f"{name} '{path}' does not exist."))
-        
-        if os.path.exists(path): # Only check type if path exists
+        if os.path.exists(path):
             if is_directory and not os.path.isdir(path):
                 raise NotADirectoryError(translation_manager.translate("FileManager", f"{name} '{path}' is not a directory."))
             if is_file and not os.path.isfile(path):
                 raise IsADirectoryError(translation_manager.translate("FileManager", f"{name} '{path}' is not a file."))
-        
         return path
 
     def _handle_destination_exists(self, destination_full_path, source_is_dir, overwrite_option, item_name):
-        """
-        Handles the scenario where the destination path already exists.
-        Removes the existing item if overwrite is allowed, otherwise raises an error.
-        """
         if os.path.exists(destination_full_path):
             if source_is_dir and os.path.isfile(destination_full_path):
                 raise IsADirectoryError(translation_manager.translate("FileManager", f"Cannot move/copy directory '{item_name}' to existing file '{destination_full_path}'."))
             elif not overwrite_option:
                 raise FileExistsError(translation_manager.translate("FileManager", f"Item '{item_name}' already exists in the destination."))
             else:
-                # If overwriting, remove existing item first
                 if os.path.isdir(destination_full_path):
                     shutil.rmtree(destination_full_path)
                 else:
                     os.remove(destination_full_path)
                 logging.info(f"Removed existing item at {destination_full_path} for overwrite.")
 
-    def copy_item_with_options(self, source_path, destination_path, options):
-        """Copies a file/folder with options."""
+    def _copy_file_with_progress(self, src, dst, progress_callback=None, total_size=0, copied_so_far=0):
+        try:
+            with open(src, 'rb') as fsrc:
+                with open(dst, 'wb') as fdst:
+                    while True:
+                        buf = fsrc.read(1024 * 1024)
+                        if not buf:
+                            break
+                        fdst.write(buf)
+                        if progress_callback and total_size > 0:
+                            copied_so_far += len(buf)
+                            progress = int((copied_so_far / total_size) * 100)
+                            progress_callback.emit(progress)
+            shutil.copystat(src, dst)
+            return copied_so_far
+        except Exception as e:
+            raise OSError(f"Error copying file {src} to {dst}: {e}")
+
+    def copy_item_with_options(self, source_path, destination_path, options, progress_callback=None):
         try:
             self._validate_path(source_path, must_exist=True, name="Source path")
             self._validate_path(destination_path, must_exist=True, is_directory=True, name="Destination path")
@@ -62,23 +66,51 @@ class FileManager:
 
             self._handle_destination_exists(destination_full_path, source_is_dir, options.get("overwrite"), base_name)
 
-            copy_function = shutil.copy2 if options.get("preserve_timestamp") else shutil.copy
-            
             if source_is_dir:
-                shutil.copytree(source_path, destination_full_path, copy_function=copy_function)
+                total_size = 0
+                for dirpath, _, filenames in os.walk(source_path):
+                    for filename in filenames:
+                        total_size += os.path.getsize(os.path.join(dirpath, filename))
+                
+                copied_size = 0
+                
+                os.makedirs(destination_full_path, exist_ok=True)
+                shutil.copystat(source_path, destination_full_path)
+
+                for dirpath, dirnames, filenames in os.walk(source_path):
+                    rel_path = os.path.relpath(dirpath, source_path)
+                    dest_dir = os.path.join(destination_full_path, rel_path)
+                    os.makedirs(dest_dir, exist_ok=True)
+                    shutil.copystat(dirpath, dest_dir)
+
+                    for filename in filenames:
+                        src_file = os.path.join(dirpath, filename)
+                        dst_file = os.path.join(dest_dir, filename)
+                        copied_size = self._copy_file_with_progress(src_file, dst_file, progress_callback, total_size, copied_size)
             else:
-                copy_function(source_path, destination_full_path)
+                total_size = os.path.getsize(source_path)
+                self._copy_file_with_progress(source_path, destination_full_path, progress_callback, total_size, 0)
 
             return translation_manager.translate("FileManager", f"Copied '{base_name}' to '{destination_path}'")
 
         except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError) as e:
-            raise e # Re-raise specific errors for caller to handle
+            raise e
         except OSError as e:
             logging.exception(f"Error copying item from {source_path} to {destination_full_path}: {e}")
             raise FileManagerError(translation_manager.translate("FileManager", f"Error copying item: {e}"))
 
-    def move_item_with_options(self, source_path, destination_path, options):
-        """Moves a file/folder with options."""
+    def copy_items_batch(self, source_paths, destination_path, options, progress_callback=None):
+        total_items = len(source_paths)
+        for i, source_path in enumerate(source_paths):
+            try:
+                self.copy_item_with_options(source_path, destination_path, options)
+                if progress_callback:
+                    progress_callback.emit(int((i + 1) / total_items * 100))
+            except Exception as e:
+                logging.error(f"Failed to copy {source_path}: {e}")
+        return f"Batch copy completed."
+
+    def move_item_with_options(self, source_path, destination_path, options, progress_callback=None):
         try:
             self._validate_path(source_path, must_exist=True, name="Source path")
             self._validate_path(destination_path, must_exist=True, is_directory=True, name="Destination path")
@@ -88,22 +120,27 @@ class FileManager:
             source_is_dir = os.path.isdir(source_path)
 
             self._handle_destination_exists(destination_full_path, source_is_dir, options.get("overwrite"), base_name)
-                
-            shutil.move(source_path, destination_full_path)
+            
+            if os.stat(source_path).st_dev != os.stat(destination_path).st_dev:
+                self.copy_item_with_options(source_path, destination_path, options, progress_callback)
+                if os.path.isdir(source_path):
+                    shutil.rmtree(source_path)
+                else:
+                    os.remove(source_path)
+            else:
+                shutil.move(source_path, destination_full_path)
+                if progress_callback:
+                    progress_callback.emit(100)
 
             return translation_manager.translate("FileManager", f"Moved '{base_name}' to '{destination_full_path}'")
 
         except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError) as e:
-            raise e # Re-raise specific errors for caller to handle
+            raise e
         except OSError as e:
             logging.exception(f"Error moving item from {source_path} to {destination_full_path}: {e}")
             raise FileManagerError(translation_manager.translate("FileManager", f"Error moving item: {e}"))
 
     def delete_item(self, item_path, move_to_trash=True):
-        """
-        Deletes a file/folder or moves it to the system trash.
-        If move_to_trash is True, attempts to move to trash. Otherwise, deletes permanently.
-        """
         try:
             self._validate_path(item_path, must_exist=True, name="Item path")
 
@@ -111,17 +148,8 @@ class FileManager:
                 try:
                     send2trash.send2trash(item_path)
                     return translation_manager.translate("FileManager", f"Moved to Trash: {item_path}")
-                except send2trash.TrashPermissionError as e:
-                    logging.warning(f"Permission error moving {item_path} to trash, deleting permanently: {e}")
-                    # Fallback to permanent delete if trash fails due to permissions
-                    if os.path.isdir(item_path):
-                        shutil.rmtree(item_path)
-                    else:
-                        os.remove(item_path)
-                    return translation_manager.translate("FileManager", f"Deleted permanently (trash failed): {item_path}")
                 except Exception as e:
                     logging.warning(f"Error moving {item_path} to trash, deleting permanently: {e}")
-                    # Fallback to permanent delete for other trash errors
                     if os.path.isdir(item_path):
                         shutil.rmtree(item_path)
                     else:
@@ -138,6 +166,17 @@ class FileManager:
         except OSError as e:
             logging.exception(f"Error deleting item {item_path}: {e}")
             raise FileManagerError(translation_manager.translate("FileManager", f"Error deleting item: {e}"))
+
+    def delete_items_batch(self, item_paths, move_to_trash=True, progress_callback=None):
+        total_items = len(item_paths)
+        for i, item_path in enumerate(item_paths):
+            try:
+                self.delete_item(item_path, move_to_trash)
+                if progress_callback:
+                    progress_callback.emit(int((i + 1) / total_items * 100))
+            except Exception as e:
+                logging.error(f"Failed to delete {item_path}: {e}")
+        return f"Batch delete completed."
 
     def copy_to_clipboard(self, path):
         try:
@@ -172,26 +211,16 @@ class FileManager:
 
             base_name = os.path.basename(self.clipboard)
             destination_full_path = os.path.join(destination_path, base_name)
-
-            # For paste, we assume overwrite is always true if it's a cut operation,
-            # or if the user explicitly allows it for copy.
-            # For simplicity here, we'll just check if it exists and handle it.
-            # A more complex UI might ask for overwrite confirmation.
-            # For now, let's assume paste implies overwrite if the item is cut.
-            # If it's a copy, we might need an options dict for paste too.
-            # For now, let's keep it simple and assume no overwrite for copy-paste if exists.
             
-            # Simplified overwrite logic for paste:
             if os.path.exists(destination_full_path):
-                if self.is_cut_operation: # If cut, always overwrite
+                if self.is_cut_operation:
                     if os.path.isdir(destination_full_path):
                         shutil.rmtree(destination_full_path)
                     else:
                         os.remove(destination_full_path)
                     logging.info(f"Removed existing item at {destination_full_path} for cut-paste overwrite.")
-                else: # If copy, raise error if exists
+                else:
                     raise FileExistsError(translation_manager.translate("FileManager", f"Item '{base_name}' already exists in the destination."))
-
 
             if self.is_cut_operation:
                 shutil.move(self.clipboard, destination_full_path)
@@ -233,7 +262,6 @@ class FileManager:
             raise FileManagerError(translation_manager.translate("FileManager", f"Error renaming item: {e}"))
 
     def create_file(self, directory, file_name):
-        """Creates a new, empty file."""
         try:
             self._validate_path(directory, must_exist=True, name="Directory")
             if not file_name:
@@ -244,7 +272,7 @@ class FileManager:
                 raise FileExistsError(translation_manager.translate("FileManager", f"File '{file_name}' already exists."))
 
             with open(file_path, 'w') as f:
-                pass  # Creates an empty file
+                pass
             return translation_manager.translate("FileManager", f"File created: {file_path}")
         except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError) as e:
             raise e
@@ -253,7 +281,6 @@ class FileManager:
             raise FileManagerError(translation_manager.translate("FileManager", f"Error creating file: {e}"))
 
     def create_directory(self, parent_directory, directory_name):
-        """Creates a new folder."""
         try:
             self._validate_path(parent_directory, must_exist=True, name="Parent directory")
             if not directory_name:
@@ -272,7 +299,6 @@ class FileManager:
             raise FileManagerError(translation_manager.translate("FileManager", f"Error creating directory: {e}"))
 
     def search_files(self, root_path, pattern):
-        """Searches for files and folders matching the pattern in the given path."""
         try:
             self._validate_path(root_path, must_exist=True, is_directory=True, name="Starting path")
 

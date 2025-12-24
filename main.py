@@ -10,6 +10,7 @@ from PyQt6.QtCore import Qt
 
 from __version__ import __version__
 
+from app.background_task_manager import BackgroundTaskManager
 from ui.main_window import MainWindow
 from utils.dialogs import show_error_message
 from utils.logger import setup_logging
@@ -36,7 +37,8 @@ if __name__ == "__main__":
 
     app = QApplication([])
 
-    window = MainWindow()
+    background_task_manager = BackgroundTaskManager()
+    window = MainWindow(background_task_manager=background_task_manager)
     app.installEventFilter(window.keyboard_event_manager)
 
     window.show()
