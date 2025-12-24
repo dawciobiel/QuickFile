@@ -75,7 +75,7 @@ class SettingsDialog(QDialog):
             self.manual_language_radio.setChecked(True)
         
         self.theme_group.setTitle(translation_manager.translate("SettingsDialog", "Theme"))
-        available_themes = self.theme_manager.get_available_themes()
+        available_themes = self.theme_manager.get_themes()
         for theme_name in available_themes:
             self.theme_combo.addItem(theme_name.capitalize(), theme_name)
         index = self.theme_combo.findData(self.current_theme)
