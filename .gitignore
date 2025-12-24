@@ -10,7 +10,7 @@ NOTE.md
 # Temporary translation file
 translations/to_translate_pl.txt
 
-# Old Qt translation files
+# Old Qt translation files - currently not used. It's used JSON format instead.
 translations/*.ts
 translations/*.qm
 
