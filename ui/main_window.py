@@ -1,5 +1,5 @@
 from PyQt6 import uic
-from PyQt6.QtWidgets import QMainWindow, QApplication
+from PyQt6.QtWidgets import QMainWindow, QApplication, QProgressBar, QLabel, QPushButton
 
 from __version__ import __version__
 from app.application_logic_handler import ApplicationLogicHandler
@@ -15,16 +15,17 @@ from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager
+from ui.progress_bar_manager import ProgressBarManager
 from ui.ui_manager import UIManager
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, background_task_manager):
         super().__init__()
         uic.loadUi("ui/main_window.ui", self)
         self.setWindowTitle(f"QuickFile v{__version__}")
+        self.background_task_manager = background_task_manager
 
-        # Initialize managers
         self.shortcuts_manager = ShortcutsManager(self)
         self.settings_manager = SettingsManager()
         self.theme_manager = ThemeManager()
@@ -35,7 +36,6 @@ class MainWindow(QMainWindow):
         self.directory_synchronizer = DirectorySynchronizer()
         self.favorites_manager = FavoritesManager()
 
-        # Initialize SettingsHandler
         self.settings_handler = SettingsHandler(
             main_window=self,
             settings_manager=self.settings_manager,
@@ -43,7 +43,6 @@ class MainWindow(QMainWindow):
             theme_manager=self.theme_manager
         )
 
-        # Then initialize UIManager, passing managers as dependencies
         self.ui_manager = UIManager(
             main_window=self,
             settings_manager=self.settings_manager,
@@ -55,7 +54,6 @@ class MainWindow(QMainWindow):
             theme_manager=self.theme_manager
         )
         
-        # Initialize ApplicationLogicHandler
         self.application_logic_handler = ApplicationLogicHandler(
             main_window=self,
             file_manager=self.file_manager,
@@ -66,13 +64,12 @@ class MainWindow(QMainWindow):
             theme_manager=self.theme_manager,
             ui_state_provider=None,
             dialog_handler=None,
-            settings_handler=self.settings_handler
+            settings_handler=self.settings_handler,
+            background_task_manager=self.background_task_manager
         )
 
-        # Initialize the UI
         self.ui_manager.init_ui(self.application_logic_handler, self.shortcuts_manager)
 
-        # Initialize UIStateProvider and DialogHandler AFTER UIManager
         self.ui_state_provider = UIStateProvider(self.ui_manager.folder_browser)
         self.dialog_handler = DialogHandler(
             main_window=self,
@@ -82,47 +79,48 @@ class MainWindow(QMainWindow):
             archive_manager=self.archive_manager,
             directory_synchronizer=self.directory_synchronizer,
             ui_state_provider=self.ui_state_provider,
-            settings_manager=self.settings_manager
+            settings_manager=self.settings_manager,
+            background_task_manager=self.background_task_manager
         )
 
-        # Now that ui_state_provider and dialog_handler are initialized, update application_logic_handler
         self.application_logic_handler.ui_state_provider = self.ui_state_provider
         self.application_logic_handler.dialog_handler = self.dialog_handler
 
         self.ui_manager.connect_signals(self.application_logic_handler)
 
-        # Initialize KeyboardEventManager AFTER ui_manager has set up folder_browser
         self.keyboard_event_manager = KeyboardEventManager(
             self,
             self.application_logic_handler,
             self.ui_manager.folder_browser
         )
 
+        self.progress_label = QLabel("Operation in progress...")
+        self.progressBar = QProgressBar()
+        self.cancel_button = QPushButton("Cancel")
+        self.statusBar().addPermanentWidget(self.progress_label)
+        self.statusBar().addPermanentWidget(self.progressBar, 1)
+        self.statusBar().addPermanentWidget(self.cancel_button)
+
+        self.progress_bar_manager = ProgressBarManager(self)
+        self.cancel_button.clicked.connect(self.background_task_manager.cancel_current_task)
+
         self.shortcuts_manager.apply_shortcuts()
         self.load_settings()
         
-        # Apply initial theme
         initial_theme = self.settings_manager.get_setting("theme", "dark")
         self.theme_manager.apply_theme(initial_theme)
 
     def load_settings(self):
-        # Restore window geometry and state using SettingsManager
         self.settings_manager.load_window_settings(self)
-
-        # Load panel paths and active panel using UIManager
         self.ui_manager.load_panel_settings()
 
     def save_settings(self):
-        # Save window geometry and state using SettingsManager
         self.settings_manager.save_window_settings(self)
-
-        # Save panel paths and active panel using UIManager
         self.ui_manager.save_panel_settings()
 
     def closeEvent(self, event):
-        # Remove the global event filter to prevent SIGSEGV
         if hasattr(self, 'keyboard_event_manager'):
             QApplication.instance().removeEventFilter(self.keyboard_event_manager)
-
+        self.background_task_manager.thread_pool.waitForDone()
         self.save_settings()
         super().closeEvent(event)
