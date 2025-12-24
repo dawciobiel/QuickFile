@@ -16,32 +16,36 @@ class ShortcutsManager:
         self.shortcuts_file = os.path.join(quickfile_config_dir, "quickfile_shortcuts.json")
         self.actions = {}
         self.default_shortcuts = {
-            "Exit": "Ctrl+Q",
-            "Go Up": "",
-            "Refresh": "Ctrl+R",
-            "New File": "",
-            "New Folder": "F7",
-            "Search": "",
-            "Copy": "F5",
-            "Paste": "Ctrl+V",
-            "Move": "F6",
-            "Rename": "F2",
-            "Delete": "F8",
-            "Compare": "F9",
-            "Synchronize": "",
-            "Create Archive": "",
-            "Extract Archive": "",
-            "Open Bookmarks": "Ctrl+B",
-            "New Tab": "Ctrl+T",
-            "Close Tab": "Ctrl+W",
+            "action.exit": "Ctrl+Q",
+            "action.go_up": "",
+            "action.refresh": "Ctrl+R",
+            "action.new_file": "",
+            "action.new_folder": "F7",
+            "action.search": "",
+            "action.copy": "F5",
+            "action.paste": "Ctrl+V",
+            "action.move": "F6",
+            "action.rename": "F2",
+            "action.delete": "F8",
+            "action.compare": "F9",
+            "action.synchronize": "",
+            "action.create_archive": "",
+            "action.extract_archive": "",
+            "action.new_tab": "Ctrl+T",
+            "action.close_tab": "Ctrl+W",
+            "action.add_favorite": "Ctrl+D",
+            "action.show_favorites": "Ctrl+Shift+B",
         }
         self.shortcuts = self.load_shortcuts()
 
     def load_shortcuts(self):
         if os.path.exists(self.shortcuts_file):
             with open(self.shortcuts_file, 'r') as f:
-                return json.load(f)
-        return self.default_shortcuts
+                loaded_settings = json.load(f)
+                defaults = self.default_shortcuts.copy()
+                defaults.update(loaded_settings)
+                return defaults
+        return self.default_shortcuts.copy()
 
     def save_shortcuts(self, shortcuts):
         with open(self.shortcuts_file, 'w') as f:
@@ -50,7 +54,6 @@ class ShortcutsManager:
         self.apply_shortcuts()
 
     def apply_shortcuts_settings(self, shortcuts):
-        """Alias for save_shortcuts to match the interface expected by DialogHandler."""
         self.save_shortcuts(shortcuts)
 
     def register_action(self, name, action):

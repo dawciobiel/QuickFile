@@ -117,7 +117,8 @@ class ApplicationLogicHandler(QObject):
         current_path = self._get_active_panel_path()
         if current_path:
             self.favorites_manager.add_favorite(current_path)
-            self.main_window.statusBar().showMessage(translation_manager.translate("ApplicationLogicHandler", f"Favorite added: {current_path}"))
+            message = translation_manager.translate("ApplicationLogicHandler", "Favorite added: {path}").format(path=current_path)
+            self.main_window.statusBar().showMessage(message)
         else:
             show_error_message(self.main_window, "Favorite Error", "Could not determine current directory.")
 
