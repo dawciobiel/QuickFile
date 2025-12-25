@@ -1,0 +1,7 @@
+{
+  "name": "Standard ZIP Archiver",
+  "type": "archive",
+  "description": "Provides support for creating and extracting ZIP archives.",
+  "entry_point": "plugin.py",
+  "class_name": "ZipPlugin"
+}

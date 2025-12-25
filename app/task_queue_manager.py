@@ -1,5 +1,6 @@
 import uuid
 import time
+import os
 from enum import Enum
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -80,11 +81,12 @@ class TaskQueueManager(QObject):
     task_removed = pyqtSignal(str)
     queue_cleared = pyqtSignal()
     
-    def __init__(self, background_task_manager, file_manager, directory_synchronizer):
+    def __init__(self, background_task_manager, file_manager, directory_synchronizer, plugin_manager):
         super().__init__()
         self.background_task_manager = background_task_manager
         self.file_manager = file_manager
         self.directory_synchronizer = directory_synchronizer
+        self.plugin_manager = plugin_manager
         self.tasks = []
         self.current_task = None
 
@@ -94,7 +96,6 @@ class TaskQueueManager(QObject):
         self._process_queue()
 
     def clear_finished_tasks(self):
-        # Filter out tasks that are completed, cancelled, or errored
         self.tasks = [task for task in self.tasks if task.status not in [TaskStatus.FINISHED, TaskStatus.CANCELLED, TaskStatus.ERROR]]
         self.queue_cleared.emit()
 
@@ -113,7 +114,7 @@ class TaskQueueManager(QObject):
         func, args, kwargs = self._get_task_function_and_args(task)
         if not func:
             task.status = TaskStatus.ERROR
-            task.error_message = f"Unsupported task type: {task.type}"
+            task.error_message = f"Unsupported task type or missing plugin: {task.type}"
             self._on_task_finished()
             return
 
@@ -140,6 +141,18 @@ class TaskQueueManager(QObject):
             return self.file_manager.delete_items_batch, (task.source_paths, task.options.get("move_to_trash", True)), kwargs
         elif task.type == TaskType.SYNC:
             return self.directory_synchronizer.synchronize, (task.source_paths[0], task.destination_path, task.options), kwargs
+        elif task.type == TaskType.ARCHIVE:
+            # For now, default to ZIP or use extension from destination path
+            ext = os.path.splitext(task.destination_path)[1]
+            plugin = self.plugin_manager.get_archiver_for_extension(ext)
+            if plugin:
+                return plugin.create_archive, (task.source_paths, task.destination_path, task.options), kwargs
+        elif task.type == TaskType.EXTRACT:
+            ext = os.path.splitext(task.source_paths[0])[1]
+            plugin = self.plugin_manager.get_archiver_for_extension(ext)
+            if plugin:
+                return plugin.extract_archive, (task.source_paths[0], task.destination_path, task.options), kwargs
+
         return None, None, None
 
     def _on_task_progress(self, progress_value):

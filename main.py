@@ -12,6 +12,7 @@ from __version__ import __version__
 
 from app.background_task_manager import BackgroundTaskManager
 from app.task_queue_manager import TaskQueueManager
+from app.plugin_manager import PluginManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_manager import FileManager
 from ui.main_window import MainWindow
@@ -43,7 +44,9 @@ if __name__ == "__main__":
     background_task_manager = BackgroundTaskManager()
     file_manager = FileManager()
     directory_synchronizer = DirectorySynchronizer()
-    task_queue_manager = TaskQueueManager(background_task_manager, file_manager, directory_synchronizer)
+    plugin_manager = PluginManager()
+    
+    task_queue_manager = TaskQueueManager(background_task_manager, file_manager, directory_synchronizer, plugin_manager)
     
     window = MainWindow(
         background_task_manager=background_task_manager, 
