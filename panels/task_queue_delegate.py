@@ -11,8 +11,10 @@ class TaskQueueDelegate(QStyledItemDelegate):
         self.buttons = {}
 
     def paint(self, painter, option, index):
+        # Let the base class handle all background and selection drawing
         super().paint(painter, option, index)
         
+        # Get the task for the current row
         task = index.model().manager.tasks[index.row()]
         self.buttons[index.row()] = {}
 
@@ -49,17 +51,18 @@ class TaskQueueDelegate(QStyledItemDelegate):
         button_option.text = text
         button_option.state = QStyle.StateFlag.State_Enabled if enabled else QStyle.StateFlag.State_None
         
-        if enabled and option.state & QStyle.StateFlag.State_MouseOver and rect.contains(option.state.mousePos):
-            button_option.state |= QStyle.StateFlag.State_Raised
-        else:
-            button_option.state |= QStyle.StateFlag.State_Sunken
+        # Check if mouse is over this specific button
+        mouse_pos = self.parent().viewport().mapFromGlobal(QCursor.pos())
+        if enabled and rect.contains(mouse_pos):
+             button_option.state |= QStyle.StateFlag.State_MouseOver
 
         style = QApplication.style()
         style.drawControl(QStyle.ControlElement.CE_PushButton, button_option, painter)
 
     def editorEvent(self, event, model, option, index):
         if event.type() == QMouseEvent.Type.MouseMove:
-            model.dataChanged.emit(index, index)
+            # Trigger a repaint to update hover state
+            self.parent().viewport().update(option.rect)
             return True
 
         if event.type() == QMouseEvent.Type.MouseButtonRelease and event.button() == Qt.MouseButton.LeftButton:
@@ -87,3 +90,5 @@ class TaskQueueDelegate(QStyledItemDelegate):
         
     def sizeHint(self, option, index):
         return QSize(220, 25)
+
+from PyQt6.QtGui import QCursor

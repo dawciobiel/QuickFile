@@ -34,7 +34,8 @@ class SettingsManager:
             "insert_selection_font_italic": False,
             "viewer_command": "xdg-open %f",
             "editor_command": "xdg-open %f",
-            "bringToFrontOnStartup": True
+            "bringToFrontOnStartup": True,
+            "theme": "dark"
         }
         self.settings = self.load_settings_from_file()
 

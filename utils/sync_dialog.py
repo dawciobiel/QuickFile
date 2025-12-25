@@ -10,8 +10,8 @@ class SyncDialog(QDialog):
         uic.loadUi("ui/sync_dialog.ui", self)
         self.setWindowTitle(translation_manager.translate("SyncDialog", "Synchronize Directories"))
 
-        self.left_path_label.setText(left_path)
-        self.right_path_label.setText(right_path)
+        self.source_dir_label.setText(left_path)
+        self.dest_dir_label.setText(right_path)
 
         self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "OK"))
         self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("Buttons", "Cancel"))
@@ -21,10 +21,10 @@ class SyncDialog(QDialog):
 
     def get_options(self):
         return {
-            "two_way": self.two_way_radio.isChecked(),
-            "left_to_right": self.left_to_right_radio.isChecked(),
-            "right_to_left": self.right_to_left_radio.isChecked(),
+            "two_way": self.two_way_sync_checkbox.isChecked(),
+            "left_to_right": not self.two_way_sync_checkbox.isChecked(), # Assuming one-way if not two-way
+            "right_to_left": False, # This logic needs to be improved if we want 3-way choice
             "include_subdirs": self.include_subdirs_checkbox.isChecked(),
             "delete": self.delete_files_checkbox.isChecked(),
-            "by_content": self.compare_by_content_checkbox.isChecked()
+            "by_content": False # This option is not in the UI, default to False
         }

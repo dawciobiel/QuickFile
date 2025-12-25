@@ -6,6 +6,7 @@ QWidget {
 
 QTableView, QTreeView {
     background-color: @@secondary_background@@;
+    alternate-background-color: @@alternate_background@@;
     color: @@foreground@@;
     selection-background-color: @@selection_background@@;
     selection-color: @@selection_foreground@@;
@@ -36,6 +37,11 @@ QTableView::item:selected {
 QTableView::item:selected:!active {
     background-color: @@inactive_selection_background@@;
     color: @@foreground@@;
+}
+
+/* Ensure unselected items have transparent background to show alternating row colors */
+QTableView::item {
+    background-color: transparent;
 }
 
 QLineEdit[activePanel="true"] {
@@ -113,6 +119,7 @@ QDialog {
     color: @@foreground@@;
 }
 
+/*
 QDialogButtonBox QPushButton, QMessageBox QPushButton {
     background-color: @@accent@@;
     color: @@foreground@@;
@@ -124,6 +131,7 @@ QDialogButtonBox QPushButton, QMessageBox QPushButton {
 QDialogButtonBox QPushButton:hover, QMessageBox QPushButton:hover {
     background-color: @@selection_background@@;
 }
+*/
 
 QTableView[activePanel="true"], QTreeView[activePanel="true"] {
     border: 2px solid @@selection_background@@;
