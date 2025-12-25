@@ -3,7 +3,7 @@ import json
 import shutil
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSize
-from PyQt6.QtWidgets import QWidget, QMenu, QHeaderView
+from PyQt6.QtWidgets import QWidget, QMenu, QHeaderView, QPushButton
 from PyQt6.QtGui import QAction
 
 from app.task_queue_manager import TaskQueueManager, Task, TaskStatus
@@ -14,11 +14,11 @@ class TaskQueueModel(QAbstractTableModel):
     def __init__(self, task_queue_manager: TaskQueueManager):
         super().__init__()
         self.manager = task_queue_manager
-        self.tasks = self.manager.tasks
         self.column_config = self._load_column_config()
         self.visible_columns = [c for c in self.column_config if c.get("visible", True)]
         
         self.manager.task_added.connect(self.on_task_added)
+        self.manager.queue_cleared.connect(self.on_queue_cleared)
 
     def _load_column_config(self):
         default_config = [
@@ -54,16 +54,16 @@ class TaskQueueModel(QAbstractTableModel):
             return default_config
 
     def rowCount(self, parent=QModelIndex()):
-        return len(self.tasks)
+        return len(self.manager.tasks)
 
     def columnCount(self, parent=QModelIndex()):
         return len(self.visible_columns)
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
-        if not index.isValid() or not (0 <= index.row() < len(self.tasks)):
+        if not index.isValid() or not (0 <= index.row() < len(self.manager.tasks)):
             return None
         
-        task = self.tasks[index.row()]
+        task = self.manager.tasks[index.row()]
         column_info = self.visible_columns[index.column()]
         column_id = column_info["id"]
 
@@ -95,17 +95,21 @@ class TaskQueueModel(QAbstractTableModel):
         return None
 
     def on_task_added(self, task: Task):
-        self.beginInsertRows(QModelIndex(), len(self.tasks) - 1, len(self.tasks) - 1)
+        self.beginInsertRows(QModelIndex(), self.rowCount() - 1, self.rowCount() - 1)
         task.status_changed.connect(lambda: self.refresh_row(task))
         task.progress_changed.connect(lambda: self.refresh_row(task))
         task.details_changed.connect(lambda: self.refresh_row(task))
         self.endInsertRows()
 
+    def on_queue_cleared(self):
+        self.layoutChanged.emit()
+
     def refresh_row(self, task):
         try:
-            row = self.tasks.index(task)
+            row = self.manager.tasks.index(task)
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
         except ValueError:
+            # Task might have been removed, which is fine
             pass
 
 class TaskQueuePanel(QWidget):
@@ -124,11 +128,16 @@ class TaskQueuePanel(QWidget):
             if col_info["id"] == "actions":
                 self.taskTableView.setItemDelegateForColumn(i, self.delegate)
                 header.setSectionResizeMode(i, QHeaderView.ResizeMode.Fixed)
-                header.resizeSection(i, 220) # 3 buttons * 60px + 4 * 5px spacing
+                header.resizeSection(i, 220)
                 break
         
         self.taskTableView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.taskTableView.customContextMenuRequested.connect(self.show_context_menu)
+
+        # Add Clear button
+        self.clear_button = QPushButton(translation_manager.translate("TaskQueuePanel", "Clear Finished"))
+        self.clear_button.clicked.connect(self.manager.clear_finished_tasks)
+        self.layout().addWidget(self.clear_button)
 
     def show_context_menu(self, pos):
         index = self.taskTableView.indexAt(pos)

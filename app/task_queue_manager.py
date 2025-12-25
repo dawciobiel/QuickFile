@@ -26,7 +26,6 @@ class Task(QObject):
     status_changed = pyqtSignal(object)
     progress_changed = pyqtSignal(int)
     details_changed = pyqtSignal(str)
-    # Signal to notify UI that a specific directory needs a refresh
     directory_changed = pyqtSignal(str)
 
     def __init__(self, task_type: TaskType, source_paths, destination_path=None, options=None):
@@ -79,6 +78,7 @@ class Task(QObject):
 class TaskQueueManager(QObject):
     task_added = pyqtSignal(Task)
     task_removed = pyqtSignal(str)
+    queue_cleared = pyqtSignal()
     
     def __init__(self, background_task_manager, file_manager, directory_synchronizer):
         super().__init__()
@@ -92,6 +92,11 @@ class TaskQueueManager(QObject):
         self.tasks.append(task)
         self.task_added.emit(task)
         self._process_queue()
+
+    def clear_finished_tasks(self):
+        # Filter out tasks that are completed, cancelled, or errored
+        self.tasks = [task for task in self.tasks if task.status not in [TaskStatus.FINISHED, TaskStatus.CANCELLED, TaskStatus.ERROR]]
+        self.queue_cleared.emit()
 
     def _process_queue(self):
         if self.current_task and self.current_task.status == TaskStatus.RUNNING:
