@@ -1,0 +1,7 @@
+{
+  "name": "RAR Archiver",
+  "type": "archive",
+  "description": "Provides support for extracting RAR archives using system 'unrar' utility.",
+  "entry_point": "plugin.py",
+  "class_name": "RarPlugin"
+}

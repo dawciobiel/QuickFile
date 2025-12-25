@@ -115,8 +115,10 @@ class DialogHandler:
         if ok and archive_name:
             archive_path = os.path.join(base_dir, archive_name + ".zip")
             action_logger.log_action("create_archive", sources=paths_to_archive, destination=archive_path)
-            message = self.archive_manager.create_zip_archive(paths_to_archive, archive_path)
-            self.main_window.statusBar().showMessage(message)
+            
+            task = Task(TaskType.ARCHIVE, source_paths=paths_to_archive, destination_path=archive_path)
+            self.task_queue_manager.add_task(task)
+            self.main_window.statusBar().showMessage("Added archive task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
 
     def extract_archive(self, checked=False):
@@ -126,8 +128,10 @@ class DialogHandler:
         extract_path, ok = QInputDialog.getText(self.main_window, "Extract Archive", "Destination path:", text=os.path.dirname(selected_archive_path))
         if ok and extract_path:
             action_logger.log_action("extract_archive", source=selected_archive_path, destination=extract_path)
-            message = self.archive_manager.extract_archive(selected_archive_path, extract_path)
-            self.main_window.statusBar().showMessage(message)
+            
+            task = Task(TaskType.EXTRACT, source_paths=[selected_archive_path], destination_path=extract_path)
+            self.task_queue_manager.add_task(task)
+            self.main_window.statusBar().showMessage("Added extract task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
 
     def synchronize_directories(self, checked=False):
