@@ -1,6 +1,6 @@
 import logging
 import os
-from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog, QMessageBox, QToolBar
+from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog, QMessageBox, QToolBar, QMenuBar
 from PyQt6.QtCore import QObject, pyqtSignal
 from file_operations.archive_manager import UnrarNotInstalledError
 from PyQt6.QtGui import QAction
@@ -52,7 +52,7 @@ class MenuPanel(QObject):
     def __init__(self, main_window, toolbar: QToolBar, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager):
         super().__init__(main_window)
         self.main_window = main_window
-        self.menu_bar = main_window.menuBar()
+        self.menu_bar = main_window.findChild(QMenuBar, "menubar")
         self.toolbar = toolbar
         self.application_logic_handler = application_logic_handler
         self.shortcuts_manager = shortcuts_manager

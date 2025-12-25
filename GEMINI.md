@@ -1,5 +1,14 @@
 # Postępy prac z Gemini AI
 
+## Data: 2025-12-25 (Aktualizacja)
+
+### Postępy prac:
+- **Logowanie i odtwarzanie akcji (Debug Feature)**:
+    - Stworzono `ActionLogger` do zapisywania akcji użytkownika w pliku `logs/actions.log`.
+    - Zaimplementowano mechanizm anonimizacji ścieżek w celu ochrony prywatności, z osobnym plikiem mapowania `logs/actions_map.log`.
+    - Stworzono skrypt `scripts/replay_actions.py` do odtwarzania zanonimizowanych logów w bezpiecznej piaskownicy (sandbox), co ułatwia debugowanie.
+    - Zintegrowano logowanie z kluczowymi operacjami w `DialogHandler`.
+
 ## Data: 2025-12-23 (Aktualizacja 3)
 
 ### Postępy prac:
