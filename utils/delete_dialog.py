@@ -22,7 +22,6 @@ class DeleteDialog(QDialog):
                 directory += os.sep
 
             question = translation_manager.translate("DeleteDialog", "Are you sure you want to delete:")
-            # Use two <br> for an extra line break
             rich_text = f"{question}<br><br>{directory}<b>{filename}</b>?"
             
             self.confirmation_label.setText(rich_text)
@@ -30,7 +29,8 @@ class DeleteDialog(QDialog):
         else:
             question = translation_manager.translate("DeleteDialog", "Are you sure you want to delete <b>{count}</b> items?").format(count=len(self.item_paths))
             self.confirmation_label.setText(question)
-            self.files_list_text.setPlainText("\\n".join(self.item_paths))
+            # Use HTML to ensure newlines are rendered
+            self.files_list_text.setHtml("<br>".join(self.item_paths))
             self.files_list_text.setVisible(True)
 
         self.move_to_trash_checkbox.setText(translation_manager.translate("DeleteDialog", "Move to Trash (if available)"))
