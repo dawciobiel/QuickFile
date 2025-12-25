@@ -1,5 +1,5 @@
 from PyQt6 import uic
-from PyQt6.QtWidgets import QMainWindow, QApplication, QProgressBar, QLabel, QPushButton
+from PyQt6.QtWidgets import QMainWindow, QApplication, QProgressBar, QLabel, QPushButton, QMessageBox
 
 from __version__ import __version__
 from app.application_logic_handler import ApplicationLogicHandler
@@ -8,7 +8,7 @@ from app.keyboard_event_handler import KeyboardEventManager
 from app.settings_handler import SettingsHandler
 from app.settings_manager import SettingsManager
 from app.shortcuts_manager import ShortcutsManager
-from app.task_queue_manager import TaskQueueManager, Task
+from app.task_queue_manager import TaskQueueManager, Task, TaskType
 from app.theme_manager import ThemeManager
 from app.ui_state_provider import UIStateProvider
 from favorites.favorites_manager import FavoritesManager
@@ -19,6 +19,7 @@ from file_operations.file_manager import FileManager
 from panels.task_queue_panel import TaskQueuePanel
 from ui.progress_bar_manager import ProgressBarManager
 from ui.ui_manager import UIManager
+from utils.dialogs import show_error_message
 
 
 class MainWindow(QMainWindow):
@@ -105,6 +106,7 @@ class MainWindow(QMainWindow):
         self.mainTabWidget.tabBar().setTabsClosable(False)
 
         self.task_queue_manager.task_added.connect(self.on_task_added)
+        self.task_queue_manager.task_completed.connect(self.on_task_completed)
 
         self.shortcuts_manager.apply_shortcuts()
         self.load_settings()
@@ -114,6 +116,11 @@ class MainWindow(QMainWindow):
 
     def on_task_added(self, task: Task):
         task.directory_changed.connect(self.ui_manager.folder_browser.refresh_path)
+
+    def on_task_completed(self, task: Task):
+        if task.type == TaskType.CHECKSUM and task.result:
+            if task.options.get("show_in_dialog", True):
+                QMessageBox.information(self, "Checksum Result", str(task.result))
 
     def load_settings(self):
         self.settings_manager.load_window_settings(self)
