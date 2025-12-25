@@ -121,6 +121,9 @@ class FileManager:
                     task.set_details(base_name)
                 total_size = os.path.getsize(source_path)
                 self._copy_file_with_progress(source_path, destination_full_path, progress_callback, total_size, 0, task_context, task)
+            
+            if task:
+                task.directory_changed.emit(destination_path)
 
             return translation_manager.translate("FileManager", f"Copied '{base_name}' to '{destination_path}'")
 
@@ -151,6 +154,7 @@ class FileManager:
 
     def move_item_with_options(self, source_path, destination_path, options, progress_callback=None, task_context=None, task=None):
         try:
+            source_dir = os.path.dirname(source_path)
             self._validate_path(source_path, must_exist=True, name="Source path")
             self._validate_path(destination_path, must_exist=True, is_directory=True, name="Destination path")
 
@@ -180,6 +184,10 @@ class FileManager:
                 shutil.move(source_path, destination_full_path)
                 if progress_callback:
                     progress_callback.emit(100)
+            
+            if task:
+                task.directory_changed.emit(source_dir)
+                task.directory_changed.emit(destination_path)
 
             return translation_manager.translate("FileManager", f"Moved '{base_name}' to '{destination_full_path}'")
 
@@ -208,27 +216,30 @@ class FileManager:
                 logging.error(f"Failed to move {source_path}: {e}")
         return f"Batch move completed."
 
-    def delete_item(self, item_path, move_to_trash=True):
+    def delete_item(self, item_path, move_to_trash=True, task=None):
         try:
+            source_dir = os.path.dirname(item_path)
             self._validate_path(item_path, must_exist=True, name="Item path")
 
             if move_to_trash:
                 try:
                     send2trash.send2trash(item_path)
-                    return translation_manager.translate("FileManager", f"Moved to Trash: {item_path}")
                 except Exception as e:
                     logging.warning(f"Error moving {item_path} to trash, deleting permanently: {e}")
                     if os.path.isdir(item_path):
                         shutil.rmtree(item_path)
                     else:
                         os.remove(item_path)
-                    return translation_manager.translate("FileManager", f"Deleted permanently (trash failed): {item_path}")
             else:
                 if os.path.isdir(item_path):
                     shutil.rmtree(item_path)
                 else:
                     os.remove(item_path)
-                return translation_manager.translate("FileManager", f"Deleted permanently: {item_path}")
+            
+            if task:
+                task.directory_changed.emit(source_dir)
+
+            return translation_manager.translate("FileManager", f"Deleted: {item_path}")
         except (ValueError, FileNotFoundError, NotADirectoryError, IsADirectoryError) as e:
             raise e
         except OSError as e:
@@ -245,7 +256,7 @@ class FileManager:
                     raise OperationCancelledError("Operation cancelled by user.")
                 task_context.wait_if_paused()
             try:
-                self.delete_item(item_path, move_to_trash)
+                self.delete_item(item_path, move_to_trash, task=task)
                 if progress_callback:
                     progress_callback.emit(int((i + 1) / total_items * 100))
             except Exception as e:

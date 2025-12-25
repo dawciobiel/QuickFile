@@ -23,9 +23,11 @@ class TaskType(Enum):
     SYNC = "Sync"
 
 class Task(QObject):
-    status_changed = pyqtSignal(object) # Emits new status
-    progress_changed = pyqtSignal(int) # Emits progress percentage
-    details_changed = pyqtSignal(str) # Emits details (e.g. current file)
+    status_changed = pyqtSignal(object)
+    progress_changed = pyqtSignal(int)
+    details_changed = pyqtSignal(str)
+    # Signal to notify UI that a specific directory needs a refresh
+    directory_changed = pyqtSignal(str)
 
     def __init__(self, task_type: TaskType, source_paths, destination_path=None, options=None):
         super().__init__()
@@ -76,7 +78,7 @@ class Task(QObject):
 
 class TaskQueueManager(QObject):
     task_added = pyqtSignal(Task)
-    task_removed = pyqtSignal(str) # task_id
+    task_removed = pyqtSignal(str)
     
     def __init__(self, background_task_manager, file_manager, directory_synchronizer):
         super().__init__()
