@@ -109,7 +109,6 @@ class TaskQueueModel(QAbstractTableModel):
             row = self.manager.tasks.index(task)
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
         except ValueError:
-            # Task might have been removed, which is fine
             pass
 
 class TaskQueuePanel(QWidget):
@@ -119,6 +118,9 @@ class TaskQueuePanel(QWidget):
         self.manager = task_queue_manager
         self.model = TaskQueueModel(self.manager)
         self.taskTableView.setModel(self.model)
+        
+        # Enable alternating row colors
+        self.taskTableView.setAlternatingRowColors(True)
         
         self.delegate = TaskQueueDelegate(self.manager, self.taskTableView)
         
@@ -134,7 +136,6 @@ class TaskQueuePanel(QWidget):
         self.taskTableView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.taskTableView.customContextMenuRequested.connect(self.show_context_menu)
 
-        # Add Clear button
         self.clear_button = QPushButton(translation_manager.translate("TaskQueuePanel", "Clear Finished"))
         self.clear_button.clicked.connect(self.manager.clear_finished_tasks)
         self.layout().addWidget(self.clear_button)

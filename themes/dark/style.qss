@@ -6,6 +6,7 @@ QWidget {
 
 QTableView, QTreeView {
     background-color: @@secondary_background@@;
+    alternate-background-color: @@alternate_background@@;
     color: @@foreground@@;
     selection-background-color: @@selection_background@@;
     selection-color: @@selection_foreground@@;
@@ -36,6 +37,11 @@ QTableView::item:selected {
 QTableView::item:selected:!active {
     background-color: @@inactive_selection_background@@;
     color: @@foreground@@;
+}
+
+/* Ensure unselected items have transparent background to show alternating row colors */
+QTableView::item {
+    background-color: transparent;
 }
 
 QLineEdit[activePanel="true"] {
