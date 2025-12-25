@@ -99,24 +99,18 @@ class MainWindow(QMainWindow):
             self.ui_manager.folder_browser
         )
 
-        self.progress_label = QLabel("Operation in progress...")
-        self.progressBar = QProgressBar()
-        self.cancel_button = QPushButton("Cancel")
-        self.statusBar().addPermanentWidget(self.progress_label)
-        self.statusBar().addPermanentWidget(self.progressBar, 1)
-        self.statusBar().addPermanentWidget(self.cancel_button)
-
-        self.progress_bar_manager = ProgressBarManager(self)
-        self.cancel_button.clicked.connect(self.background_task_manager.cancel_current_task)
+        # Add Task Queue Panel to its tab
+        self.task_queue_panel = TaskQueuePanel(self.task_queue_manager)
+        self.queue_tab.layout().addWidget(self.task_queue_panel)
+        
+        # Make main tabs non-closable
+        self.mainTabWidget.tabBar().setTabsClosable(False)
 
         self.shortcuts_manager.apply_shortcuts()
         self.load_settings()
         
         initial_theme = self.settings_manager.get_setting("theme", "dark")
         self.theme_manager.apply_theme(initial_theme)
-        
-        self.task_queue_panel = TaskQueuePanel(self.task_queue_manager)
-        self.ui_manager.folder_browser.add_custom_tab(self.task_queue_panel, "Queue", "right")
 
     def load_settings(self):
         self.settings_manager.load_window_settings(self)

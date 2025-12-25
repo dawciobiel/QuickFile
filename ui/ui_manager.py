@@ -84,17 +84,15 @@ class UIManager(QObject):
         self.main_window.search_input = self.search_input
         self.main_window.add_favorite_button = self.add_favorite_button
 
+        # Add FolderBrowser to the browser_tab layout
+        self.main_window.browser_tab.layout().addWidget(self.folder_browser)
+        
+        # Replace the function key panel placeholder
         central_widget_layout = self.main_window.centralwidget.layout()
-        if central_widget_layout:
-            folder_browser_placeholder = self.main_window.findChild(QWidget, "folder_browser_placeholder")
-            if folder_browser_placeholder:
-                central_widget_layout.replaceWidget(folder_browser_placeholder, self.folder_browser)
-                folder_browser_placeholder.deleteLater()
-            
-            function_key_panel_placeholder = self.main_window.findChild(QWidget, "function_key_panel_placeholder")
-            if function_key_panel_placeholder:
-                central_widget_layout.replaceWidget(function_key_panel_placeholder, self.function_key_panel)
-                function_key_panel_placeholder.deleteLater()
+        function_key_panel_placeholder = self.main_window.findChild(QWidget, "function_key_panel_placeholder")
+        if function_key_panel_placeholder:
+            central_widget_layout.replaceWidget(function_key_panel_placeholder, self.function_key_panel)
+            function_key_panel_placeholder.deleteLater()
 
         self.menu_panel = self._create_menu_panel(self.toolbar, application_logic_handler, shortcuts_manager)
         self.menu_panel.initialize_menus()
