@@ -3,6 +3,7 @@ import os
 
 from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 
+from app.action_logger import action_logger
 from app.background_task_manager import BackgroundTaskManager
 from app.settings_manager import SettingsManager
 from app.task_queue_manager import TaskQueueManager, Task, TaskType
@@ -47,6 +48,7 @@ class DialogHandler:
         selected_path = self.ui_state_provider.get_current_selected_path()
         if not selected_path:
             raise ValueError(translation_manager.translate("MenuPanel", "No file or folder selected."))
+        action_logger.log_action("show_properties", path=selected_path)
         properties = get_file_properties(selected_path)
         if properties:
             PropertiesDialog(properties, self.main_window).exec()
@@ -54,16 +56,20 @@ class DialogHandler:
             raise ValueError(f"Could not retrieve properties for: {selected_path}")
 
     def open_general_settings_dialog(self, checked=False):
+        action_logger.log_action("open_settings")
         dialog = SettingsDialog(self.main_window, self.settings_manager, self.main_window.theme_manager)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_settings = dialog.get_settings()
+            action_logger.log_action("save_settings", settings=new_settings)
             return new_settings
         return None
 
     def open_shortcuts_dialog(self, checked=False):
+        action_logger.log_action("open_shortcuts")
         dialog = ShortcutsDialog(self.main_window, self.main_window.shortcuts_manager.shortcuts)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_shortcuts = dialog.get_shortcuts()
+            action_logger.log_action("save_shortcuts", shortcuts=new_shortcuts)
             self.main_window.shortcuts_manager.apply_shortcuts_settings(new_shortcuts)
 
     def show_search_results(self, results):
@@ -71,6 +77,7 @@ class DialogHandler:
         dialog.exec()
 
     def _compare_files(self, file1_path, file2_path):
+        action_logger.log_action("compare_files", file1=file1_path, file2=file2_path)
         are_identical = self.file_comparator.compare_files(file1_path, file2_path)
         if are_identical:
             QMessageBox.information(self.main_window, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are identical.")
@@ -78,6 +85,7 @@ class DialogHandler:
             QMessageBox.information(self.main_window, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are different.")
 
     def _compare_directories(self, dir1_path, dir2_path):
+        action_logger.log_action("compare_dirs", dir1=dir1_path, dir2=dir2_path)
         dircmp_obj = self.file_comparator.compare_directories(dir1_path, dir2_path)
         if dircmp_obj:
             report = self.file_comparator.get_directory_comparison_report(dircmp_obj)
@@ -88,9 +96,11 @@ class DialogHandler:
             QMessageBox.critical(self.main_window, "Directory Comparison Error", "Could not compare directories. Ensure both paths are valid directories.")
 
     def open_favorites_dialog(self, checked=False):
+        action_logger.log_action("open_favorites")
         favorites = self.favorites_manager.get_favorites()
         dialog = FavoritesDialog(favorites, self.main_window)
         if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_favorite:
+            action_logger.log_action("navigate_favorite", path=dialog.selected_favorite)
             self.ui_state_provider.folder_browser.navigate_to_path(dialog.selected_favorite)
 
     def create_archive(self, checked=False):
@@ -104,6 +114,7 @@ class DialogHandler:
         archive_name, ok = QInputDialog.getText(self.main_window, "Create Archive", "Archive name (without extension):")
         if ok and archive_name:
             archive_path = os.path.join(base_dir, archive_name + ".zip")
+            action_logger.log_action("create_archive", sources=paths_to_archive, destination=archive_path)
             message = self.archive_manager.create_zip_archive(paths_to_archive, archive_path)
             self.main_window.statusBar().showMessage(message)
             self.ui_state_provider.folder_browser.refresh_all_views()
@@ -114,6 +125,7 @@ class DialogHandler:
             raise ValueError("No archive file selected.")
         extract_path, ok = QInputDialog.getText(self.main_window, "Extract Archive", "Destination path:", text=os.path.dirname(selected_archive_path))
         if ok and extract_path:
+            action_logger.log_action("extract_archive", source=selected_archive_path, destination=extract_path)
             message = self.archive_manager.extract_archive(selected_archive_path, extract_path)
             self.main_window.statusBar().showMessage(message)
             self.ui_state_provider.folder_browser.refresh_all_views()
@@ -127,6 +139,7 @@ class DialogHandler:
         dialog = SyncDialog(self.main_window, left_path, right_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            action_logger.log_action("sync_dirs", source=left_path, destination=right_path, options=options)
             task = Task(TaskType.SYNC, source_paths=[left_path], destination_path=right_path, options=options)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage("Added sync task to queue.")
@@ -137,6 +150,7 @@ class DialogHandler:
             current_dir = self.ui_state_provider.get_active_panel_path()
         name, ok = QInputDialog.getText(self.main_window, "New File", "File name:")
         if ok and name:
+            action_logger.log_action("create_file", path=os.path.join(current_dir, name))
             message = self.file_manager.create_file(current_dir, name)
             self.main_window.statusBar().showMessage(message)
             self.ui_state_provider.folder_browser.refresh_all_views()
@@ -146,6 +160,7 @@ class DialogHandler:
             current_dir = self.ui_state_provider.get_active_panel_path()
         name, ok = QInputDialog.getText(self.main_window, "New Folder", "Folder name:")
         if ok and name:
+            action_logger.log_action("create_directory", path=os.path.join(current_dir, name))
             message = self.file_manager.create_directory(current_dir, name)
             self.main_window.statusBar().showMessage(message)
             self.ui_state_provider.folder_browser.refresh_all_views()
@@ -161,6 +176,7 @@ class DialogHandler:
         dialog = CopyDialog(self.main_window, source_paths, destination_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            action_logger.log_action("copy", sources=source_paths, destination=destination_path, options=options)
             task = Task(TaskType.COPY, source_paths, destination_path, options)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage(f"Added copy task to queue.")
@@ -177,6 +193,7 @@ class DialogHandler:
         dialog = MoveDialog(self.main_window, paths_to_move, destination_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            action_logger.log_action("move", sources=paths_to_move, destination=destination_path, options=options)
             task = Task(TaskType.MOVE, paths_to_move, destination_path, options)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage(f"Added move task to queue.")
@@ -186,6 +203,7 @@ class DialogHandler:
         current_dir = self.ui_state_provider.get_active_panel_path()
         if not current_dir:
             raise ValueError("Could not determine current directory for active panel.")
+        action_logger.log_action("paste", destination=current_dir)
         message = self.file_manager.paste_item(current_dir)
         self.main_window.statusBar().showMessage(message)
         self.ui_state_provider.folder_browser.refresh_all_views()
@@ -198,6 +216,7 @@ class DialogHandler:
         dialog = DeleteDialog(self.main_window, selected_paths)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            action_logger.log_action("delete", paths=selected_paths, options=options)
             task = Task(TaskType.DELETE, selected_paths, options=options)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage(f"Added delete task to queue.")
@@ -210,6 +229,7 @@ class DialogHandler:
         old_name = os.path.basename(selected_path)
         new_name, ok = QInputDialog.getText(self.main_window, "Rename", "New name:", text=old_name)
         if ok and new_name:
+            action_logger.log_action("rename", path=selected_path, new_name=new_name)
             message = self.file_manager.rename_item(selected_path, new_name)
             self.main_window.statusBar().showMessage(message)
             self.ui_state_provider.folder_browser.refresh_all_views()
