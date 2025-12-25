@@ -88,60 +88,60 @@ class ApplicationLogicHandler(QObject):
         self.main_window.statusBar().showMessage(message)
 
     @_handle_error
-    def add_favorite(self):
+    def add_favorite(self, checked=False):
         current_path = self.ui_state_provider.get_active_panel_path()
         if current_path:
             self.favorites_manager.add_favorite(current_path)
             self.main_window.statusBar().showMessage(translation_manager.translate("MenuPanel", f"Added to favorites: {current_path}"))
 
     @_handle_error
-    def open_favorites_dialog(self):
+    def open_favorites_dialog(self, checked=False):
         self.dialog_handler.open_favorites_dialog()
 
     @_handle_error
-    def create_new_file(self, current_dir=None):
+    def create_new_file(self, current_dir=None, checked=False):
         self.dialog_handler.create_new_file(current_dir)
 
     @_handle_error
-    def create_new_directory(self, current_dir=None):
+    def create_new_directory(self, current_dir=None, checked=False):
         self.dialog_handler.create_new_directory(current_dir)
 
     @_handle_error
-    def copy_selected_item(self):
+    def copy_selected_item(self, checked=False):
         self.dialog_handler.copy_selected_item()
 
     @_handle_error
-    def move_selected_item(self):
+    def move_selected_item(self, checked=False):
         self.dialog_handler.move_selected_item()
 
     @_handle_error
-    def delete_selected_item(self):
+    def delete_selected_item(self, checked=False):
         self.dialog_handler.delete_selected_item()
 
     @_handle_error
-    def rename_selected_item(self):
+    def rename_selected_item(self, checked=False):
         self.dialog_handler.rename_selected_item()
 
     @_handle_error
-    def paste_item_to_current_dir(self):
+    def paste_item_to_current_dir(self, checked=False):
         self.dialog_handler.paste_item_to_current_dir()
 
     @_handle_error
-    def open_general_settings_dialog(self):
+    def open_general_settings_dialog(self, checked=False):
         new_settings = self.dialog_handler.open_general_settings_dialog()
         if new_settings:
-            self.settings_handler.apply_settings(new_settings)
+            self.settings_handler.apply_general_settings(new_settings)
 
     @_handle_error
-    def open_shortcuts_dialog(self):
+    def open_shortcuts_dialog(self, checked=False):
         self.dialog_handler.open_shortcuts_dialog()
 
     @_handle_error
-    def show_properties_dialog(self):
+    def show_properties_dialog(self, checked=False):
         self.dialog_handler.show_properties_dialog()
 
     @_handle_error
-    def compare_selected_items(self):
+    def compare_selected_items(self, checked=False):
         selected_paths = self.ui_state_provider.get_selected_paths()
         
         if len(selected_paths) == 2:
@@ -174,27 +174,27 @@ class ApplicationLogicHandler(QObject):
             show_error_message(self.main_window, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Select exactly two items to compare, or one item to compare with the other panel."))
 
     @_handle_error
-    def create_archive(self):
+    def create_archive(self, checked=False):
         self.dialog_handler.create_archive()
 
     @_handle_error
-    def extract_archive(self):
+    def extract_archive(self, checked=False):
         self.dialog_handler.extract_archive()
 
     @_handle_error
-    def synchronize_directories(self):
+    def synchronize_directories(self, checked=False):
         self.dialog_handler.synchronize_directories()
 
     @_handle_error
-    def calculate_checksum(self, checked=False): # Added checked=False
+    def calculate_checksum(self, checked=False):
         self.dialog_handler.calculate_checksum()
 
     @_handle_error
-    def new_tab(self):
+    def new_tab(self, checked=False):
         self.ui_state_provider.folder_browser.add_new_tab()
 
     @_handle_error
-    def close_tab(self):
+    def close_tab(self, checked=False):
         self.ui_state_provider.folder_browser.close_current_tab()
 
     @_handle_error

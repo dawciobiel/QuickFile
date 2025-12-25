@@ -1,9 +1,0 @@
-{
-    "background": "#000000",
-    "foreground": "#D3D3D3",
-    "selection_background": "#0000CD",
-    "selection_foreground": "#FFFFFF",
-    "active_panel_background": "#FF0000",
-    "border": "#D3D3D3",
-    "accent": "#FF0000"
-}
