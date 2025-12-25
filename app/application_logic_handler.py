@@ -130,7 +130,7 @@ class ApplicationLogicHandler(QObject):
     def open_general_settings_dialog(self, checked=False):
         new_settings = self.dialog_handler.open_general_settings_dialog()
         if new_settings:
-            self.settings_handler.apply_settings(new_settings)
+            self.settings_handler.apply_general_settings(new_settings)
 
     @_handle_error
     def open_shortcuts_dialog(self, checked=False):

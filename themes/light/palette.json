@@ -1,9 +1,11 @@
 {
     "background": "#f0f0f0",
     "secondary_background": "#ffffff",
+    "alternate_background": "#f9f9f9",
     "foreground": "#333333",
     "accent": "#007bff",
     "border": "#cccccc",
     "selection_foreground": "#ffffff",
-    "selection_background": "#007bff"
+    "selection_background": "#007bff",
+    "inactive_selection_background": "#e0e0e0"
 }
