@@ -119,6 +119,7 @@ QDialog {
     color: @@foreground@@;
 }
 
+/*
 QDialogButtonBox QPushButton, QMessageBox QPushButton {
     background-color: @@accent@@;
     color: @@foreground@@;
@@ -130,6 +131,7 @@ QDialogButtonBox QPushButton, QMessageBox QPushButton {
 QDialogButtonBox QPushButton:hover, QMessageBox QPushButton:hover {
     background-color: @@selection_background@@;
 }
+*/
 
 QTableView[activePanel="true"], QTreeView[activePanel="true"] {
     border: 2px solid @@selection_background@@;
