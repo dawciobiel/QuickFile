@@ -39,6 +39,7 @@ class MenuPanel(QObject):
     KEY_RENAME = "action.rename"
     KEY_DELETE = "action.delete"
     KEY_SYNCHRONIZE = "action.synchronize"
+    KEY_CHECKSUM = "action.checksum"
     KEY_ABOUT = "action.about"
     KEY_FLAT_VIEW = "action.flat_view"
     KEY_TREE_VIEW = "action.tree_view"
@@ -286,3 +287,11 @@ class MenuPanel(QObject):
 
         sync_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Synchronize"), tooltip_text=translation_manager.translate("MenuPanel", "Synchronize directories"), icon=QStyle.StandardPixmap.SP_DirLinkIcon, slot=self.application_logic_handler.synchronize_directories, shortcut_key=self.KEY_SYNCHRONIZE, add_to_toolbar=True)
         operations_menu.addAction(sync_action)
+
+        checksum_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Calculate Checksum"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Calculate checksum for selected file"),
+            slot=self.application_logic_handler.calculate_checksum,
+            shortcut_key=self.KEY_CHECKSUM
+        )
+        operations_menu.addAction(checksum_action)

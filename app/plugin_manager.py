@@ -144,3 +144,11 @@ class PluginManager:
             if extension.lower() in plugin.get_supported_extensions():
                 return plugin
         return None
+
+    def get_checksum_plugins(self) -> list[ChecksumPlugin]:
+        plugins = []
+        if "checksum" in self.registry:
+            for artifact_id, versions in self.registry["checksum"].items():
+                if versions:
+                    plugins.append(versions[0].get_instance())
+        return plugins

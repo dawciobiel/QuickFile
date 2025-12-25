@@ -22,6 +22,7 @@ class TaskType(Enum):
     ARCHIVE = "Archive"
     EXTRACT = "Extract"
     SYNC = "Sync"
+    CHECKSUM = "Checksum"
 
 class Task(QObject):
     status_changed = pyqtSignal(object)
@@ -44,6 +45,7 @@ class Task(QObject):
         self.start_time = None
         self.end_time = None
         self.error_message = None
+        self.result = None
         
         self.task_context = None
 
@@ -80,6 +82,7 @@ class TaskQueueManager(QObject):
     task_added = pyqtSignal(Task)
     task_removed = pyqtSignal(str)
     queue_cleared = pyqtSignal()
+    task_completed = pyqtSignal(Task)
     
     def __init__(self, background_task_manager, file_manager, directory_synchronizer, plugin_manager):
         super().__init__()
@@ -124,6 +127,7 @@ class TaskQueueManager(QObject):
         signals.progress.connect(self._on_task_progress)
         signals.finished.connect(self._on_task_finished)
         signals.error.connect(self._on_task_error)
+        signals.result.connect(self._on_task_result)
 
     def _get_task_function_and_args(self, task: Task):
         kwargs = {'task': task}
@@ -142,7 +146,6 @@ class TaskQueueManager(QObject):
         elif task.type == TaskType.SYNC:
             return self.directory_synchronizer.synchronize, (task.source_paths[0], task.destination_path, task.options), kwargs
         elif task.type == TaskType.ARCHIVE:
-            # For now, default to ZIP or use extension from destination path
             ext = os.path.splitext(task.destination_path)[1]
             plugin = self.plugin_manager.get_archiver_for_extension(ext)
             if plugin:
@@ -152,12 +155,53 @@ class TaskQueueManager(QObject):
             plugin = self.plugin_manager.get_archiver_for_extension(ext)
             if plugin:
                 return plugin.extract_archive, (task.source_paths[0], task.destination_path, task.options), kwargs
-
+        elif task.type == TaskType.CHECKSUM:
+            algorithm = task.options.get("algorithm")
+            save_to_file = task.options.get("save_to_file", False)
+            for plugin in self.plugin_manager.get_checksum_plugins():
+                if algorithm in plugin.get_supported_algorithms():
+                    return self._calculate_checksums_batch, (task.source_paths, algorithm, plugin, save_to_file), kwargs
+        
         return None, None, None
+
+    def _calculate_checksums_batch(self, file_paths, algorithm, plugin, save_to_file, progress_callback=None, task_context=None, task=None):
+        results = []
+        total_files = len(file_paths)
+        for i, file_path in enumerate(file_paths):
+            if task_context and task_context.is_cancelled: break
+            if task_context: task_context.wait_if_paused()
+            
+            if task: task.set_details(f"Calculating {algorithm}: {os.path.basename(file_path)}")
+            
+            try:
+                checksum = plugin.calculate_checksum(file_path, algorithm, task_context=task_context)
+                result_str = f"{os.path.basename(file_path)}: {checksum}"
+                results.append(result_str)
+                
+                if save_to_file:
+                    checksum_file_path = f"{file_path}.checksum"
+                    with open(checksum_file_path, 'w') as f:
+                        f.write(f"{checksum}  {os.path.basename(file_path)}\n")
+                    if task:
+                        task.directory_changed.emit(os.path.dirname(file_path))
+
+            except Exception as e:
+                results.append(f"{os.path.basename(file_path)}: Error ({e})")
+            
+            if progress_callback:
+                progress_callback.emit(int((i + 1) / total_files * 100))
+        
+        if task:
+            task.set_details("Finished")
+        return "\n".join(results)
 
     def _on_task_progress(self, progress_value):
         if self.current_task:
             self.current_task.progress = progress_value
+
+    def _on_task_result(self, result):
+        if self.current_task:
+            self.current_task.result = result
 
     def _on_task_finished(self):
         if not self.current_task:
@@ -165,6 +209,8 @@ class TaskQueueManager(QObject):
         
         if self.current_task.status == TaskStatus.RUNNING:
             self.current_task.status = TaskStatus.FINISHED
+            self.task_completed.emit(self.current_task)
+
         self.current_task = None
         self._process_queue()
 
