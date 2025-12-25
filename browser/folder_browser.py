@@ -198,6 +198,7 @@ class FolderBrowser(QWidget):
     def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, theme_manager: ThemeManager = None, parent=None):
         super().__init__(parent)
         uic.loadUi("ui/folder_browser.ui", self)
+        
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager
         self.view_mode = view_mode
@@ -328,6 +329,16 @@ class FolderBrowser(QWidget):
             self.leftTabWidget.widget(i).file_view.refresh()
         for i in range(self.rightTabWidget.count()):
             self.rightTabWidget.widget(i).file_view.refresh()
+
+    def refresh_path(self, path):
+        for i in range(self.leftTabWidget.count()):
+            panel = self.leftTabWidget.widget(i)
+            if panel and path.startswith(panel.file_view.get_current_path()):
+                panel.file_view.refresh()
+        for i in range(self.rightTabWidget.count()):
+            panel = self.rightTabWidget.widget(i)
+            if panel and path.startswith(panel.file_view.get_current_path()):
+                panel.file_view.refresh()
 
     def set_view_mode(self, mode):
         if self.view_mode == mode:

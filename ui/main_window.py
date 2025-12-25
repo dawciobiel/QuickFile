@@ -8,7 +8,7 @@ from app.keyboard_event_handler import KeyboardEventManager
 from app.settings_handler import SettingsHandler
 from app.settings_manager import SettingsManager
 from app.shortcuts_manager import ShortcutsManager
-from app.task_queue_manager import TaskQueueManager
+from app.task_queue_manager import TaskQueueManager, Task
 from app.theme_manager import ThemeManager
 from app.ui_state_provider import UIStateProvider
 from favorites.favorites_manager import FavoritesManager
@@ -99,18 +99,21 @@ class MainWindow(QMainWindow):
             self.ui_manager.folder_browser
         )
 
-        # Add Task Queue Panel to its tab
         self.task_queue_panel = TaskQueuePanel(self.task_queue_manager)
         self.queue_tab.layout().addWidget(self.task_queue_panel)
         
-        # Make main tabs non-closable
         self.mainTabWidget.tabBar().setTabsClosable(False)
+
+        self.task_queue_manager.task_added.connect(self.on_task_added)
 
         self.shortcuts_manager.apply_shortcuts()
         self.load_settings()
         
         initial_theme = self.settings_manager.get_setting("theme", "dark")
         self.theme_manager.apply_theme(initial_theme)
+
+    def on_task_added(self, task: Task):
+        task.directory_changed.connect(self.ui_manager.folder_browser.refresh_path)
 
     def load_settings(self):
         self.settings_manager.load_window_settings(self)
