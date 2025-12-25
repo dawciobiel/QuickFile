@@ -25,6 +25,7 @@ from utils.search_dialog import SearchDialog
 from utils.settings_dialog import SettingsDialog
 from utils.shortcuts_dialog import ShortcutsDialog
 from utils.sync_dialog import SyncDialog
+from utils.checksum_dialog import ChecksumDialog
 
 
 class DialogHandler:
@@ -133,6 +134,31 @@ class DialogHandler:
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage("Added extract task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
+
+    def calculate_checksum(self, checked=False):
+        selected_paths = self.ui_state_provider.get_selected_paths()
+        if not selected_paths:
+            raise ValueError("No file selected for checksum calculation.")
+        
+        files_only = [p for p in selected_paths if os.path.isfile(p)]
+        if not files_only:
+            raise ValueError("Checksum can only be calculated for files.")
+
+        algorithms = set()
+        for plugin in self.task_queue_manager.plugin_manager.get_checksum_plugins():
+            algorithms.update(plugin.get_supported_algorithms())
+        
+        if not algorithms:
+            raise ValueError("No checksum plugins available.")
+
+        dialog = ChecksumDialog(self.main_window, files_only, sorted(list(algorithms)))
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            options = dialog.get_options()
+            action_logger.log_action("calculate_checksum", paths=files_only, options=options)
+            
+            task = Task(TaskType.CHECKSUM, source_paths=files_only, options=options)
+            self.task_queue_manager.add_task(task)
+            self.main_window.statusBar().showMessage("Added checksum task to queue.")
 
     def synchronize_directories(self, checked=False):
         left_path = self.ui_state_provider.folder_browser.get_left_panel_widget().file_view.get_current_path()
