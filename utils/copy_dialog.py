@@ -1,5 +1,6 @@
 import os
 from PyQt6 import uic
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QDialogButtonBox
 from app.translation_manager import translation_manager
 
@@ -8,6 +9,9 @@ class CopyDialog(QDialog):
         super().__init__(parent)
         uic.loadUi("ui/file_operation_dialog.ui", self)
         self.setWindowTitle(translation_manager.translate("CopyDialog", "Copy"))
+        
+        # Set a minimum width for the dialog
+        self.setMinimumWidth(600)
         
         if isinstance(source_paths, str):
             self.source_paths = [source_paths]
@@ -19,7 +23,6 @@ class CopyDialog(QDialog):
         self._init_options_ui()
 
     def _init_options_ui(self):
-        # Ensure we are on the options page and hide the progress page
         self.stackedWidget.setCurrentWidget(self.options_page)
         
         if len(self.source_paths) == 1:
@@ -29,6 +32,9 @@ class CopyDialog(QDialog):
             
         self.destination_path_label.setText(self.destination_path)
 
+        self.source_path_label.setWordWrap(True)
+        self.destination_path_label.setWordWrap(True)
+
         self.overwrite_checkbox.setText(translation_manager.translate("CopyDialog", "Overwrite existing files"))
         self.preserve_timestamp_checkbox.setText(translation_manager.translate("CopyDialog", "Preserve original modification date"))
         self.preserve_timestamp_checkbox.setChecked(True)
@@ -37,12 +43,12 @@ class CopyDialog(QDialog):
         self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "OK"))
         self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("Buttons", "Cancel"))
         
-        # The dialog now just accepts or rejects, no task starting here
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
+        
+        self.adjustSize()
 
     def get_options(self):
-        """Returns the selected options from the dialog."""
         return {
             "overwrite": self.overwrite_checkbox.isChecked(),
             "preserve_timestamp": self.preserve_timestamp_checkbox.isChecked(),
