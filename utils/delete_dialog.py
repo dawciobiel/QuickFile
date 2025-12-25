@@ -1,3 +1,4 @@
+import os
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QDialogButtonBox
 from app.translation_manager import translation_manager
@@ -13,18 +14,35 @@ class DeleteDialog(QDialog):
 
     def _init_options_ui(self):
         if len(self.item_paths) == 1:
-            self.confirmation_label.setText(translation_manager.translate("DeleteDialog", "Are you sure you want to delete:") + f" <b>{self.item_paths[0]}</b>?")
+            full_path = self.item_paths[0]
+            directory = os.path.dirname(full_path)
+            filename = os.path.basename(full_path)
+            
+            if directory != os.path.sep:
+                directory += os.sep
+
+            question = translation_manager.translate("DeleteDialog", "Are you sure you want to delete:")
+            # Use two <br> for an extra line break
+            rich_text = f"{question}<br><br>{directory}<b>{filename}</b>?"
+            
+            self.confirmation_label.setText(rich_text)
             self.files_list_text.setVisible(False)
         else:
-            self.confirmation_label.setText(translation_manager.translate("DeleteDialog", f"Are you sure you want to delete <b>{len(self.item_paths)}</b> items?"))
-            self.files_list_text.setPlainText("\n".join(self.item_paths))
+            question = translation_manager.translate("DeleteDialog", "Are you sure you want to delete <b>{count}</b> items?").format(count=len(self.item_paths))
+            self.confirmation_label.setText(question)
+            self.files_list_text.setPlainText("\\n".join(self.item_paths))
             self.files_list_text.setVisible(True)
 
         self.move_to_trash_checkbox.setText(translation_manager.translate("DeleteDialog", "Move to Trash (if available)"))
         self.warning_label.setText(translation_manager.translate("DeleteDialog", "This operation cannot be undone if not moved to Trash."))
 
-        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "OK"))
-        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("Buttons", "Cancel"))
+        ok_button = self.buttonBox.button(QDialogButtonBox.StandardButton.Ok)
+        if ok_button:
+            ok_button.setText(translation_manager.translate("Buttons", "OK"))
+            
+        cancel_button = self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel)
+        if cancel_button:
+            cancel_button.setText(translation_manager.translate("Buttons", "Cancel"))
         
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
