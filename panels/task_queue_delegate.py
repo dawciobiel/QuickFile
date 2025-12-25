@@ -11,10 +11,9 @@ class TaskQueueDelegate(QStyledItemDelegate):
         self.buttons = {}
 
     def paint(self, painter, option, index):
-        # Let the base class handle all background and selection drawing
         super().paint(painter, option, index)
-
-        task = index.model().tasks[index.row()]
+        
+        task = index.model().manager.tasks[index.row()]
         self.buttons[index.row()] = {}
 
         button_width = 60
@@ -69,7 +68,7 @@ class TaskQueueDelegate(QStyledItemDelegate):
             if not row_buttons:
                 return False
 
-            task = model.tasks[index.row()]
+            task = model.manager.tasks[index.row()]
             for button_id, button_data in row_buttons.items():
                 if button_data["rect"].contains(pos) and button_data["enabled"]:
                     self._handle_button_click(task.id, button_id)
