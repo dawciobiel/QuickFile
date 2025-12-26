@@ -20,6 +20,7 @@ from panels.task_queue_panel import TaskQueuePanel
 from ui.progress_bar_manager import ProgressBarManager
 from ui.ui_manager import UIManager
 from utils.dialogs import show_error_message
+from utils.checksum_result_dialog import ChecksumResultDialog
 
 
 class MainWindow(QMainWindow):
@@ -120,7 +121,8 @@ class MainWindow(QMainWindow):
     def on_task_completed(self, task: Task):
         if task.type == TaskType.CHECKSUM and task.result:
             if task.options.get("show_in_dialog", True):
-                QMessageBox.information(self, "Checksum Result", str(task.result))
+                dialog = ChecksumResultDialog(self, "Checksum Result", str(task.result))
+                dialog.exec()
 
     def load_settings(self):
         self.settings_manager.load_window_settings(self)
