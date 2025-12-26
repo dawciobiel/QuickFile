@@ -3,7 +3,7 @@ import os
 
 import psutil
 from PyQt6 import uic
-from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QDir
+from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QDir, QTimer
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter, QTabWidget, QLabel
 
@@ -206,6 +206,13 @@ class FolderBrowser(QWidget):
         self.current_paths = {}
         self._init_tab_widget(self.leftTabWidget)
         self._init_tab_widget(self.rightTabWidget)
+        
+        self._paths_to_refresh = set()
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setSingleShot(True)
+        self._refresh_timer.setInterval(200) # 200ms delay
+        self._refresh_timer.timeout.connect(self._do_refresh)
+        
         self.load_panel_settings()
 
     def _init_tab_widget(self, tab_widget: QTabWidget):
@@ -331,14 +338,25 @@ class FolderBrowser(QWidget):
             self.rightTabWidget.widget(i).file_view.refresh()
 
     def refresh_path(self, path):
-        for i in range(self.leftTabWidget.count()):
-            panel = self.leftTabWidget.widget(i)
-            if panel and path.startswith(panel.file_view.get_current_path()):
-                panel.file_view.refresh()
-        for i in range(self.rightTabWidget.count()):
-            panel = self.rightTabWidget.widget(i)
-            if panel and path.startswith(panel.file_view.get_current_path()):
-                panel.file_view.refresh()
+        self._paths_to_refresh.add(path)
+        self._refresh_timer.start()
+
+    def _do_refresh(self):
+        paths_to_process = self._paths_to_refresh.copy()
+        self._paths_to_refresh.clear()
+
+        for path in paths_to_process:
+            logging.debug(f"Doing debounced refresh for path: {path}")
+            for i in range(self.leftTabWidget.count()):
+                panel = self.leftTabWidget.widget(i)
+                if panel and path.startswith(panel.file_view.get_current_path()):
+                    logging.debug(f"Resetting path for left panel at: {panel.file_view.get_current_path()}")
+                    panel.file_view.set_path(panel.file_view.get_current_path())
+            for i in range(self.rightTabWidget.count()):
+                panel = self.rightTabWidget.widget(i)
+                if panel and path.startswith(panel.file_view.get_current_path()):
+                    logging.debug(f"Resetting path for right panel at: {panel.file_view.get_current_path()}")
+                    panel.file_view.set_path(panel.file_view.get_current_path())
 
     def set_view_mode(self, mode):
         if self.view_mode == mode:
