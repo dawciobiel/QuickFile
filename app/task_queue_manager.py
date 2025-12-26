@@ -1,6 +1,7 @@
 import uuid
 import time
 import os
+import logging
 from enum import Enum
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -165,6 +166,7 @@ class TaskQueueManager(QObject):
         return None, None, None
 
     def _calculate_checksums_batch(self, file_paths, algorithm, plugin, save_to_file, progress_callback=None, task_context=None, task=None):
+        logging.debug(f"Starting checksum batch for {len(file_paths)} files with algorithm {algorithm}.")
         results = []
         total_files = len(file_paths)
         for i, file_path in enumerate(file_paths):
@@ -174,9 +176,11 @@ class TaskQueueManager(QObject):
             if task: task.set_details(f"Calculating {algorithm}: {os.path.basename(file_path)}")
             
             try:
+                logging.debug(f"Checksum batch: Calculating for file {i+1}/{total_files}: {file_path}")
                 checksum = plugin.calculate_checksum(file_path, algorithm, task_context=task_context)
                 result_str = f"{os.path.basename(file_path)}: {checksum}"
                 results.append(result_str)
+                logging.debug(f"Checksum for {file_path} is {checksum}")
                 
                 if save_to_file:
                     checksum_file_path = f"{file_path}.checksum"
@@ -186,11 +190,13 @@ class TaskQueueManager(QObject):
                         task.directory_changed.emit(os.path.dirname(file_path))
 
             except Exception as e:
+                logging.error(f"Checksum calculation failed for {file_path}: {e}")
                 results.append(f"{os.path.basename(file_path)}: Error ({e})")
             
             if progress_callback:
                 progress_callback.emit(int((i + 1) / total_files * 100))
         
+        logging.debug("Checksum batch finished.")
         if task:
             task.set_details("Finished")
         return "\n".join(results)

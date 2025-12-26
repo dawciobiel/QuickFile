@@ -18,22 +18,20 @@ class StandardChecksumPlugin(ChecksumPlugin):
         if algorithm not in self.get_supported_algorithms():
             raise ValueError(f"Unsupported algorithm: {algorithm}")
 
+        logging.debug(f"ChecksumPlugin: Starting {algorithm} for {file_path}")
         try:
             hash_func = getattr(hashlib, algorithm)()
-            
-            # Read file in chunks to avoid memory issues and allow progress tracking
-            # We don't know the total size here easily without os.path.getsize, 
-            # but usually this method is called by a manager that handles total progress.
-            # However, for a single large file, internal progress is useful.
             
             import os
             total_size = os.path.getsize(file_path)
             processed_size = 0
             
+            logging.debug(f"ChecksumPlugin: Opening file {file_path}")
             with open(file_path, "rb") as f:
                 for chunk in iter(lambda: f.read(4096 * 1024), b""): # 4MB chunks
                     if task_context:
                         if task_context.is_cancelled:
+                            logging.debug(f"ChecksumPlugin: Cancellation requested for {file_path}")
                             raise Exception("Operation cancelled")
                         task_context.wait_if_paused()
                     
@@ -43,8 +41,10 @@ class StandardChecksumPlugin(ChecksumPlugin):
                         processed_size += len(chunk)
                         progress = int((processed_size / total_size) * 100)
                         progress_callback.emit(progress)
-                        
-            return hash_func.hexdigest()
+            
+            digest = hash_func.hexdigest()
+            logging.debug(f"ChecksumPlugin: Finished {algorithm} for {file_path}. Result: {digest}")
+            return digest
             
         except Exception as e:
             logging.exception(f"Error calculating {algorithm} for {file_path}: {e}")
