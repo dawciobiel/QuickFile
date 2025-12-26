@@ -6,13 +6,12 @@ from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
 
 class ApplicationLogicHandler(QObject):
-    def __init__(self, main_window, file_manager, file_comparator, favorites_manager, archive_manager, directory_synchronizer, theme_manager, ui_state_provider, dialog_handler, settings_handler, background_task_manager, task_queue_manager):
+    def __init__(self, main_window, file_manager, file_comparator, favorites_manager, directory_synchronizer, theme_manager, ui_state_provider, dialog_handler, settings_handler, background_task_manager, task_queue_manager):
         super().__init__()
         self.main_window = main_window
         self.file_manager = file_manager
         self.file_comparator = file_comparator
         self.favorites_manager = favorites_manager
-        self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
         self.theme_manager = theme_manager
         self.ui_state_provider = ui_state_provider

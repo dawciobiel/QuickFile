@@ -22,8 +22,6 @@ class ZipPlugin(ArchivePlugin):
         try:
             with zipfile.ZipFile(destination_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 total_files = 0
-                # Pre-count for progress (optional, can be skipped for speed)
-                # For now, let's just iterate
                 
                 for source_path in source_paths:
                     if task_context and task_context.is_cancelled: return
@@ -43,6 +41,9 @@ class ZipPlugin(ArchivePlugin):
                     else:
                         if task: task.set_details(f"Archiving: {os.path.basename(source_path)}")
                         zipf.write(source_path, os.path.basename(source_path))
+            
+            if task:
+                task.directory_changed.emit(os.path.dirname(destination_path))
                         
             return f"Archive created: {destination_path}"
         except Exception as e:
@@ -64,6 +65,9 @@ class ZipPlugin(ArchivePlugin):
                     
                     if progress_callback:
                         progress_callback.emit(int((i + 1) / total_files * 100))
+            
+            if task:
+                task.directory_changed.emit(destination_path)
                         
             return f"Archive extracted to: {destination_path}"
         except Exception as e:

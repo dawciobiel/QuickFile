@@ -247,6 +247,7 @@ class FileManager:
             raise FileManagerError(translation_manager.translate("FileManager", f"Error deleting item: {e}"))
 
     def delete_items_batch(self, item_paths, move_to_trash=True, progress_callback=None, task_context=None, task=None):
+        logging.debug(f"Starting delete batch for {len(item_paths)} items.")
         total_items = len(item_paths)
         for i, item_path in enumerate(item_paths):
             if task:
@@ -256,11 +257,13 @@ class FileManager:
                     raise OperationCancelledError("Operation cancelled by user.")
                 task_context.wait_if_paused()
             try:
+                logging.debug(f"Deleting item {i+1}/{total_items}: {item_path}")
                 self.delete_item(item_path, move_to_trash, task=task)
                 if progress_callback:
                     progress_callback.emit(int((i + 1) / total_items * 100))
             except Exception as e:
                 logging.error(f"Failed to delete {item_path}: {e}")
+        logging.debug("Delete batch finished.")
         return f"Batch delete completed."
 
     def copy_to_clipboard(self, path):

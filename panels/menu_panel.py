@@ -2,7 +2,6 @@ import logging
 import os
 from PyQt6.QtWidgets import QInputDialog, QStyle, QDialog, QMessageBox, QToolBar, QMenuBar
 from PyQt6.QtCore import QObject, pyqtSignal
-from file_operations.archive_manager import UnrarNotInstalledError
 from PyQt6.QtGui import QAction
 from utils.copy_dialog import CopyDialog
 from utils.move_dialog import MoveDialog

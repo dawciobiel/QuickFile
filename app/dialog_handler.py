@@ -10,7 +10,6 @@ from app.task_queue_manager import TaskQueueManager, Task, TaskType
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
 from favorites.favorites_manager import FavoritesManager
-from file_operations.archive_manager import ArchiveManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager, FileManagerError
@@ -30,15 +29,13 @@ from utils.checksum_dialog import ChecksumDialog
 
 class DialogHandler:
     def __init__(self, main_window, file_manager: FileManager, file_comparator: FileComparator,
-                 favorites_manager: FavoritesManager, archive_manager: ArchiveManager,
-                 directory_synchronizer: DirectorySynchronizer, ui_state_provider: UIStateProvider,
-                 settings_manager: SettingsManager, background_task_manager: BackgroundTaskManager,
-                 task_queue_manager: TaskQueueManager = None):
+                 favorites_manager: FavoritesManager, directory_synchronizer: DirectorySynchronizer, 
+                 ui_state_provider: UIStateProvider, settings_manager: SettingsManager, 
+                 background_task_manager: BackgroundTaskManager, task_queue_manager: TaskQueueManager = None):
         self.main_window = main_window
         self.file_manager = file_manager
         self.file_comparator = file_comparator
         self.favorites_manager = favorites_manager
-        self.archive_manager = archive_manager
         self.directory_synchronizer = directory_synchronizer
         self.ui_state_provider = ui_state_provider
         self.settings_manager = settings_manager

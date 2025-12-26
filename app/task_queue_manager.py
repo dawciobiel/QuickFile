@@ -95,6 +95,7 @@ class TaskQueueManager(QObject):
         self.current_task = None
 
     def add_task(self, task: Task):
+        logging.debug(f"Adding task {task.id} of type {task.type} to queue.")
         self.tasks.append(task)
         self.task_added.emit(task)
         self._process_queue()
@@ -104,12 +105,17 @@ class TaskQueueManager(QObject):
         self.queue_cleared.emit()
 
     def _process_queue(self):
+        logging.debug("Processing queue...")
         if self.current_task and self.current_task.status == TaskStatus.RUNNING:
+            logging.debug(f"Queue is blocked by running task {self.current_task.id}.")
             return
         
         next_task = next((t for t in self.tasks if t.status == TaskStatus.PENDING), None)
         if next_task:
+            logging.debug(f"Found pending task {next_task.id}. Starting...")
             self._start_task(next_task)
+        else:
+            logging.debug("No pending tasks found.")
 
     def _start_task(self, task: Task):
         self.current_task = task
@@ -213,16 +219,18 @@ class TaskQueueManager(QObject):
         if not self.current_task:
             return
         
+        logging.debug(f"Task {self.current_task.id} finished.")
         if self.current_task.status == TaskStatus.RUNNING:
             self.current_task.status = TaskStatus.FINISHED
             self.task_completed.emit(self.current_task)
-
+            
         self.current_task = None
         self._process_queue()
 
     def _on_task_error(self, error_tuple):
         exctype, value, traceback_str = error_tuple
         
+        logging.error(f"Task {self.current_task.id} failed with error: {value}")
         if issubclass(exctype, OperationCancelledError):
             self.current_task.status = TaskStatus.CANCELLED
         else:
