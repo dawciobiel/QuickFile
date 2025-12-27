@@ -25,6 +25,7 @@ class TaskType(Enum):
     SYNC = "Sync"
     CHECKSUM = "Checksum"
     SEARCH = "Search"
+    CALCULATE_SIZE = "Calculate Size"
 
 class Task(QObject):
     status_changed = pyqtSignal(object)
@@ -175,8 +176,41 @@ class TaskQueueManager(QObject):
                 plugin = plugins[0]
                 query = task.options.get("query")
                 return plugin.search, (task.source_paths[0], query, task.options), kwargs
+        elif task.type == TaskType.CALCULATE_SIZE:
+             return self._calculate_directory_size_task, (task.source_paths[0],), kwargs
         
         return None, None, None
+
+    def _calculate_directory_size_task(self, path, progress_callback=None, task_context=None, task=None):
+        logging.debug(f"Starting size calculation for {path}")
+        total_size = 0
+        file_count = 0
+        
+        if task: task.set_details("Calculating size...")
+
+        try:
+            for dirpath, dirnames, filenames in os.walk(path):
+                if task_context and task_context.is_cancelled: break
+                if task_context: task_context.wait_if_paused()
+                
+                for f in filenames:
+                    fp = os.path.join(dirpath, f)
+                    try:
+                        if not os.path.islink(fp):
+                            total_size += os.path.getsize(fp)
+                            file_count += 1
+                    except OSError:
+                        pass
+                
+                if task:
+                    task.set_details(f"Scanned {file_count} files...")
+                    
+        except OSError as e:
+            logging.error(f"Error calculating size: {e}")
+            
+        logging.debug(f"Size calculation finished: {total_size} bytes")
+        if task: task.set_details(f"Finished: {total_size} bytes")
+        return total_size
 
     def _calculate_checksums_batch(self, file_paths, algorithm, plugin, save_to_file, progress_callback=None, task_context=None, task=None):
         logging.debug(f"Starting checksum batch for {len(file_paths)} files with algorithm {algorithm}.")

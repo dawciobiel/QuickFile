@@ -1,7 +1,8 @@
 import os
 import logging
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView
+from PyQt6.QtCore import pyqtSignal, Qt, QEvent, QTimer, QItemSelectionModel
+from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView, QApplication
+from PyQt6.QtGui import QKeyEvent
 
 from browser.base_view import AbstractFileView
 from browser.flat_file_system_model import FlatFileSystemModel
@@ -32,6 +33,7 @@ class FlatFileView(AbstractFileView):
         self.view = QTableView()
         self.view.setModel(self.model)
         self.view.setAlternatingRowColors(True)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         
         self.delegate = FileStyleDelegate(self.view)
         self.view.setItemDelegate(self.delegate)
@@ -118,4 +120,32 @@ class FlatFileView(AbstractFileView):
         return list(self.insert_selected_items)
         
     def handle_key_event(self, event):
+        if event.key() == Qt.Key.Key_Insert:
+            self.toggle_selection()
+            
+            # Calculate next index immediately
+            current_idx = self.view.currentIndex()
+            if current_idx.isValid() and current_idx.row() < self.model.rowCount() - 1:
+                next_idx = self.model.index(current_idx.row() + 1, 0)
+                
+                def move():
+                    self.view.setCurrentIndex(next_idx)
+                    self.view.scrollTo(next_idx)
+                
+                # Use a small delay to ensure dataChanged is processed
+                QTimer.singleShot(10, move)
+            return True
+        elif event.key() == Qt.Key.Key_Home:
+            if self.model.rowCount() > 0:
+                index = self.model.index(0, 0)
+                self.view.setCurrentIndex(index)
+                self.view.scrollToTop()
+            return True
+        elif event.key() == Qt.Key.Key_End:
+            if self.model.rowCount() > 0:
+                index = self.model.index(self.model.rowCount() - 1, 0)
+                self.view.setCurrentIndex(index)
+                self.view.scrollToBottom()
+            return True
+
         return self._handle_common_key_events(event, self.view.currentIndex())

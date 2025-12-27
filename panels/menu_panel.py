@@ -46,6 +46,7 @@ class MenuPanel(QObject):
     KEY_CLOSE_TAB = "action.close_tab"
     KEY_ADD_FAVORITE = "action.add_favorite"
     KEY_SHOW_FAVORITES = "action.show_favorites"
+    KEY_CALCULATE_SIZE = "action.calculate_size"
 
     def __init__(self, main_window, toolbar: QToolBar, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager):
         super().__init__(main_window)
@@ -281,3 +282,11 @@ class MenuPanel(QObject):
             shortcut_key=self.KEY_CHECKSUM
         )
         operations_menu.addAction(checksum_action)
+
+        calculate_size_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Calculate Size"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Calculate size of selected directory"),
+            slot=self.application_logic_handler.calculate_directory_size,
+            shortcut_key=self.KEY_CALCULATE_SIZE
+        )
+        operations_menu.addAction(calculate_size_action)
