@@ -5,10 +5,10 @@ import os
 import pwd
 
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QDir
-from PyQt6.QtGui import QColor, QFont  # Import QColor and QFont
+from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtWidgets import QFileIconProvider
 
-from app.settings_manager import SettingsManager  # Import SettingsManager
+from app.settings_manager import SettingsManager
 from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
 
@@ -16,7 +16,7 @@ FileStyleRole = Qt.ItemDataRole.UserRole + 1
 
 class FlatFileSystemModel(QAbstractTableModel):
     def __init__(self, parent=None, show_dot_files=True, file_permissions_display_mode="symbolic", show_uid_column=True,
-                 show_gid_column=True, insert_selected_items=None, settings_manager: SettingsManager = None):
+                 show_gid_column=True, insert_selected_items=None, settings_manager: SettingsManager = None, theme_manager=None):
         super().__init__(parent)
         self.parent_widget = parent
         self._current_path = os.path.expanduser("~")
@@ -27,11 +27,18 @@ class FlatFileSystemModel(QAbstractTableModel):
         self._show_uid_column = show_uid_column
         self._show_gid_column = show_gid_column
         self._file_styles = {}
-        self._insert_selected_items = insert_selected_items if insert_selected_items is not None else set()  # This will now store file paths (strings)
+        self._insert_selected_items = insert_selected_items if insert_selected_items is not None else set()
         self.settings_manager = settings_manager
+        self.theme_manager = theme_manager
+        
+        if self.theme_manager:
+            self.on_theme_changed(self.theme_manager.get_theme_path())
+            
         self._populate_items()
 
-    def load_file_styles(self, theme_path):
+    def on_theme_changed(self, theme_path):
+        if not theme_path:
+            return
         styles_path = os.path.join(theme_path, "file_styles.json")
         if os.path.exists(styles_path):
             with open(styles_path, 'r') as f:
@@ -44,21 +51,17 @@ class FlatFileSystemModel(QAbstractTableModel):
         if self._current_path == path:
             self.refresh()
             return
-        # logging.debug(f"[FlatFileSystemModel.set_current_path] Changing path from '{self._current_path}' to '{path}'")
         self.beginResetModel()
         self._current_path = path
         self._populate_items()
         self.endResetModel()
 
     def refresh(self):
-        """Explicitly refreshes the model's data."""
-        # logging.debug(f"[FlatFileSystemModel.refresh] Refreshing model for path '{self._current_path}'")
         self.beginResetModel()
         self._populate_items()
         self.endResetModel()
 
     def _populate_items(self):
-        # logging.debug(f"[FlatFileSystemModel._populate_items] Populating items for path: '{self._current_path}'")
         dot_dot_item = []
         other_items = []
 
@@ -67,7 +70,6 @@ class FlatFileSystemModel(QAbstractTableModel):
         
         if self._current_path == "/root":
             msg = translation_manager.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
-            # logging.warning(f"Skipping listing of /root directory due to permission restrictions.") # Removed logging
             show_error_message(self.parent_widget, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
             other_items = []
 
@@ -83,12 +85,10 @@ class FlatFileSystemModel(QAbstractTableModel):
 
         except OSError as e:
             msg = translation_manager.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
-            # logging.error(f"Permission error accessing {self._current_path}: {e}") # Removed logging
             show_error_message(self.parent_widget, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
             other_items = []
 
         self._items = dot_dot_item + other_items
-        # logging.debug(f"[FlatFileSystemModel._populate_items] Populated {len(self._items)} items.")
 
     def set_show_dot_files(self, new_dot_files_state):
         if self._show_dot_files == new_dot_files_state:
@@ -139,24 +139,13 @@ class FlatFileSystemModel(QAbstractTableModel):
 
         item_name, item_path, is_dir, is_selected = self._items[index.row()]
 
-        # Check for Insert selection styling
-        # Compare item_path (string) with the set of insert-selected paths
         if item_path in self._insert_selected_items and self.settings_manager:
-            # logging.warning(f"[FlatFileSystemModel.data] Item '{item_path}' is INSERT-SELECTED. Role: {role}") # Removed logging
             if role == Qt.ItemDataRole.ForegroundRole:
-                color = QColor(self.settings_manager.get_setting("insert_selection_text_color"))
-                # logging.warning(f"[FlatFileSystemModel.data] Returning ForegroundRole: {color.name()}") # Removed logging
-                return color
-            # Removed BackgroundRole handling
-            # elif role == Qt.ItemDataRole.BackgroundRole:
-            #     color = QColor(self.settings_manager.get_setting("insert_selection_background_color"))
-            #     logging.warning(f"[FlatFileSystemModel.data] Returning BackgroundRole: {color.name()}")
-            #     return color
+                return QColor(self.settings_manager.get_setting("insert_selection_text_color"))
             elif role == Qt.ItemDataRole.FontRole:
                 font = QFont()
                 font.setBold(self.settings_manager.get_setting("insert_selection_font_bold"))
                 font.setItalic(self.settings_manager.get_setting("insert_selection_font_italic"))
-                # logging.warning(f"[FlatFileSystemModel.data] Returning FontRole: Bold={font.bold()}, Italic={font.italic()}") # Removed logging
                 return font
 
         if role == FileStyleRole:

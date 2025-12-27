@@ -1,6 +1,6 @@
 import abc
 import os
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from PyQt6.QtCore import QEvent, pyqtSignal, Qt, QModelIndex
 
 # This metaclass inherits from the metaclasses of both QWidget and ABC.
@@ -18,6 +18,8 @@ class AbstractFileView(QWidget, metaclass=AbstractViewMeta):
     def __init__(self, settings_manager, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
     @abc.abstractmethod
     def set_path(self, path, select_item_name=None):

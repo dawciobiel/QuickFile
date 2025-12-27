@@ -1,24 +1,20 @@
-import os
-from PyQt6.QtCore import Qt, QEvent, pyqtSignal, QPoint
-from PyQt6.QtWidgets import QTableView, QVBoxLayout, QAbstractItemView, QHeaderView, QMenu
-from PyQt6.QtGui import QAction
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtWidgets import QTableView, QHeaderView
 
-from app.theme_manager import ThemeManager
 from browser.base_view import AbstractFileView
 from browser.flat_file_system_model import FlatFileSystemModel
 from browser.styling_delegate import FileStyleDelegate
-from app.application_logic_handler import ApplicationLogicHandler
-from app.translation_manager import translation_manager
 
 
 class FlatFileView(AbstractFileView):
-    insert_selection_changed = pyqtSignal()
+    path_changed = pyqtSignal(str)
     file_selected = pyqtSignal(str)
+    insert_selection_changed = pyqtSignal()
 
-    def __init__(self, settings_manager, theme_manager: ThemeManager, parent=None):
+    def __init__(self, settings_manager, theme_manager, parent=None):
         super().__init__(settings_manager, parent)
         self.theme_manager = theme_manager
-        self._insert_selected_items = set()
+        self.insert_selected_items = set()
 
         self.model = FlatFileSystemModel(
             parent=self,
@@ -26,194 +22,81 @@ class FlatFileView(AbstractFileView):
             file_permissions_display_mode=self.settings_manager.get_setting("file_permissions_display_mode", "symbolic"),
             show_uid_column=self.settings_manager.get_setting("show_uid_column", True),
             show_gid_column=self.settings_manager.get_setting("show_gid_column", True),
-            insert_selected_items=self._insert_selected_items,
-            settings_manager=self.settings_manager
+            insert_selected_items=self.insert_selected_items,
+            settings_manager=self.settings_manager,
+            theme_manager=self.theme_manager
         )
         
         self.view = QTableView()
         self.view.setModel(self.model)
-        self.view.setItemDelegate(FileStyleDelegate(self.view))
-        self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.view.setAlternatingRowColors(True)
         
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.view)
+        self.delegate = FileStyleDelegate(self.view)
+        self.view.setItemDelegate(self.delegate)
         
-        self._configure_view()
+        self.layout.addWidget(self.view)
         
         self.view.doubleClicked.connect(self.on_item_double_clicked)
-        self.view.customContextMenuRequested.connect(self._show_context_menu)
-        self.view.installEventFilter(self)
+        
+        self.theme_manager.theme_changed.connect(self.model.on_theme_changed)
 
-    def _show_context_menu(self, pos: QPoint):
-        main_window = self.window()
-        if not hasattr(main_window, 'application_logic_handler'):
-            return
-            
-        app_logic: ApplicationLogicHandler = main_window.application_logic_handler
-        
-        menu = QMenu()
-        
-        copy_action = QAction(translation_manager.translate("MenuPanel", "Copy"), self)
-        copy_action.triggered.connect(app_logic.copy_selected_item)
-        menu.addAction(copy_action)
-        
-        move_action = QAction(translation_manager.translate("MenuPanel", "Move"), self)
-        move_action.triggered.connect(app_logic.move_selected_item)
-        menu.addAction(move_action)
-        
-        delete_action = QAction(translation_manager.translate("MenuPanel", "Delete"), self)
-        delete_action.triggered.connect(app_logic.delete_selected_item)
-        menu.addAction(delete_action)
-        
-        menu.addSeparator()
-        
-        properties_action = QAction(translation_manager.translate("MenuPanel", "Properties"), self)
-        properties_action.triggered.connect(app_logic.show_properties_dialog)
-        menu.addAction(properties_action)
-        
-        menu.exec(self.view.viewport().mapToGlobal(pos))
+    def update_view_settings(self):
+        self.model.set_show_dot_files(self.settings_manager.get_setting("showDotFiles", True))
+        self.model.set_file_permissions_display_mode(self.settings_manager.get_setting("file_permissions_display_mode", "symbolic"))
+        self.model.set_show_uid_column(self.settings_manager.get_setting("show_uid_column", True))
+        self.model.set_show_gid_column(self.settings_manager.get_setting("show_gid_column", True))
+        self.configure_columns()
 
-    def eventFilter(self, source, event):
-        if source is self.view and event.type() == QEvent.Type.KeyPress:
-            return self.handle_key_event(event)
-        return super().eventFilter(source, event)
-
-    def handle_key_event(self, event: QEvent):
-        current_index = self.view.currentIndex()
-        key = event.key()
-        if key == Qt.Key.Key_Insert:
-            self.toggle_insert_selection_for_current_item()
-            next_row = current_index.row() + 1
-            if next_row < self.model.rowCount():
-                next_index = self.model.index(next_row, current_index.column())
-                self.view.setCurrentIndex(next_index)
-                self.view.scrollTo(next_index, QAbstractItemView.ScrollHint.EnsureVisible)
-            return True
-        
-        if self._handle_common_key_events(event, current_index):
-            return True
-        
-        if key == Qt.Key.Key_Home:
-            first_index = self.model.index(0, 0)
-            if first_index.isValid():
-                self.view.setCurrentIndex(first_index)
-            return True
-        elif key == Qt.Key.Key_End:
-            last_row = self.model.rowCount() - 1
-            if last_row >= 0:
-                last_index = self.model.index(last_row, 0)
-                if last_index.isValid():
-                    self.view.setCurrentIndex(last_index)
-                return True
-        return False
-
-    def _configure_view(self):
+    def configure_columns(self):
         header = self.view.horizontalHeader()
-        self.view.verticalHeader().setDefaultSectionSize(20)
-        self.view.verticalHeader().hide()
-        
-        setting_key = "table_column_widths"
-        saved_widths = self.settings_manager.get_setting(setting_key)
-        if saved_widths and len(saved_widths) == header.count():
-            for i, width in enumerate(saved_widths):
-                if width > 0:
-                    header.resizeSection(i, width)
-        else:
-            header.resizeSections(QHeaderView.ResizeMode.ResizeToContents)
-            
-        header.sectionResized.connect(self.on_header_section_resized)
-
-    def on_header_section_resized(self, section, old_size, new_size):
-        header = self.view.horizontalHeader()
-        column_widths = [header.sectionSize(i) for i in range(header.count())]
-        self.settings_manager.set_setting("table_column_widths", column_widths)
+        for i in range(self.model.columnCount()):
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
+        # Give the 'Name' column a larger initial width
+        header.resizeSection(0, 300)
 
     def set_path(self, path, select_item_name=None):
         self.model.set_current_path(path)
         self.path_changed.emit(path)
-        self._insert_selected_items.clear()
-        self.insert_selection_changed.emit()
-
-        found_index = None
-        if select_item_name:
-            for row in range(self.model.rowCount()):
-                index = self.model.index(row, 0)
-                if self.model.fileName(index) == select_item_name:
-                    found_index = index
-                    break
-        
-        if found_index:
-            self.view.setCurrentIndex(found_index)
-            self.view.scrollTo(found_index, QAbstractItemView.ScrollHint.EnsureVisible)
-        else:
-            first_index = self.model.index(0, 0)
-            if first_index.isValid():
-                self.view.setCurrentIndex(first_index)
-                self.view.scrollTo(first_index, QAbstractItemView.ScrollHint.EnsureVisible)
+        self.configure_columns()
 
     def get_current_path(self):
         return self.model._current_path
 
-    def refresh(self):
-        self.model.refresh()
-        self._insert_selected_items.clear()
-        self.insert_selection_changed.emit()
-
     def get_selected_paths(self):
         return self.model.get_selected_paths()
 
-    def get_insert_selected_paths(self):
-        return list(self._insert_selected_items)
-
     def get_current_selected_path(self):
-        if self.view.currentIndex().isValid():
-            return self.model.filePath(self.view.currentIndex())
+        selected_indexes = self.view.selectionModel().selectedIndexes()
+        if selected_indexes:
+            return self.model.filePath(selected_indexes[0])
         return None
-            
-    def update_view_settings(self):
-        self.model.set_file_permissions_display_mode(self.settings_manager.get_setting("file_permissions_display_mode", "symbolic"))
-        self.model.set_show_dot_files(self.settings_manager.get_setting("showDotFiles", True))
-        self.model.set_show_uid_column(self.settings_manager.get_setting("show_uid_column", True))
-        self.model.set_show_gid_column(self.settings_manager.get_setting("show_gid_column", True))
-        
-        theme_path = self.theme_manager.get_theme_path()
-        if theme_path:
-            self.model.load_file_styles(theme_path)
 
-        self.refresh()
-        
     def on_item_double_clicked(self, index):
-        item_name = self.model.fileName(index)
-        path = self.model.filePath(index)
-
-        if item_name == "..":
-            self.go_up()
-        elif os.path.isdir(path):
-            self.set_path(path)
+        if self.model.isDir(index):
+            self.set_path(self.model.filePath(index))
         else:
-            self.file_selected.emit(path)
-        
+            self.file_selected.emit(self.model.filePath(index))
+
+    def refresh(self):
+        self.model.refresh()
+
     def toggle_selection(self):
         current_index = self.view.currentIndex()
-        if current_index.isValid():
-            self.model.toggle_selection_by_index(current_index)
-            next_row = current_index.row() + 1
-            if next_row < self.model.rowCount():
-                next_index = self.model.index(next_row, current_index.column())
-                self.view.setCurrentIndex(next_index)
+        if not current_index.isValid():
+            return
+        
+        file_path = self.model.filePath(current_index)
+        if file_path in self.insert_selected_items:
+            self.insert_selected_items.remove(file_path)
+        else:
+            self.insert_selected_items.add(file_path)
+        
+        self.model.dataChanged.emit(current_index, current_index)
+        self.insert_selection_changed.emit()
 
-    def toggle_insert_selection_for_current_item(self):
-        current_index = self.view.currentIndex()
-        if current_index.isValid():
-            item_path = self.model.filePath(current_index)
-
-            if item_path in self._insert_selected_items:
-                self._insert_selected_items.remove(item_path)
-            else:
-                self._insert_selected_items.add(item_path)
-
-            self.view.update()
-            self.insert_selection_changed.emit()
+    def get_insert_selected_paths(self):
+        return list(self.insert_selected_items)
+        
+    def handle_key_event(self, event):
+        # For now, just pass to common handler
+        return self._handle_common_key_events(event, self.view.currentIndex())

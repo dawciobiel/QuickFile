@@ -2,6 +2,8 @@
 
 ## Główne funkcje do zaimplementowania
 
+- [ ] **Refaktoryzacja modeli systemu plików**: Stworzyć abstrakcyjną klasę bazową `AbstractFileSystemModel`, która zdefiniuje wspólny interfejs dla `FlatFileSystemModel` i `TreeFileSystemModel` (np. metody `filePath`, `fileName`, `isDir`). To zapobiegnie błędom takim jak brakujące metody w jednej z implementacji.
+
 - [ ] **Architektura pluginów**: Zaprojektować i zaimplementować system wtyczek, który w przyszłości pozwoli na łatwe dodawanie obsługi nowych formatów archiwów (np. tworzenie RAR) i innych funkcjonalności.
 
 - [ ] **Odtwarzanie logów akcji**: Stworzyć narzędzie lub tryb w aplikacji, który potrafi odtworzyć zanonimizowany plik `actions.log`, symulując działania użytkownika w celu debugowania.
