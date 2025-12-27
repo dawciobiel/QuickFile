@@ -1,0 +1,7 @@
+{
+  "name": "Standard File Search",
+  "type": "search",
+  "description": "Provides standard file search functionality using recursive directory scanning.",
+  "entry_point": "plugin.py",
+  "class_name": "StandardSearchPlugin"
+}
