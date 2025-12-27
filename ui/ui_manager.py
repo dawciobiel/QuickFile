@@ -34,14 +34,10 @@ class UIManager:
         self.main_window.mainToolbar.setObjectName("MainToolBar")
         self.main_window.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.main_window.mainToolbar)
 
-        self.main_window.search_input = QLineEdit()
-        self.main_window.search_input.setPlaceholderText(translation_manager.translate("Toolbar", "Search..."))
-        self.main_window.search_input.returnPressed.connect(app_logic_handler.start_file_search)
+        # Search input removed as requested
 
         self.menu_panel = MenuPanel(self.main_window, self.main_window.mainToolbar, app_logic_handler, shortcuts_manager)
         self.menu_panel.initialize_menus()
-
-        self.main_window.mainToolbar.addWidget(self.main_window.search_input)
 
         self.bottom_panel = FunctionKeyPanel(self.main_window)
         self.main_window.centralWidget().layout().addWidget(self.bottom_panel)
