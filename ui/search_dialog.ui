@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>600</width>
-    <height>450</height>
+    <height>550</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -277,22 +277,105 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_owner">
+        <widget class="QGroupBox" name="groupBox_permissions">
          <property name="title">
-          <string>Owner / Permissions</string>
+          <string>Permissions</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_5">
-          <item>
-           <widget class="QCheckBox" name="ownerCheckbox">
+         <layout class="QGridLayout" name="gridLayout_perms">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="permissionsCheckbox">
             <property name="text">
-             <string>Owner</string>
+             <string>Enable</string>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QCheckBox" name="permissionsCheckbox">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_owner">
             <property name="text">
-             <string>Permissions</string>
+             <string>Owner:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="permOwnerEdit">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="placeholderText">
+             <string>rwx</string>
+            </property>
+            <property name="maxLength">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_group">
+            <property name="text">
+             <string>Group:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="permGroupEdit">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="placeholderText">
+             <string>r-x</string>
+            </property>
+            <property name="maxLength">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_others">
+            <property name="text">
+             <string>Others:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="permOthersEdit">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="placeholderText">
+             <string>---</string>
+            </property>
+            <property name="maxLength">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QCheckBox" name="suidCheckbox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>SUID</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QCheckBox" name="sgidCheckbox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>SGID</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QCheckBox" name="stickyCheckbox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Sticky</string>
             </property>
            </widget>
           </item>
