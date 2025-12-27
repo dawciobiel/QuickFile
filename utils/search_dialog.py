@@ -27,6 +27,17 @@ class SearchDialog(QDialog):
         self.sizeFromCheckbox.toggled.connect(self.sizeFromUnitCombo.setEnabled)
         self.sizeToCheckbox.toggled.connect(self.sizeToSpinBox.setEnabled)
         self.sizeToCheckbox.toggled.connect(self.sizeToUnitCombo.setEnabled)
+        
+        # Permissions
+        self.permissionsCheckbox.toggled.connect(self._toggle_permissions)
+
+    def _toggle_permissions(self, checked):
+        self.permOwnerEdit.setEnabled(checked)
+        self.permGroupEdit.setEnabled(checked)
+        self.permOthersEdit.setEnabled(checked)
+        self.suidCheckbox.setEnabled(checked)
+        self.sgidCheckbox.setEnabled(checked)
+        self.stickyCheckbox.setEnabled(checked)
 
     def _translate_ui(self):
         self.setWindowTitle(translation_manager.translate("SearchDialog", "Advanced Search"))
@@ -52,5 +63,12 @@ class SearchDialog(QDialog):
             "case_sensitive": self.caseSensitiveCheckbox.isChecked(),
             "start_path": self.startPathEdit.text(),
             "exclude_paths": self.excludePathsEdit.toPlainText().splitlines(),
+            "permissions_enabled": self.permissionsCheckbox.isChecked(),
+            "perm_owner": self.permOwnerEdit.text(),
+            "perm_group": self.permGroupEdit.text(),
+            "perm_others": self.permOthersEdit.text(),
+            "suid": self.suidCheckbox.isChecked(),
+            "sgid": self.sgidCheckbox.isChecked(),
+            "sticky": self.stickyCheckbox.isChecked(),
             # Add other attributes here later
         }
