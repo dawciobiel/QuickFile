@@ -14,6 +14,7 @@ class KeyboardEventManager(QObject):
 
         self.key_actions = {
             (Qt.Key.Key_Tab, Qt.KeyboardModifier.NoModifier): self.folder_browser.switch_active_panel,
+            (Qt.Key.Key_Backspace, Qt.KeyboardModifier.NoModifier): self.folder_browser.go_up_directory, # Added Backspace
             (Qt.Key.Key_F1, Qt.KeyboardModifier.NoModifier): lambda: self.main_window.status_bar.showMessage(translation_manager.translate("KeyboardEventManager", "F1: Help (not implemented)")),
             (Qt.Key.Key_F2, Qt.KeyboardModifier.NoModifier): self.application_logic_handler.rename_selected_item,
             (Qt.Key.Key_F3, Qt.KeyboardModifier.NoModifier): self.application_logic_handler._handle_f3_key,
