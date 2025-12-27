@@ -1,5 +1,6 @@
 import os
 import logging
+import fnmatch
 from plugins.base import SearchPlugin
 
 class StandardSearchPlugin(SearchPlugin):
@@ -16,9 +17,22 @@ class StandardSearchPlugin(SearchPlugin):
             raise ValueError(f"Invalid root path: {root_path}")
 
         found_items = []
-        query_lower = query.lower()
         
-        logging.debug(f"SearchPlugin: Starting search in {root_path} for '{query}'")
+        # Extract options
+        file_name_pattern = options.get("file_name", "*")
+        if not file_name_pattern:
+            file_name_pattern = "*" 
+            
+        file_name_case_sensitive = options.get("file_name_case_sensitive", False)
+        
+        extension = options.get("extension", "")
+        extension_case_sensitive = options.get("extension_case_sensitive", False)
+        
+        exclude_paths = options.get("exclude_paths", [])
+        exclude_paths = [os.path.abspath(p) for p in exclude_paths if p.strip()]
+
+        logging.debug(f"SearchPlugin: Starting search in {root_path}")
+        logging.debug(f"Pattern: {file_name_pattern} (Case: {file_name_case_sensitive}), Ext: {extension} (Case: {extension_case_sensitive}), Exclude: {exclude_paths}")
         
         try:
             for dirpath, dirnames, filenames in os.walk(root_path):
@@ -29,20 +43,20 @@ class StandardSearchPlugin(SearchPlugin):
                     task_context.wait_if_paused()
                 
                 if task:
-                    # Update details less frequently to avoid flooding UI updates?
-                    # For now, let's update on every directory change
                     task.set_details(f"Scanning: {os.path.basename(dirpath)}")
 
-                # Check directories
-                for dirname in dirnames:
-                    if query_lower in dirname.lower():
-                        full_path = os.path.join(dirpath, dirname)
-                        found_items.append(full_path)
-                        logging.debug(f"Found directory: {full_path}")
-                
+                # Handle exclusions
+                for i in range(len(dirnames) - 1, -1, -1):
+                    full_dir_path = os.path.abspath(os.path.join(dirpath, dirnames[i]))
+                    for excluded in exclude_paths:
+                        if full_dir_path.startswith(excluded):
+                            logging.debug(f"Skipping excluded directory: {full_dir_path}")
+                            del dirnames[i]
+                            break
+
                 # Check files
                 for filename in filenames:
-                    if query_lower in filename.lower():
+                    if self._matches_criteria(filename, file_name_pattern, file_name_case_sensitive, extension, extension_case_sensitive):
                         full_path = os.path.join(dirpath, filename)
                         found_items.append(full_path)
                         logging.debug(f"Found file: {full_path}")
@@ -55,3 +69,20 @@ class StandardSearchPlugin(SearchPlugin):
 
         logging.debug(f"SearchPlugin: Finished. Found {len(found_items)} items.")
         return found_items
+
+    def _matches_criteria(self, filename, pattern, pattern_case_sensitive, extension, extension_case_sensitive):
+        # Check extension first (faster)
+        if extension:
+            if extension_case_sensitive:
+                if not filename.endswith(f".{extension}"):
+                    return False
+            else:
+                if not filename.lower().endswith(f".{extension.lower()}"):
+                    return False
+
+        # Check filename pattern
+        if pattern_case_sensitive:
+            return fnmatch.fnmatchcase(filename, pattern)
+        else:
+            # Force case-insensitive match by lowercasing both
+            return fnmatch.fnmatchcase(filename.lower(), pattern.lower())

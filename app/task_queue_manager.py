@@ -170,7 +170,6 @@ class TaskQueueManager(QObject):
                 if algorithm in plugin.get_supported_algorithms():
                     return self._calculate_checksums_batch, (task.source_paths, algorithm, plugin, save_to_file), kwargs
         elif task.type == TaskType.SEARCH:
-            # Use the first available search plugin for now
             plugins = self.plugin_manager.get_search_plugins()
             if plugins:
                 plugin = plugins[0]
@@ -224,29 +223,39 @@ class TaskQueueManager(QObject):
             self.current_task.result = result
 
     def _on_task_finished(self):
-        if not self.current_task:
-            return
-        
-        logging.debug(f"Task {self.current_task.id} finished.")
-        if self.current_task.status == TaskStatus.RUNNING:
-            self.current_task.status = TaskStatus.FINISHED
-            self.task_completed.emit(self.current_task)
+        try:
+            logging.debug("_on_task_finished called.")
+            if not self.current_task:
+                logging.warning("_on_task_finished called but current_task is None.")
+                return
             
-        self.current_task = None
-        self._process_queue()
+            logging.debug(f"Task {self.current_task.id} finished.")
+            if self.current_task.status == TaskStatus.RUNNING:
+                self.current_task.status = TaskStatus.FINISHED
+                logging.debug(f"Emitting task_completed for task {self.current_task.id}.")
+                self.task_completed.emit(self.current_task)
+                
+        except Exception as e:
+            logging.exception(f"Error in _on_task_finished: {e}")
+        finally:
+            self.current_task = None
+            self._process_queue()
 
     def _on_task_error(self, error_tuple):
-        exctype, value, traceback_str = error_tuple
-        
-        logging.error(f"Task {self.current_task.id} failed with error: {value}")
-        if issubclass(exctype, OperationCancelledError):
-            self.current_task.status = TaskStatus.CANCELLED
-        else:
-            self.current_task.status = TaskStatus.ERROR
-            self.current_task.error_message = str(value)
+        try:
+            exctype, value, traceback_str = error_tuple
             
-        self.current_task = None
-        self._process_queue()
+            logging.error(f"Task {self.current_task.id} failed with error: {value}")
+            if issubclass(exctype, OperationCancelledError):
+                self.current_task.status = TaskStatus.CANCELLED
+            else:
+                self.current_task.status = TaskStatus.ERROR
+                self.current_task.error_message = str(value)
+        except Exception as e:
+            logging.exception(f"Error in _on_task_error: {e}")
+        finally:
+            self.current_task = None
+            self._process_queue()
 
     def pause_task(self, task_id):
         task = self._get_task_by_id(task_id)
