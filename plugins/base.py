@@ -61,3 +61,15 @@ class ChecksumPlugin(FileOperationPlugin):
         Calculates the checksum for a single file.
         """
         pass
+
+class SearchPlugin(FileOperationPlugin):
+    """
+    Interface for plugins that search for files.
+    """
+    @abstractmethod
+    def search(self, root_path: str, query: str, options: dict, progress_callback=None, task_context=None, task=None) -> list[str]:
+        """
+        Searches for files matching the query starting from root_path.
+        Returns a list of matching file paths.
+        """
+        pass

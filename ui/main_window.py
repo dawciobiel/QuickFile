@@ -16,6 +16,7 @@ from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager
 from panels.task_queue_panel import TaskQueuePanel
+from panels.search_results_panel import SearchResultsPanel
 from ui.progress_bar_manager import ProgressBarManager
 from ui.ui_manager import UIManager
 from utils.dialogs import show_error_message
@@ -99,6 +100,9 @@ class MainWindow(QMainWindow):
         self.task_queue_panel = TaskQueuePanel(self.task_queue_manager)
         self.queue_tab.layout().addWidget(self.task_queue_panel)
         
+        self.search_results_panel = SearchResultsPanel()
+        self.search_tab.layout().addWidget(self.search_results_panel)
+        
         self.mainTabWidget.tabBar().setTabsClosable(False)
 
         self.task_queue_manager.task_added.connect(self.on_task_added)
@@ -118,6 +122,11 @@ class MainWindow(QMainWindow):
             if task.options.get("show_in_dialog", True):
                 dialog = ChecksumResultDialog(self, "Checksum Result", str(task.result))
                 dialog.exec()
+        elif task.type == TaskType.SEARCH and task.result is not None:
+            # task.result is a list of file paths
+            self.search_results_panel.display_results(task.result)
+            # Switch to search tab
+            self.mainTabWidget.setCurrentWidget(self.search_tab)
 
     def load_settings(self):
         self.settings_manager.load_window_settings(self)

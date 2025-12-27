@@ -24,6 +24,7 @@ class TaskType(Enum):
     EXTRACT = "Extract"
     SYNC = "Sync"
     CHECKSUM = "Checksum"
+    SEARCH = "Search"
 
 class Task(QObject):
     status_changed = pyqtSignal(object)
@@ -168,6 +169,13 @@ class TaskQueueManager(QObject):
             for plugin in self.plugin_manager.get_checksum_plugins():
                 if algorithm in plugin.get_supported_algorithms():
                     return self._calculate_checksums_batch, (task.source_paths, algorithm, plugin, save_to_file), kwargs
+        elif task.type == TaskType.SEARCH:
+            # Use the first available search plugin for now
+            plugins = self.plugin_manager.get_search_plugins()
+            if plugins:
+                plugin = plugins[0]
+                query = task.options.get("query")
+                return plugin.search, (task.source_paths[0], query, task.options), kwargs
         
         return None, None, None
 

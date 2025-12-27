@@ -25,6 +25,7 @@ from utils.settings_dialog import SettingsDialog
 from utils.shortcuts_dialog import ShortcutsDialog
 from utils.sync_dialog import SyncDialog
 from utils.checksum_dialog import ChecksumDialog
+from utils.search_input_dialog import SearchInputDialog
 
 
 class DialogHandler:
@@ -156,6 +157,20 @@ class DialogHandler:
             task = Task(TaskType.CHECKSUM, source_paths=files_only, options=options)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage("Added checksum task to queue.")
+
+    def start_search(self, checked=False):
+        current_path = self.ui_state_provider.get_active_panel_path()
+        if not current_path:
+            raise ValueError("Cannot determine search path.")
+
+        dialog = SearchInputDialog(self.main_window, current_path)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            query = dialog.get_query()
+            if query:
+                action_logger.log_action("search", path=current_path, query=query)
+                task = Task(TaskType.SEARCH, source_paths=[current_path], options={"query": query})
+                self.task_queue_manager.add_task(task)
+                self.main_window.statusBar().showMessage("Added search task to queue.")
 
     def synchronize_directories(self, checked=False):
         left_path = self.ui_state_provider.folder_browser.get_left_panel_widget().file_view.get_current_path()
