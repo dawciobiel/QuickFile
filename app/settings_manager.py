@@ -17,7 +17,6 @@ class SettingsManager:
             shutil.move(old_settings_file, self.settings_file)
 
         self.default_settings = {
-            "view_mode": "flat",
             "leftPanelPath": os.path.expanduser("~"),
             "rightPanelPath": os.path.expanduser("~"),
             "activePanel": "left",

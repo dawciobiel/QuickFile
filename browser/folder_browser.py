@@ -11,14 +11,12 @@ from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from browser.flat_view import FlatFileView
-from browser.tree_view import TreeFileView
 
 
 class PanelWidget(QWidget):
-    def __init__(self, settings_manager, initial_view_mode, folder_browser_event_filter, theme_manager: ThemeManager, parent=None):
+    def __init__(self, settings_manager, folder_browser_event_filter, theme_manager: ThemeManager, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
-        self._current_view_mode = initial_view_mode
         self._folder_browser_event_filter = folder_browser_event_filter
         self.theme_manager = theme_manager
         
@@ -40,30 +38,18 @@ class PanelWidget(QWidget):
         self.completer.setModel(self.completer_model)
         self.path_edit.setCompleter(self.completer)
 
-        self.flat_file_view = FlatFileView(self.settings_manager, self.theme_manager, self)
-        self.tree_file_view = TreeFileView(self.settings_manager, self.theme_manager, self)
-        
-        self.layout.addWidget(self.flat_file_view)
-        self.layout.addWidget(self.tree_file_view)
+        self.file_view = FlatFileView(self.settings_manager, self.theme_manager, self)
+        self.layout.addWidget(self.file_view)
 
         self.summary_label = QLabel("Summary")
         self.layout.addWidget(self.summary_label)
 
-        self.flat_file_view.setVisible(self._current_view_mode == "flat")
-        self.tree_file_view.setVisible(self._current_view_mode == "tree")
-
-        self.file_view = self.flat_file_view if self._current_view_mode == "flat" else self.tree_file_view
-
-        self.flat_file_view.path_changed.connect(self._on_path_changed)
-        self.tree_file_view.path_changed.connect(self._on_path_changed)
-        
+        self.file_view.path_changed.connect(self._on_path_changed)
         self.path_edit.returnPressed.connect(self.on_path_edited)
         self.drive_combo.currentIndexChanged.connect(self._on_drive_selected)
 
-        self.flat_file_view.view.selectionModel().currentChanged.connect(self.update_summary_panel)
-        self.tree_file_view.view.selectionModel().currentChanged.connect(self.update_summary_panel)
-        self.flat_file_view.insert_selection_changed.connect(self.update_summary_panel)
-        self.tree_file_view.insert_selection_changed.connect(self.update_summary_panel)
+        self.file_view.view.selectionModel().currentChanged.connect(self.update_summary_panel)
+        self.file_view.insert_selection_changed.connect(self.update_summary_panel)
 
         self._populate_drive_combo()
 
@@ -134,28 +120,9 @@ class PanelWidget(QWidget):
         else:
             self.path_edit.setText(self.file_view.get_current_path())
 
-    def set_file_view_mode(self, mode):
-        if self._current_view_mode == mode:
-            return
-        current_path = self.file_view.get_current_path()
-        if self._folder_browser_event_filter:
-            self.file_view.view.removeEventFilter(self._folder_browser_event_filter)
-        self.file_view.setVisible(False)
-        self._current_view_mode = mode
-        if mode == "flat":
-            self.file_view = self.flat_file_view
-        else:
-            self.file_view = self.tree_file_view
-        self.file_view.setVisible(True)
-        self.file_view.set_path(current_path)
-        self.file_view.view.setFocus()
-        self.file_view.update_view_settings()
-        if self._folder_browser_event_filter:
-            self.file_view.view.installEventFilter(self._folder_browser_event_filter)
-
     def toggle_insert_selection(self):
         if self.file_view:
-            self.file_view.toggle_insert_selection_for_current_item()
+            self.file_view.toggle_selection()
 
     def update_summary_panel(self):
         insert_selected_paths = self.file_view.get_insert_selected_paths()
@@ -195,13 +162,12 @@ class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
 
-    def __init__(self, view_mode="flat", settings_manager: SettingsManager = None, theme_manager: ThemeManager = None, parent=None):
+    def __init__(self, settings_manager: SettingsManager = None, theme_manager: ThemeManager = None, parent=None):
         super().__init__(parent)
         uic.loadUi("ui/folder_browser.ui", self)
         
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager
-        self.view_mode = view_mode
         self.active_panel_widget = None
         self.current_paths = {}
         self._init_tab_widget(self.leftTabWidget)
@@ -210,7 +176,7 @@ class FolderBrowser(QWidget):
         self._paths_to_refresh = set()
         self._refresh_timer = QTimer(self)
         self._refresh_timer.setSingleShot(True)
-        self._refresh_timer.setInterval(200) # 200ms delay
+        self._refresh_timer.setInterval(200)
         self._refresh_timer.timeout.connect(self._do_refresh)
         
         self.load_panel_settings()
@@ -221,7 +187,7 @@ class FolderBrowser(QWidget):
         tab_widget.currentChanged.connect(lambda index, tw=tab_widget: self._on_tab_changed(tw, index))
 
     def _create_panel_widget(self, path):
-        panel = PanelWidget(self.settings_manager, self.view_mode, self, self.theme_manager, self)
+        panel = PanelWidget(self.settings_manager, self, self.theme_manager, self)
         panel.file_view.set_path(path)
         panel.file_view.path_changed.connect(lambda new_path, p=panel: self._update_tab_title(p, new_path))
         panel.file_view.file_selected.connect(self.file_selected.emit)
@@ -357,46 +323,6 @@ class FolderBrowser(QWidget):
                 if panel and path.startswith(panel.file_view.get_current_path()):
                     logging.debug(f"Resetting path for right panel at: {panel.file_view.get_current_path()}")
                     panel.file_view.set_path(panel.file_view.get_current_path())
-
-    def set_view_mode(self, mode):
-        if self.view_mode == mode:
-            return
-        self.view_mode = mode
-        self.settings_manager.set_setting("view_mode", mode)
-        for i in range(self.leftTabWidget.count()):
-            self.leftTabWidget.widget(i).set_file_view_mode(mode)
-        for i in range(self.rightTabWidget.count()):
-            self.rightTabWidget.widget(i).set_file_view_mode(mode)
-        if self.active_panel_widget:
-            self.set_active_panel(self.active_panel_widget)
-
-    def set_file_permissions_display_mode(self, mode):
-        for i in range(self.leftTabWidget.count()):
-            self.leftTabWidget.widget(i).file_view.update_view_settings()
-        for i in range(self.rightTabWidget.count()):
-            self.rightTabWidget.widget(i).file_view.update_view_settings()
-        self.refresh_all_views()
-
-    def set_show_dot_files(self, show):
-        for i in range(self.leftTabWidget.count()):
-            self.leftTabWidget.widget(i).file_view.update_view_settings()
-        for i in range(self.rightTabWidget.count()):
-            self.rightTabWidget.widget(i).file_view.update_view_settings()
-        self.refresh_all_views()
-
-    def set_show_uid_column(self, show):
-        for i in range(self.leftTabWidget.count()):
-            self.leftTabWidget.widget(i).file_view.update_view_settings()
-        for i in range(self.rightTabWidget.count()):
-            self.rightTabWidget.widget(i).file_view.update_view_settings()
-        self.refresh_all_views()
-
-    def set_show_gid_column(self, show):
-        for i in range(self.leftTabWidget.count()):
-            self.leftTabWidget.widget(i).file_view.update_view_settings()
-        for i in range(self.rightTabWidget.count()):
-            self.rightTabWidget.widget(i).file_view.update_view_settings()
-        self.refresh_all_views()
 
     def set_panel_paths(self, left_path, right_path):
         if self.leftTabWidget.count() > 0:
