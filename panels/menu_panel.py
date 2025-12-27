@@ -40,8 +40,6 @@ class MenuPanel(QObject):
     KEY_SYNCHRONIZE = "action.synchronize"
     KEY_CHECKSUM = "action.checksum"
     KEY_ABOUT = "action.about"
-    KEY_FLAT_VIEW = "action.flat_view"
-    KEY_TREE_VIEW = "action.tree_view"
     KEY_CONFIGURE_SHORTCUTS = "action.configure_shortcuts"
     KEY_GENERAL_SETTINGS = "action.general_settings"
     KEY_NEW_TAB = "action.new_tab"
@@ -65,7 +63,6 @@ class MenuPanel(QObject):
         self._create_operations_menu()
         self._create_favorites_menu()
         self._create_archive_menu()
-        self._create_view_menu()
         self._create_settings_menu()
         self._create_help_menu()
 
@@ -97,23 +94,6 @@ class MenuPanel(QObject):
             shortcut_key=self.KEY_ABOUT
         )
         help_menu.addAction(about_action)
-
-    def _create_view_menu(self):
-        view_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "View"))
-        flat_view_action = self._create_action(
-            visible_text=translation_manager.translate("MenuPanel", "Flat View"),
-            tooltip_text=translation_manager.translate("MenuPanel", "Flat View"),
-            slot=lambda: self.view_mode_changed.emit("flat"),
-            shortcut_key=self.KEY_FLAT_VIEW
-        )
-        tree_view_action = self._create_action(
-            visible_text=translation_manager.translate("MenuPanel", "Tree View"),
-            tooltip_text=translation_manager.translate("MenuPanel", "Tree View"),
-            slot=lambda: self.view_mode_changed.emit("tree"),
-            shortcut_key=self.KEY_TREE_VIEW
-        )
-        view_menu.addAction(flat_view_action)
-        view_menu.addAction(tree_view_action)
 
     def _create_settings_menu(self):
         settings_menu = self.menu_bar.addMenu(translation_manager.translate("MainWindow", "Settings"))
@@ -263,7 +243,7 @@ class MenuPanel(QObject):
             visible_text=translation_manager.translate("MenuPanel", "Search"),
             tooltip_text=translation_manager.translate("MenuPanel", "Search for files and directories"),
             icon=QStyle.StandardPixmap.SP_FileDialogDetailedView,
-            slot=self.application_logic_handler.start_file_search, # Updated slot
+            slot=self.application_logic_handler.start_file_search,
             shortcut_key=self.KEY_SEARCH,
             add_to_toolbar=True
         )

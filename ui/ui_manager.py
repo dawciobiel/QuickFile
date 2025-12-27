@@ -23,7 +23,6 @@ class UIManager:
         self.main_window.centralWidget().layout().setContentsMargins(5, 5, 5, 5)
         
         self.folder_browser = FolderBrowser(
-            view_mode=self.settings_manager.get_setting("view_mode", "flat"),
             settings_manager=self.settings_manager,
             theme_manager=self.theme_manager,
             parent=self.main_window
@@ -33,8 +32,6 @@ class UIManager:
         self.main_window.mainToolbar.setMovable(False)
         self.main_window.mainToolbar.setObjectName("MainToolBar")
         self.main_window.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.main_window.mainToolbar)
-
-        # Search input removed as requested
 
         self.menu_panel = MenuPanel(self.main_window, self.main_window.mainToolbar, app_logic_handler, shortcuts_manager)
         self.menu_panel.initialize_menus()
@@ -47,7 +44,6 @@ class UIManager:
         self.folder_browser.current_directory_changed.connect(app_logic_handler.update_status_bar_path)
         self.menu_panel.go_up_requested.connect(app_logic_handler.ui_state_provider.folder_browser.go_up_directory)
         self.menu_panel.refresh_requested.connect(app_logic_handler.ui_state_provider.folder_browser.refresh_all_views)
-        self.menu_panel.view_mode_changed.connect(app_logic_handler.ui_state_provider.folder_browser.set_view_mode)
 
     def load_panel_settings(self):
         self.folder_browser.load_panel_settings()

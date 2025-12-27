@@ -1,5 +1,6 @@
+import logging
 from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtWidgets import QTableView, QHeaderView
+from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView
 
 from browser.base_view import AbstractFileView
 from browser.flat_file_system_model import FlatFileSystemModel
@@ -51,13 +52,24 @@ class FlatFileView(AbstractFileView):
         header = self.view.horizontalHeader()
         for i in range(self.model.columnCount()):
             header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
-        # Give the 'Name' column a larger initial width
         header.resizeSection(0, 300)
 
     def set_path(self, path, select_item_name=None):
+        logging.debug(f"FlatFileView.set_path: path={path}, select_item_name={select_item_name}")
         self.model.set_current_path(path)
         self.path_changed.emit(path)
         self.configure_columns()
+
+        if select_item_name:
+            for row in range(self.model.rowCount()):
+                index = self.model.index(row, 0)
+                file_name = self.model.fileName(index)
+                logging.debug(f"Checking row {row}: {file_name}")
+                if file_name == select_item_name:
+                    logging.debug(f"Found match: {file_name}")
+                    self.view.setCurrentIndex(index)
+                    self.view.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
+                    break
 
     def get_current_path(self):
         return self.model._current_path
@@ -98,5 +110,4 @@ class FlatFileView(AbstractFileView):
         return list(self.insert_selected_items)
         
     def handle_key_event(self, event):
-        # For now, just pass to common handler
         return self._handle_common_key_events(event, self.view.currentIndex())
