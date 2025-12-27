@@ -75,19 +75,8 @@ class ApplicationLogicHandler(QObject):
         self.main_window.statusBar().showMessage(path)
 
     @_handle_error
-    def start_file_search(self):
-        search_text = self.main_window.search_input.text()
-        if not search_text:
-            return
-        
-        current_path = self.ui_state_provider.get_active_panel_path()
-        if not current_path:
-            return
-
-        action_logger.log_action("search", path=current_path, query=search_text)
-        task = Task(TaskType.SEARCH, source_paths=[current_path], options={"query": search_text})
-        self.task_queue_manager.add_task(task)
-        self.main_window.statusBar().showMessage("Added search task to queue.")
+    def start_file_search(self, checked=False):
+        self.dialog_handler.start_search()
 
     @_handle_error
     def add_favorite(self, checked=False):

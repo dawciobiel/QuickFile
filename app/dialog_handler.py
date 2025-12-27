@@ -20,12 +20,11 @@ from utils.copy_dialog import CopyDialog
 from utils.delete_dialog import DeleteDialog
 from utils.move_dialog import MoveDialog
 from utils.properties_dialog import PropertiesDialog
-from utils.search_dialog import SearchDialog
+from utils.search_dialog import SearchDialog # Updated import
 from utils.settings_dialog import SettingsDialog
 from utils.shortcuts_dialog import ShortcutsDialog
 from utils.sync_dialog import SyncDialog
 from utils.checksum_dialog import ChecksumDialog
-from utils.search_input_dialog import SearchInputDialog
 
 
 class DialogHandler:
@@ -72,8 +71,10 @@ class DialogHandler:
             self.main_window.shortcuts_manager.apply_shortcuts_settings(new_shortcuts)
 
     def show_search_results(self, results):
-        dialog = SearchDialog(self.main_window, results)
-        dialog.exec()
+        # This method might be obsolete if we use the new SearchResultsPanel, 
+        # but kept for compatibility with old direct search calls if any.
+        # For now, let's just log or do nothing as results are handled via TaskQueue.
+        pass
 
     def _compare_files(self, file1_path, file2_path):
         action_logger.log_action("compare_files", file1=file1_path, file2=file2_path)
@@ -163,12 +164,16 @@ class DialogHandler:
         if not current_path:
             raise ValueError("Cannot determine search path.")
 
-        dialog = SearchInputDialog(self.main_window, current_path)
+        dialog = SearchDialog(self.main_window, current_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            query = dialog.get_query()
+            options = dialog.get_options()
+            query = options.get("file_name") # For now, use file name as query
+            start_path = options.get("start_path", current_path)
+            
             if query:
-                action_logger.log_action("search", path=current_path, query=query)
-                task = Task(TaskType.SEARCH, source_paths=[current_path], options={"query": query})
+                action_logger.log_action("search", path=start_path, query=query, options=options)
+                # Pass both query (for backward compatibility) and full options
+                task = Task(TaskType.SEARCH, source_paths=[start_path], options={"query": query, **options})
                 self.task_queue_manager.add_task(task)
                 self.main_window.statusBar().showMessage("Added search task to queue.")
 
