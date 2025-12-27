@@ -1,13 +1,12 @@
 import grp
 import json
 import os
-# import logging # Removed logging
 import pwd
 
 from PyQt6.QtCore import QAbstractItemModel, QModelIndex, Qt
-from PyQt6.QtGui import QColor, QFont  # Import QColor and QFont
+from PyQt6.QtGui import QColor, QFont
 
-from app.settings_manager import SettingsManager  # Import SettingsManager
+from app.settings_manager import SettingsManager
 from app.translation_manager import translation_manager
 
 FileStyleRole = Qt.ItemDataRole.UserRole + 1
@@ -18,7 +17,7 @@ class TreeItem:
         self.parent = parent
         self.children = []
         self.is_populated = False
-        self.is_marked = False  # This is for checkbox selection, not insert selection
+        self.is_marked = False
 
     def child(self, row):
         return self.children[row]
@@ -96,15 +95,22 @@ class TreeItem:
             pass
 
 class TreeFileSystemModel(QAbstractItemModel):
-    def __init__(self, settings_manager: SettingsManager, parent=None, insert_selected_items=None):  # Added insert_selected_items
+    def __init__(self, settings_manager: SettingsManager, parent=None, insert_selected_items=None, theme_manager=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
+        self.theme_manager = theme_manager
         self.root_item = TreeItem(self.settings_manager.get_setting("leftPanelPath", os.path.expanduser("~")))
         self._file_styles = {}
-        self._insert_selected_items = insert_selected_items if insert_selected_items is not None else set()  # Initialize it
+        self._insert_selected_items = insert_selected_items if insert_selected_items is not None else set()
+        
+        if self.theme_manager:
+            self.on_theme_changed(self.theme_manager.get_theme_path())
+            
         self.update_settings()
 
-    def load_file_styles(self, theme_path):
+    def on_theme_changed(self, theme_path):
+        if not theme_path:
+            return
         styles_path = os.path.join(theme_path, "file_styles.json")
         if os.path.exists(styles_path):
             with open(styles_path, 'r') as f:
@@ -162,24 +168,13 @@ class TreeFileSystemModel(QAbstractItemModel):
         
         item = index.internalPointer()
 
-        # Check for Insert selection styling
-        # Compare item.path (string) with the set of insert-selected paths
         if item.path in self._insert_selected_items and self.settings_manager:
-            # logging.warning(f"[TreeFileSystemModel.data] Item '{item.path}' is INSERT-SELECTED. Role: {role}") # Removed logging
             if role == Qt.ItemDataRole.ForegroundRole:
-                color = QColor(self.settings_manager.get_setting("insert_selection_text_color"))
-                # logging.warning(f"[TreeFileSystemModel.data] Returning ForegroundRole: {color.name()}") # Removed logging
-                return color
-            # Removed BackgroundRole handling
-            # elif role == Qt.ItemDataRole.BackgroundRole:
-            #     color = QColor(self.settings_manager.get_setting("insert_selection_background_color"))
-            #     logging.warning(f"[TreeFileSystemModel.data] Returning BackgroundRole: {color.name()}")
-            #     return color
+                return QColor(self.settings_manager.get_setting("insert_selection_text_color"))
             elif role == Qt.ItemDataRole.FontRole:
                 font = QFont()
                 font.setBold(self.settings_manager.get_setting("insert_selection_font_bold"))
                 font.setItalic(self.settings_manager.get_setting("insert_selection_font_italic"))
-                # logging.warning(f"[TreeFileSystemModel.data] Returning FontRole: Bold={font.bold()}, Italic={font.italic()}") # Removed logging
                 return font
 
         if role == FileStyleRole:
@@ -235,6 +230,11 @@ class TreeFileSystemModel(QAbstractItemModel):
         if not index.isValid():
             return ""
         return index.internalPointer().data(0)
+
+    def isDir(self, index):
+        if not index.isValid():
+            return False
+        return os.path.isdir(index.internalPointer().path)
 
     def toggle_selection_by_index(self, index):
         if not index.isValid():
