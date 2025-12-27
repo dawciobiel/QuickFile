@@ -32,11 +32,22 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QLineEdit" name="fileNameEdit">
-         <property name="placeholderText">
-          <string>e.g. *.txt, report_??.doc</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_filename">
+         <item>
+          <widget class="QLineEdit" name="fileNameEdit">
+           <property name="placeholderText">
+            <string>e.g. *.txt, report_??.doc</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="fileNameCaseSensitiveCheckbox">
+           <property name="text">
+            <string>Case sensitive</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item row="1" column="0">
         <widget class="QLabel" name="label_extension">
@@ -46,18 +57,22 @@
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QLineEdit" name="extensionEdit">
-         <property name="placeholderText">
-          <string>e.g. py, cpp</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QCheckBox" name="caseSensitiveCheckbox">
-         <property name="text">
-          <string>Case sensitive</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_extension">
+         <item>
+          <widget class="QLineEdit" name="extensionEdit">
+           <property name="placeholderText">
+            <string>e.g. py, cpp</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="extensionCaseSensitiveCheckbox">
+           <property name="text">
+            <string>Case sensitive</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>

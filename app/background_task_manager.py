@@ -2,7 +2,7 @@ import logging
 import sys
 import traceback
 import time
-from PyQt6.QtCore import QObject, QRunnable, pyqtSignal, QThreadPool, QMutex, QWaitCondition
+from PyQt6.QtCore import QObject, QRunnable, pyqtSignal, QThreadPool, QMutex, QWaitCondition, QThread
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
@@ -73,6 +73,10 @@ class Worker(QRunnable):
         else:
             self.signals.result.emit(result)
         finally:
+            # Small delay to ensure previous signals (like result) are processed
+            # before the thread potentially terminates and cleans up.
+            QThread.msleep(10)
+            logging.debug("Worker: Emitting finished signal.")
             self.signals.finished.emit()
 
 class BackgroundTaskManager(QObject):
@@ -88,15 +92,8 @@ class BackgroundTaskManager(QObject):
         self.current_context = TaskContext()
         
         # Pass the context to the function via 'task_context' argument
-        # We use 'task_context' instead of 'cancellation_token' to reflect expanded capabilities
-        # For backward compatibility with recently updated code, we can also map it if needed,
-        # but better to update FileManager to use 'task_context'.
         kwargs['task_context'] = self.current_context
         
-        # Remove old 'cancellation_token' if present in kwargs to avoid confusion, 
-        # or map it for compatibility if we didn't update FileManager yet.
-        # Since we are updating FileManager next, we will use 'task_context'.
-
         worker = Worker(fn, *args, **kwargs)
         self.thread_pool.start(worker)
         self.current_worker = worker

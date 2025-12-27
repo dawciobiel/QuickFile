@@ -59,8 +59,9 @@ class SearchDialog(QDialog):
         # Return all search options
         return {
             "file_name": self.fileNameEdit.text(),
+            "file_name_case_sensitive": self.fileNameCaseSensitiveCheckbox.isChecked(),
             "extension": self.extensionEdit.text(),
-            "case_sensitive": self.caseSensitiveCheckbox.isChecked(),
+            "extension_case_sensitive": self.extensionCaseSensitiveCheckbox.isChecked(),
             "start_path": self.startPathEdit.text(),
             "exclude_paths": self.excludePathsEdit.toPlainText().splitlines(),
             "permissions_enabled": self.permissionsCheckbox.isChecked(),
