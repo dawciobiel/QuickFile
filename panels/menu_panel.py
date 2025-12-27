@@ -259,7 +259,14 @@ class MenuPanel(QObject):
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 
-        search_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Search"), tooltip_text=translation_manager.translate("MenuPanel", "Search for files and directories"), icon=QStyle.StandardPixmap.SP_FileDialogDetailedView, slot=self.main_window.search_input.setFocus, shortcut_key=self.KEY_SEARCH, add_to_toolbar=True)
+        search_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Search"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Search for files and directories"),
+            icon=QStyle.StandardPixmap.SP_FileDialogDetailedView,
+            slot=self.application_logic_handler.start_file_search, # Updated slot
+            shortcut_key=self.KEY_SEARCH,
+            add_to_toolbar=True
+        )
         operations_menu.addAction(search_action)
         operations_menu.addSeparator()
         self.toolbar.addSeparator()

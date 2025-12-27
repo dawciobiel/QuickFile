@@ -5,7 +5,7 @@ import importlib.util
 import shutil
 from packaging.version import Version
 
-from plugins.base import ArchivePlugin, ChecksumPlugin
+from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin
 
 class PluginInfo:
     """Holds metadata and the loaded class for a specific plugin version."""
@@ -31,7 +31,8 @@ class PluginManager:
         
         self.registry = {
             "archive": {},
-            "checksum": {}
+            "checksum": {},
+            "search": {}
         }
         
         self._install_bundled_plugins()
@@ -149,6 +150,14 @@ class PluginManager:
         plugins = []
         if "checksum" in self.registry:
             for artifact_id, versions in self.registry["checksum"].items():
+                if versions:
+                    plugins.append(versions[0].get_instance())
+        return plugins
+
+    def get_search_plugins(self) -> list[SearchPlugin]:
+        plugins = []
+        if "search" in self.registry:
+            for artifact_id, versions in self.registry["search"].items():
                 if versions:
                     plugins.append(versions[0].get_instance())
         return plugins

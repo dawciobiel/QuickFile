@@ -4,6 +4,8 @@ import logging
 from PyQt6.QtCore import QObject
 from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
+from app.task_queue_manager import Task, TaskType
+from app.action_logger import action_logger
 
 class ApplicationLogicHandler(QObject):
     def __init__(self, main_window, file_manager, file_comparator, favorites_manager, directory_synchronizer, theme_manager, ui_state_provider, dialog_handler, settings_handler, background_task_manager, task_queue_manager):
@@ -73,18 +75,8 @@ class ApplicationLogicHandler(QObject):
         self.main_window.statusBar().showMessage(path)
 
     @_handle_error
-    def start_file_search(self):
-        search_text = self.main_window.search_input.text()
-        if not search_text:
-            return
-        
-        current_path = self.ui_state_provider.get_active_panel_path()
-        if not current_path:
-            return
-
-        results, message = self.file_manager.search_files(current_path, search_text)
-        self.dialog_handler.show_search_results(results)
-        self.main_window.statusBar().showMessage(message)
+    def start_file_search(self, checked=False):
+        self.dialog_handler.start_search()
 
     @_handle_error
     def add_favorite(self, checked=False):
