@@ -30,6 +30,7 @@ class FlatFileSystemModel(QAbstractTableModel):
         self._insert_selected_items = insert_selected_items if insert_selected_items is not None else set()
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager
+        self._directory_sizes = {}
         
         if self.theme_manager:
             self.on_theme_changed(self.theme_manager.get_theme_path())
@@ -53,11 +54,13 @@ class FlatFileSystemModel(QAbstractTableModel):
             return
         self.beginResetModel()
         self._current_path = path
+        self._directory_sizes.clear()
         self._populate_items()
         self.endResetModel()
 
     def refresh(self):
         self.beginResetModel()
+        self._directory_sizes.clear()
         self._populate_items()
         self.endResetModel()
 
@@ -133,6 +136,14 @@ class FlatFileSystemModel(QAbstractTableModel):
             return default_flags | Qt.ItemFlag.ItemIsUserCheckable
         return default_flags
 
+    def update_directory_size(self, path, size):
+        self._directory_sizes[path] = size
+        for row in range(len(self._items)):
+            if self._items[row][1] == path:
+                index = self.index(row, 1)
+                self.dataChanged.emit(index, index, [Qt.ItemDataRole.DisplayRole])
+                break
+
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid() or not (0 <= index.row() < len(self._items)):
             return None
@@ -173,7 +184,14 @@ class FlatFileSystemModel(QAbstractTableModel):
                         else: return f"{size_bytes / (1024**3):.1f} GB"
                     except OSError:
                         return "N/A"
-                return ""
+                else:
+                    if item_path in self._directory_sizes:
+                         size_bytes = self._directory_sizes[item_path]
+                         if size_bytes < 1024: return f"{size_bytes} B"
+                         elif size_bytes < 1024**2: return f"{size_bytes / 1024:.1f} KB"
+                         elif size_bytes < 1024**3: return f"{size_bytes / (1024**2):.1f} MB"
+                         else: return f"{size_bytes / (1024**3):.1f} GB"
+                    return ""
             elif index.column() == 2:
                 if is_dir:
                     return "Folder"

@@ -11,6 +11,7 @@ from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from browser.flat_view import FlatFileView
+from app.task_queue_manager import Task, TaskType
 
 
 class PanelWidget(QWidget):
@@ -270,11 +271,6 @@ class FolderBrowser(QWidget):
                     break
                 widget = widget.parent()
             return False
-        elif event.type() == QEvent.Type.KeyPress:
-            if event.key() == Qt.Key.Key_Insert:
-                if self.active_panel_widget:
-                    self.active_panel_widget.toggle_insert_selection()
-                return True
         return super().eventFilter(source, event)
 
     def set_active_panel(self, panel_widget):
@@ -395,3 +391,19 @@ class FolderBrowser(QWidget):
     def navigate_to_path(self, path):
         if self.active_panel_widget:
             self.active_panel_widget.file_view.set_path(path)
+
+    def calculate_selected_directory_size(self):
+        # This method is now handled by ApplicationLogicHandler creating a task.
+        # We can remove it or leave it empty/deprecated.
+        pass
+
+    def update_directory_size(self, path, size):
+        for i in range(self.leftTabWidget.count()):
+            panel = self.leftTabWidget.widget(i)
+            if panel.file_view.get_current_path() == os.path.dirname(path):
+                 panel.file_view.model.update_directory_size(path, size)
+        
+        for i in range(self.rightTabWidget.count()):
+            panel = self.rightTabWidget.widget(i)
+            if panel.file_view.get_current_path() == os.path.dirname(path):
+                 panel.file_view.model.update_directory_size(path, size)

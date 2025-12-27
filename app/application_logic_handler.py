@@ -4,7 +4,7 @@ import logging
 from PyQt6.QtCore import QObject
 from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
-from app.task_queue_manager import Task, TaskType
+from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.action_logger import action_logger
 
 class ApplicationLogicHandler(QObject):
@@ -21,6 +21,8 @@ class ApplicationLogicHandler(QObject):
         self.settings_handler = settings_handler
         self.background_task_manager = background_task_manager
         self.task_queue_manager = task_queue_manager
+        
+        self.task_queue_manager.task_completed.connect(self._on_task_completed)
 
     def _handle_error(func):
         def wrapper(self, *args, **kwargs):
@@ -30,6 +32,12 @@ class ApplicationLogicHandler(QObject):
                 logging.exception(f"An unexpected error occurred in {func.__name__}: {e}")
                 show_error_message(self.main_window, translation_manager.translate("Global", "Error"), str(e))
         return wrapper
+
+    def _on_task_completed(self, task):
+        if task.type == TaskType.CALCULATE_SIZE and task.status == TaskStatus.FINISHED:
+            path = task.source_paths[0]
+            size = task.result
+            self.ui_state_provider.folder_browser.update_directory_size(path, size)
 
     @_handle_error
     def open_file_externally(self, file_path):
@@ -179,6 +187,13 @@ class ApplicationLogicHandler(QObject):
     @_handle_error
     def calculate_checksum(self, checked=False):
         self.dialog_handler.calculate_checksum()
+
+    @_handle_error
+    def calculate_directory_size(self, checked=False):
+        path = self.ui_state_provider.get_current_selected_path()
+        if path and os.path.isdir(path):
+            task = Task(TaskType.CALCULATE_SIZE, [path])
+            self.task_queue_manager.add_task(task)
 
     @_handle_error
     def new_tab(self, checked=False):
