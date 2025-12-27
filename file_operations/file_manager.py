@@ -403,3 +403,39 @@ class FileManager:
         except OSError as e:
             logging.exception(f"Error searching files in {root_path} with pattern {pattern}: {e}")
             raise FileManagerError(translation_manager.translate("FileManager", f"Error during file search: {e}"))
+
+    def create_link(self, source_path, link_path, is_hardlink=False):
+        try:
+            self._validate_path(source_path, must_exist=True, name="Source path")
+            if os.path.exists(link_path):
+                raise FileExistsError(translation_manager.translate("FileManager", f"Link path '{link_path}' already exists."))
+
+            if is_hardlink:
+                if os.path.isdir(source_path):
+                    raise ValueError(translation_manager.translate("FileManager", "Cannot create hard link to a directory."))
+                os.link(source_path, link_path)
+                return translation_manager.translate("FileManager", f"Hard link created: {link_path}")
+            else:
+                os.symlink(source_path, link_path)
+                return translation_manager.translate("FileManager", f"Symbolic link created: {link_path}")
+        except (ValueError, FileNotFoundError, FileExistsError) as e:
+            raise e
+        except OSError as e:
+            logging.exception(f"Error creating link from {source_path} to {link_path}: {e}")
+            raise FileManagerError(translation_manager.translate("FileManager", f"Error creating link: {e}"))
+
+    def modify_symbolic_link(self, link_path, new_target_path):
+        try:
+            self._validate_path(link_path, must_exist=True, name="Link path")
+            if not os.path.islink(link_path):
+                raise ValueError(translation_manager.translate("FileManager", f"Path '{link_path}' is not a symbolic link."))
+            self._validate_path(new_target_path, must_exist=True, name="New target path")
+
+            os.remove(link_path)
+            os.symlink(new_target_path, link_path)
+            return translation_manager.translate("FileManager", f"Symbolic link '{link_path}' modified to point to '{new_target_path}'")
+        except (ValueError, FileNotFoundError) as e:
+            raise e
+        except OSError as e:
+            logging.exception(f"Error modifying symbolic link {link_path}: {e}")
+            raise FileManagerError(translation_manager.translate("FileManager", f"Error modifying symbolic link: {e}"))

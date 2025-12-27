@@ -47,6 +47,8 @@ class MenuPanel(QObject):
     KEY_ADD_FAVORITE = "action.add_favorite"
     KEY_SHOW_FAVORITES = "action.show_favorites"
     KEY_CALCULATE_SIZE = "action.calculate_size"
+    KEY_CREATE_LINK = "action.create_link"
+    KEY_MODIFY_LINK = "action.modify_link"
 
     def __init__(self, main_window, toolbar: QToolBar, application_logic_handler: ApplicationLogicHandler, shortcuts_manager: ShortcutsManager):
         super().__init__(main_window)
@@ -237,6 +239,24 @@ class MenuPanel(QObject):
             add_to_toolbar=True
         )
         operations_menu.addAction(new_folder_action)
+        operations_menu.addSeparator()
+        
+        create_link_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Create Link"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Create a symbolic link"),
+            slot=self.application_logic_handler.create_link,
+            shortcut_key=self.KEY_CREATE_LINK
+        )
+        operations_menu.addAction(create_link_action)
+
+        modify_link_action = self._create_action(
+            visible_text=translation_manager.translate("MenuPanel", "Modify Link"),
+            tooltip_text=translation_manager.translate("MenuPanel", "Modify a symbolic link"),
+            slot=self.application_logic_handler.modify_symbolic_link,
+            shortcut_key=self.KEY_MODIFY_LINK
+        )
+        operations_menu.addAction(modify_link_action)
+        
         operations_menu.addSeparator()
         self.toolbar.addSeparator()
 

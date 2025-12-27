@@ -209,5 +209,13 @@ class ApplicationLogicHandler(QObject):
             self.ui_state_provider.folder_browser.active_panel_widget.path_edit.setFocus()
             self.ui_state_provider.folder_browser.active_panel_widget.path_edit.selectAll()
 
+    @_handle_error
+    def create_link(self, checked=False):
+        self.dialog_handler.create_link()
+
+    @_handle_error
+    def modify_symbolic_link(self, checked=False):
+        self.dialog_handler.modify_symbolic_link()
+
     def _get_active_panel_path(self):
         return self.ui_state_provider.get_active_panel_path()
