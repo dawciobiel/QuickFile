@@ -1,38 +1,75 @@
 from PyQt6 import uic
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QDialog, QFileDialog
 from app.translation_manager import translation_manager
 
-
 class SearchDialog(QDialog):
-    def __init__(self, parent=None, results=None):
+    def __init__(self, parent, start_path):
         super().__init__(parent)
         uic.loadUi("ui/search_dialog.ui", self)
-        self.setWindowTitle(translation_manager.translate("SearchDialog", "Search Results"))
         
-        self.results = results if results is not None else []
-
-        self._init_ui()
-
-    def _init_ui(self):
-        # Hide search input elements since we are only displaying results provided by MainWindow
-        self.search_in_label.setVisible(False)
-        self.path_label.setVisible(False)
-        self.search_input.setVisible(False)
-        self.search_button.setVisible(False)
+        self.startPathEdit.setText(start_path)
         
-        # Also hide the layouts containing them if possible, or just the widgets
-        # Accessing layouts by name from .ui isn't direct attribute access usually, 
-        # but hiding widgets is enough.
+        self._connect_signals()
+        self._translate_ui()
+        
+        # Set focus to file name input
+        self.fileNameEdit.setFocus()
 
-        if not self.results:
-            self.stackedWidget.setCurrentWidget(self.no_results_page)
-            self.no_results_label.setText(translation_manager.translate("SearchDialog", "No search results found."))
-        else:
-            self.stackedWidget.setCurrentWidget(self.results_page)
-            self.results_list_widget.addItems(self.results)
+    def _connect_signals(self):
+        self.searchButton.clicked.connect(self.accept)
+        self.cancelButton.clicked.connect(self.reject)
+        self.browsePathButton.clicked.connect(self._browse_path)
+        
+        # Enable/disable controls based on checkboxes
+        self.dateFromCheckbox.toggled.connect(self.dateFromEdit.setEnabled)
+        self.dateToCheckbox.toggled.connect(self.dateToEdit.setEnabled)
+        self.sizeFromCheckbox.toggled.connect(self.sizeFromSpinBox.setEnabled)
+        self.sizeFromCheckbox.toggled.connect(self.sizeFromUnitCombo.setEnabled)
+        self.sizeToCheckbox.toggled.connect(self.sizeToSpinBox.setEnabled)
+        self.sizeToCheckbox.toggled.connect(self.sizeToUnitCombo.setEnabled)
+        
+        # Permissions
+        self.permissionsCheckbox.toggled.connect(self._toggle_permissions)
 
-        # Configure button box
-        self.buttonBox.button(QDialogButtonBox.StandardButton.Close).setText(translation_manager.translate("SearchDialog", "Close"))
-        self.buttonBox.rejected.connect(self.reject)
-        self.buttonBox.accepted.connect(self.accept)
+    def _toggle_permissions(self, checked):
+        self.permOwnerEdit.setEnabled(checked)
+        self.permGroupEdit.setEnabled(checked)
+        self.permOthersEdit.setEnabled(checked)
+        self.suidCheckbox.setEnabled(checked)
+        self.sgidCheckbox.setEnabled(checked)
+        self.stickyCheckbox.setEnabled(checked)
+
+    def _translate_ui(self):
+        self.setWindowTitle(translation_manager.translate("SearchDialog", "Advanced Search"))
+        self.searchButton.setText(translation_manager.translate("Buttons", "Search"))
+        self.cancelButton.setText(translation_manager.translate("Buttons", "Cancel"))
+        # Add more translations as needed
+
+    def _browse_path(self):
+        directory = QFileDialog.getExistingDirectory(self, translation_manager.translate("SearchDialog", "Select Directory"), self.startPathEdit.text())
+        if directory:
+            self.startPathEdit.setText(directory)
+
+    def get_query(self):
+        # For now, we construct a simple query string based on file name
+        # In the future, we will return a complex dictionary with all criteria
+        return self.fileNameEdit.text()
+
+    def get_options(self):
+        # Return all search options
+        return {
+            "file_name": self.fileNameEdit.text(),
+            "file_name_case_sensitive": self.fileNameCaseSensitiveCheckbox.isChecked(),
+            "extension": self.extensionEdit.text(),
+            "extension_case_sensitive": self.extensionCaseSensitiveCheckbox.isChecked(),
+            "start_path": self.startPathEdit.text(),
+            "exclude_paths": self.excludePathsEdit.toPlainText().splitlines(),
+            "permissions_enabled": self.permissionsCheckbox.isChecked(),
+            "perm_owner": self.permOwnerEdit.text(),
+            "perm_group": self.permGroupEdit.text(),
+            "perm_others": self.permOthersEdit.text(),
+            "suid": self.suidCheckbox.isChecked(),
+            "sgid": self.sgidCheckbox.isChecked(),
+            "sticky": self.stickyCheckbox.isChecked(),
+            # Add other attributes here later
+        }

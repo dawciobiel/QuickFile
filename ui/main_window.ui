@@ -79,6 +79,28 @@
         </property>
        </layout>
       </widget>
+      <widget class="QWidget" name="search_tab">
+       <attribute name="title">
+        <string>Search Results</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="search_layout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+       </layout>
+      </widget>
      </widget>
     </item>
     <item>
