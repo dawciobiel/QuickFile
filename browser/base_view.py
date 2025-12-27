@@ -1,5 +1,6 @@
 import abc
 import os
+import logging
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from PyQt6.QtCore import QEvent, pyqtSignal, Qt, QModelIndex
 
@@ -53,6 +54,7 @@ class AbstractFileView(QWidget, metaclass=AbstractViewMeta):
         
         if parent_path != current_path:
             current_dir_name = os.path.basename(current_path)
+            logging.debug(f"AbstractFileView.go_up: Navigating to {parent_path}, selecting {current_dir_name}")
             self.set_path(parent_path, select_item_name=current_dir_name)
 
     @abc.abstractmethod

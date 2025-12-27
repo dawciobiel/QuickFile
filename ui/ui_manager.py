@@ -42,8 +42,8 @@ class UIManager:
     def connect_signals(self, app_logic_handler):
         self.folder_browser.file_selected.connect(app_logic_handler.open_file_externally)
         self.folder_browser.current_directory_changed.connect(app_logic_handler.update_status_bar_path)
-        self.menu_panel.go_up_requested.connect(app_logic_handler.ui_state_provider.folder_browser.go_up_directory)
-        self.menu_panel.refresh_requested.connect(app_logic_handler.ui_state_provider.folder_browser.refresh_all_views)
+        self.menu_panel.go_up_requested.connect(self.folder_browser.go_up_directory)
+        self.menu_panel.refresh_requested.connect(self.folder_browser.refresh_all_views)
 
     def load_panel_settings(self):
         self.folder_browser.load_panel_settings()

@@ -1,3 +1,4 @@
+import os
 import logging
 from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView
@@ -55,7 +56,6 @@ class FlatFileView(AbstractFileView):
         header.resizeSection(0, 300)
 
     def set_path(self, path, select_item_name=None):
-        logging.debug(f"FlatFileView.set_path: path={path}, select_item_name={select_item_name}")
         self.model.set_current_path(path)
         self.path_changed.emit(path)
         self.configure_columns()
@@ -64,12 +64,13 @@ class FlatFileView(AbstractFileView):
             for row in range(self.model.rowCount()):
                 index = self.model.index(row, 0)
                 file_name = self.model.fileName(index)
-                logging.debug(f"Checking row {row}: {file_name}")
                 if file_name == select_item_name:
-                    logging.debug(f"Found match: {file_name}")
                     self.view.setCurrentIndex(index)
                     self.view.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
                     break
+        else:
+            if self.model.rowCount() > 0:
+                self.view.setCurrentIndex(self.model.index(0, 0))
 
     def get_current_path(self):
         return self.model._current_path
@@ -85,7 +86,14 @@ class FlatFileView(AbstractFileView):
 
     def on_item_double_clicked(self, index):
         if self.model.isDir(index):
-            self.set_path(self.model.filePath(index))
+            target_path = self.model.filePath(index)
+            current_path = self.get_current_path()
+            
+            if os.path.abspath(target_path) == os.path.dirname(os.path.abspath(current_path)):
+                current_dir_name = os.path.basename(os.path.abspath(current_path))
+                self.set_path(target_path, select_item_name=current_dir_name)
+            else:
+                self.set_path(target_path)
         else:
             self.file_selected.emit(self.model.filePath(index))
 
