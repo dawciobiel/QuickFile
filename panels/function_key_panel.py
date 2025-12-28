@@ -19,7 +19,7 @@ class FunctionKeyPanel(QWidget):
         # F1 - Help (placeholder)
         btn_f1 = QPushButton(translation_manager.translate("FunctionKeyPanel", "F1 Help"))
         btn_f1.setToolTip(translation_manager.translate("FunctionKeyPanel", "Show help (not implemented)"))
-        btn_f1.clicked.connect(lambda: self.main_window.status_bar.showMessage(translation_manager.translate("FunctionKeyPanel", "F1: Help (not implemented)")))
+        btn_f1.clicked.connect(lambda: self.main_window.status_bar.showMessage(translation_manager.translate("KeyboardEventManager", "F1: Help (not implemented)")))
         self.layout.addWidget(btn_f1)
 
         # F2 - Rename

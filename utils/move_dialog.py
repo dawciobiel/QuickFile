@@ -10,7 +10,6 @@ class MoveDialog(QDialog):
         uic.loadUi("ui/file_operation_dialog.ui", self)
         self.setWindowTitle(translation_manager.translate("MoveDialog", "Move"))
 
-        # Set a minimum width for the dialog
         self.setMinimumWidth(600)
 
         if isinstance(source_paths, str):
@@ -21,6 +20,7 @@ class MoveDialog(QDialog):
         self.destination_path = destination_path
 
         self._init_options_ui()
+        self.retranslate_ui()
 
     def _init_options_ui(self):
         self.stackedWidget.setCurrentWidget(self.options_page)
@@ -28,23 +28,27 @@ class MoveDialog(QDialog):
         if len(self.source_paths) == 1:
             self.source_path_label.setText(self.source_paths[0])
         else:
-            self.source_path_label.setText(translation_manager.translate("MoveDialog", f"{len(self.source_paths)} items selected"))
+            self.source_path_label.setText(translation_manager.translate("MoveDialog", "{count} items selected").format(count=len(self.source_paths)))
             
         self.destination_path_label.setText(self.destination_path)
 
         self.source_path_label.setWordWrap(True)
         self.destination_path_label.setWordWrap(True)
 
-        self.overwrite_checkbox.setText(translation_manager.translate("MoveDialog", "Overwrite existing files"))
         self.preserve_timestamp_checkbox.setVisible(False)
 
-        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "OK"))
-        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("Buttons", "Cancel"))
-        
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
 
         self.adjustSize()
+
+    def retranslate_ui(self):
+        self.source_label_title.setText(translation_manager.translate("MoveDialog", "Source:"))
+        self.destination_label_title.setText(translation_manager.translate("MoveDialog", "Destination:"))
+        self.overwrite_checkbox.setText(translation_manager.translate("MoveDialog", "Overwrite existing files"))
+        
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "OK"))
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("Buttons", "Cancel"))
 
     def get_options(self):
         return {

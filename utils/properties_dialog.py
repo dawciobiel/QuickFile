@@ -1,5 +1,5 @@
 from PyQt6 import uic
-from PyQt6.QtWidgets import QDialog, QLabel, QTextEdit
+from PyQt6.QtWidgets import QDialog, QLabel, QTextEdit, QDialogButtonBox
 from PyQt6.QtCore import Qt
 from app.translation_manager import translation_manager
 
@@ -10,10 +10,12 @@ class PropertiesDialog(QDialog):
         self.setWindowTitle(translation_manager.translate("PropertiesDialog", "Properties"))
 
         self._init_ui(properties)
+        self.retranslate_ui()
 
     def _init_ui(self, properties):
         if properties:
             for key, value in properties.items():
+                translated_key = translation_manager.translate("PropertiesDialog", key)
                 if key == 'Full path':
                     path_text_edit = QTextEdit()
                     path_text_edit.setReadOnly(True)
@@ -21,10 +23,12 @@ class PropertiesDialog(QDialog):
                     path_text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
                     path_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
                     path_text_edit.setFixedHeight(60)
-                    self.formLayout.addRow(QLabel(f"{key}:"), path_text_edit)
+                    self.formLayout.addRow(QLabel(f"{translated_key}:"), path_text_edit)
                 else:
                     label_value = QLabel(str(value))
                     label_value.setWordWrap(True)
-                    self.formLayout.addRow(QLabel(f"{key}:"), label_value)
+                    self.formLayout.addRow(QLabel(f"{translated_key}:"), label_value)
 
-        # ButtonBox is already connected in the .ui file
+    def retranslate_ui(self):
+        ok_button = self.buttonBox.button(QDialogButtonBox.StandardButton.Ok)
+        ok_button.setText(translation_manager.translate("Buttons", "OK"))
