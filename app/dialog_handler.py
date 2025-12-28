@@ -78,10 +78,13 @@ class DialogHandler:
     def _compare_files(self, file1_path, file2_path):
         action_logger.log_action("compare_files", file1=file1_path, file2=file2_path)
         are_identical = self.file_comparator.compare_files(file1_path, file2_path)
+        title = translation_manager.translate("DialogHandler", "File Comparison Result")
         if are_identical:
-            QMessageBox.information(self.main_window, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are identical.")
+            message = translation_manager.translate("DialogHandler", "Files '{file1}' and '{file2}' are identical.").format(file1=os.path.basename(file1_path), file2=os.path.basename(file2_path))
+            QMessageBox.information(self.main_window, title, message)
         else:
-            QMessageBox.information(self.main_window, "File Comparison Result", f"Files '{os.path.basename(file1_path)}' and '{os.path.basename(file2_path)}' are different.")
+            message = translation_manager.translate("DialogHandler", "Files '{file1}' and '{file2}' are different.").format(file1=os.path.basename(file1_path), file2=os.path.basename(file2_path))
+            QMessageBox.information(self.main_window, title, message)
 
     def _compare_directories(self, dir1_path, dir2_path):
         action_logger.log_action("compare_dirs", dir1=dir1_path, dir2=dir2_path)
@@ -110,7 +113,7 @@ class DialogHandler:
             base_dir = self.ui_state_provider.get_active_panel_path()
         else:
             base_dir = os.path.dirname(paths_to_archive[0])
-        archive_name, ok = QInputDialog.getText(self.main_window, "Create Archive", "Archive name (without extension):")
+        archive_name, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "Create Archive"), translation_manager.translate("DialogHandler", "Archive name (without extension):"))
         if ok and archive_name:
             archive_path = os.path.join(base_dir, archive_name + ".zip")
             action_logger.log_action("create_archive", sources=paths_to_archive, destination=archive_path)
@@ -124,7 +127,7 @@ class DialogHandler:
         selected_archive_path = self.ui_state_provider.get_current_selected_path()
         if not selected_archive_path:
             raise ValueError("No archive file selected.")
-        extract_path, ok = QInputDialog.getText(self.main_window, "Extract Archive", "Destination path:", text=os.path.dirname(selected_archive_path))
+        extract_path, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "Extract Archive"), translation_manager.translate("DialogHandler", "Destination path:"), text=os.path.dirname(selected_archive_path))
         if ok and extract_path:
             action_logger.log_action("extract_archive", source=selected_archive_path, destination=extract_path)
             
@@ -193,7 +196,7 @@ class DialogHandler:
     def create_new_file(self, current_dir=None, checked=False):
         if not current_dir:
             current_dir = self.ui_state_provider.get_active_panel_path()
-        name, ok = QInputDialog.getText(self.main_window, "New File", "File name:")
+        name, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "New File"), translation_manager.translate("DialogHandler", "File name:"))
         if ok and name:
             action_logger.log_action("create_file", path=os.path.join(current_dir, name))
             message = self.file_manager.create_file(current_dir, name)
@@ -203,7 +206,7 @@ class DialogHandler:
     def create_new_directory(self, current_dir=None, checked=False):
         if not current_dir:
             current_dir = self.ui_state_provider.get_active_panel_path()
-        name, ok = QInputDialog.getText(self.main_window, "New Folder", "Folder name:")
+        name, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "New Folder"), translation_manager.translate("DialogHandler", "Folder name:"))
         if ok and name:
             action_logger.log_action("create_directory", path=os.path.join(current_dir, name))
             message = self.file_manager.create_directory(current_dir, name)
@@ -272,7 +275,7 @@ class DialogHandler:
         if not selected_path:
             raise ValueError("No file/folder selected for renaming.")
         old_name = os.path.basename(selected_path)
-        new_name, ok = QInputDialog.getText(self.main_window, "Rename", "New name:", text=old_name)
+        new_name, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "Rename"), translation_manager.translate("DialogHandler", "New name:"), text=old_name)
         if ok and new_name:
             action_logger.log_action("rename", path=selected_path, new_name=new_name)
             message = self.file_manager.rename_item(selected_path, new_name)

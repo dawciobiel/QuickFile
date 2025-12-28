@@ -10,6 +10,7 @@ from app.settings_manager import SettingsManager
 from app.shortcuts_manager import ShortcutsManager
 from app.task_queue_manager import TaskQueueManager, Task, TaskType
 from app.theme_manager import ThemeManager
+from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
 from favorites.favorites_manager import FavoritesManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
@@ -113,6 +114,13 @@ class MainWindow(QMainWindow):
         
         initial_theme = self.settings_manager.get_setting("theme", "dark")
         self.theme_manager.apply_theme(initial_theme)
+        
+        self.retranslate_ui()
+
+    def retranslate_ui(self):
+        self.mainTabWidget.setTabText(self.mainTabWidget.indexOf(self.browser_tab), translation_manager.translate("MainWindow", "Browser"))
+        self.mainTabWidget.setTabText(self.mainTabWidget.indexOf(self.queue_tab), translation_manager.translate("MainWindow", "Queue"))
+        self.mainTabWidget.setTabText(self.mainTabWidget.indexOf(self.search_tab), translation_manager.translate("MainWindow", "Search Results"))
 
     def on_task_added(self, task: Task):
         task.directory_changed.connect(self.ui_manager.folder_browser.refresh_path)
@@ -123,9 +131,7 @@ class MainWindow(QMainWindow):
                 dialog = ChecksumResultDialog(self, "Checksum Result", str(task.result))
                 dialog.exec()
         elif task.type == TaskType.SEARCH and task.result is not None:
-            # task.result is a list of file paths
             self.search_results_panel.display_results(task.result)
-            # Switch to search tab
             self.mainTabWidget.setCurrentWidget(self.search_tab)
 
     def load_settings(self):
