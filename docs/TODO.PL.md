@@ -6,6 +6,8 @@
 
 - [ ] **Architektura pluginów**: Zaprojektować i zaimplementować system wtyczek, który w przyszłości pozwoli na łatwe dodawanie obsługi nowych formatów archiwów (np. tworzenie RAR) i innych funkcjonalności.
 
+- [ ] **Plugin do obsługi linków symbolicznych**: Przenieść obecną funkcjonalność tworzenia i modyfikowania linków symbolicznych do dedykowanego pluginu. Plugin powinien być dostosowany do różnych systemów operacyjnych (Linux, macOS, Windows), oferując odpowiednie opcje i interfejs dla każdego z nich.
+
 - [ ] **Odtwarzanie logów akcji**: Stworzyć narzędzie lub tryb w aplikacji, który potrafi odtworzyć zanonimizowany plik `actions.log`, symulując działania użytkownika w celu debugowania.
 
 - [ ] **Zarządzanie kolejką zadań**: Dodać możliwość czyszczenia listy "Queue" z zadań, które mają status "Ukończony" lub "Błąd".

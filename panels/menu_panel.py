@@ -130,12 +130,6 @@ class MenuPanel(QObject):
             slot=self.application_logic_handler.close_tab,
             shortcut_key=self.KEY_CLOSE_TAB
         )
-        compare_action = self._create_action(
-            visible_text=translation_manager.translate("MenuPanel", "Compare"),
-            tooltip_text=translation_manager.translate("MenuPanel", "Compare selected items"),
-            slot=self.application_logic_handler.compare_selected_items,
-            shortcut_key=self.KEY_COMPARE
-        )
         properties_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "Properties"),
             tooltip_text=translation_manager.translate("MenuPanel", "Show properties of selected item"),
@@ -155,7 +149,6 @@ class MenuPanel(QObject):
         file_menu.addAction(new_tab_action)
         file_menu.addAction(close_tab_action)
         file_menu.addSeparator()
-        file_menu.addAction(compare_action)
         file_menu.addAction(properties_action)
         file_menu.addSeparator()
         file_menu.addAction(exit_action)
@@ -275,9 +268,6 @@ class MenuPanel(QObject):
         copy_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Copy"), tooltip_text=translation_manager.translate("MenuPanel", "Copy selected items"), icon=QStyle.StandardPixmap.SP_FileLinkIcon, slot=self.application_logic_handler.copy_selected_item, shortcut_key=self.KEY_COPY, add_to_toolbar=True)
         operations_menu.addAction(copy_action)
 
-        paste_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Paste"), tooltip_text=translation_manager.translate("MenuPanel", "Paste items from clipboard"), icon=QStyle.StandardPixmap.SP_FileIcon, slot=self.application_logic_handler.paste_item_to_current_dir, shortcut_key=self.KEY_PASTE, add_to_toolbar=True)
-        operations_menu.addAction(paste_action)
-
         move_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Move"), tooltip_text=translation_manager.translate("MenuPanel", "Move selected items"), icon=QStyle.StandardPixmap.SP_DirLinkIcon, slot=self.application_logic_handler.move_selected_item, shortcut_key=self.KEY_MOVE, add_to_toolbar=True)
         operations_menu.addAction(move_action)
 
@@ -294,6 +284,7 @@ class MenuPanel(QObject):
 
         sync_action = self._create_action(visible_text=translation_manager.translate("MenuPanel", "Synchronize"), tooltip_text=translation_manager.translate("MenuPanel", "Synchronize directories"), icon=QStyle.StandardPixmap.SP_DirLinkIcon, slot=self.application_logic_handler.synchronize_directories, shortcut_key=self.KEY_SYNCHRONIZE, add_to_toolbar=True)
         operations_menu.addAction(sync_action)
+        operations_menu.addSeparator()
 
         checksum_action = self._create_action(
             visible_text=translation_manager.translate("MenuPanel", "Calculate Checksum"),
