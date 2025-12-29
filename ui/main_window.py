@@ -164,22 +164,25 @@ class MainWindow(QMainWindow):
 
     def on_task_finished(self, task: Task):
         """This slot is called when a task finishes, regardless of status (success, error, cancelled)."""
-        if task.id in self.active_task_panels:
-            for panel in self.active_task_panels[task.id]:
-                # Check if the panel (widget) has not been deleted
-                if sip.isdeleted(panel):
-                    continue
-                
-                # Decrement busy counter and hide spinner if it's the last task for this panel
-                current_count = self.panel_busy_counters.get(panel, 1)
-                if current_count <= 1:
-                    self.ui_manager.folder_browser.set_tab_busy_indicator(panel, False)
-                    if panel in self.panel_busy_counters:
-                        del self.panel_busy_counters[panel]
-                else:
-                    self.panel_busy_counters[panel] = current_count - 1
+        if task.id not in self.active_task_panels:
+            return
 
-            del self.active_task_panels[task.id]
+        panels_for_this_task = self.active_task_panels.pop(task.id)
+
+        for panel in panels_for_this_task:
+            if sip.isdeleted(panel):
+                self.panel_busy_counters.pop(panel, None)
+                continue
+
+            if panel not in self.panel_busy_counters:
+                self.ui_manager.folder_browser.set_tab_busy_indicator(panel, False)
+                continue
+
+            self.panel_busy_counters[panel] -= 1
+
+            if self.panel_busy_counters[panel] <= 0:
+                self.ui_manager.folder_browser.set_tab_busy_indicator(panel, False)
+                del self.panel_busy_counters[panel]
 
     def show_status_message(self, message):
         self.statusBar().showMessage(message, 5000)  # Show for 5 seconds
