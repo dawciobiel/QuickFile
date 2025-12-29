@@ -45,7 +45,7 @@ QTableView::item {
 }
 
 QLineEdit[activePanel="true"] {
-    background-color: @@selection_background@@;
+    background-color: @@active_panel_border@@;
     color: @@selection_foreground@@;
     border: 1px solid @@border@@;
     padding: 2px;
@@ -134,7 +134,7 @@ QDialogButtonBox QPushButton:hover, QMessageBox QPushButton:hover {
 */
 
 QTableView[activePanel="true"], QTreeView[activePanel="true"] {
-    border: 2px solid @@selection_background@@;
+    border: 2px solid @@active_panel_border@@;
 }
 
 QTableView[activePanel="false"], QTreeView[activePanel="false"] {

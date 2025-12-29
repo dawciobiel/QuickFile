@@ -6,5 +6,7 @@
     "accent": "#3498db",
     "border": "#2c3e50",
     "selection_foreground": "#FFFFFF",
-    "selection_background": "#2980b9"
+    "selection_background": "#2980b9",
+    "active_panel_border": "#e74c3c",
+    "inactive_selection_background": "#4a6278"
 }
