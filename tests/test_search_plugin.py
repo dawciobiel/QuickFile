@@ -8,7 +8,7 @@ def load_search_plugin_class():
         os.path.dirname(__file__), 
         "..", 
         "plugins", 
-        "com.quickfile", 
+        "org.quickfile",
         "search_standard", 
         "1.0.0", 
         "plugin.py"
