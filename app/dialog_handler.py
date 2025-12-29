@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 
 from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 
@@ -14,11 +15,11 @@ from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager, FileManagerError
 from file_operations.properties_manager import get_file_properties
-from utils.create_link_dialog import CreateLinkDialog
-from utils.favorites_dialog import FavoritesDialog
 from utils.compare_dialog import CompareDialog
 from utils.copy_dialog import CopyDialog
+from utils.create_link_dialog import CreateLinkDialog
 from utils.delete_dialog import DeleteDialog
+from utils.favorites_dialog import FavoritesDialog
 from utils.modify_link_dialog import ModifyLinkDialog
 from utils.move_dialog import MoveDialog
 from utils.properties_dialog import PropertiesDialog
@@ -26,7 +27,6 @@ from utils.search_dialog import SearchDialog
 from utils.settings_dialog import SettingsDialog
 from utils.shortcuts_dialog import ShortcutsDialog
 from utils.sync_dialog import SyncDialog
-from utils.checksum_dialog import ChecksumDialog
 
 
 class DialogHandler:
@@ -43,6 +43,34 @@ class DialogHandler:
         self.settings_manager = settings_manager
         self.background_task_manager = background_task_manager
         self.task_queue_manager = task_queue_manager
+
+    def show_file_viewer_dialog(self, checked=False):
+        selected_path = self.ui_state_provider.get_current_selected_path()
+        if not selected_path or not os.path.isfile(selected_path):
+            raise ValueError(translation_manager.translate("MenuPanel", "No file selected or selected item is a directory."))
+
+        action_logger.log_action("view_file", path=selected_path)
+
+        use_internal = self.settings_manager.get_setting("use_internal_viewer", True)
+
+        if use_internal:
+            viewer_plugin = self.task_queue_manager.plugin_manager.get_viewer_for_file(selected_path)
+            if viewer_plugin:
+                viewer_plugin.view_file(selected_path, self.main_window)
+            else:
+                QMessageBox.warning(self.main_window, "Viewer Not Found", "No suitable built-in viewer plugin found for this file type.")
+        else:
+            command = self.settings_manager.get_setting("viewer_command")
+            if not command:
+                QMessageBox.warning(self.main_window, "Command Not Set", "External viewer command is not configured in settings.")
+                return
+
+            try:
+                # Replace %f with the selected file path
+                full_command = command.replace("%f", f'"{selected_path}"')
+                subprocess.Popen(full_command, shell=True)
+            except Exception as e:
+                QMessageBox.critical(self.main_window, "Error", f"Failed to launch external viewer:\n{e}")
 
     def show_properties_dialog(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()

@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 
+from PyQt6.QtWidgets import QWidget
+
+
 class FileOperationPlugin(ABC):
     """
     Base interface for all file operation plugins.
@@ -71,5 +74,27 @@ class SearchPlugin(FileOperationPlugin):
         """
         Searches for files matching the query starting from root_path.
         Returns a list of matching file paths.
+        """
+        pass
+
+
+class ViewerPlugin(FileOperationPlugin):
+    """
+    Interface for plugins that provide a file viewing capability.
+    """
+
+    @abstractmethod
+    def can_view(self, file_path: str) -> bool:
+        """
+        Returns True if the plugin can handle viewing this file type.
+        This can be based on extension, mime type, or file content.
+        """
+        pass
+
+    @abstractmethod
+    def view_file(self, file_path: str, parent: QWidget):
+        """
+        Opens a non-modal dialog or a new window to view the file.
+        The parent widget is provided to ensure proper window management.
         """
         pass
