@@ -1,11 +1,8 @@
 import logging
 import os
 import shutil
-
 import send2trash
-
 from app.translation_manager import translation_manager
-
 
 class FileManagerError(Exception):
     pass
@@ -47,7 +44,7 @@ class FileManager:
     def _copy_file_with_progress(self, src, dst, progress_callback=None, total_size=0, copied_so_far=0, task_context=None, task=None):
         try:
             # Use a larger buffer size to make the dual progress bar more visible
-            buffer_size = 4 * 1024 * 1024  # 4MB
+            buffer_size = 4 * 1024 * 1024 # 4MB
             bytes_read = copied_so_far
             bytes_written = copied_so_far
 
@@ -58,11 +55,11 @@ class FileManager:
                             if task_context.is_cancelled:
                                 raise OperationCancelledError("Operation cancelled by user.")
                             task_context.wait_if_paused()
-
+                        
                         buf = fsrc.read(buffer_size)
                         if not buf:
                             break
-
+                        
                         # Update read progress
                         bytes_read += len(buf)
                         if progress_callback and total_size > 0:
@@ -71,7 +68,7 @@ class FileManager:
                             progress_callback.emit((read_pct, write_pct))
 
                         fdst.write(buf)
-
+                        
                         # Update write progress
                         bytes_written += len(buf)
                         if progress_callback and total_size > 0:
@@ -296,7 +293,7 @@ class FileManager:
                     shutil.rmtree(item_path)
                 else:
                     os.remove(item_path)
-
+            
             if task:
                 task.directory_changed.emit(source_dir)
 
@@ -308,6 +305,10 @@ class FileManager:
             raise FileManagerError(translation_manager.translate("FileManager", f"Error deleting item: {e}"))
 
     def delete_items_batch(self, item_paths, move_to_trash=True, progress_callback=None, task_context=None, task=None):
+        affected_dirs = set()
+        for path in item_paths:
+            affected_dirs.add(os.path.dirname(path))
+
         if move_to_trash:
             total_items = len(item_paths)
             for i, path in enumerate(item_paths):
@@ -320,6 +321,11 @@ class FileManager:
                 
                 if progress_callback:
                     progress_callback.emit(int((i + 1) / total_items * 100))
+            
+            if task:
+                for dir_path in affected_dirs:
+                    task.directory_changed.emit(dir_path)
+            
             return "Items moved to trash."
 
         try:
@@ -348,8 +354,8 @@ class FileManager:
                     pass
             
             if task:
-                for path in item_paths:
-                    task.directory_changed.emit(os.path.dirname(path))
+                for dir_path in affected_dirs:
+                    task.directory_changed.emit(dir_path)
 
             return "Items permanently deleted."
 
