@@ -74,6 +74,10 @@ QComboBox::drop-down {
     border-left-style: solid;
 }
 
+QComboBox::down-arrow {
+    image: url(resources/arrow_down_dark.png);
+}
+
 QComboBox QAbstractItemView {
     border: 1px solid @@border@@;
     selection-background-color: @@selection_background@@;
