@@ -29,7 +29,7 @@
      </widget>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>1</number>
+          <number>0</number>
       </property>
       <widget class="QWidget" name="general_page">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -76,26 +76,37 @@
           <property name="title">
            <string>External Editors</string>
           </property>
-          <layout class="QFormLayout" name="formLayout_2">
-           <item row="0" column="0">
-            <widget class="QLabel" name="viewer_label">
-             <property name="text">
-              <string>Viewer (F3):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="viewer_command_edit"/>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="editor_label">
-             <property name="text">
-              <string>Editor (F4):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="editor_command_edit"/>
+             <layout class="QVBoxLayout" name="verticalLayout_12">
+                 <item>
+                     <widget class="QCheckBox" name="use_internal_viewer_checkbox">
+                         <property name="text">
+                             <string>Use built-in viewer (F3)</string>
+                         </property>
+                     </widget>
+                 </item>
+                 <item>
+                     <layout class="QFormLayout" name="formLayout_2">
+                         <item row="0" column="0">
+                             <widget class="QLabel" name="viewer_label">
+                                 <property name="text">
+                                     <string>External Viewer (F3):</string>
+                                 </property>
+                             </widget>
+                         </item>
+                         <item row="0" column="1">
+                             <widget class="QLineEdit" name="viewer_command_edit"/>
+                         </item>
+                         <item row="1" column="0">
+                             <widget class="QLabel" name="editor_label">
+                                 <property name="text">
+                                     <string>Editor (F4):</string>
+                                 </property>
+                             </widget>
+                         </item>
+                         <item row="1" column="1">
+                             <widget class="QLineEdit" name="editor_command_edit"/>
+                         </item>
+                     </layout>
            </item>
           </layout>
          </widget>

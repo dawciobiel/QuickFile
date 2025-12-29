@@ -1,11 +1,14 @@
-import os
+import importlib.util
 import json
 import logging
-import importlib.util
+import os
 import shutil
+import sys
+
 from packaging.version import Version
 
-from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin
+from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin
+
 
 class PluginInfo:
     """Holds metadata and the loaded class for a specific plugin version."""
@@ -25,28 +28,29 @@ class PluginInfo:
 
 class PluginManager:
     def __init__(self):
+        self.project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         self.user_plugins_dir = os.path.join(os.path.expanduser("~"), ".config", "QuickFile", "plugins")
-        self.bundled_plugins_dir = os.path.join(os.path.dirname(__file__), "..", "plugins")
+        self.bundled_plugins_dir = os.path.join(self.project_root, "plugins")
         os.makedirs(self.user_plugins_dir, exist_ok=True)
         
         self.registry = {
             "archive": {},
             "checksum": {},
-            "search": {}
+            "search": {},
+            "viewer": {}
         }
         
         self._install_bundled_plugins()
         self.scan_and_load_plugins()
 
     def _install_bundled_plugins(self):
-        """Copies bundled plugins to the user's config directory if they don't exist."""
         if not os.path.isdir(self.bundled_plugins_dir):
             return
         
-        # Bundled structure: plugins/<groupId>/<artifactId>/<version>
         for group_id in os.listdir(self.bundled_plugins_dir):
             group_src = os.path.join(self.bundled_plugins_dir, group_id)
-            if not os.path.isdir(group_src): continue
+            if not os.path.isdir(group_src) or not group_id.startswith("org."):
+                continue
             
             for artifact_id in os.listdir(group_src):
                 artifact_src = os.path.join(group_src, artifact_id)
@@ -68,7 +72,10 @@ class PluginManager:
         if not os.path.isdir(self.user_plugins_dir):
             return
 
-        # Structure: plugins/<groupId>/<artifactId>/<version>
+        # Add project root to sys.path to allow plugins to import app modules
+        if self.project_root not in sys.path:
+            sys.path.insert(0, self.project_root)
+
         for group_id in os.listdir(self.user_plugins_dir):
             group_path = os.path.join(self.user_plugins_dir, group_id)
             if not os.path.isdir(group_path): continue
@@ -100,12 +107,10 @@ class PluginManager:
                         self.registry[plugin_type][full_id].append(plugin_info)
                         logging.info(f"Successfully loaded plugin: {full_id} v{version} (type: {plugin_type})")
                 except Exception as e:
-                    logging.error(f"Failed to load plugin from {version_path}: {e}")
+                    logging.error(f"Failed to load plugin from {version_path}: {e}", exc_info=True)
         
-        # Sort versions for each artifact in each type registry
-        full_id = f"{group_id}.{artifact_id}"
         for plugin_type in self.registry:
-            if full_id in self.registry[plugin_type]:
+            for full_id in self.registry[plugin_type]:
                 self.registry[plugin_type][full_id].sort(key=lambda p: p.version, reverse=True)
 
     def _load_plugin(self, group_id, artifact_id, version, version_path):
@@ -122,8 +127,7 @@ class PluginManager:
             raise ValueError("'entry_point' or 'class_name' missing in metadata.json")
 
         module_path = os.path.join(version_path, entry_point)
-        # Unique module name to avoid collisions
-        module_name = f"plugins.{group_id}.{artifact_id}.{version}.{entry_point.replace('.py', '')}"
+        module_name = f"quickfile.plugins.{group_id}_{artifact_id}_{version}".replace('.', '_')
 
         spec = importlib.util.spec_from_file_location(module_name, module_path)
         module = importlib.util.module_from_spec(spec)
@@ -161,3 +165,17 @@ class PluginManager:
                 if versions:
                     plugins.append(versions[0].get_instance())
         return plugins
+
+    def get_viewer_plugins(self) -> list[ViewerPlugin]:
+        plugins = []
+        if "viewer" in self.registry:
+            for artifact_id, versions in self.registry["viewer"].items():
+                if versions:
+                    plugins.append(versions[0].get_instance())
+        return plugins
+
+    def get_viewer_for_file(self, file_path: str) -> ViewerPlugin | None:
+        for plugin in self.get_viewer_plugins():
+            if plugin.can_view(file_path):
+                return plugin
+        return None
