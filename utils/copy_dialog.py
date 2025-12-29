@@ -1,9 +1,10 @@
-import os
 from PyQt6 import uic
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog
-from app.translation_manager import translation_manager
+
 from app.task_queue_manager import Task, TaskType, TaskStatus
+from app.translation_manager import translation_manager
+from ui.dual_progress_bar import DualProgressBar
+
 
 class CopyDialog(QDialog):
     def __init__(self, parent, source_paths, destination_path, task_queue_manager, background_task_manager):
@@ -23,10 +24,21 @@ class CopyDialog(QDialog):
             self.source_paths = source_paths
             
         self.destination_path = destination_path
-        
+
+        self._replace_progress_bar()
         self._init_ui()
         self._connect_signals()
         self.retranslate_ui()
+
+    def _replace_progress_bar(self):
+        # Replace the standard QProgressBar from UI with DualProgressBar
+        layout = self.progress_page.layout()
+        index = layout.indexOf(self.progressBar)
+        layout.removeWidget(self.progressBar)
+        self.progressBar.deleteLater()
+
+        self.progressBar = DualProgressBar()
+        layout.insertWidget(index, self.progressBar)
 
     def _init_ui(self):
         self.stackedWidget.setCurrentWidget(self.options_page)
@@ -76,9 +88,17 @@ class CopyDialog(QDialog):
         self.task = Task(TaskType.COPY, self.source_paths, self.destination_path, self.get_options())
         
         self.task_queue_manager.add_task(self.task)
-        
-        self.task.progress_changed.connect(self.progressBar.setValue)
+
+        self.task.progress_changed.connect(self.update_progress)
         self.task.status_changed.connect(self.on_task_status_changed)
+
+    def update_progress(self, value):
+        if isinstance(value, tuple):
+            read_val, write_val = value
+            self.progressBar.setReadValue(read_val)
+            self.progressBar.setValue(write_val)
+        else:
+            self.progressBar.setValue(value)
 
     def queue_operation(self):
         self.accept()
@@ -87,7 +107,7 @@ class CopyDialog(QDialog):
         hide_text = translation_manager.translate("Buttons", "Hide")
         
         if self.cancel_button.text() == hide_text:
-            self.accept()  # Just close the dialog, don't interrupt the task
+            self.accept()
             return
 
         if self.task:
