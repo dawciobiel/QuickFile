@@ -108,6 +108,7 @@ class MainWindow(QMainWindow):
 
         self.task_queue_manager.task_added.connect(self.on_task_added)
         self.task_queue_manager.task_completed.connect(self.on_task_completed)
+        self.ui_manager.folder_browser.status_message_requested.connect(self.show_status_message)
 
         self.shortcuts_manager.apply_shortcuts()
         self.load_settings()
@@ -133,6 +134,11 @@ class MainWindow(QMainWindow):
         elif task.type == TaskType.SEARCH and task.result is not None:
             self.search_results_panel.display_results(task.result)
             self.mainTabWidget.setCurrentWidget(self.search_tab)
+        
+        self.ui_manager.folder_browser.handle_task_completion(task)
+
+    def show_status_message(self, message):
+        self.statusBar().showMessage(message, 5000)  # Show for 5 seconds
 
     def load_settings(self):
         self.settings_manager.load_window_settings(self)
