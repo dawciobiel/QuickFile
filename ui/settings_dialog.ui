@@ -29,7 +29,7 @@
      </widget>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="general_page">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -189,6 +189,32 @@
             <widget class="QCheckBox" name="show_gid_checkbox">
              <property name="text">
               <string>Show GID Column</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="dynamic_refresh_group">
+          <property name="title">
+           <string>Dynamic Refresh</string>
+          </property>
+          <layout class="QFormLayout" name="formLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="refresh_interval_label">
+             <property name="text">
+              <string>Refresh interval (ms):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QSpinBox" name="refresh_interval_spinbox">
+             <property name="maximum">
+              <number>60000</number>
+             </property>
+             <property name="singleStep">
+              <number>100</number>
              </property>
             </widget>
            </item>

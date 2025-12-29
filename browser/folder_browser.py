@@ -162,6 +162,7 @@ class PanelWidget(QWidget):
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
+    status_message_requested = pyqtSignal(str)
 
     def __init__(self, settings_manager: SettingsManager = None, theme_manager: ThemeManager = None, parent=None):
         super().__init__(parent)
@@ -177,7 +178,10 @@ class FolderBrowser(QWidget):
         self._paths_to_refresh = set()
         self._refresh_timer = QTimer(self)
         self._refresh_timer.setSingleShot(True)
-        self._refresh_timer.setInterval(200)
+        
+        refresh_interval = self.settings_manager.get_setting("dynamic_refresh_interval", 2000)
+        self._refresh_timer.setInterval(refresh_interval)
+
         self._refresh_timer.timeout.connect(self._do_refresh)
         
         self.load_panel_settings()
@@ -407,3 +411,32 @@ class FolderBrowser(QWidget):
             panel = self.rightTabWidget.widget(i)
             if panel.file_view.get_current_path() == os.path.dirname(path):
                  panel.file_view.model.update_directory_size(path, size)
+
+    def handle_task_completion(self, task: Task):
+        """
+        Slot to handle completed tasks from the TaskQueueManager.
+        Checks if any open tabs are in a now-deleted directory.
+        """
+        if task.type != TaskType.DELETE:
+            return
+
+        logging.debug(f"FolderBrowser handling completed DELETE task: {task.id}")
+
+        all_panels = [self.leftTabWidget.widget(i) for i in range(self.leftTabWidget.count())] + \
+                     [self.rightTabWidget.widget(i) for i in range(self.rightTabWidget.count())]
+
+        for panel in all_panels:
+            current_path = panel.file_view.get_current_path()
+            if not os.path.exists(current_path):
+                logging.info(f"Path no longer exists: {current_path}. Navigating up.")
+                
+                # Navigate up to the first existing parent
+                parent_path = current_path
+                while not os.path.exists(parent_path) and parent_path != os.path.dirname(parent_path):
+                    parent_path = os.path.dirname(parent_path)
+                
+                panel.file_view.set_path(parent_path)
+                
+                # Emit a signal to show a message in the status bar
+                message = translation_manager.translate("FolderBrowser", "Directory no longer exists. Navigated up.")
+                self.status_message_requested.emit(message)
