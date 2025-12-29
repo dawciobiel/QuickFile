@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
-#==============================================================================
-# unmount-slowfs.sh
+# ==============================================================================
+# Project: QuickFile
+# Script: unmount-slowfs.sh
+# Description: Unmounts the slow SSHFS-based filesystem created by mount-slowfs.sh.
 #
+# Author: Dawid Bielecki "dawciobiel"
+# GitHub: https://github.com/dawciobiel/QuickFile
+# License: GPL 3.0
+# Date: 2025-12-24
+# ==============================================================================
+
 # DESCRIPTION:
 #   Unmounts the slow SSHFS-based filesystem created by mount-slowfs.sh.
 #
@@ -13,17 +21,9 @@
 #
 # REQUIREMENTS:
 #   - fusermount (Linux)
-#
-# AUTHOR:
-#   dawciobiel (https://github.com/dawciobiel)
-#
-# CREATED:
-#   2025-12-24
-#==============================================================================
 
 MOUNT_POINT="${1:-slowfs}"
 
 fusermount -u "$MOUNT_POINT"
 
 echo "Unmounted slow filesystem: $MOUNT_POINT"
-

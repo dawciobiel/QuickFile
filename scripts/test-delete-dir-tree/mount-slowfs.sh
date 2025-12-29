@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
-#==============================================================================
-# mount-slowfs.sh
+# ==============================================================================
+# Project: QuickFile
+# Script: mount-slowfs.sh
+# Description: Mounts a slow FUSE-based filesystem using SSHFS to localhost.
 #
+# Author: Dawid Bielecki "dawciobiel"
+# GitHub: https://github.com/dawciobiel/QuickFile
+# License: GPL 3.0
+# Date: 2025-12-24
+# ==============================================================================
+
 # DESCRIPTION:
 #   Mounts a slow FUSE-based filesystem using SSHFS to localhost. This creates
 #   an intentionally slow I/O environment ideal for testing file managers,
@@ -20,13 +28,6 @@
 # REQUIREMENTS:
 #   - sshfs installed
 #   - SSH server running locally (usually enabled by default)
-#
-# AUTHOR:
-#   dawciobiel (https://github.com/dawciobiel)
-#
-# CREATED:
-#   2025-12-24
-#==============================================================================
 
 MOUNT_POINT="${1:-slowfs}"
 
@@ -34,4 +35,3 @@ mkdir -p "$MOUNT_POINT"
 sshfs localhost:/tmp "$MOUNT_POINT"
 
 echo "Mounted slow filesystem at: $MOUNT_POINT"
-
