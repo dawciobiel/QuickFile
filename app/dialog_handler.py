@@ -15,6 +15,7 @@ from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager, FileManagerError
 from file_operations.properties_manager import get_file_properties
+from utils.checksum_dialog import ChecksumDialog
 from utils.compare_dialog import CompareDialog
 from utils.copy_dialog import CopyDialog
 from utils.create_link_dialog import CreateLinkDialog
