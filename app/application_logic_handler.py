@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import subprocess
@@ -7,6 +8,18 @@ from PyQt6.QtCore import QObject
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
+
+
+def handle_error(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except Exception as e:
+            logging.exception(f"An unexpected error occurred in {func.__name__}: {e}")
+            show_error_message(self.main_window, translation_manager.translate("Global", "Error"), str(e))
+
+    return wrapper
 
 
 class ApplicationLogicHandler(QObject):
@@ -26,26 +39,17 @@ class ApplicationLogicHandler(QObject):
         
         self.task_queue_manager.task_completed.connect(self._on_task_completed)
 
-    def _handle_error(func):
-        def wrapper(self, *args, **kwargs):
-            try:
-                return func(self, *args, **kwargs)
-            except Exception as e:
-                logging.exception(f"An unexpected error occurred in {func.__name__}: {e}")
-                show_error_message(self.main_window, translation_manager.translate("Global", "Error"), str(e))
-        return wrapper
-
     def _on_task_completed(self, task):
         if task.type == TaskType.CALCULATE_SIZE and task.status == TaskStatus.FINISHED:
             path = task.source_paths[0]
             size = task.result
             self.ui_state_provider.folder_browser.update_directory_size(path, size)
 
-    @_handle_error
-    def _handle_f3_key(self):
+    @handle_error
+    def _handle_f3_key(self, checked=False):
         self.dialog_handler.show_file_viewer_dialog()
 
-    @_handle_error
+    @handle_error
     def _handle_f4_key(self):
         selected_path = self.ui_state_provider.get_current_selected_path()
         if selected_path and os.path.isfile(selected_path):
@@ -60,68 +64,68 @@ class ApplicationLogicHandler(QObject):
                 logging.error(f"Failed to edit file {selected_path}: {e}")
                 show_error_message(self.main_window, translation_manager.translate("Global", "Error"), f"Failed to edit file: {e}")
 
-    @_handle_error
+    @handle_error
     def update_status_bar_path(self, path):
         self.main_window.statusBar().showMessage(path)
 
-    @_handle_error
+    @handle_error
     def start_file_search(self, checked=False):
         self.dialog_handler.start_search()
 
-    @_handle_error
+    @handle_error
     def add_favorite(self, checked=False):
         current_path = self.ui_state_provider.get_active_panel_path()
         if current_path:
             self.favorites_manager.add_favorite(current_path)
             self.main_window.statusBar().showMessage(translation_manager.translate("MenuPanel", f"Added to favorites: {current_path}"))
 
-    @_handle_error
+    @handle_error
     def open_favorites_dialog(self, checked=False):
         self.dialog_handler.open_favorites_dialog()
 
-    @_handle_error
+    @handle_error
     def create_new_file(self, current_dir=None, checked=False):
         self.dialog_handler.create_new_file(current_dir)
 
-    @_handle_error
+    @handle_error
     def create_new_directory(self, current_dir=None, checked=False):
         self.dialog_handler.create_new_directory(current_dir)
 
-    @_handle_error
+    @handle_error
     def copy_selected_item(self, checked=False):
         self.dialog_handler.copy_selected_item()
 
-    @_handle_error
+    @handle_error
     def move_selected_item(self, checked=False):
         self.dialog_handler.move_selected_item()
 
-    @_handle_error
+    @handle_error
     def delete_selected_item(self, checked=False):
         self.dialog_handler.delete_selected_item()
 
-    @_handle_error
+    @handle_error
     def rename_selected_item(self, checked=False):
         self.dialog_handler.rename_selected_item()
 
-    @_handle_error
+    @handle_error
     def paste_item_to_current_dir(self, checked=False):
         self.dialog_handler.paste_item_to_current_dir()
 
-    @_handle_error
+    @handle_error
     def open_general_settings_dialog(self, checked=False):
         new_settings = self.dialog_handler.open_general_settings_dialog()
         if new_settings:
             self.settings_handler.apply_general_settings(new_settings)
 
-    @_handle_error
+    @handle_error
     def open_shortcuts_dialog(self, checked=False):
         self.dialog_handler.open_shortcuts_dialog()
 
-    @_handle_error
+    @handle_error
     def show_properties_dialog(self, checked=False):
         self.dialog_handler.show_properties_dialog()
 
-    @_handle_error
+    @handle_error
     def compare_selected_items(self, checked=False):
         selected_paths = self.ui_state_provider.get_selected_paths()
         
@@ -154,48 +158,48 @@ class ApplicationLogicHandler(QObject):
         else:
             show_error_message(self.main_window, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Select exactly two items to compare, or one item to compare with the other panel."))
 
-    @_handle_error
+    @handle_error
     def create_archive(self, checked=False):
         self.dialog_handler.create_archive()
 
-    @_handle_error
+    @handle_error
     def extract_archive(self, checked=False):
         self.dialog_handler.extract_archive()
 
-    @_handle_error
+    @handle_error
     def synchronize_directories(self, checked=False):
         self.dialog_handler.synchronize_directories()
 
-    @_handle_error
+    @handle_error
     def calculate_checksum(self, checked=False):
         self.dialog_handler.calculate_checksum()
 
-    @_handle_error
+    @handle_error
     def calculate_directory_size(self, checked=False):
         path = self.ui_state_provider.get_current_selected_path()
         if path and os.path.isdir(path):
             task = Task(TaskType.CALCULATE_SIZE, [path])
             self.task_queue_manager.add_task(task)
 
-    @_handle_error
+    @handle_error
     def new_tab(self, checked=False):
         self.ui_state_provider.folder_browser.add_new_tab()
 
-    @_handle_error
+    @handle_error
     def close_tab(self, checked=False):
         self.ui_state_provider.folder_browser.close_current_tab()
 
-    @_handle_error
+    @handle_error
     def set_focus_on_path_edit(self):
         if self.ui_state_provider.folder_browser.active_panel_widget:
             self.ui_state_provider.folder_browser.active_panel_widget.path_edit.setFocus()
             self.ui_state_provider.folder_browser.active_panel_widget.path_edit.selectAll()
 
-    @_handle_error
+    @handle_error
     def create_link(self, checked=False):
         self.dialog_handler.create_link()
 
-    @_handle_error
+    @handle_error
     def modify_symbolic_link(self, checked=False):
         self.dialog_handler.modify_symbolic_link()
 
