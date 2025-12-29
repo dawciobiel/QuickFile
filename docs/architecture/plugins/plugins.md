@@ -14,7 +14,7 @@ Struktura katalogów jest inspirowana konwencją Maven (`groupId/artifactId/vers
 
 ```
 plugins/
-├── <groupId>/                  # Odwrócona domena autora (np. com.quickfile)
+├── <groupId>/                  # Odwrócona domena autora (np. org.quickfile)
 │   └── <artifactId>/           # Nazwa wtyczki (np. zip_archiver)
 │       └── <version>/          # Wersja wtyczki (np. 1.0.0)
 │           ├── metadata.json   # Plik metadanych
@@ -26,7 +26,7 @@ plugins/
 ### Przykład
 
 ```
-~/.config/QuickFile/plugins/com.quickfile/zip_archiver/1.0.0/
+~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.0/
 ```
 
 ## Metadane (`metadata.json`)
