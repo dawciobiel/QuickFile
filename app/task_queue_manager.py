@@ -102,8 +102,19 @@ class TaskQueueManager(QObject):
         self.task_added.emit(task)
         self._process_queue()
 
-    def clear_finished_tasks(self):
+    def clear_all_completed_tasks(self):
+        """Clears all tasks that are in a final state (FINISHED, CANCELLED, ERROR)."""
         self.tasks = [task for task in self.tasks if task.status not in [TaskStatus.FINISHED, TaskStatus.CANCELLED, TaskStatus.ERROR]]
+        self.queue_cleared.emit()
+
+    def clear_finished_tasks(self):
+        """Clears only tasks that completed successfully (FINISHED)."""
+        self.tasks = [task for task in self.tasks if task.status != TaskStatus.FINISHED]
+        self.queue_cleared.emit()
+
+    def clear_error_tasks(self):
+        """Clears only tasks that ended with an error (ERROR)."""
+        self.tasks = [task for task in self.tasks if task.status != TaskStatus.ERROR]
         self.queue_cleared.emit()
 
     def _process_queue(self):

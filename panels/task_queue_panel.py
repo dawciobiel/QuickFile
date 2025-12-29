@@ -3,7 +3,7 @@ import json
 import shutil
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSize
-from PyQt6.QtWidgets import QWidget, QMenu, QHeaderView, QPushButton
+from PyQt6.QtWidgets import QWidget, QMenu, QHeaderView, QPushButton, QHBoxLayout
 from PyQt6.QtGui import QAction
 
 from app.task_queue_manager import TaskQueueManager, Task, TaskStatus
@@ -136,9 +136,25 @@ class TaskQueuePanel(QWidget):
         self.taskTableView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.taskTableView.customContextMenuRequested.connect(self.show_context_menu)
 
-        self.clear_button = QPushButton(translation_manager.translate("TaskQueuePanel", "Clear Finished"))
-        self.clear_button.clicked.connect(self.manager.clear_finished_tasks)
-        self.layout().addWidget(self.clear_button)
+        # Buttons layout
+        buttons_layout = QHBoxLayout()
+        
+        # Clear All Completed
+        self.clear_all_button = QPushButton(translation_manager.translate("TaskQueuePanel", "Clear All Completed"))
+        self.clear_all_button.clicked.connect(self.manager.clear_all_completed_tasks)
+        buttons_layout.addWidget(self.clear_all_button)
+
+        # Clear Finished
+        self.clear_finished_button = QPushButton(translation_manager.translate("TaskQueuePanel", "Clear Finished"))
+        self.clear_finished_button.clicked.connect(self.manager.clear_finished_tasks)
+        buttons_layout.addWidget(self.clear_finished_button)
+
+        # Clear Error
+        self.clear_error_button = QPushButton(translation_manager.translate("TaskQueuePanel", "Clear Error"))
+        self.clear_error_button.clicked.connect(self.manager.clear_error_tasks)
+        buttons_layout.addWidget(self.clear_error_button)
+
+        self.layout().addLayout(buttons_layout)
 
     def show_context_menu(self, pos):
         index = self.taskTableView.indexAt(pos)
