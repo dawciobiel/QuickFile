@@ -216,55 +216,102 @@ class FileManager:
                 logging.error(f"Failed to move {source_path}: {e}")
         return f"Batch move completed."
 
-    def delete_item(self, item_path, move_to_trash=True, task=None):
-        try:
-            source_dir = os.path.dirname(item_path)
-            self._validate_path(item_path, must_exist=True, name="Item path")
+    def _get_paths_and_total_size(self, item_paths, task_context=None, task=None):
+        total_size = 0
+        all_files = []
+        all_dirs = []
 
-            if move_to_trash:
-                try:
-                    send2trash.send2trash(item_path)
-                except Exception as e:
-                    logging.warning(f"Error moving {item_path} to trash, deleting permanently: {e}")
-                    if os.path.isdir(item_path):
-                        shutil.rmtree(item_path)
-                    else:
-                        os.remove(item_path)
-            else:
-                if os.path.isdir(item_path):
-                    shutil.rmtree(item_path)
-                else:
-                    os.remove(item_path)
+        if task:
+            task.set_details("Scanning files...")
+
+        for path in item_paths:
+            if task_context and task_context.is_cancelled:
+                raise OperationCancelledError("Scan cancelled by user.")
             
-            if task:
-                task.directory_changed.emit(source_dir)
-
-            return translation_manager.translate("FileManager", f"Deleted: {item_path}")
-        except (ValueError, FileNotFoundError, NotADirectoryError, IsADirectoryError) as e:
-            raise e
-        except OSError as e:
-            logging.exception(f"Error deleting item {item_path}: {e}")
-            raise FileManagerError(translation_manager.translate("FileManager", f"Error deleting item: {e}"))
+            if os.path.isdir(path):
+                for dirpath, dirnames, filenames in os.walk(path):
+                    if task_context and task_context.is_cancelled:
+                        raise OperationCancelledError("Scan cancelled by user.")
+                    
+                    for f in filenames:
+                        fp = os.path.join(dirpath, f)
+                        if not os.path.islink(fp):
+                            try:
+                                size = os.path.getsize(fp)
+                                total_size += size
+                                all_files.append((fp, size))
+                            except OSError:
+                                pass
+                    all_dirs.append(dirpath)
+            elif os.path.isfile(path):
+                try:
+                    size = os.path.getsize(path)
+                    total_size += size
+                    all_files.append((path, size))
+                except OSError:
+                    pass
+        
+        # Sort directories by depth (deepest first) for safe deletion
+        all_dirs.sort(key=lambda x: x.count(os.sep), reverse=True)
+        
+        return all_files, all_dirs, total_size
 
     def delete_items_batch(self, item_paths, move_to_trash=True, progress_callback=None, task_context=None, task=None):
-        logging.debug(f"Starting delete batch for {len(item_paths)} items.")
-        total_items = len(item_paths)
-        for i, item_path in enumerate(item_paths):
-            if task:
-                task.set_details(f"({i+1}/{total_items}) {os.path.basename(item_path)}")
-            if task_context:
-                if task_context.is_cancelled:
+        if move_to_trash:
+            # send2trash does not support progress, so we fall back to simple iteration
+            total_items = len(item_paths)
+            for i, path in enumerate(item_paths):
+                if task_context and task_context.is_cancelled:
                     raise OperationCancelledError("Operation cancelled by user.")
-                task_context.wait_if_paused()
-            try:
-                logging.debug(f"Deleting item {i+1}/{total_items}: {item_path}")
-                self.delete_item(item_path, move_to_trash, task=task)
+                if task:
+                    task.set_details(f"({i+1}/{total_items}) {os.path.basename(path)}")
+                
+                send2trash.send2trash(path)
+                
                 if progress_callback:
                     progress_callback.emit(int((i + 1) / total_items * 100))
-            except Exception as e:
-                logging.error(f"Failed to delete {item_path}: {e}")
-        logging.debug("Delete batch finished.")
-        return f"Batch delete completed."
+            return "Items moved to trash."
+
+        # --- Permanent Deletion with Progress ---
+        try:
+            all_files, all_dirs, total_size = self._get_paths_and_total_size(item_paths, task_context, task)
+            
+            deleted_size = 0
+            
+            # Delete files
+            for i, (file_path, file_size) in enumerate(all_files):
+                if task_context and task_context.is_cancelled:
+                    raise OperationCancelledError("Operation cancelled by user.")
+                if task:
+                    task.set_details(f"({i+1}/{len(all_files)}) {os.path.basename(file_path)}")
+                
+                os.remove(file_path)
+                deleted_size += file_size
+                if progress_callback and total_size > 0:
+                    progress = int((deleted_size / total_size) * 100)
+                    progress_callback.emit(progress)
+
+            # Delete directories
+            for dir_path in all_dirs:
+                if task_context and task_context.is_cancelled:
+                    raise OperationCancelledError("Operation cancelled by user.")
+                try:
+                    os.rmdir(dir_path)
+                except OSError:
+                    # Directory might not be empty if some files failed to delete
+                    pass
+            
+            if task:
+                for path in item_paths:
+                    task.directory_changed.emit(os.path.dirname(path))
+
+            return "Items permanently deleted."
+
+        except (ValueError, FileNotFoundError, OperationCancelledError) as e:
+            raise e
+        except OSError as e:
+            logging.exception(f"Error during permanent deletion: {e}")
+            raise FileManagerError(f"Error during permanent deletion: {e}")
 
     def copy_to_clipboard(self, path):
         try:
