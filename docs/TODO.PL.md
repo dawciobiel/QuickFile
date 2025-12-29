@@ -4,8 +4,6 @@
 
 - [ ] **Refactor, Chore, Cleaning**: Być może część starych branchy, które nie są już potrzebne i nie będą — należy skasować.
 
-- [ ] **Wbudowany podgląd plików (F3)**: Należałoby użyć zewnętrznego, powszechnie dostępnego edytora tekstu do podglądu plików tekstowych. I zdefiniować go jako narzędzia do podglądu (View) plików tekstowych. Można też spróbować stworzyć własne, proste narzędzie tego typu. W ten sposób dla każdego systemu będzie ono miało taki sam interfejs graficzny.
-
 - [ ] **Refaktoryzacja modeli systemu plików**: Stworzyć abstrakcyjną klasę bazową `AbstractFileSystemModel`, która zdefiniuje wspólny interfejs dla obecnego `FlatFileSystemModel`. Pozwoli to w przyszłości na łatwe dodanie innych modeli, np. `TreeFileSystemModel` (widok drzewa), zachowując spójność API (metody `filePath`, `fileName`, `isDir`).
 
 - [ ] **Architektura pluginów**: Zaprojektować i zaimplementować system wtyczek, który w przyszłości pozwoli na łatwe dodawanie obsługi nowych formatów archiwów (np. tworzenie RAR) i innych funkcjonalności.
@@ -21,6 +19,8 @@
 - [ ] **Feature improvement**: Pasek postępu w oknie dialogowym do kopiowania/przenoszenia mógłby być w dwóch kolorach. Kolor reprezentowałby odczyt i zapis danych na nośniku. 
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Wbudowany podgląd plików (F3)**: Zaimplementowano zaawansowany podgląd plików jako niezależny plugin. Obsługuje tryby Text, HEX, DEC, BIN, wybór kodowania, zawijanie wierszy i numerację linii. Dodano opcję w ustawieniach do przełączania między wbudowanym a zewnętrznym viewerem.
 
 - [x] **Dynamiczne odświeżanie widoku plików**: Zaimplementowano fundament pod dynamiczne odświeżanie. Aplikacja jest odporna na usunięcie katalogu, w którym znajduje się użytkownik (przechodzi w górę). Dodano konfigurowalny interwał odświeżania oraz wskaźnik "spinner" na kartach, na których odbywają się operacje w tle. Naprawiono szereg błędów związanych z wieloma zadaniami i zamykaniem kart.
 
