@@ -1,5 +1,11 @@
+# .gitignore
+.gitignore
+
 # Logs
 #logs/
+
+# Resources
+resources/Rolling@1x-1.0s-20px-20px.gif
 
 # Refactorization notes
 docs/refactor/
