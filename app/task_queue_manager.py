@@ -85,7 +85,8 @@ class TaskQueueManager(QObject):
     task_added = pyqtSignal(Task)
     task_removed = pyqtSignal(str)
     queue_cleared = pyqtSignal()
-    task_completed = pyqtSignal(Task)
+    task_completed = pyqtSignal(Task)  # Emitted only on success
+    task_finished = pyqtSignal(Task)   # Emitted on success, error, or cancellation
     
     def __init__(self, background_task_manager, file_manager, directory_synchronizer, plugin_manager):
         super().__init__()
@@ -283,6 +284,8 @@ class TaskQueueManager(QObject):
         except Exception as e:
             logging.exception(f"Error in _on_task_finished: {e}")
         finally:
+            if self.current_task:
+                self.task_finished.emit(self.current_task)
             self.current_task = None
             self._process_queue()
 
@@ -299,6 +302,8 @@ class TaskQueueManager(QObject):
         except Exception as e:
             logging.exception(f"Error in _on_task_error: {e}")
         finally:
+            if self.current_task:
+                self.task_finished.emit(self.current_task)
             self.current_task = None
             self._process_queue()
 
@@ -322,6 +327,7 @@ class TaskQueueManager(QObject):
                     task.task_context.cancel()
             elif task.status == TaskStatus.PENDING:
                 task.status = TaskStatus.CANCELLED
+                self.task_finished.emit(task) # Manually emit for pending tasks
 
     def _get_task_by_id(self, task_id):
         return next((t for t in self.tasks if t.id == task_id), None)
