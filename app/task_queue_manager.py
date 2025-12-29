@@ -1,8 +1,9 @@
-import uuid
-import time
-import os
 import logging
+import os
+import time
+import uuid
 from enum import Enum
+
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from file_operations.file_manager import OperationCancelledError
@@ -29,7 +30,7 @@ class TaskType(Enum):
 
 class Task(QObject):
     status_changed = pyqtSignal(object)
-    progress_changed = pyqtSignal(int)
+    progress_changed = pyqtSignal(object)  # Changed to object to support tuples
     details_changed = pyqtSignal(str)
     directory_changed = pyqtSignal(str)
 

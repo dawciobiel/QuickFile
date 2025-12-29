@@ -1,8 +1,11 @@
 import logging
 import os
 import shutil
+
 import send2trash
+
 from app.translation_manager import translation_manager
+
 
 class FileManagerError(Exception):
     pass
@@ -43,6 +46,11 @@ class FileManager:
 
     def _copy_file_with_progress(self, src, dst, progress_callback=None, total_size=0, copied_so_far=0, task_context=None, task=None):
         try:
+            # Use a larger buffer size to make the dual progress bar more visible
+            buffer_size = 4 * 1024 * 1024  # 4MB
+            bytes_read = copied_so_far
+            bytes_written = copied_so_far
+
             with open(src, 'rb') as fsrc:
                 with open(dst, 'wb') as fdst:
                     while True:
@@ -50,17 +58,29 @@ class FileManager:
                             if task_context.is_cancelled:
                                 raise OperationCancelledError("Operation cancelled by user.")
                             task_context.wait_if_paused()
-                        
-                        buf = fsrc.read(1024 * 1024)
+
+                        buf = fsrc.read(buffer_size)
                         if not buf:
                             break
-                        fdst.write(buf)
+
+                        # Update read progress
+                        bytes_read += len(buf)
                         if progress_callback and total_size > 0:
-                            copied_so_far += len(buf)
-                            progress = int((copied_so_far / total_size) * 100)
-                            progress_callback.emit(progress)
+                            read_pct = int((bytes_read / total_size) * 100)
+                            write_pct = int((bytes_written / total_size) * 100)
+                            progress_callback.emit((read_pct, write_pct))
+
+                        fdst.write(buf)
+
+                        # Update write progress
+                        bytes_written += len(buf)
+                        if progress_callback and total_size > 0:
+                            read_pct = int((bytes_read / total_size) * 100)
+                            write_pct = int((bytes_written / total_size) * 100)
+                            progress_callback.emit((read_pct, write_pct))
+
             shutil.copystat(src, dst)
-            return copied_so_far
+            return bytes_written
         except OperationCancelledError:
             if os.path.exists(dst):
                 try:
@@ -145,6 +165,8 @@ class FileManager:
             try:
                 self.copy_item_with_options(source_path, destination_path, options, task_context=task_context, task=task)
                 if progress_callback:
+                    # For batch operations, we currently only report item count progress
+                    # To support dual progress bar here, we'd need to calculate total size of all items first
                     progress_callback.emit(int((i + 1) / total_items * 100))
             except OperationCancelledError:
                 raise
@@ -251,14 +273,42 @@ class FileManager:
                 except OSError:
                     pass
         
-        # Sort directories by depth (deepest first) for safe deletion
         all_dirs.sort(key=lambda x: x.count(os.sep), reverse=True)
         
         return all_files, all_dirs, total_size
 
+    def delete_item(self, item_path, move_to_trash=True, task=None):
+        try:
+            source_dir = os.path.dirname(item_path)
+            self._validate_path(item_path, must_exist=True, name="Item path")
+
+            if move_to_trash:
+                try:
+                    send2trash.send2trash(item_path)
+                except Exception as e:
+                    logging.warning(f"Error moving {item_path} to trash, deleting permanently: {e}")
+                    if os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                    else:
+                        os.remove(item_path)
+            else:
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                else:
+                    os.remove(item_path)
+
+            if task:
+                task.directory_changed.emit(source_dir)
+
+            return translation_manager.translate("FileManager", f"Deleted: {item_path}")
+        except (ValueError, FileNotFoundError, NotADirectoryError, IsADirectoryError) as e:
+            raise e
+        except OSError as e:
+            logging.exception(f"Error deleting item {item_path}: {e}")
+            raise FileManagerError(translation_manager.translate("FileManager", f"Error deleting item: {e}"))
+
     def delete_items_batch(self, item_paths, move_to_trash=True, progress_callback=None, task_context=None, task=None):
         if move_to_trash:
-            # send2trash does not support progress, so we fall back to simple iteration
             total_items = len(item_paths)
             for i, path in enumerate(item_paths):
                 if task_context and task_context.is_cancelled:
@@ -272,13 +322,11 @@ class FileManager:
                     progress_callback.emit(int((i + 1) / total_items * 100))
             return "Items moved to trash."
 
-        # --- Permanent Deletion with Progress ---
         try:
             all_files, all_dirs, total_size = self._get_paths_and_total_size(item_paths, task_context, task)
             
             deleted_size = 0
             
-            # Delete files
             for i, (file_path, file_size) in enumerate(all_files):
                 if task_context and task_context.is_cancelled:
                     raise OperationCancelledError("Operation cancelled by user.")
@@ -291,14 +339,12 @@ class FileManager:
                     progress = int((deleted_size / total_size) * 100)
                     progress_callback.emit(progress)
 
-            # Delete directories
             for dir_path in all_dirs:
                 if task_context and task_context.is_cancelled:
                     raise OperationCancelledError("Operation cancelled by user.")
                 try:
                     os.rmdir(dir_path)
                 except OSError:
-                    # Directory might not be empty if some files failed to delete
                     pass
             
             if task:
