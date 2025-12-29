@@ -221,8 +221,13 @@ class DialogHandler:
         if not destination_path:
             raise ValueError("No inactive panel path to copy to.")
 
-        dialog = CopyDialog(self.main_window, source_paths, destination_path)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
+        dialog = CopyDialog(self.main_window, source_paths, destination_path, self.task_queue_manager, self.background_task_manager)
+        dialog.exec()  # The dialog now manages its own lifecycle
+
+        # If the dialog was accepted (e.g., "Queue" was clicked), we might still
+        # want to create a task, but the logic is now more complex.
+        # For now, we assume the dialog handles it.
+        if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
             action_logger.log_action("copy", sources=source_paths, destination=destination_path, options=options)
             task = Task(TaskType.COPY, source_paths, destination_path, options)
@@ -238,8 +243,10 @@ class DialogHandler:
         if not destination_path:
             raise ValueError("No inactive panel path to move to.")
         
-        dialog = MoveDialog(self.main_window, paths_to_move, destination_path)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
+        dialog = MoveDialog(self.main_window, paths_to_move, destination_path, self.task_queue_manager, self.background_task_manager)
+        dialog.exec()
+
+        if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
             action_logger.log_action("move", sources=paths_to_move, destination=destination_path, options=options)
             task = Task(TaskType.MOVE, paths_to_move, destination_path, options)
