@@ -8,10 +8,10 @@ from PyQt6.QtGui import QFileSystemModel, QMovie, QIcon
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter, QTabWidget, QLabel
 
 from app.settings_manager import SettingsManager
+from app.task_queue_manager import Task, TaskType
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from browser.flat_view import FlatFileView
-from app.task_queue_manager import Task, TaskType
 
 
 class PanelWidget(QWidget):
@@ -183,8 +183,8 @@ class FolderBrowser(QWidget):
         self._refresh_timer.setInterval(refresh_interval)
         
         self._refresh_timer.timeout.connect(self._do_refresh)
-        
-        self.spinner_movie = QMovie("resources/spinner.gif")
+
+        self.spinner_movie = QMovie("resources/icons/spinner.gif")
         self.busy_tabs = set()
         self.spinner_movie.frameChanged.connect(self._update_busy_icons)
         self.spinner_movie.start()
