@@ -4,7 +4,7 @@ import os
 import psutil
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QDir, QTimer
-from PyQt6.QtGui import QFileSystemModel
+from PyQt6.QtGui import QFileSystemModel, QMovie, QIcon
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter, QTabWidget, QLabel
 
 from app.settings_manager import SettingsManager
@@ -162,6 +162,7 @@ class PanelWidget(QWidget):
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
+    status_message_requested = pyqtSignal(str)
 
     def __init__(self, settings_manager: SettingsManager = None, theme_manager: ThemeManager = None, parent=None):
         super().__init__(parent)
@@ -177,8 +178,16 @@ class FolderBrowser(QWidget):
         self._paths_to_refresh = set()
         self._refresh_timer = QTimer(self)
         self._refresh_timer.setSingleShot(True)
-        self._refresh_timer.setInterval(200)
+        
+        refresh_interval = self.settings_manager.get_setting("dynamic_refresh_interval", 2000)
+        self._refresh_timer.setInterval(refresh_interval)
+        
         self._refresh_timer.timeout.connect(self._do_refresh)
+        
+        self.spinner_movie = QMovie("resources/spinner.gif")
+        self.busy_tabs = set()
+        self.spinner_movie.frameChanged.connect(self._update_busy_icons)
+        self.spinner_movie.start()
         
         self.load_panel_settings()
 
@@ -307,18 +316,14 @@ class FolderBrowser(QWidget):
         paths_to_process = self._paths_to_refresh.copy()
         self._paths_to_refresh.clear()
 
+        all_panels = [self.leftTabWidget.widget(i) for i in range(self.leftTabWidget.count())] + \
+                     [self.rightTabWidget.widget(i) for i in range(self.rightTabWidget.count())]
+
         for path in paths_to_process:
-            logging.debug(f"Doing debounced refresh for path: {path}")
-            for i in range(self.leftTabWidget.count()):
-                panel = self.leftTabWidget.widget(i)
-                if panel and path.startswith(panel.file_view.get_current_path()):
-                    logging.debug(f"Resetting path for left panel at: {panel.file_view.get_current_path()}")
-                    panel.file_view.set_path(panel.file_view.get_current_path())
-            for i in range(self.rightTabWidget.count()):
-                panel = self.rightTabWidget.widget(i)
-                if panel and path.startswith(panel.file_view.get_current_path()):
-                    logging.debug(f"Resetting path for right panel at: {panel.file_view.get_current_path()}")
-                    panel.file_view.set_path(panel.file_view.get_current_path())
+            for panel in all_panels:
+                if panel and os.path.normpath(panel.file_view.get_current_path()) == os.path.normpath(path):
+                    logging.debug(f"Refreshing panel at: {path}")
+                    panel.file_view.refresh()
 
     def set_panel_paths(self, left_path, right_path):
         if self.leftTabWidget.count() > 0:
@@ -407,3 +412,84 @@ class FolderBrowser(QWidget):
             panel = self.rightTabWidget.widget(i)
             if panel.file_view.get_current_path() == os.path.dirname(path):
                  panel.file_view.model.update_directory_size(path, size)
+
+    def handle_task_completion(self, task: Task):
+        """
+        Slot to handle completed tasks from the TaskQueueManager.
+        Checks if any open tabs are in a now-deleted directory.
+        """
+        if task.type != TaskType.DELETE:
+            return
+
+        logging.debug(f"FolderBrowser handling completed DELETE task: {task.id}")
+
+        all_panels = [self.leftTabWidget.widget(i) for i in range(self.leftTabWidget.count())] + \
+                     [self.rightTabWidget.widget(i) for i in range(self.rightTabWidget.count())]
+
+        for panel in all_panels:
+            current_path = panel.file_view.get_current_path()
+            if not os.path.exists(current_path):
+                logging.info(f"Path no longer exists: {current_path}. Navigating up.")
+                
+                # Navigate up to the first existing parent
+                parent_path = current_path
+                while not os.path.exists(parent_path) and parent_path != os.path.dirname(parent_path):
+                    parent_path = os.path.dirname(parent_path)
+                
+                panel.file_view.set_path(parent_path)
+                
+                # Emit a signal to show a message in the status bar
+                message = translation_manager.translate("FolderBrowser", "Directory no longer exists. Navigated up.")
+                self.status_message_requested.emit(message)
+
+    def set_tab_busy_indicator(self, panel, is_busy):
+        tab_widget = self._get_parent_tab_widget(panel)
+        if not tab_widget:
+            return
+        
+        index = tab_widget.indexOf(panel)
+        if index == -1:
+            return
+            
+        tab_tuple = (tab_widget, index)
+
+        if is_busy:
+            self.busy_tabs.add(tab_tuple)
+            self._update_busy_icons()
+        else:
+            if tab_tuple in self.busy_tabs:
+                self.busy_tabs.remove(tab_tuple)
+            tab_widget.setTabIcon(index, QIcon())
+
+    def _update_busy_icons(self):
+        if not self.busy_tabs:
+            return
+            
+        current_frame_icon = QIcon(self.spinner_movie.currentPixmap())
+        
+        for tab_widget, index in self.busy_tabs:
+            if tab_widget.widget(index):
+                tab_widget.setTabIcon(index, current_frame_icon)
+
+    def _paths_are_related(self, path1, path2):
+        """Check if two paths are related (one contains the other)."""
+        norm_path1 = os.path.normpath(path1)
+        norm_path2 = os.path.normpath(path2)
+
+        # Add trailing slashes for consistent startswith checks
+        path1_sep = os.path.join(norm_path1, '')
+        path2_sep = os.path.join(norm_path2, '')
+
+        return path1_sep.startswith(path2_sep) or path2_sep.startswith(path1_sep)
+
+    def find_panels_by_path(self, path):
+        affected_panels = []
+        all_panels = [self.leftTabWidget.widget(i) for i in range(self.leftTabWidget.count())] + \
+                     [self.rightTabWidget.widget(i) for i in range(self.rightTabWidget.count())]
+        
+        for panel in all_panels:
+            panel_path = panel.file_view.get_current_path()
+            if self._paths_are_related(path, panel_path):
+                affected_panels.append(panel)
+                
+        return affected_panels
