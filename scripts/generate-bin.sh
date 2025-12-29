@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# Project: QuickFile
+# Script: generate-bin.sh
+# Description: Generates a standalone binary executable using PyInstaller.
+#
+# Author: Dawid Bielecki "dawciobiel"
+# GitHub: https://github.com/dawciobiel/QuickFile
+# License: GPL 3.0
+# Date: 2025-12-25
+# ==============================================================================
 
 # TODO
 # Need to be added do binary file:

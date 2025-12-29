@@ -1,31 +1,41 @@
 #!/bin/bash
+# ==============================================================================
+# Project: QuickFile
+# Script: run_tests.sh
+# Description: Runs all tests using pytest and captures output to a log file.
+#
+# Author: Dawid Bielecki "dawciobiel"
+# GitHub: https://github.com/dawciobiel/QuickFile
+# License: GPL 3.0
+# Date: 2025-12-25
+# ==============================================================================
 
-# Przejdź do katalogu głównego projektu
+# Go to the project root directory
 cd "$(dirname "$0")/.."
 
-# Upewnij się, że katalog logów istnieje
+# Ensure the logs directory exists
 mkdir -p logs
 
-# Nazwa pliku log
+# Log file name
 LOG_FILE="logs/test_results.log"
 
-# --- Czyszczenie starego logu ---
-# Używamy '>' aby nadpisać plik i zacząć od nowa
+# --- Clean up old log ---
+# Use '>' to overwrite the file and start fresh
 echo "Starting test session on $(date)" > "$LOG_FILE"
 echo "================================================================================" >> "$LOG_FILE"
 
 echo "Running all tests and capturing complete output to $LOG_FILE..."
 
-# --- Uruchomienie Pytest ---
-# Używamy 'script' aby oszukać pytest/tee i myśleć, że działają w interaktywnym terminalu,
-# co zmusza je do zachowania kolorów i pełnego formatowania.
-# Wynik jest dopisywany do LOG_FILE.
+# --- Run Pytest ---
+# Use 'script' to trick pytest/tee into thinking they are running in an interactive terminal,
+# which forces them to preserve colors and full formatting.
+# The output is appended to LOG_FILE.
 script -q -c "pytest -v --tb=long tests/" /dev/null | tee -a "$LOG_FILE"
 
-# --- Sprawdzenie wyniku ---
-# Musimy pobrać status wyjścia z pytest, co jest trudniejsze z 'script'.
-# Możemy to zrobić, sprawdzając zawartość logu w poszukiwaniu słowa "failed".
-# To nie jest idealne, ale jest to proste i skuteczne obejście.
+# --- Check result ---
+# We need to get the exit status from pytest, which is trickier with 'script'.
+# We can do this by checking the log content for the word "failed".
+# This is not ideal, but it is a simple and effective workaround.
 if grep -q "failed" "$LOG_FILE"; then
     echo "================================================================================" >> "$LOG_FILE"
     echo "🔴 Some tests failed. Check $LOG_FILE for details." | tee -a "$LOG_FILE"

@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+# ==============================================================================
+# Project: QuickFile
+# Script: replay_actions.py
+# Description: Replays user actions from a log file for debugging purposes.
+#
+# Author: Dawid Bielecki "dawciobiel"
+# GitHub: https://github.com/dawciobiel/QuickFile
+# License: GPL 3.0
+# Date: 2025-12-25
+# ==============================================================================
 
 import argparse
 import os

@@ -1,3 +1,14 @@
+# ==============================================================================
+# Project: QuickFile
+# Script: check_hardcoded_strings.py
+# Description: Scans the project for hardcoded strings that might need translation.
+#
+# Author: Dawid Bielecki "dawciobiel"
+# GitHub: https://github.com/dawciobiel/QuickFile
+# License: GPL 3.0
+# Date: 2025-12-25
+# ==============================================================================
+
 import os
 import re
 import xml.etree.ElementTree as ET

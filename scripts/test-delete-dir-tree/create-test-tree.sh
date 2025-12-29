@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
-#==============================================================================
-# create-test-tree.sh
+# ==============================================================================
+# Project: QuickFile
+# Script: create-test-tree.sh
+# Description: Generates a test directory structure for validating file deletion logic.
 #
+# Author: Dawid Bielecki "dawciobiel"
+# GitHub: https://github.com/dawciobiel/QuickFile
+# License: GPL 3.0
+# Date: 2025-12-24
+# ==============================================================================
+
 # DESCRIPTION:
 #   Generates a test directory structure for validating file deletion logic,
 #   progress bars, and performance behavior in applications such as QuickFile.
@@ -25,13 +33,6 @@
 # REQUIREMENTS:
 #   - Bash shell
 #   - Standard GNU utilities: seq, mkdir, echo
-#
-# AUTHOR:
-#   dawciobiel (https://github.com/dawciobiel)
-#
-# CREATED:
-#   2025-12-24
-#==============================================================================
 
 TARGET_DIR="${1:-test_dir}"
 SUBDIR_COUNT=10
@@ -49,4 +50,3 @@ for i in $(seq -w 1 "$SUBDIR_COUNT"); do
 done
 
 echo "Test directory structure created at: $TARGET_DIR"
-
