@@ -1,11 +1,13 @@
+import logging
 import os
 import subprocess
-import logging
+
 from PyQt6.QtCore import QObject
+
+from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
-from app.task_queue_manager import Task, TaskType, TaskStatus
-from app.action_logger import action_logger
+
 
 class ApplicationLogicHandler(QObject):
     def __init__(self, main_window, file_manager, file_comparator, favorites_manager, directory_synchronizer, theme_manager, ui_state_provider, dialog_handler, settings_handler, background_task_manager, task_queue_manager):
@@ -40,28 +42,8 @@ class ApplicationLogicHandler(QObject):
             self.ui_state_provider.folder_browser.update_directory_size(path, size)
 
     @_handle_error
-    def open_file_externally(self, file_path):
-        if not file_path:
-            return
-        
-        viewer_command = self.settings_handler.settings_manager.get_setting("viewer_command", "xdg-open %f")
-        
-        try:
-            if "%f" in viewer_command:
-                command = viewer_command.replace("%f", file_path)
-                subprocess.Popen(command, shell=True)
-            else:
-                # Fallback if %f is missing, though unlikely with default
-                subprocess.Popen([viewer_command, file_path])
-        except Exception as e:
-            logging.error(f"Failed to open file {file_path}: {e}")
-            show_error_message(self.main_window, translation_manager.translate("Global", "Error"), f"Failed to open file: {e}")
-
-    @_handle_error
     def _handle_f3_key(self):
-        selected_path = self.ui_state_provider.get_current_selected_path()
-        if selected_path and os.path.isfile(selected_path):
-            self.open_file_externally(selected_path)
+        self.dialog_handler.show_file_viewer_dialog()
 
     @_handle_error
     def _handle_f4_key(self):

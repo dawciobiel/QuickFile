@@ -1,0 +1,10 @@
+{
+  "group_id": "org.quickfile",
+  "artifact_id": "standard_viewer",
+  "version": "1.0.0",
+  "type": "viewer",
+  "name": "Standard File Viewer",
+  "description": "A built-in viewer for text files and simple images.",
+  "entry_point": "plugin.py",
+  "class_name": "StandardViewerPlugin"
+}

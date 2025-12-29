@@ -1,8 +1,5 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QToolBar, QLineEdit, QMenu
 
-from app.translation_manager import translation_manager
 from browser.folder_browser import FolderBrowser
 from panels.function_key_panel import FunctionKeyPanel
 from panels.menu_panel import MenuPanel
@@ -40,7 +37,7 @@ class UIManager:
         self.main_window.centralWidget().layout().addWidget(self.bottom_panel)
 
     def connect_signals(self, app_logic_handler):
-        self.folder_browser.file_selected.connect(app_logic_handler.open_file_externally)
+        self.folder_browser.file_selected.connect(app_logic_handler._handle_f3_key)
         self.folder_browser.current_directory_changed.connect(app_logic_handler.update_status_bar_path)
         self.menu_panel.go_up_requested.connect(self.folder_browser.go_up_directory)
         self.menu_panel.refresh_requested.connect(self.folder_browser.refresh_all_views)
