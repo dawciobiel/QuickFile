@@ -1,12 +1,14 @@
-import os
+import importlib
 import json
 import logging
-import importlib
+import os
 import shutil
 import sys
+
 from packaging.version import Version
 
-from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin, AttributeEditorPlugin, ViewModePlugin
+from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin, AttributeEditorPlugin, ViewModePlugin, SymlinkPlugin
+
 
 class PluginInfo:
     """Holds metadata and the loaded class for a specific plugin version."""
@@ -37,7 +39,8 @@ class PluginManager:
             "search": {},
             "viewer": {},
             "attribute_editor": {},
-            "view_mode": {}
+            "view_mode": {},
+            "symlink": {}
         }
         
         self._install_bundled_plugins()
@@ -200,4 +203,13 @@ class PluginManager:
         for plugin in self.get_view_mode_plugins():
             if plugin.view_mode_name == name:
                 return plugin
+        return None
+
+    def get_symlink_plugin(self) -> SymlinkPlugin | None:
+        if "symlink" in self.registry:
+            for artifact_id, versions in self.registry["symlink"].items():
+                if versions:
+                    plugin = versions[0].get_instance()
+                    if plugin.is_supported():
+                        return plugin
         return None
