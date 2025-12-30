@@ -84,8 +84,8 @@ class ActionLogger:
                 "params": anonymized_params
             }
             
-            with open(self.actions_log_path, 'a') as f:
-                f.write(json.dumps(log_entry) + "\\n")
+            with open(self.actions_log_path, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(log_entry) + "\n")
                 
             self._save_map()
         except Exception as e:
@@ -93,7 +93,7 @@ class ActionLogger:
 
     def _save_map(self):
         try:
-            with open(self.actions_map_path, 'w') as f:
+            with open(self.actions_map_path, 'w', encoding='utf-8') as f:
                 json.dump(self.path_map, f, indent=4)
         except Exception as e:
             logging.error(f"Failed to save action map: {e}")

@@ -13,19 +13,34 @@ class ActionReplayer:
             raise FileNotFoundError(f"Action log file not found: {log_path}")
             
         self.log_path = log_path
+        self.map_path = log_path.replace("actions.log", "actions_map.log")
         self.file_manager = file_manager
         self.dir_synchronizer = dir_synchronizer
         
         self.sandbox_dir = tempfile.mkdtemp(prefix="quickfile_replay_")
-        self.path_map = {}
+        self.path_map = self._load_path_map()
         logging.info(f"ActionReplayer initialized. Sandbox created at: {self.sandbox_dir}")
+
+    def _load_path_map(self):
+        path_map = {}
+        if os.path.exists(self.map_path):
+            with open(self.map_path, 'r', encoding='utf-8') as f:
+                try:
+                    raw_map = json.load(f)
+                    for key, value in raw_map.items():
+                        if not value.startswith('/'):
+                             path_map[value] = key
+                except json.JSONDecodeError as e:
+                    logging.error(f"Could not parse map file {self.map_path}: {e}")
+        return path_map
 
     def run(self):
         logging.info(f"Starting replay of {self.log_path}...")
         try:
-            with open(self.log_path, 'r') as f:
+            with open(self.log_path, 'r', encoding='utf-8') as f:
                 for line in f:
-                    if not line.strip():
+                    line = line.strip()
+                    if not line:
                         continue
                     self._process_action(json.loads(line))
             logging.info("Replay finished successfully.")
@@ -36,12 +51,15 @@ class ActionReplayer:
             self.cleanup()
 
     def _remap_path(self, anonymized_path):
-        # Simple remapping for now, assuming root is the sandbox
-        # We might need a more robust way to handle this if paths are complex
-        # For now, we just join the anonymized path to the sandbox root, removing any leading slash
-        if anonymized_path.startswith('/'):
-            anonymized_path = anonymized_path[1:]
-        return os.path.join(self.sandbox_dir, anonymized_path)
+        parts = anonymized_path.split('/')
+        remapped_parts = [self.sandbox_dir]
+        for part in parts:
+            if part in self.path_map:
+                remapped_parts.append(self.path_map[part])
+            elif part:
+                remapped_parts.append(part)
+        
+        return os.path.join(*remapped_parts)
 
     def _process_action(self, action_data):
         action_name = action_data.get("action")
@@ -49,7 +67,6 @@ class ActionReplayer:
         
         logging.info(f"Executing action: {action_name} with params: {params}")
 
-        # Remap paths in params
         remapped_params = {}
         for key, value in params.items():
             if isinstance(value, str) and ('path' in key or 'source' in key or 'destination' in key):
@@ -59,7 +76,6 @@ class ActionReplayer:
             else:
                 remapped_params[key] = value
         
-        # Get the handler and execute
         handler = getattr(self, f"_handle_{action_name}", None)
         if handler:
             handler(**remapped_params)
@@ -73,6 +89,7 @@ class ActionReplayer:
     # --- Action Handlers ---
 
     def _handle_create_directory(self, path, **kwargs):
+        self._ensure_dir_exists(path)
         self.file_manager.create_directory(os.path.dirname(path), os.path.basename(path))
 
     def _handle_create_file(self, path, **kwargs):
@@ -82,7 +99,6 @@ class ActionReplayer:
     def _handle_copy(self, sources, destination, options, **kwargs):
         self._ensure_dir_exists(destination)
         for src in sources:
-            # In sandbox, source files don't exist, so we create dummy ones
             self._ensure_dir_exists(src)
             if not os.path.exists(src):
                 with open(src, 'w') as f:
@@ -102,7 +118,6 @@ class ActionReplayer:
 
     def _handle_delete(self, paths, options, **kwargs):
         for path in paths:
-            # Ensure dummy file exists to be deleted
             if not os.path.exists(path):
                 self._ensure_dir_exists(path)
                 with open(path, 'w') as f:
@@ -120,7 +135,6 @@ class ActionReplayer:
     def _handle_sync_dirs(self, source, destination, options, **kwargs):
         self._ensure_dir_exists(source)
         self._ensure_dir_exists(destination)
-        # Create some dummy files to test sync
         with open(os.path.join(source, "file1.txt"), 'w') as f: f.write("a")
         with open(os.path.join(source, "file2.txt"), 'w') as f: f.write("b")
         with open(os.path.join(destination, "file2.txt"), 'w') as f: f.write("c")

@@ -1,10 +1,11 @@
+import os
 from PyQt6 import uic
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog
-
-from app.task_queue_manager import Task, TaskType, TaskStatus
+from app.action_logger import action_logger
 from app.translation_manager import translation_manager
+from app.task_queue_manager import Task, TaskType, TaskStatus
 from ui.dual_progress_bar import DualProgressBar
-
 
 class CopyDialog(QDialog):
     def __init__(self, parent, source_paths, destination_path, task_queue_manager, background_task_manager):
@@ -24,7 +25,7 @@ class CopyDialog(QDialog):
             self.source_paths = source_paths
             
         self.destination_path = destination_path
-
+        
         self._replace_progress_bar()
         self._init_ui()
         self._connect_signals()
@@ -36,7 +37,7 @@ class CopyDialog(QDialog):
         index = layout.indexOf(self.progressBar)
         layout.removeWidget(self.progressBar)
         self.progressBar.deleteLater()
-
+        
         self.progressBar = DualProgressBar()
         layout.insertWidget(index, self.progressBar)
 
@@ -85,8 +86,10 @@ class CopyDialog(QDialog):
         self.queue_button.setVisible(False)
         self.cancel_button.setText(translation_manager.translate("Buttons", "Hide"))
 
-        self.task = Task(TaskType.COPY, self.source_paths, self.destination_path, self.get_options())
+        options = self.get_options()
+        action_logger.log_action("copy", sources=self.source_paths, destination=self.destination_path, options=options)
         
+        self.task = Task(TaskType.COPY, self.source_paths, self.destination_path, options)
         self.task_queue_manager.add_task(self.task)
 
         self.task.progress_changed.connect(self.update_progress)
