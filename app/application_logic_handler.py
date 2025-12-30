@@ -4,6 +4,7 @@ import os
 import subprocess
 
 from PyQt6.QtCore import QObject
+from PyQt6.QtWidgets import QMessageBox
 
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
@@ -18,7 +19,6 @@ def handle_error(func):
         except Exception as e:
             logging.exception(f"An unexpected error occurred in {func.__name__}: {e}")
             show_error_message(self.main_window, translation_manager.translate("Global", "Error"), str(e))
-
     return wrapper
 
 
@@ -63,6 +63,18 @@ class ApplicationLogicHandler(QObject):
             except Exception as e:
                 logging.error(f"Failed to edit file {selected_path}: {e}")
                 show_error_message(self.main_window, translation_manager.translate("Global", "Error"), f"Failed to edit file: {e}")
+
+    @handle_error
+    def change_owner(self, checked=False):
+        selected_path = self.ui_state_provider.get_current_selected_path()
+        if not selected_path:
+            raise ValueError(translation_manager.translate("MenuPanel", "No file or folder selected."))
+
+        plugin = self.task_queue_manager.plugin_manager.get_attribute_editor_plugin()
+        if plugin:
+            plugin.open_editor(selected_path, self.main_window)
+        else:
+            QMessageBox.warning(self.main_window, "Not Supported", "Attribute editing is not supported on this system.")
 
     @handle_error
     def update_status_bar_path(self, path):
@@ -124,6 +136,10 @@ class ApplicationLogicHandler(QObject):
     @handle_error
     def show_properties_dialog(self, checked=False):
         self.dialog_handler.show_properties_dialog()
+
+    @handle_error
+    def show_about_dialog(self, checked=False):
+        self.dialog_handler.show_about_dialog()
 
     @handle_error
     def compare_selected_items(self, checked=False):
@@ -202,6 +218,14 @@ class ApplicationLogicHandler(QObject):
     @handle_error
     def modify_symbolic_link(self, checked=False):
         self.dialog_handler.modify_symbolic_link()
+
+    @handle_error
+    def refresh_all_views(self, checked=False):
+        self.ui_state_provider.folder_browser.refresh_all_views()
+
+    @handle_error
+    def go_up_directory(self, checked=False):
+        self.ui_state_provider.folder_browser.go_up_directory()
 
     def _get_active_panel_path(self):
         return self.ui_state_provider.get_active_panel_path()
