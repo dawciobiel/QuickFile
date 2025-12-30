@@ -15,6 +15,7 @@ from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager, FileManagerError
 from file_operations.properties_manager import get_file_properties
+from utils.about_dialog import AboutDialog
 from utils.checksum_dialog import ChecksumDialog
 from utils.compare_dialog import CompareDialog
 from utils.copy_dialog import CopyDialog
@@ -44,6 +45,11 @@ class DialogHandler:
         self.settings_manager = settings_manager
         self.background_task_manager = background_task_manager
         self.task_queue_manager = task_queue_manager
+
+    def show_about_dialog(self, checked=False):
+        action_logger.log_action("show_about")
+        dialog = AboutDialog(self.main_window)
+        dialog.exec()
 
     def show_file_viewer_dialog(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()

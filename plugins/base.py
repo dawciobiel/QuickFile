@@ -77,12 +77,10 @@ class SearchPlugin(FileOperationPlugin):
         """
         pass
 
-
 class ViewerPlugin(FileOperationPlugin):
     """
     Interface for plugins that provide a file viewing capability.
     """
-
     @abstractmethod
     def can_view(self, file_path: str) -> bool:
         """
@@ -96,5 +94,25 @@ class ViewerPlugin(FileOperationPlugin):
         """
         Opens a non-modal dialog or a new window to view the file.
         The parent widget is provided to ensure proper window management.
+        """
+        pass
+
+
+class AttributeEditorPlugin(FileOperationPlugin):
+    """
+    Interface for plugins that provide a file attribute editing capability.
+    """
+
+    @abstractmethod
+    def is_supported(self) -> bool:
+        """
+        Returns True if the plugin can run on the current operating system.
+        """
+        pass
+
+    @abstractmethod
+    def open_editor(self, path: str, parent: QWidget):
+        """
+        Opens a dialog to edit attributes for the given file or directory path.
         """
         pass

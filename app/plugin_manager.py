@@ -1,4 +1,4 @@
-import importlib.util
+import importlib
 import json
 import logging
 import os
@@ -7,7 +7,7 @@ import sys
 
 from packaging.version import Version
 
-from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin
+from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin, AttributeEditorPlugin
 
 
 class PluginInfo:
@@ -37,7 +37,8 @@ class PluginManager:
             "archive": {},
             "checksum": {},
             "search": {},
-            "viewer": {}
+            "viewer": {},
+            "attribute_editor": {}
         }
         
         self._install_bundled_plugins()
@@ -71,10 +72,6 @@ class PluginManager:
         logging.info(f"Scanning for plugins in: {self.user_plugins_dir}")
         if not os.path.isdir(self.user_plugins_dir):
             return
-
-        # Add project root to sys.path to allow plugins to import app modules
-        if self.project_root not in sys.path:
-            sys.path.insert(0, self.project_root)
 
         for group_id in os.listdir(self.user_plugins_dir):
             group_path = os.path.join(self.user_plugins_dir, group_id)
@@ -126,12 +123,15 @@ class PluginManager:
         if not entry_point or not class_name:
             raise ValueError("'entry_point' or 'class_name' missing in metadata.json")
 
-        module_path = os.path.join(version_path, entry_point)
-        module_name = f"quickfile.plugins.{group_id}_{artifact_id}_{version}".replace('.', '_')
+        module_name = os.path.splitext(entry_point)[0]
 
-        spec = importlib.util.spec_from_file_location(module_name, module_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        # Add plugin directory to path and import, then remove
+        sys.path.insert(0, version_path)
+        try:
+            module = importlib.import_module(module_name)
+            importlib.reload(module)  # Ensure we get the latest version
+        finally:
+            sys.path.pop(0)
         
         plugin_class = getattr(module, class_name)
         return PluginInfo(group_id, artifact_id, version, version_path, metadata, plugin_class)
@@ -178,4 +178,13 @@ class PluginManager:
         for plugin in self.get_viewer_plugins():
             if plugin.can_view(file_path):
                 return plugin
+        return None
+
+    def get_attribute_editor_plugin(self) -> AttributeEditorPlugin | None:
+        if "attribute_editor" in self.registry:
+            for artifact_id, versions in self.registry["attribute_editor"].items():
+                if versions:
+                    plugin = versions[0].get_instance()
+                    if plugin.is_supported():
+                        return plugin
         return None

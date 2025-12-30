@@ -1,0 +1,10 @@
+{
+  "group_id": "org.quickfile",
+  "artifact_id": "linux_attribute_editor",
+  "version": "1.0.0",
+  "type": "attribute_editor",
+  "name": "Linux Attribute Editor",
+  "description": "A plugin to edit file/directory owner and permissions on Linux.",
+  "entry_point": "plugin.py",
+  "class_name": "LinuxAttributeEditorPlugin"
+}
