@@ -1,5 +1,8 @@
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QAction
+from PyQt6.QtWidgets import QToolBar, QLineEdit, QMenu
 
+from app.translation_manager import translation_manager
 from browser.folder_browser import FolderBrowser
 from panels.function_key_panel import FunctionKeyPanel
 from panels.menu_panel import MenuPanel
@@ -31,7 +34,7 @@ class UIManager:
         self.main_window.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.main_window.mainToolbar)
 
         self.menu_panel = MenuPanel(self.main_window, self.main_window.mainToolbar, app_logic_handler, shortcuts_manager)
-        self.menu_panel.initialize_menus()
+        self.menu_panel.initialize_ui()
 
         self.bottom_panel = FunctionKeyPanel(self.main_window)
         self.main_window.centralWidget().layout().addWidget(self.bottom_panel)
