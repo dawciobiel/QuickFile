@@ -8,18 +8,18 @@ from PyQt6.QtGui import QFileSystemModel, QMovie, QIcon
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter, QTabWidget, QLabel
 
 from app.settings_manager import SettingsManager
-from app.task_queue_manager import Task, TaskType
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
-from browser.flat_view import FlatFileView
-
+from app.plugin_manager import PluginManager
+from app.task_queue_manager import TaskType
 
 class PanelWidget(QWidget):
-    def __init__(self, settings_manager, folder_browser_event_filter, theme_manager: ThemeManager, parent=None):
+    def __init__(self, settings_manager, folder_browser_event_filter, theme_manager, plugin_manager: PluginManager, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
         self._folder_browser_event_filter = folder_browser_event_filter
         self.theme_manager = theme_manager
+        self.plugin_manager = plugin_manager
         
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -39,7 +39,16 @@ class PanelWidget(QWidget):
         self.completer.setModel(self.completer_model)
         self.path_edit.setCompleter(self.completer)
 
-        self.file_view = FlatFileView(self.settings_manager, self.theme_manager, self)
+        # Dynamically create the view from a plugin
+        view_plugin = self.plugin_manager.get_view_mode_plugin("flat") # Default to flat view
+        if view_plugin:
+            # Pass self to the plugin so it can access settings_manager etc.
+            self.file_view = view_plugin.create_view_widget(self)
+        else:
+            # Fallback to a simple label if plugin is not found
+            self.file_view = QLabel("Error: 'flat' view mode plugin not found.")
+            logging.error("'flat' view mode plugin not found.")
+        
         self.layout.addWidget(self.file_view)
 
         self.summary_label = QLabel("Summary")
@@ -164,12 +173,13 @@ class FolderBrowser(QWidget):
     current_directory_changed = pyqtSignal(str)
     status_message_requested = pyqtSignal(str)
 
-    def __init__(self, settings_manager: SettingsManager = None, theme_manager: ThemeManager = None, parent=None):
+    def __init__(self, settings_manager: SettingsManager, theme_manager: ThemeManager, plugin_manager: PluginManager, parent=None):
         super().__init__(parent)
         uic.loadUi("ui/folder_browser.ui", self)
         
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager
+        self.plugin_manager = plugin_manager
         self.active_panel_widget = None
         self.current_paths = {}
         self._init_tab_widget(self.leftTabWidget)
@@ -183,7 +193,7 @@ class FolderBrowser(QWidget):
         self._refresh_timer.setInterval(refresh_interval)
         
         self._refresh_timer.timeout.connect(self._do_refresh)
-
+        
         self.spinner_movie = QMovie("resources/icons/spinner.gif")
         self.busy_tabs = set()
         self.spinner_movie.frameChanged.connect(self._update_busy_icons)
@@ -197,7 +207,7 @@ class FolderBrowser(QWidget):
         tab_widget.currentChanged.connect(lambda index, tw=tab_widget: self._on_tab_changed(tw, index))
 
     def _create_panel_widget(self, path):
-        panel = PanelWidget(self.settings_manager, self, self.theme_manager, self)
+        panel = PanelWidget(self.settings_manager, self, self.theme_manager, self.plugin_manager, self)
         panel.file_view.set_path(path)
         panel.file_view.path_changed.connect(lambda new_path, p=panel: self._update_tab_title(p, new_path))
         panel.file_view.file_selected.connect(self.file_selected.emit)
@@ -398,8 +408,6 @@ class FolderBrowser(QWidget):
             self.active_panel_widget.file_view.set_path(path)
 
     def calculate_selected_directory_size(self):
-        # This method is now handled by ApplicationLogicHandler creating a task.
-        # We can remove it or leave it empty/deprecated.
         pass
 
     def update_directory_size(self, path, size):
@@ -413,11 +421,7 @@ class FolderBrowser(QWidget):
             if panel.file_view.get_current_path() == os.path.dirname(path):
                  panel.file_view.model.update_directory_size(path, size)
 
-    def handle_task_completion(self, task: Task):
-        """
-        Slot to handle completed tasks from the TaskQueueManager.
-        Checks if any open tabs are in a now-deleted directory.
-        """
+    def handle_task_completion(self, task):
         if task.type != TaskType.DELETE:
             return
 
@@ -431,14 +435,12 @@ class FolderBrowser(QWidget):
             if not os.path.exists(current_path):
                 logging.info(f"Path no longer exists: {current_path}. Navigating up.")
                 
-                # Navigate up to the first existing parent
                 parent_path = current_path
                 while not os.path.exists(parent_path) and parent_path != os.path.dirname(parent_path):
                     parent_path = os.path.dirname(parent_path)
                 
                 panel.file_view.set_path(parent_path)
                 
-                # Emit a signal to show a message in the status bar
                 message = translation_manager.translate("FolderBrowser", "Directory no longer exists. Navigated up.")
                 self.status_message_requested.emit(message)
 
@@ -472,11 +474,9 @@ class FolderBrowser(QWidget):
                 tab_widget.setTabIcon(index, current_frame_icon)
 
     def _paths_are_related(self, path1, path2):
-        """Check if two paths are related (one contains the other)."""
         norm_path1 = os.path.normpath(path1)
         norm_path2 = os.path.normpath(path2)
 
-        # Add trailing slashes for consistent startswith checks
         path1_sep = os.path.join(norm_path1, '')
         path2_sep = os.path.join(norm_path2, '')
 
