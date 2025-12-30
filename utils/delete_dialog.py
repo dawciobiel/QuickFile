@@ -1,6 +1,7 @@
 import os
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog
+from app.action_logger import action_logger
 from app.translation_manager import translation_manager
 from app.task_queue_manager import Task, TaskType, TaskStatus
 
@@ -67,8 +68,10 @@ class DeleteDialog(QDialog):
         self.queue_button.setVisible(False)
         self.cancel_button.setText(translation_manager.translate("Buttons", "Hide"))
 
-        self.task = Task(TaskType.DELETE, self.item_paths, options=self.get_options())
-        
+        options = self.get_options()
+        action_logger.log_action("delete", paths=self.item_paths, options=options)
+
+        self.task = Task(TaskType.DELETE, self.item_paths, options=options)
         self.task_queue_manager.add_task(self.task)
         
         self.task.progress_changed.connect(self.progressBar.setValue)
