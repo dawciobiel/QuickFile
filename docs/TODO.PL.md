@@ -4,14 +4,6 @@
 
 - [ ] **Refactor, Chore, Cleaning**: Być może część starych branchy, które nie są już potrzebne i nie będą — należy skasować.
 
-- [ ] **Zaawansowana edycja atrybutów plików (Plugin)**:
-    - Stworzyć system pluginów do edycji atrybutów, zależny od systemu operacyjnego (Linux/Windows).
-    - Zaprojektować ergonomiczne okno dialogowe (wzorowane np. na Double Commander), umożliwiające zmianę:
-        - Uprawnień (chmod / ACL).
-        - Właściciela i grupy (chown / chgrp).
-        - Dat (utworzenia, modyfikacji, dostępu).
-    - Zapewnić obsługę wielu plików jednocześnie (zmiana atrybutów dla zaznaczenia).
-
 - [ ] **Ulepszenie paska narzędzi (Toolbar)**:
     - [ ] Poprawić wygląd ikon na pasku narzędzi, aby były spójne i profesjonalne.
     - [ ] Dodać w menu "Widok" opcję "Pokaż/Ukryj pasek narzędzi".
@@ -22,8 +14,6 @@
 
 - [ ] **Plugin do obsługi linków symbolicznych**: Przenieść obecną funkcjonalność tworzenia i modyfikowania linków symbolicznych do dedykowanego pluginu. Plugin powinien być dostosowany do różnych systemów operacyjnych (Linux, macOS, Windows), oferując odpowiednie opcje i interfejs dla każdego z nich.
 
-- [ ] **Odtwarzanie logów akcji**: Stworzyć narzędzie lub tryb w aplikacji, który potrafi odtworzyć zanonimizowany plik `actions.log`, symulując działania użytkownika w celu debugowania.
-
 - [ ] **Feature**: Możliwość ustalania maksymalnej prędkości podczas procesu kopiowaniu plików. To powinien być jakiś suwak lub spinner w oknie dialogowym aktualnie wykonywanego procesu kopiowania. A swoją drogą nie wiem, jak zaimplementować ogranicznik prędkości kopiowanych plików. 
 
 - [ ] **Feature**: Pod Windows (i jego systemem plików) czasami może być problem ze zbyt długimi nazwami plików lub zbyt długą ścieżką. Przyjrzeć się temu problemowi i dodać odpowiednią funkcjonalność dla "zachowania nazwy pliku".
@@ -31,6 +21,12 @@
 - [ ] **Feature improvement**: Pasek postępu w oknie dialogowym do kopiowania/przenoszenia mógłby być w dwóch kolorach. Kolor reprezentowałby odczyt i zapis danych na nośniku. 
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Zaawansowana edycja atrybutów plików (Plugin)**: Stworzono fundament pod edycję atrybutów w formie pluginu. Zaimplementowano
+  pierwszy plugin (`linux_attribute_editor`) do zmiany właściciela i grupy plików na systemach POSIX.
+
+- [x] **Odtwarzanie logów akcji**: Stworzono skrypt `scripts/replay_actions.py`, który odtwarza zanonimizowane logi akcji użytkownika w
+  bezpiecznej piaskownicy (sandbox), co ułatwia debugowanie. Zintegrowano logowanie z kluczowymi operacjami.
 
 - [x] **Wbudowany podgląd plików (F3)**: Zaimplementowano zaawansowany podgląd plików jako niezależny plugin. Obsługuje tryby Text, HEX, DEC, BIN, wybór kodowania, zawijanie wierszy i numerację linii. Dodano opcję w ustawieniach do przełączania między wbudowanym a zewnętrznym viewerem.
 
