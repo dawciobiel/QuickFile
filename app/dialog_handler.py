@@ -13,16 +13,14 @@ from app.ui_state_provider import UIStateProvider
 from favorites.favorites_manager import FavoritesManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
-from file_operations.file_manager import FileManager, FileManagerError
+from file_operations.file_manager import FileManager
 from file_operations.properties_manager import get_file_properties
 from utils.about_dialog import AboutDialog
 from utils.checksum_dialog import ChecksumDialog
 from utils.compare_dialog import CompareDialog
 from utils.copy_dialog import CopyDialog
-from utils.create_link_dialog import CreateLinkDialog
 from utils.delete_dialog import DeleteDialog
 from utils.favorites_dialog import FavoritesDialog
-from utils.modify_link_dialog import ModifyLinkDialog
 from utils.move_dialog import MoveDialog
 from utils.properties_dialog import PropertiesDialog
 from utils.search_dialog import SearchDialog
@@ -322,50 +320,3 @@ class DialogHandler:
             message = self.file_manager.rename_item(selected_path, new_name)
             self.main_window.statusBar().showMessage(message)
             self.ui_state_provider.folder_browser.refresh_all_views()
-
-    def create_link(self, checked=False):
-        source_path = self.ui_state_provider.get_current_selected_path()
-        if not source_path:
-            QMessageBox.warning(self.main_window, "Warning", "Please select a source file or directory.")
-            return
-            
-        link_dir = self.ui_state_provider.get_inactive_panel_path()
-        if not link_dir:
-            link_dir = self.ui_state_provider.get_active_panel_path()
-
-        dialog = CreateLinkDialog(self.main_window, source_path, link_dir)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            details = dialog.get_link_details()
-            if details:
-                source, link, is_hardlink = details
-                try:
-                    action_logger.log_action("create_link", source=source, link=link, is_hardlink=is_hardlink)
-                    message = self.file_manager.create_link(source, link, is_hardlink)
-                    self.main_window.statusBar().showMessage(message)
-                    self.ui_state_provider.folder_browser.refresh_all_views()
-                except (FileManagerError, ValueError, FileExistsError) as e:
-                    QMessageBox.critical(self.main_window, "Error", str(e))
-
-    def modify_symbolic_link(self, checked=False):
-        link_path = self.ui_state_provider.get_current_selected_path()
-        if not link_path or not os.path.islink(link_path):
-            QMessageBox.warning(self.main_window, "Warning", "Please select a symbolic link to modify.")
-            return
-
-        try:
-            target_path = os.readlink(link_path)
-        except OSError as e:
-            QMessageBox.critical(self.main_window, "Error", f"Could not read link target: {e}")
-            return
-
-        dialog = ModifyLinkDialog(self.main_window, link_path, target_path)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            new_target = dialog.get_new_target()
-            if new_target and new_target != target_path:
-                try:
-                    action_logger.log_action("modify_link", link=link_path, new_target=new_target)
-                    message = self.file_manager.modify_symbolic_link(link_path, new_target)
-                    self.main_window.statusBar().showMessage(message)
-                    self.ui_state_provider.folder_browser.refresh_all_views()
-                except (FileManagerError, ValueError, FileNotFoundError) as e:
-                    QMessageBox.critical(self.main_window, "Error", str(e))

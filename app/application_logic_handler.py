@@ -6,7 +6,6 @@ import subprocess
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QMessageBox
 
-from app.action_logger import action_logger
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
@@ -214,11 +213,37 @@ class ApplicationLogicHandler(QObject):
 
     @handle_error
     def create_link(self, checked=False):
-        self.dialog_handler.create_link()
+        source_path = self.ui_state_provider.get_current_selected_path()
+        if not source_path:
+            QMessageBox.warning(self.main_window, "Warning", "Please select a source file or directory.")
+            return
+
+        link_dir = self.ui_state_provider.get_inactive_panel_path()
+        if not link_dir:
+            link_dir = self.ui_state_provider.get_active_panel_path()
+
+        plugin = self.task_queue_manager.plugin_manager.get_symlink_plugin()
+        if plugin:
+            plugin.create_link(source_path, link_dir, self.main_window)
+            self.ui_state_provider.folder_browser.refresh_all_views()
+        else:
+            QMessageBox.warning(self.main_window, "Not Supported",
+                                "Symlink creation is not supported on this system or no plugin is available.")
 
     @handle_error
     def modify_symbolic_link(self, checked=False):
-        self.dialog_handler.modify_symbolic_link()
+        link_path = self.ui_state_provider.get_current_selected_path()
+        if not link_path:
+            QMessageBox.warning(self.main_window, "Warning", "Please select a symbolic link to modify.")
+            return
+
+        plugin = self.task_queue_manager.plugin_manager.get_symlink_plugin()
+        if plugin:
+            plugin.modify_link(link_path, self.main_window)
+            self.ui_state_provider.folder_browser.refresh_all_views()
+        else:
+            QMessageBox.warning(self.main_window, "Not Supported",
+                                "Symlink modification is not supported on this system or no plugin is available.")
 
     @handle_error
     def refresh_all_views(self, checked=False):

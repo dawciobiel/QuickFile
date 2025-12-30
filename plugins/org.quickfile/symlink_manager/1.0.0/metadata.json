@@ -1,0 +1,10 @@
+{
+  "group_id": "org.quickfile",
+  "artifact_id": "symlink_manager",
+  "version": "1.0.0",
+  "type": "symlink",
+  "name": "Symlink Manager",
+  "description": "Provides functionality to create and modify symbolic and hard links.",
+  "entry_point": "plugin.py",
+  "class_name": "SymlinkManagerPlugin"
+}

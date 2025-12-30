@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from PyQt6.QtWidgets import QWidget
+
 
 class FileOperationPlugin(ABC):
     """
@@ -128,5 +130,32 @@ class ViewModePlugin(FileOperationPlugin):
         """
         Creates and returns the main widget for this view mode.
         This widget should contain the model and the view (e.g., QTableView).
+        """
+        pass
+
+
+class SymlinkPlugin(FileOperationPlugin):
+    """
+    Interface for plugins that handle symbolic and hard links.
+    """
+
+    @abstractmethod
+    def is_supported(self) -> bool:
+        """
+        Returns True if the plugin can run on the current operating system.
+        """
+        pass
+
+    @abstractmethod
+    def create_link(self, source_path: str, default_link_dir: str, parent: QWidget):
+        """
+        Opens a dialog to create a link (symbolic or hard) to the source path.
+        """
+        pass
+
+    @abstractmethod
+    def modify_link(self, link_path: str, parent: QWidget):
+        """
+        Opens a dialog to modify an existing symbolic link.
         """
         pass
