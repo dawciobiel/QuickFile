@@ -4,10 +4,6 @@
 
 - [ ] **Refactor, Chore, Cleaning**: Być może część starych branchy, które nie są już potrzebne i nie będą — należy skasować.
 
-- [ ] **Ulepszenie paska narzędzi (Toolbar)**:
-    - [ ] Poprawić wygląd ikon na pasku narzędzi, aby były spójne i profesjonalne.
-    - [ ] Dodać w menu "Widok" opcję "Pokaż/Ukryj pasek narzędzi".
-
 - [ ] **Refaktoryzacja modeli systemu plików**: Stworzyć abstrakcyjną klasę bazową `AbstractFileSystemModel`, która zdefiniuje wspólny interfejs dla obecnego `FlatFileSystemModel`. Pozwoli to w przyszłości na łatwe dodanie innych modeli, np. `TreeFileSystemModel` (widok drzewa), zachowując spójność API (metody `filePath`, `fileName`, `isDir`).
 
 - [ ] **Architektura pluginów**: Zaprojektować i zaimplementować system wtyczek, który w przyszłości pozwoli na łatwe dodawanie obsługi nowych formatów archiwów (np. tworzenie RAR) i innych funkcjonalności.
@@ -21,6 +17,9 @@
 - [ ] **Feature improvement**: Pasek postępu w oknie dialogowym do kopiowania/przenoszenia mógłby być w dwóch kolorach. Kolor reprezentowałby odczyt i zapis danych na nośniku. 
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Ulepszenie paska narzędzi (Toolbar)**: Stworzono dynamiczny pasek narzędzi, budowany na podstawie pliku konfiguracyjnego
+  `toolbar_layout.json`. Dodano ikony SVG dla wszystkich akcji oraz opcję pokazywania/ukrywania paska w menu "Widok".
 
 - [x] **Zaawansowana edycja atrybutów plików (Plugin)**: Stworzono fundament pod edycję atrybutów w formie pluginu. Zaimplementowano
   pierwszy plugin (`linux_attribute_editor`) do zmiany właściciela i grupy plików na systemach POSIX.
