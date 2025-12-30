@@ -1,6 +1,7 @@
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog
 
+from app.action_logger import action_logger
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from ui.dual_progress_bar import DualProgressBar
@@ -82,8 +83,10 @@ class MoveDialog(QDialog):
         self.queue_button.setVisible(False)
         self.cancel_button.setText(translation_manager.translate("Buttons", "Hide"))
 
-        self.task = Task(TaskType.MOVE, self.source_paths, self.destination_path, self.get_options())
-        
+        options = self.get_options()
+        action_logger.log_action("move", sources=self.source_paths, destination=self.destination_path, options=options)
+
+        self.task = Task(TaskType.MOVE, self.source_paths, self.destination_path, options)
         self.task_queue_manager.add_task(self.task)
 
         self.task.progress_changed.connect(self.update_progress)
