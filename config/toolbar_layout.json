@@ -1,0 +1,58 @@
+[
+  {
+    "id": "view.refresh",
+    "visible": true
+  },
+  {
+    "id": "toolbar.go_up",
+    "visible": true
+  },
+  {
+    "id": "separator",
+    "visible": true
+  },
+  {
+    "id": "operations.view",
+    "visible": true
+  },
+  {
+    "id": "operations.edit",
+    "visible": true
+  },
+  {
+    "id": "operations.copy",
+    "visible": true
+  },
+  {
+    "id": "operations.move",
+    "visible": true
+  },
+  {
+    "id": "operations.new_folder",
+    "visible": true
+  },
+  {
+    "id": "operations.delete",
+    "visible": true
+  },
+  {
+    "id": "separator",
+    "visible": true
+  },
+  {
+    "id": "view.search",
+    "visible": true
+  },
+  {
+    "id": "view.synchronize",
+    "visible": true
+  },
+  {
+    "id": "separator",
+    "visible": true
+  },
+  {
+    "id": "options.general_settings",
+    "visible": true
+  }
+]
