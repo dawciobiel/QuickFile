@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-
 from PyQt6.QtWidgets import QWidget
-
 
 class FileOperationPlugin(ABC):
     """
@@ -97,12 +95,10 @@ class ViewerPlugin(FileOperationPlugin):
         """
         pass
 
-
 class AttributeEditorPlugin(FileOperationPlugin):
     """
     Interface for plugins that provide a file attribute editing capability.
     """
-
     @abstractmethod
     def is_supported(self) -> bool:
         """
@@ -114,5 +110,23 @@ class AttributeEditorPlugin(FileOperationPlugin):
     def open_editor(self, path: str, parent: QWidget):
         """
         Opens a dialog to edit attributes for the given file or directory path.
+        """
+        pass
+
+class ViewModePlugin(FileOperationPlugin):
+    """
+    Interface for plugins that provide a file system view mode (e.g., Flat, Tree).
+    """
+    @property
+    @abstractmethod
+    def view_mode_name(self) -> str:
+        """The name of the view mode, e.g., 'flat' or 'tree'."""
+        pass
+
+    @abstractmethod
+    def create_view_widget(self, parent: QWidget) -> QWidget:
+        """
+        Creates and returns the main widget for this view mode.
+        This widget should contain the model and the view (e.g., QTableView).
         """
         pass

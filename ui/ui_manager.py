@@ -10,7 +10,7 @@ from panels.menu_panel import MenuPanel
 
 class UIManager:
     def __init__(self, main_window, settings_manager, file_manager, file_comparator,
-                 directory_synchronizer, favorites_manager, theme_manager):
+                 directory_synchronizer, favorites_manager, theme_manager, plugin_manager):
         self.main_window = main_window
         self.settings_manager = settings_manager
         self.file_manager = file_manager
@@ -18,6 +18,7 @@ class UIManager:
         self.directory_synchronizer = directory_synchronizer
         self.favorites_manager = favorites_manager
         self.theme_manager = theme_manager
+        self.plugin_manager = plugin_manager
 
     def init_ui(self, app_logic_handler, shortcuts_manager):
         self.main_window.centralWidget().layout().setContentsMargins(5, 5, 5, 5)
@@ -25,6 +26,7 @@ class UIManager:
         self.folder_browser = FolderBrowser(
             settings_manager=self.settings_manager,
             theme_manager=self.theme_manager,
+            plugin_manager=self.plugin_manager,
             parent=self.main_window
         )
         self.main_window.browser_tab.layout().addWidget(self.folder_browser)
