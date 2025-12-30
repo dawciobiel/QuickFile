@@ -1,5 +1,5 @@
 from PyQt6 import uic, sip
-from PyQt6.QtWidgets import QMainWindow, QApplication
+from PyQt6.QtWidgets import QMainWindow, QApplication, QProgressBar, QLabel, QPushButton, QMessageBox
 
 from __version__ import __version__
 from app.application_logic_handler import ApplicationLogicHandler
@@ -16,9 +16,11 @@ from favorites.favorites_manager import FavoritesManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager
-from panels.search_results_panel import SearchResultsPanel
 from panels.task_queue_panel import TaskQueuePanel
+from panels.search_results_panel import SearchResultsPanel
+from ui.progress_bar_manager import ProgressBarManager
 from ui.ui_manager import UIManager
+from utils.dialogs import show_error_message
 from utils.checksum_result_dialog import ChecksumResultDialog
 
 
@@ -186,6 +188,14 @@ class MainWindow(QMainWindow):
     def load_settings(self):
         self.settings_manager.load_window_settings(self)
         self.ui_manager.load_panel_settings()
+
+        # Load toolbar visibility
+        toolbar_visible = self.settings_manager.get_setting("toolbar_visible", True)
+        self.mainToolbar.setVisible(toolbar_visible)
+        # Update the checkbox in the menu
+        show_toolbar_action = self.ui_manager.menu_panel.actions.get("view.show_toolbar")
+        if show_toolbar_action:
+            show_toolbar_action.setChecked(toolbar_visible)
 
     def save_settings(self):
         self.settings_manager.save_window_settings(self)

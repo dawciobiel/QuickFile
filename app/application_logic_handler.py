@@ -6,6 +6,7 @@ import subprocess
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QMessageBox
 
+from app.action_logger import action_logger
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
@@ -50,7 +51,7 @@ class ApplicationLogicHandler(QObject):
         self.dialog_handler.show_file_viewer_dialog()
 
     @handle_error
-    def _handle_f4_key(self):
+    def _handle_f4_key(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
         if selected_path and os.path.isfile(selected_path):
             editor_command = self.settings_handler.settings_manager.get_setting("editor_command", "xdg-open %f")
@@ -226,6 +227,11 @@ class ApplicationLogicHandler(QObject):
     @handle_error
     def go_up_directory(self, checked=False):
         self.ui_state_provider.folder_browser.go_up_directory()
+
+    @handle_error
+    def toggle_toolbar_visibility(self, checked):
+        self.main_window.mainToolbar.setVisible(checked)
+        self.settings_handler.settings_manager.set_setting("toolbar_visible", checked)
 
     def _get_active_panel_path(self):
         return self.ui_state_provider.get_active_panel_path()
