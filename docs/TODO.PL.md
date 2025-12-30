@@ -4,6 +4,18 @@
 
 - [ ] **Refactor, Chore, Cleaning**: Być może część starych branchy, które nie są już potrzebne i nie będą — należy skasować.
 
+- [ ] **Zaawansowana edycja atrybutów plików (Plugin)**:
+    - Stworzyć system pluginów do edycji atrybutów, zależny od systemu operacyjnego (Linux/Windows).
+    - Zaprojektować ergonomiczne okno dialogowe (wzorowane np. na Double Commander), umożliwiające zmianę:
+        - Uprawnień (chmod / ACL).
+        - Właściciela i grupy (chown / chgrp).
+        - Dat (utworzenia, modyfikacji, dostępu).
+    - Zapewnić obsługę wielu plików jednocześnie (zmiana atrybutów dla zaznaczenia).
+
+- [ ] **Ulepszenie paska narzędzi (Toolbar)**:
+    - [ ] Poprawić wygląd ikon na pasku narzędzi, aby były spójne i profesjonalne.
+    - [ ] Dodać w menu "Widok" opcję "Pokaż/Ukryj pasek narzędzi".
+
 - [ ] **Refaktoryzacja modeli systemu plików**: Stworzyć abstrakcyjną klasę bazową `AbstractFileSystemModel`, która zdefiniuje wspólny interfejs dla obecnego `FlatFileSystemModel`. Pozwoli to w przyszłości na łatwe dodanie innych modeli, np. `TreeFileSystemModel` (widok drzewa), zachowując spójność API (metody `filePath`, `fileName`, `isDir`).
 
 - [ ] **Architektura pluginów**: Zaprojektować i zaimplementować system wtyczek, który w przyszłości pozwoli na łatwe dodawanie obsługi nowych formatów archiwów (np. tworzenie RAR) i innych funkcjonalności.
