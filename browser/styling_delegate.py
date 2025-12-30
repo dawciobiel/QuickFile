@@ -1,55 +1,37 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QPalette
-from PyQt6.QtWidgets import QStyledItemDelegate, QStyle  # Import QStyle
+from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtWidgets import QStyledItemDelegate, QStyle
 
-from browser.flat_file_system_model import FileStyleRole
-
+FileStyleRole = Qt.ItemDataRole.UserRole + 1
 
 class FileStyleDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.default_font = QFont()
+        self.bold_font = QFont()
+        self.bold_font.setBold(True)
 
-    def initStyleOption(self, option, index):
-        super().initStyleOption(option, index)
+    def paint(self, painter, option, index):
+        # Let the base class handle the painting first
+        super().paint(painter, option, index)
 
-        # Flag to check if any custom "Insert" style was applied
-        insert_style_applied = False
+        # Custom styling for insert-selected items
+        if index.model().filePath(index) in index.model()._insert_selected_items:
+            if option.state & QStyle.StateFlag.State_Selected:
+                # If the item is also selected by the view, we might not need to do anything extra
+                # or we could blend colors, but for now, let's just let the selection style dominate.
+                pass
+            else:
+                # Apply custom style for insert-selection only when not normally selected
+                painter.save()
+                
+                # Example: draw a colored rectangle over the row
+                # You can get colors/fonts from settings manager if needed
+                rect = option.rect
+                # A subtle overlay color
+                overlay_color = QColor(255, 255, 0, 20) # Semi-transparent yellow
+                painter.fillRect(rect, overlay_color)
+                
+                painter.restore()
 
-        # 1. Apply theme-based file styles (from file_styles.json)
-        style_data = index.data(FileStyleRole)
-        if style_data:
-            if "foreground_color" in style_data:
-                option.palette.setColor(QPalette.ColorRole.Text, QColor(style_data["foreground_color"]))
-            if "background_color" in style_data:
-                option.palette.setColor(QPalette.ColorRole.Base, QColor(style_data["background_color"]))
-                option.palette.setColor(QPalette.ColorRole.AlternateBase, QColor(style_data["background_color"]))
-            if style_data.get("font_weight") == "bold":
-                option.font.setBold(True)
-            if style_data.get("font_italic"):
-                option.font.setItalic(True)
-            if style_data.get("font_strikethrough"):
-                option.font.setStrikeOut(True)
-
-        # 2. Apply "Insert" selection styles (these should override theme styles)
-        insert_fg_color = index.data(Qt.ItemDataRole.ForegroundRole)
-        # insert_bg_color = index.data(Qt.ItemDataRole.BackgroundRole) # Removed
-        insert_font = index.data(Qt.ItemDataRole.FontRole)
-
-        if insert_fg_color is not None:
-            option.palette.setColor(QPalette.ColorRole.Text, insert_fg_color)
-            insert_style_applied = True
-
-        # Removed BackgroundRole handling
-        # if insert_bg_color is not None:
-        #     option.palette.setColor(QPalette.ColorRole.Base, insert_bg_color)
-        #     option.palette.setColor(QPalette.ColorRole.AlternateBase, insert_bg_color)
-        #     insert_style_applied = True
-
-        if insert_font is not None:
-            option.font = insert_font
-            insert_style_applied = True
-
-        # If any "Insert" style was applied, remove the default selection state
-        # to prevent it from being drawn over our custom background.
-        if insert_style_applied:
-            option.state &= ~QStyle.StateFlag.State_Selected
+        # You can add more custom painting logic here if needed

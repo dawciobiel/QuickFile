@@ -1,14 +1,12 @@
-import importlib
+import os
 import json
 import logging
-import os
+import importlib
 import shutil
 import sys
-
 from packaging.version import Version
 
-from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin, AttributeEditorPlugin
-
+from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin, AttributeEditorPlugin, ViewModePlugin
 
 class PluginInfo:
     """Holds metadata and the loaded class for a specific plugin version."""
@@ -38,7 +36,8 @@ class PluginManager:
             "checksum": {},
             "search": {},
             "viewer": {},
-            "attribute_editor": {}
+            "attribute_editor": {},
+            "view_mode": {}
         }
         
         self._install_bundled_plugins()
@@ -124,12 +123,12 @@ class PluginManager:
             raise ValueError("'entry_point' or 'class_name' missing in metadata.json")
 
         module_name = os.path.splitext(entry_point)[0]
-
+        
         # Add plugin directory to path and import, then remove
         sys.path.insert(0, version_path)
         try:
             module = importlib.import_module(module_name)
-            importlib.reload(module)  # Ensure we get the latest version
+            importlib.reload(module) # Ensure we get the latest version
         finally:
             sys.path.pop(0)
         
@@ -187,4 +186,18 @@ class PluginManager:
                     plugin = versions[0].get_instance()
                     if plugin.is_supported():
                         return plugin
+        return None
+
+    def get_view_mode_plugins(self) -> list[ViewModePlugin]:
+        plugins = []
+        if "view_mode" in self.registry:
+            for artifact_id, versions in self.registry["view_mode"].items():
+                if versions:
+                    plugins.append(versions[0].get_instance())
+        return plugins
+
+    def get_view_mode_plugin(self, name: str) -> ViewModePlugin | None:
+        for plugin in self.get_view_mode_plugins():
+            if plugin.view_mode_name == name:
+                return plugin
         return None
