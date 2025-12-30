@@ -6,7 +6,7 @@ import stat
 
 from PyQt6 import uic
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QCompleter
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QCompleter, QGridLayout, QLineEdit, QLabel, QComboBox
 
 from app.translation_manager import translation_manager
 
@@ -15,9 +15,26 @@ class ChangeOwnerDialog(QDialog):
     def __init__(self, path, parent=None):
         super().__init__(parent)
 
+        # --- Declare UI attributes for linter ---
+        self.gridLayout: QGridLayout = None
+        self.value_name_top: QLineEdit = None
+        self.value_owner: QLabel = None
+        self.value_group: QLabel = None
+        self.value_size: QLabel = None
+        self.value_permissions: QLabel = None
+        self.owner_combo: QComboBox = None
+        self.group_combo: QComboBox = None
+        self.buttonBox: QDialogButtonBox = None
+        # -----------------------------------------
+        
         ui_path = os.path.join(os.path.dirname(__file__), "change_owner_dialog.ui")
         uic.loadUi(ui_path, self)
 
+        # Set column stretch programmatically
+        self.gridLayout.setColumnStretch(0, 2)
+        self.gridLayout.setColumnStretch(1, 1)
+        self.gridLayout.setColumnStretch(2, 1)
+        
         self.path = path
         self.setWindowTitle(translation_manager.translate("ChangeOwnerDialog", "Change Owner & Group"))
 
@@ -33,9 +50,9 @@ class ChangeOwnerDialog(QDialog):
         try:
             st = os.stat(self.path)
 
-            self.value_name.setText(os.path.basename(self.path))
-            self.value_name.setReadOnly(True)  # Ensure it's read-only
-
+            self.value_name_top.setText(os.path.basename(self.path))
+            self.value_name_top.setReadOnly(True)  # Ensure it's read-only
+            
             owner_name = pwd.getpwuid(st.st_uid).pw_name
             self.value_owner.setText(owner_name)
 
@@ -55,7 +72,7 @@ class ChangeOwnerDialog(QDialog):
 
         except (OSError, KeyError) as e:
             logging.error(f"Could not retrieve file info for {self.path}: {e}")
-            self.value_name.setText(f"Error: {e}")
+            self.value_name_top.setText(f"Error: {e}")
 
     def _populate_combos(self):
         # Populate users

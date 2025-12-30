@@ -6,86 +6,90 @@
             <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>600</width>
-                <height>250</height>
+                <width>650</width>
+                <height>280</height>
             </rect>
         </property>
         <property name="windowTitle">
             <string>Change Owner &amp; Group</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout">
+        <layout class="QVBoxLayout" name="verticalLayout_main">
+            <item>
+                <layout class="QFormLayout" name="formLayout_2">
+                    <item row="0" column="0">
+                        <widget class="QLabel" name="label_name_top">
+                            <property name="text">
+                                <string>Name:</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item row="0" column="1">
+                        <widget class="QLineEdit" name="value_name_top">
+                            <property name="readOnly">
+                                <bool>true</bool>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
+            </item>
             <item>
                 <layout class="QGridLayout" name="gridLayout">
                     <item row="0" column="0">
                         <widget class="QGroupBox" name="object_group">
                             <property name="title">
-                                <string>Object</string>
+                                <string>Current Attributes</string>
                             </property>
                             <layout class="QFormLayout" name="formLayout">
                                 <item row="0" column="0">
-                                    <widget class="QLabel" name="label_name">
-                                        <property name="text">
-                                            <string>Name:</string>
-                                        </property>
-                                    </widget>
-                                </item>
-                                <item row="0" column="1">
-                                    <widget class="QLineEdit" name="value_name">
-                                        <property name="readOnly">
-                                            <bool>true</bool>
-                                        </property>
-                                    </widget>
-                                </item>
-                                <item row="1" column="0">
                                     <widget class="QLabel" name="label_owner">
                                         <property name="text">
                                             <string>Owner:</string>
                                         </property>
                                     </widget>
                                 </item>
-                                <item row="1" column="1">
+                                <item row="0" column="1">
                                     <widget class="QLabel" name="value_owner">
                                         <property name="text">
                                             <string/>
                                         </property>
                                     </widget>
                                 </item>
-                                <item row="2" column="0">
+                                <item row="1" column="0">
                                     <widget class="QLabel" name="label_group">
                                         <property name="text">
                                             <string>Group:</string>
                                         </property>
                                     </widget>
                                 </item>
-                                <item row="2" column="1">
+                                <item row="1" column="1">
                                     <widget class="QLabel" name="value_group">
                                         <property name="text">
                                             <string/>
                                         </property>
                                     </widget>
                                 </item>
-                                <item row="3" column="0">
+                                <item row="2" column="0">
                                     <widget class="QLabel" name="label_size">
                                         <property name="text">
                                             <string>Size:</string>
                                         </property>
                                     </widget>
                                 </item>
-                                <item row="3" column="1">
+                                <item row="2" column="1">
                                     <widget class="QLabel" name="value_size">
                                         <property name="text">
                                             <string/>
                                         </property>
                                     </widget>
                                 </item>
-                                <item row="4" column="0">
+                                <item row="3" column="0">
                                     <widget class="QLabel" name="label_permissions">
                                         <property name="text">
                                             <string>Permissions:</string>
                                         </property>
                                     </widget>
                                 </item>
-                                <item row="4" column="1">
+                                <item row="3" column="1">
                                     <widget class="QLabel" name="value_permissions">
                                         <property name="text">
                                             <string/>
