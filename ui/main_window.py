@@ -55,7 +55,8 @@ class MainWindow(QMainWindow):
             file_comparator=self.file_comparator,
             directory_synchronizer=self.directory_synchronizer,
             favorites_manager=self.favorites_manager,
-            theme_manager=self.theme_manager
+            theme_manager=self.theme_manager,
+            plugin_manager=self.task_queue_manager.plugin_manager
         )
         
         self.application_logic_handler = ApplicationLogicHandler(

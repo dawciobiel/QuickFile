@@ -1,0 +1,10 @@
+{
+    "group_id": "org.quickfile",
+    "artifact_id": "flat_view",
+    "version": "1.0.0",
+    "type": "view_mode",
+    "name": "Flat View",
+    "description": "A classic flat, two-column file system view.",
+    "entry_point": "plugin.py",
+    "class_name": "FlatViewPlugin"
+}
