@@ -4,10 +4,6 @@
 
 - [ ] **Refactor, Chore, Cleaning**: Być może część starych branchy, które nie są już potrzebne i nie będą — należy skasować.
 
-- [ ] **Architektura pluginów**: Zaprojektować i zaimplementować system wtyczek, który w przyszłości pozwoli na łatwe dodawanie obsługi nowych formatów archiwów (np. tworzenie RAR) i innych funkcjonalności.
-
-- [ ] **Plugin do obsługi linków symbolicznych**: Przenieść obecną funkcjonalność tworzenia i modyfikowania linków symbolicznych do dedykowanego pluginu. Plugin powinien być dostosowany do różnych systemów operacyjnych (Linux, macOS, Windows), oferując odpowiednie opcje i interfejs dla każdego z nich.
-
 - [ ] **Feature**: Możliwość ustalania maksymalnej prędkości podczas procesu kopiowaniu plików. To powinien być jakiś suwak lub spinner w oknie dialogowym aktualnie wykonywanego procesu kopiowania. A swoją drogą nie wiem, jak zaimplementować ogranicznik prędkości kopiowanych plików. 
 
 - [ ] **Feature**: Pod Windows (i jego systemem plików) czasami może być problem ze zbyt długimi nazwami plików lub zbyt długą ścieżką. Przyjrzeć się temu problemowi i dodać odpowiednią funkcjonalność dla "zachowania nazwy pliku".
@@ -16,18 +12,23 @@
 
 ## Zrobione / Zaimplementowane częściowo
 
-- [x] **Refaktoryzacja modeli systemu plików**: Stworzono abstrakcyjną klasę bazową `AbstractFileSystemModel` oraz interfejs
-  `ViewModePlugin`. Przeniesiono dotychczasowy widok płaski (`FlatView`) do niezależnego pluginu `org.quickfile.flat_view`. Aplikacja
-  dynamicznie ładuje widok, co umożliwia łatwe dodanie w przyszłości widoku drzewa.
+- [x] **Uniwersalne okno tworzenia archiwum**: Zaimplementowano `CreateArchiveDialog`, który dynamicznie ładuje dostępne pluginy archiwizujące i pozwala na wybór formatu oraz konfigurację opcji.
 
-- [x] **Ulepszenie paska narzędzi (Toolbar)**: Stworzono dynamiczny pasek narzędzi, budowany na podstawie pliku konfiguracyjnego
-  `toolbar_layout.json`. Dodano ikony SVG dla wszystkich akcji oraz opcję pokazywania/ukrywania paska w menu "Widok".
+- [x] **Plugin do obsługi linków symbolicznych**: Przeniesiono funkcjonalność tworzenia i modyfikowania linków symbolicznych do dedykowanego pluginu `org.quickfile.symlink_manager`.
 
-- [x] **Zaawansowana edycja atrybutów plików (Plugin)**: Stworzono fundament pod edycję atrybutów w formie pluginu. Zaimplementowano
-  pierwszy plugin (`linux_attribute_editor`) do zmiany właściciela i grupy plików na systemach POSIX.
+- [x] **Architektura pluginów**: Zaprojektowano i zaimplementowano system wtyczek, który pozwala na łatwe dodawanie obsługi nowych formatów archiwów, widoków, edytorów atrybutów i innych funkcjonalności.
 
-- [x] **Odtwarzanie logów akcji**: Stworzono skrypt `scripts/replay_actions.py`, który odtwarza zanonimizowane logi akcji użytkownika w
-  bezpiecznej piaskownicy (sandbox), co ułatwia debugowanie. Zintegrowano logowanie z kluczowymi operacjami.
+- [x] **Naprawa skrótów klawiszowych**: Naprawiono błąd, który powodował, że skróty klawiszowe (np. Ctrl+D, Ctrl+Shift+B) przestały działać po refaktoryzacji menu. Zaktualizowano `ShortcutsManager`, aby używał spójnych identyfikatorów akcji.
+
+- [x] **Ulepszone kolorowanie plików**: Dodano obsługę kolorowania specjalnych typów plików (symlinki, hardlinki, pliki ukryte) w widoku płaskim. Zaktualizowano pliki stylów (`file_styles.json`) i logikę delegata.
+
+- [x] **Refaktoryzacja modeli systemu plików**: Stworzono abstrakcyjną klasę bazową `AbstractFileSystemModel` oraz interfejs `ViewModePlugin`. Przeniesiono dotychczasowy widok płaski (`FlatView`) do niezależnego pluginu `org.quickfile.flat_view`. Aplikacja dynamicznie ładuje widok, co umożliwia łatwe dodanie w przyszłości widoku drzewa.
+
+- [x] **Ulepszenie paska narzędzi (Toolbar)**: Stworzono dynamiczny pasek narzędzi, budowany na podstawie pliku konfiguracyjnego `toolbar_layout.json`. Dodano ikony SVG dla wszystkich akcji oraz opcję pokazywania/ukrywania paska w menu "Widok".
+
+- [x] **Zaawansowana edycja atrybutów plików (Plugin)**: Stworzono fundament pod edycję atrybutów w formie pluginu. Zaimplementowano pierwszy plugin (`linux_attribute_editor`) do zmiany właściciela i grupy plików na systemach POSIX.
+
+- [x] **Odtwarzanie logów akcji**: Stworzono skrypt `scripts/replay_actions.py`, który odtwarza zanonimizowane logi akcji użytkownika w bezpiecznej piaskownicy (sandbox), co ułatwia debugowanie. Zintegrowano logowanie z kluczowymi operacjami.
 
 - [x] **Wbudowany podgląd plików (F3)**: Zaimplementowano zaawansowany podgląd plików jako niezależny plugin. Obsługuje tryby Text, HEX, DEC, BIN, wybór kodowania, zawijanie wierszy i numerację linii. Dodano opcję w ustawieniach do przełączania między wbudowanym a zewnętrznym viewerem.
 
