@@ -105,6 +105,11 @@ class FlatFileSystemModel(AbstractFileSystemModel):
 
         self._items = dot_dot_item + other_items
 
+        # Clean up selected items that no longer exist
+        for path in list(self._insert_selected_items):
+            if not os.path.exists(path):
+                self._insert_selected_items.remove(path)
+
     def set_show_dot_files(self, new_dot_files_state):
         if self._show_dot_files == new_dot_files_state:
             return
@@ -490,6 +495,12 @@ class FlatFileView(AbstractFileView):
 
     def get_insert_selected_paths(self):
         return list(self.insert_selected_items)
+
+    def clear_selection(self):
+        logging.debug("FlatFileView: clear_selection called")
+        self.insert_selected_items.clear()
+        self.insert_selection_changed.emit()
+        self.model.layoutChanged.emit()
         
     def handle_key_event(self, event):
         if event.key() == Qt.Key.Key_Insert:
