@@ -19,6 +19,7 @@ from utils.about_dialog import AboutDialog
 from utils.checksum_dialog import ChecksumDialog
 from utils.compare_dialog import CompareDialog
 from utils.copy_dialog import CopyDialog
+from utils.create_archive_dialog import CreateArchiveDialog
 from utils.delete_dialog import DeleteDialog
 from utils.favorites_dialog import FavoritesDialog
 from utils.move_dialog import MoveDialog
@@ -142,19 +143,29 @@ class DialogHandler:
         paths_to_archive = self.ui_state_provider.get_selected_paths()
         if not paths_to_archive:
             raise ValueError("No file/folder selected for archiving.")
+
         if len(paths_to_archive) > 1:
             base_dir = self.ui_state_provider.get_active_panel_path()
         else:
             base_dir = os.path.dirname(paths_to_archive[0])
-        archive_name, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "Create Archive"), translation_manager.translate("DialogHandler", "Archive name (without extension):"))
-        if ok and archive_name:
-            archive_path = os.path.join(base_dir, archive_name + ".zip")
-            action_logger.log_action("create_archive", sources=paths_to_archive, destination=archive_path)
-            
-            task = Task(TaskType.ARCHIVE, source_paths=paths_to_archive, destination_path=archive_path)
-            self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage("Added archive task to queue.")
-            self.ui_state_provider.folder_browser.refresh_all_views()
+
+        dialog = CreateArchiveDialog(self.main_window, self.task_queue_manager.plugin_manager, base_dir)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            data = dialog.get_data()
+            if data:
+                archive_path = data["destination_path"]
+                options = data["options"]
+                # We need to pass the plugin name or instance to the task so TaskQueueManager knows which one to use
+                # Currently TaskQueueManager selects plugin based on extension.
+                # To support explicit plugin selection, we might need to modify Task or TaskQueueManager.
+                # For now, let's rely on extension, but ensure the dialog sets the correct one.
+
+                action_logger.log_action("create_archive", sources=paths_to_archive, destination=archive_path, options=options)
+
+                task = Task(TaskType.ARCHIVE, source_paths=paths_to_archive, destination_path=archive_path, options=options)
+                self.task_queue_manager.add_task(task)
+                self.main_window.statusBar().showMessage("Added archive task to queue.")
+                self.ui_state_provider.folder_browser.refresh_all_views()
 
     def extract_archive(self, checked=False):
         selected_archive_path = self.ui_state_provider.get_current_selected_path()
