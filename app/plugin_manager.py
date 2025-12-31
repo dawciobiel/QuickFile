@@ -7,7 +7,8 @@ import sys
 
 from packaging.version import Version
 
-from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin, AttributeEditorPlugin, ViewModePlugin, SymlinkPlugin
+from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin, AttributeEditorPlugin, ViewModePlugin, SymlinkPlugin, \
+    StandardOperationsPlugin
 
 
 class PluginInfo:
@@ -40,7 +41,8 @@ class PluginManager:
             "viewer": {},
             "attribute_editor": {},
             "view_mode": {},
-            "symlink": {}
+            "symlink": {},
+            "standard_operations": {}
         }
         
         self._install_bundled_plugins()
@@ -212,4 +214,12 @@ class PluginManager:
                     plugin = versions[0].get_instance()
                     if plugin.is_supported():
                         return plugin
+        return None
+
+    def get_standard_operations_plugin(self) -> StandardOperationsPlugin | None:
+        if "standard_operations" in self.registry:
+            for artifact_id, versions in self.registry["standard_operations"].items():
+                if versions:
+                    # Return the first available plugin (highest version)
+                    return versions[0].get_instance()
         return None

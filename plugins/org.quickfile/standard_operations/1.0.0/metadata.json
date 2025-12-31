@@ -1,0 +1,10 @@
+{
+  "group_id": "org.quickfile",
+  "artifact_id": "standard_operations",
+  "version": "1.0.0",
+  "type": "standard_operations",
+  "name": "Standard File Operations",
+  "description": "Provides standard file operations like copy, move, and delete.",
+  "entry_point": "plugin.py",
+  "class_name": "StandardOperationsPluginImpl"
+}
