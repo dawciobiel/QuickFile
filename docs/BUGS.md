@@ -2,7 +2,8 @@
 
 ## Nierozwiązane (Unresolved)
 
-(Brak)
+**Not working**: Przestały działać skróty klawiszowe `Ctrl+D` oraz `Ctrl+Shift+B`, czyli dodawanie do bookmarks oraz wyświetlanie bookmarks.
+
 
 ## Naprawione (Fixed)
 
