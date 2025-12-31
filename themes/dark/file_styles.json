@@ -1,4 +1,17 @@
 {
+  "special_types": {
+    "symlink": {
+      "foreground_color": "#00FFFF",
+      "font_italic": true
+    },
+    "hardlink": {
+      "foreground_color": "#00CCCC"
+    },
+    "hidden": {
+      "foreground_color": "#7f8c8d"
+    }
+  },
+
   "7z": { "foreground_color": "#f1c40f" },
   "7zip": { "foreground_color": "#f1c40f" },
   "gz": { "foreground_color": "#f1c40f" },
