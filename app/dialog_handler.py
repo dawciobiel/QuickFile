@@ -155,10 +155,6 @@ class DialogHandler:
             if data:
                 archive_path = data["destination_path"]
                 options = data["options"]
-                # We need to pass the plugin name or instance to the task so TaskQueueManager knows which one to use
-                # Currently TaskQueueManager selects plugin based on extension.
-                # To support explicit plugin selection, we might need to modify Task or TaskQueueManager.
-                # For now, let's rely on extension, but ensure the dialog sets the correct one.
 
                 action_logger.log_action("create_archive", sources=paths_to_archive, destination=archive_path, options=options)
 
@@ -166,6 +162,7 @@ class DialogHandler:
                 self.task_queue_manager.add_task(task)
                 self.main_window.statusBar().showMessage("Added archive task to queue.")
                 self.ui_state_provider.folder_browser.refresh_all_views()
+                self.ui_state_provider.folder_browser.clear_selection()
 
     def extract_archive(self, checked=False):
         selected_archive_path = self.ui_state_provider.get_current_selected_path()
@@ -179,6 +176,7 @@ class DialogHandler:
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage("Added extract task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
+            self.ui_state_provider.folder_browser.clear_selection()
 
     def calculate_checksum(self, checked=False):
         selected_paths = self.ui_state_provider.get_selected_paths()
@@ -204,6 +202,7 @@ class DialogHandler:
             task = Task(TaskType.CHECKSUM, source_paths=files_only, options=options)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage("Added checksum task to queue.")
+            self.ui_state_provider.folder_browser.clear_selection()
 
     def start_search(self, checked=False):
         current_path = self.ui_state_provider.get_active_panel_path()
@@ -275,6 +274,10 @@ class DialogHandler:
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage(f"Added copy task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
+            self.ui_state_provider.folder_browser.clear_selection()
+        elif dialog.result() == QDialog.DialogCode.Accepted and dialog.task:
+            self.ui_state_provider.folder_browser.refresh_all_views()
+            self.ui_state_provider.folder_browser.clear_selection()
 
     def move_selected_item(self, checked=False):
         paths_to_move = self.ui_state_provider.get_selected_paths()
@@ -294,6 +297,10 @@ class DialogHandler:
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage(f"Added move task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
+            self.ui_state_provider.folder_browser.clear_selection()
+        elif dialog.result() == QDialog.DialogCode.Accepted and dialog.task:
+            self.ui_state_provider.folder_browser.refresh_all_views()
+            self.ui_state_provider.folder_browser.clear_selection()
 
     def paste_item_to_current_dir(self, checked=False):
         current_dir = self.ui_state_provider.get_active_panel_path()
@@ -319,6 +326,10 @@ class DialogHandler:
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage(f"Added delete task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
+            self.ui_state_provider.folder_browser.clear_selection()
+        elif dialog.result() == QDialog.DialogCode.Accepted and dialog.task:
+            self.ui_state_provider.folder_browser.refresh_all_views()
+            self.ui_state_provider.folder_browser.clear_selection()
 
     def rename_selected_item(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()

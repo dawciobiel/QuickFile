@@ -1,334 +1,338 @@
 import logging
 import os
-import time
 import uuid
-from enum import Enum
+from enum import Enum, auto
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal, QRunnable, QThreadPool, QMutex, QWaitCondition
 
-from file_operations.file_manager import OperationCancelledError
+from app.plugin_manager import PluginManager
+
+
+class TaskType(Enum):
+    COPY = auto()
+    MOVE = auto()
+    DELETE = auto()
+    ARCHIVE = auto()
+    EXTRACT = auto()
+    CHECKSUM = auto()
+    SEARCH = auto()
+    SYNC = auto()
+    CALCULATE_SIZE = auto()
 
 
 class TaskStatus(Enum):
-    PENDING = "Pending"
-    RUNNING = "Running"
-    PAUSED = "Paused"
-    FINISHED = "Finished"
-    CANCELLED = "Cancelled"
-    ERROR = "Error"
-
-class TaskType(Enum):
-    COPY = "Copy"
-    MOVE = "Move"
-    DELETE = "Delete"
-    ARCHIVE = "Archive"
-    EXTRACT = "Extract"
-    SYNC = "Sync"
-    CHECKSUM = "Checksum"
-    SEARCH = "Search"
-    CALCULATE_SIZE = "Calculate Size"
+    PENDING = auto()
+    RUNNING = auto()
+    PAUSED = auto()
+    FINISHED = auto()
+    ERROR = auto()
+    CANCELLED = auto()
 
 class Task(QObject):
-    status_changed = pyqtSignal(object)
-    progress_changed = pyqtSignal(object)  # Changed to object to support tuples
+    status_changed = pyqtSignal(TaskStatus)
+    progress_changed = pyqtSignal(object)  # Can be int or tuple (read, write)
     details_changed = pyqtSignal(str)
     directory_changed = pyqtSignal(str)
 
-    def __init__(self, task_type: TaskType, source_paths, destination_path=None, options=None):
+    def __init__(self, task_type: TaskType, source_paths: list[str], destination_path: str = None, options: dict = None):
         super().__init__()
         self.id = str(uuid.uuid4())
         self.type = task_type
         self.source_paths = source_paths
         self.destination_path = destination_path
         self.options = options or {}
-        
-        self._status = TaskStatus.PENDING
-        self._progress = 0
-        self._current_details = ""
-        
-        self.start_time = None
-        self.end_time = None
-        self.error_message = None
+        self.status = TaskStatus.PENDING
+        self.progress = 0
+        self.details = ""
         self.result = None
-        
-        self.task_context = None
+        self.error_message = None
 
-    @property
-    def status(self):
-        return self._status
+    def set_status(self, status: TaskStatus):
+        self.status = status
+        self.status_changed.emit(status)
 
-    @status.setter
-    def status(self, new_status):
-        if self._status != new_status:
-            self._status = new_status
-            self.status_changed.emit(new_status)
-            if new_status == TaskStatus.RUNNING and self.start_time is None:
-                self.start_time = time.time()
-            elif new_status in [TaskStatus.FINISHED, TaskStatus.CANCELLED, TaskStatus.ERROR]:
-                self.end_time = time.time()
+    def set_progress(self, progress):
+        self.progress = progress
+        self.progress_changed.emit(progress)
 
-    @property
-    def progress(self):
-        return self._progress
+    def set_details(self, details: str):
+        self.details = details
+        self.details_changed.emit(details)
 
-    @progress.setter
-    def progress(self, value):
-        if self._progress != value:
-            self._progress = value
-            self.progress_changed.emit(value)
 
-    def set_details(self, details):
-        if self._current_details != details:
-            self._current_details = details
-            self.details_changed.emit(details)
+class TaskContext:
+    def __init__(self):
+        self.is_cancelled = False
+        self.is_paused = False
+        self._pause_mutex = QMutex()
+        self._pause_condition = QWaitCondition()
+
+    def cancel(self):
+        self.is_cancelled = True
+        self.resume()  # Resume if paused to allow cancellation
+
+    def pause(self):
+        self._pause_mutex.lock()
+        self.is_paused = True
+        self._pause_mutex.unlock()
+
+    def resume(self):
+        self._pause_mutex.lock()
+        self.is_paused = False
+        self._pause_condition.wakeAll()
+        self._pause_mutex.unlock()
+
+    def wait_if_paused(self):
+        self._pause_mutex.lock()
+        while self.is_paused:
+            self._pause_condition.wait(self._pause_mutex)
+        self._pause_mutex.unlock()
+
+
+class Worker(QRunnable):
+    def __init__(self, task: Task, task_context: TaskContext, process_func):
+        super().__init__()
+        self.task = task
+        self.task_context = task_context
+        self.process_func = process_func
+        self.signals = WorkerSignals()
+
+    def run(self):
+        try:
+            if self.task_context.is_cancelled:
+                self.signals.cancelled.emit(self.task)
+                return
+
+            result = self.process_func(self.task, self.task_context)
+
+            if self.task_context.is_cancelled:
+                self.signals.cancelled.emit(self.task)
+            else:
+                self.task.result = result
+                self.signals.finished.emit(self.task)
+        except Exception as e:
+            logging.exception(f"Task {self.task.id} failed: {e}")
+            self.task.error_message = str(e)
+            self.signals.error.emit(self.task, str(e))
+
+
+class WorkerSignals(QObject):
+    finished = pyqtSignal(Task)
+    error = pyqtSignal(Task, str)
+    cancelled = pyqtSignal(Task)
 
 class TaskQueueManager(QObject):
     task_added = pyqtSignal(Task)
-    task_removed = pyqtSignal(str)
+    task_started = pyqtSignal(Task)
+    task_completed = pyqtSignal(Task)
+    task_failed = pyqtSignal(Task, str)
+    task_cancelled = pyqtSignal(Task)
+    task_finished = pyqtSignal(Task)  # Emitted for any finish state (success, error, cancel)
     queue_cleared = pyqtSignal()
-    task_completed = pyqtSignal(Task)  # Emitted only on success
-    task_finished = pyqtSignal(Task)   # Emitted on success, error, or cancellation
-    
-    def __init__(self, background_task_manager, file_manager, directory_synchronizer, plugin_manager):
+
+    def __init__(self, file_manager, directory_synchronizer, plugin_manager: PluginManager):
         super().__init__()
-        self.background_task_manager = background_task_manager
         self.file_manager = file_manager
         self.directory_synchronizer = directory_synchronizer
         self.plugin_manager = plugin_manager
-        self.tasks = []
-        self.current_task = None
+        self.tasks = []  # List of all tasks (history + pending)
+        self.active_tasks = {}  # task.id -> (Task, TaskContext)
+        self.thread_pool = QThreadPool()
+        self.max_concurrent_tasks = 2
+        self.thread_pool.setMaxThreadCount(self.max_concurrent_tasks)
 
     def add_task(self, task: Task):
         logging.debug(f"Adding task {task.id} of type {task.type} to queue.")
         self.tasks.append(task)
         self.task_added.emit(task)
-        self._process_queue()
+        self.process_queue()
 
-    def clear_all_completed_tasks(self):
-        """Clears all tasks that are in a final state (FINISHED, CANCELLED, ERROR)."""
-        self.tasks = [task for task in self.tasks if task.status not in [TaskStatus.FINISHED, TaskStatus.CANCELLED, TaskStatus.ERROR]]
-        self.queue_cleared.emit()
-
-    def clear_finished_tasks(self):
-        """Clears only tasks that completed successfully (FINISHED)."""
-        self.tasks = [task for task in self.tasks if task.status != TaskStatus.FINISHED]
-        self.queue_cleared.emit()
-
-    def clear_error_tasks(self):
-        """Clears only tasks that ended with an error (ERROR)."""
-        self.tasks = [task for task in self.tasks if task.status != TaskStatus.ERROR]
-        self.queue_cleared.emit()
-
-    def _process_queue(self):
+    def process_queue(self):
         logging.debug("Processing queue...")
-        if self.current_task and self.current_task.status == TaskStatus.RUNNING:
-            logging.debug(f"Queue is blocked by running task {self.current_task.id}.")
-            return
-        
-        next_task = next((t for t in self.tasks if t.status == TaskStatus.PENDING), None)
-        if next_task:
-            logging.debug(f"Found pending task {next_task.id}. Starting...")
-            self._start_task(next_task)
-        else:
+        # Find pending tasks
+        pending_tasks = [t for t in self.tasks if t.status == TaskStatus.PENDING]
+
+        while len(self.active_tasks) < self.max_concurrent_tasks and pending_tasks:
+            task = pending_tasks.pop(0)
+            self.start_task(task)
+
+        if not pending_tasks and not self.active_tasks:
             logging.debug("No pending tasks found.")
 
-    def _start_task(self, task: Task):
-        self.current_task = task
-        task.status = TaskStatus.RUNNING
-        
-        func, args, kwargs = self._get_task_function_and_args(task)
-        if not func:
-            task.status = TaskStatus.ERROR
-            task.error_message = f"Unsupported task type or missing plugin: {task.type}"
-            self._on_task_finished()
-            return
+    def start_task(self, task: Task):
+        logging.debug(f"Found pending task {task.id}. Starting...")
+        task.set_status(TaskStatus.RUNNING)
+        self.task_started.emit(task)
 
-        signals = self.background_task_manager.run_task(func, *args, **kwargs)
-        task.task_context = self.background_task_manager.current_context
-        
-        signals.progress.connect(self._on_task_progress)
-        signals.finished.connect(self._on_task_finished)
-        signals.error.connect(self._on_task_error)
-        signals.result.connect(self._on_task_result)
+        task_context = TaskContext()
+        self.active_tasks[task.id] = (task, task_context)
 
-    def _get_task_function_and_args(self, task: Task):
-        kwargs = {'task': task}
+        worker = Worker(task, task_context, self._process_task)
+        worker.signals.finished.connect(self._on_task_finished)
+        worker.signals.error.connect(self._on_task_error)
+        worker.signals.cancelled.connect(self._on_task_cancelled)
+
+        self.thread_pool.start(worker)
+
+    def _process_task(self, task: Task, task_context: TaskContext):
         if task.type == TaskType.COPY:
-            if len(task.source_paths) == 1:
-                return self.file_manager.copy_item_with_options, (task.source_paths[0], task.destination_path, task.options), kwargs
+            plugin = self.plugin_manager.get_standard_operations_plugin()
+            if plugin:
+                return plugin.copy_items(task.source_paths, task.destination_path, task.options, task.progress_changed, task_context, task)
             else:
-                return self.file_manager.copy_items_batch, (task.source_paths, task.destination_path, task.options), kwargs
+                raise Exception("No standard operations plugin found.")
         elif task.type == TaskType.MOVE:
-            if len(task.source_paths) == 1:
-                return self.file_manager.move_item_with_options, (task.source_paths[0], task.destination_path, task.options), kwargs
+            plugin = self.plugin_manager.get_standard_operations_plugin()
+            if plugin:
+                return plugin.move_items(task.source_paths, task.destination_path, task.options, task.progress_changed, task_context, task)
             else:
-                return self.file_manager.move_items_batch, (task.source_paths, task.destination_path, task.options), kwargs
+                raise Exception("No standard operations plugin found.")
         elif task.type == TaskType.DELETE:
-            return self.file_manager.delete_items_batch, (task.source_paths, task.options.get("move_to_trash", True)), kwargs
-        elif task.type == TaskType.SYNC:
-            return self.directory_synchronizer.synchronize, (task.source_paths[0], task.destination_path, task.options), kwargs
+            plugin = self.plugin_manager.get_standard_operations_plugin()
+            if plugin:
+                return plugin.delete_items(task.source_paths, task.options, task.progress_changed, task_context, task)
+            else:
+                raise Exception("No standard operations plugin found.")
         elif task.type == TaskType.ARCHIVE:
-            ext = os.path.splitext(task.destination_path)[1]
+            # Determine which plugin to use based on extension or options
+            ext = os.path.splitext(task.destination_path)[1].lower()
             plugin = self.plugin_manager.get_archiver_for_extension(ext)
-            if plugin:
-                return plugin.create_archive, (task.source_paths, task.destination_path, task.options), kwargs
+            if not plugin:
+                raise ValueError(f"No plugin found for extension {ext}")
+            return plugin.create_archive(task.source_paths, task.destination_path, task.options, task.progress_changed, task_context, task)
         elif task.type == TaskType.EXTRACT:
-            ext = os.path.splitext(task.source_paths[0])[1]
+            ext = os.path.splitext(task.source_paths[0])[1].lower()
             plugin = self.plugin_manager.get_archiver_for_extension(ext)
-            if plugin:
-                return plugin.extract_archive, (task.source_paths[0], task.destination_path, task.options), kwargs
+            if not plugin:
+                raise ValueError(f"No plugin found for extension {ext}")
+            return plugin.extract_archive(task.source_paths[0], task.destination_path, task.options, task.progress_changed, task_context,
+                                          task)
         elif task.type == TaskType.CHECKSUM:
-            algorithm = task.options.get("algorithm")
-            save_to_file = task.options.get("save_to_file", False)
-            for plugin in self.plugin_manager.get_checksum_plugins():
-                if algorithm in plugin.get_supported_algorithms():
-                    return self._calculate_checksums_batch, (task.source_paths, algorithm, plugin, save_to_file), kwargs
+            # For checksum, we might have multiple files.
+            # We can use the first file to determine the plugin if needed, or iterate.
+            # Currently ChecksumPlugin calculates for one file.
+            # We need to handle batch processing here or in the plugin.
+            # Let's assume we use the first available checksum plugin for now.
+            plugins = self.plugin_manager.get_checksum_plugins()
+            if not plugins:
+                raise ValueError("No checksum plugin available.")
+            plugin = plugins[0]
+
+            results = {}
+            total_files = len(task.source_paths)
+            for i, file_path in enumerate(task.source_paths):
+                if task_context.is_cancelled: break
+                task.set_details(f"({i + 1}/{total_files}) {os.path.basename(file_path)}")
+
+                # Check if algorithm is supported
+                algo = task.options.get("algorithm", "md5")
+                if algo not in plugin.get_supported_algorithms():
+                    raise ValueError(f"Algorithm {algo} not supported by plugin {plugin.name}")
+
+                checksum = plugin.calculate_checksum(file_path, algo, task.progress_changed, task_context)
+                results[file_path] = checksum
+            return results
+
         elif task.type == TaskType.SEARCH:
+            # Use the first available search plugin
             plugins = self.plugin_manager.get_search_plugins()
-            if plugins:
-                plugin = plugins[0]
-                query = task.options.get("query")
-                return plugin.search, (task.source_paths[0], query, task.options), kwargs
+            if not plugins:
+                raise ValueError("No search plugin available.")
+            plugin = plugins[0]
+            return plugin.search(task.source_paths[0], task.options.get("query"), task.options, task.progress_changed, task_context, task)
+        elif task.type == TaskType.SYNC:
+            return self.directory_synchronizer.synchronize_directories(task.source_paths[0], task.destination_path, task.options,
+                                                                       task.progress_changed, task_context, task)
         elif task.type == TaskType.CALCULATE_SIZE:
-             return self._calculate_directory_size_task, (task.source_paths[0],), kwargs
-        
-        return None, None, None
-
-    def _calculate_directory_size_task(self, path, progress_callback=None, task_context=None, task=None):
-        logging.debug(f"Starting size calculation for {path}")
-        total_size = 0
-        file_count = 0
-        
-        if task: task.set_details("Calculating size...")
-
-        try:
-            for dirpath, dirnames, filenames in os.walk(path):
-                if task_context and task_context.is_cancelled: break
-                if task_context: task_context.wait_if_paused()
-                
+            # This is a simple task, maybe keep it here or move to a plugin?
+            # For now, let's keep it simple using os.walk
+            total_size = 0
+            path = task.source_paths[0]
+            for dirpath, _, filenames in os.walk(path):
+                if task_context.is_cancelled: break
                 for f in filenames:
                     fp = os.path.join(dirpath, f)
                     try:
-                        if not os.path.islink(fp):
-                            total_size += os.path.getsize(fp)
-                            file_count += 1
+                        total_size += os.path.getsize(fp)
                     except OSError:
                         pass
-                
-                if task:
-                    task.set_details(f"Scanned {file_count} files...")
-                    
-        except OSError as e:
-            logging.error(f"Error calculating size: {e}")
-            
-        logging.debug(f"Size calculation finished: {total_size} bytes")
-        if task: task.set_details(f"Finished: {total_size} bytes")
-        return total_size
+            return total_size
+        else:
+            raise ValueError(f"Unknown task type: {task.type}")
 
-    def _calculate_checksums_batch(self, file_paths, algorithm, plugin, save_to_file, progress_callback=None, task_context=None, task=None):
-        logging.debug(f"Starting checksum batch for {len(file_paths)} files with algorithm {algorithm}.")
-        results = []
-        total_files = len(file_paths)
-        for i, file_path in enumerate(file_paths):
-            if task_context and task_context.is_cancelled: break
-            if task_context: task_context.wait_if_paused()
-            
-            if task: task.set_details(f"Calculating {algorithm}: {os.path.basename(file_path)}")
-            
-            try:
-                logging.debug(f"Checksum batch: Calculating for file {i+1}/{total_files}: {file_path}")
-                checksum = plugin.calculate_checksum(file_path, algorithm, task_context=task_context)
-                result_str = f"{os.path.basename(file_path)}: {checksum}"
-                results.append(result_str)
-                logging.debug(f"Checksum for {file_path} is {checksum}")
-                
-                if save_to_file:
-                    checksum_file_path = f"{file_path}.checksum"
-                    with open(checksum_file_path, 'w') as f:
-                        f.write(f"{checksum}  {os.path.basename(file_path)}\n")
-                    if task:
-                        task.directory_changed.emit(os.path.dirname(file_path))
+    def _on_task_finished(self, task: Task):
+        logging.debug(f"Worker: Emitting finished signal.")
+        logging.debug(f"_on_task_finished called.")
+        logging.debug(f"Task {task.id} finished.")
+        task.set_status(TaskStatus.FINISHED)
+        self._cleanup_task(task.id)
+        logging.debug(f"Emitting task_completed for task {task.id}.")
+        self.task_completed.emit(task)
+        self.task_finished.emit(task)
+        self.process_queue()
 
-            except Exception as e:
-                logging.error(f"Checksum calculation failed for {file_path}: {e}")
-                results.append(f"{os.path.basename(file_path)}: Error ({e})")
-            
-            if progress_callback:
-                progress_callback.emit(int((i + 1) / total_files * 100))
-        
-        logging.debug("Checksum batch finished.")
-        if task:
-            task.set_details("Finished")
-        return "\n".join(results)
+    def _on_task_error(self, task: Task, error_message: str):
+        logging.error(f"Task {task.id} failed with error: {error_message}")
+        task.set_status(TaskStatus.ERROR)
+        self._cleanup_task(task.id)
+        self.task_failed.emit(task, error_message)
+        self.task_finished.emit(task)
+        self.process_queue()
 
-    def _on_task_progress(self, progress_value):
-        if self.current_task:
-            self.current_task.progress = progress_value
+    def _on_task_cancelled(self, task: Task):
+        logging.info(f"Task {task.id} cancelled.")
+        task.set_status(TaskStatus.CANCELLED)
+        self._cleanup_task(task.id)
+        self.task_cancelled.emit(task)
+        self.task_finished.emit(task)
+        self.process_queue()
 
-    def _on_task_result(self, result):
-        if self.current_task:
-            self.current_task.result = result
-
-    def _on_task_finished(self):
-        try:
-            logging.debug("_on_task_finished called.")
-            if not self.current_task:
-                logging.warning("_on_task_finished called but current_task is None.")
-                return
-            
-            logging.debug(f"Task {self.current_task.id} finished.")
-            if self.current_task.status == TaskStatus.RUNNING:
-                self.current_task.status = TaskStatus.FINISHED
-                logging.debug(f"Emitting task_completed for task {self.current_task.id}.")
-                self.task_completed.emit(self.current_task)
-                
-        except Exception as e:
-            logging.exception(f"Error in _on_task_finished: {e}")
-        finally:
-            if self.current_task:
-                self.task_finished.emit(self.current_task)
-            self.current_task = None
-            self._process_queue()
-
-    def _on_task_error(self, error_tuple):
-        try:
-            exctype, value, traceback_str = error_tuple
-            
-            logging.error(f"Task {self.current_task.id} failed with error: {value}")
-            if issubclass(exctype, OperationCancelledError):
-                self.current_task.status = TaskStatus.CANCELLED
-            else:
-                self.current_task.status = TaskStatus.ERROR
-                self.current_task.error_message = str(value)
-        except Exception as e:
-            logging.exception(f"Error in _on_task_error: {e}")
-        finally:
-            if self.current_task:
-                self.task_finished.emit(self.current_task)
-            self.current_task = None
-            self._process_queue()
-
-    def pause_task(self, task_id):
-        task = self._get_task_by_id(task_id)
-        if task and task.status == TaskStatus.RUNNING and task.task_context:
-            task.task_context.pause()
-            task.status = TaskStatus.PAUSED
-
-    def resume_task(self, task_id):
-        task = self._get_task_by_id(task_id)
-        if task and task.status == TaskStatus.PAUSED and task.task_context:
-            task.task_context.resume()
-            task.status = TaskStatus.RUNNING
+    def _cleanup_task(self, task_id):
+        if task_id in self.active_tasks:
+            del self.active_tasks[task_id]
 
     def cancel_task(self, task_id):
-        task = self._get_task_by_id(task_id)
-        if task:
-            if task.status == TaskStatus.RUNNING or task.status == TaskStatus.PAUSED:
-                if task.task_context:
-                    task.task_context.cancel()
-            elif task.status == TaskStatus.PENDING:
-                task.status = TaskStatus.CANCELLED
-                self.task_finished.emit(task) # Manually emit for pending tasks
+        if task_id in self.active_tasks:
+            task, context = self.active_tasks[task_id]
+            logging.info(f"Cancelling task {task_id}...")
+            context.cancel()
+        else:
+            # Check if it's in the pending queue
+            for task in self.tasks:
+                if task.id == task_id and task.status == TaskStatus.PENDING:
+                    task.set_status(TaskStatus.CANCELLED)
+                    self.task_cancelled.emit(task)
+                    self.task_finished.emit(task)
+                    logging.info(f"Cancelled pending task {task_id}.")
+                    return
 
-    def _get_task_by_id(self, task_id):
-        return next((t for t in self.tasks if t.id == task_id), None)
+    def pause_task(self, task_id):
+        if task_id in self.active_tasks:
+            task, context = self.active_tasks[task_id]
+            if not context.is_paused:
+                logging.info(f"Pausing task {task_id}...")
+                context.pause()
+                task.set_status(TaskStatus.PAUSED)
+
+    def resume_task(self, task_id):
+        if task_id in self.active_tasks:
+            task, context = self.active_tasks[task_id]
+            if context.is_paused:
+                logging.info(f"Resuming task {task_id}...")
+                context.resume()
+                task.set_status(TaskStatus.RUNNING)
+
+    def clear_completed_tasks(self):
+        self.tasks = [t for t in self.tasks if t.status not in [TaskStatus.FINISHED, TaskStatus.CANCELLED]]
+        self.queue_cleared.emit()
+
+    def clear_error_tasks(self):
+        self.tasks = [t for t in self.tasks if t.status != TaskStatus.ERROR]
+        self.queue_cleared.emit()
+
+    def clear_all_tasks(self):
+        for task in self.tasks:
+            if task.status in [TaskStatus.RUNNING, TaskStatus.PAUSED]:
+                self.cancel_task(task.id)
+        self.tasks = []
+        self.queue_cleared.emit()

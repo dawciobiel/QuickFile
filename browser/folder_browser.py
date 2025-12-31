@@ -7,11 +7,12 @@ from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QDir, QTimer
 from PyQt6.QtGui import QFileSystemModel, QMovie, QIcon
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter, QTabWidget, QLabel
 
+from app.plugin_manager import PluginManager
 from app.settings_manager import SettingsManager
+from app.task_queue_manager import TaskType
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
-from app.plugin_manager import PluginManager
-from app.task_queue_manager import TaskType
+
 
 class PanelWidget(QWidget):
     def __init__(self, settings_manager, folder_browser_event_filter, theme_manager, plugin_manager: PluginManager, parent=None):
@@ -493,3 +494,16 @@ class FolderBrowser(QWidget):
                 affected_panels.append(panel)
                 
         return affected_panels
+
+    def clear_selection(self):
+        logging.debug("FolderBrowser: clear_selection called")
+        if self.active_panel_widget:
+            logging.debug(f"Active panel widget found: {self.active_panel_widget}")
+            logging.debug(f"File view type: {type(self.active_panel_widget.file_view)}")
+            if hasattr(self.active_panel_widget.file_view, 'clear_selection'):
+                logging.debug("Calling file_view.clear_selection()")
+                self.active_panel_widget.file_view.clear_selection()
+            else:
+                logging.warning("Active panel file_view does not have clear_selection method")
+        else:
+            logging.warning("FolderBrowser: No active panel widget to clear selection")

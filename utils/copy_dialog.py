@@ -1,11 +1,11 @@
-import os
 from PyQt6 import uic
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog
+
 from app.action_logger import action_logger
-from app.translation_manager import translation_manager
 from app.task_queue_manager import Task, TaskType, TaskStatus
+from app.translation_manager import translation_manager
 from ui.dual_progress_bar import DualProgressBar
+
 
 class CopyDialog(QDialog):
     def __init__(self, parent, source_paths, destination_path, task_queue_manager, background_task_manager):
@@ -104,6 +104,10 @@ class CopyDialog(QDialog):
             self.progressBar.setValue(value)
 
     def queue_operation(self):
+        options = self.get_options()
+        action_logger.log_action("copy", sources=self.source_paths, destination=self.destination_path, options=options)
+        self.task = Task(TaskType.COPY, self.source_paths, self.destination_path, options)
+        self.task_queue_manager.add_task(self.task)
         self.accept()
 
     def cancel_operation(self):
