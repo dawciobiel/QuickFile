@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget, QDialog
 
 
 class FileOperationPlugin(ABC):
@@ -46,6 +46,14 @@ class ArchivePlugin(FileOperationPlugin):
         This method must be thread-safe and support progress reporting and cancellation.
         """
         pass
+
+    def get_configuration_dialog(self, parent: QWidget, current_options: dict) -> QDialog | None:
+        """
+        Returns a configuration dialog for creating an archive.
+        The dialog should allow the user to modify 'current_options'.
+        Returns None if the plugin has no configurable options.
+        """
+        return None
 
 class ChecksumPlugin(FileOperationPlugin):
     """
@@ -133,12 +141,10 @@ class ViewModePlugin(FileOperationPlugin):
         """
         pass
 
-
 class SymlinkPlugin(FileOperationPlugin):
     """
     Interface for plugins that handle symbolic and hard links.
     """
-
     @abstractmethod
     def is_supported(self) -> bool:
         """
