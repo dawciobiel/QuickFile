@@ -1,7 +1,7 @@
 import json
 import os
+
 from PyQt6.QtGui import QAction, QIcon
-from PyQt6.QtWidgets import QMenu
 
 from app.translation_manager import translation_manager
 
@@ -34,7 +34,7 @@ class MenuPanel:
             "operations.change_owner": os.path.join(base_path, "person_edit_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
             "view.new_tab": os.path.join(base_path, "new_tab_right_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
             "view.close_tab": os.path.join(base_path, "close_tab_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "favorites.manage": os.path.join(base_path, "folder_managed_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
+            "favorites.manage": os.path.join(base_path, "menage_favorites_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
             "favorites.add": os.path.join(base_path, "bookmark_add_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
         }
 

@@ -165,3 +165,32 @@ class SymlinkPlugin(FileOperationPlugin):
         Opens a dialog to modify an existing symbolic link.
         """
         pass
+
+
+class StandardOperationsPlugin(FileOperationPlugin):
+    """
+    Interface for plugins that handle standard file operations: copy, move, delete.
+    """
+
+    @abstractmethod
+    def copy_items(self, source_paths: list[str], destination_path: str, options: dict, progress_callback=None, task_context=None,
+                   task=None):
+        """
+        Copies items from source_paths to destination_path.
+        """
+        pass
+
+    @abstractmethod
+    def move_items(self, source_paths: list[str], destination_path: str, options: dict, progress_callback=None, task_context=None,
+                   task=None):
+        """
+        Moves items from source_paths to destination_path.
+        """
+        pass
+
+    @abstractmethod
+    def delete_items(self, item_paths: list[str], options: dict, progress_callback=None, task_context=None, task=None):
+        """
+        Deletes items specified in item_paths.
+        """
+        pass

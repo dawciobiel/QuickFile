@@ -1,5 +1,5 @@
 from PyQt6 import uic, sip
-from PyQt6.QtWidgets import QMainWindow, QApplication, QProgressBar, QLabel, QPushButton, QMessageBox
+from PyQt6.QtWidgets import QMainWindow, QApplication, QWidget, QTabWidget, QToolBar
 
 from __version__ import __version__
 from app.application_logic_handler import ApplicationLogicHandler
@@ -16,17 +16,24 @@ from favorites.favorites_manager import FavoritesManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager
-from panels.task_queue_panel import TaskQueuePanel
 from panels.search_results_panel import SearchResultsPanel
-from ui.progress_bar_manager import ProgressBarManager
+from panels.task_queue_panel import TaskQueuePanel
 from ui.ui_manager import UIManager
-from utils.dialogs import show_error_message
 from utils.checksum_result_dialog import ChecksumResultDialog
 
 
 class MainWindow(QMainWindow):
     def __init__(self, background_task_manager, task_queue_manager: TaskQueueManager, file_manager: FileManager, directory_synchronizer: DirectorySynchronizer):
         super().__init__()
+
+        # --- Declare UI attributes for linter ---
+        self.mainTabWidget: QTabWidget | None = None
+        self.browser_tab: QWidget | None = None
+        self.queue_tab: QWidget | None = None
+        self.search_tab: QWidget | None = None
+        self.mainToolbar: QToolBar | None = None
+        # -----------------------------------------
+        
         uic.loadUi("ui/main_window.ui", self)
         self.setWindowTitle(f"QuickFile v{__version__}")
         self.background_task_manager = background_task_manager
@@ -96,6 +103,7 @@ class MainWindow(QMainWindow):
             self.application_logic_handler,
             self.ui_manager.folder_browser
         )
+        QApplication.instance().installEventFilter(self.keyboard_event_manager)
 
         self.task_queue_panel = TaskQueuePanel(self.task_queue_manager)
         self.queue_tab.layout().addWidget(self.task_queue_panel)
