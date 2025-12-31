@@ -1,19 +1,21 @@
 import datetime
 import grp
 import json
+import logging
 import os
 import pwd
-import logging
-from PyQt6.QtCore import pyqtSignal, Qt, QModelIndex, QDir, QTimer
-from PyQt6.QtGui import QColor, QFont, QKeyEvent
-from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView, QFileIconProvider, QApplication
 
+from PyQt6.QtCore import pyqtSignal, Qt, QModelIndex, QDir, QTimer
+from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView, QFileIconProvider
+
+from app.settings_manager import SettingsManager
+from app.translation_manager import translation_manager
 from browser.abstract_file_system_model import AbstractFileSystemModel
 from browser.base_view import AbstractFileView
 from browser.styling_delegate import FileStyleDelegate, FileStyleRole
-from app.settings_manager import SettingsManager
-from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
+
 
 class FlatFileSystemModel(AbstractFileSystemModel):
     def __init__(self, parent=None, show_dot_files=True, file_permissions_display_mode="symbolic", show_uid_column=True,
@@ -28,6 +30,7 @@ class FlatFileSystemModel(AbstractFileSystemModel):
         self._show_uid_column = show_uid_column
         self._show_gid_column = show_gid_column
         self._file_styles = {}
+        self._special_type_styles = {}
         self._insert_selected_items = insert_selected_items if insert_selected_items is not None else set()
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager
@@ -43,10 +46,18 @@ class FlatFileSystemModel(AbstractFileSystemModel):
             return
         styles_path = os.path.join(theme_path, "file_styles.json")
         if os.path.exists(styles_path):
-            with open(styles_path, 'r') as f:
-                self._file_styles = json.load(f)
+            try:
+                with open(styles_path, 'r') as f:
+                    data = json.load(f)
+                    self._file_styles = data
+                    self._special_type_styles = data.get("special_types", {})
+                    logging.info(f"Loaded file styles from {styles_path}. Special types: {list(self._special_type_styles.keys())}")
+            except Exception as e:
+                logging.error(f"Failed to load file styles: {e}")
         else:
+            logging.warning(f"File styles not found at {styles_path}")
             self._file_styles = {}
+            self._special_type_styles = {}
         self.layoutChanged.emit()
 
     def set_current_path(self, path):
@@ -161,6 +172,26 @@ class FlatFileSystemModel(AbstractFileSystemModel):
                 return font
 
         if role == FileStyleRole:
+            # Check for special types first
+            if os.path.islink(item_path):
+                if "symlink" in self._special_type_styles:
+                    return self._special_type_styles["symlink"]
+
+            # Check for hardlinks (only for files)
+            if not is_dir:
+                try:
+                    stat_info = os.stat(item_path)
+                    if stat_info.st_nlink > 1:
+                        if "hardlink" in self._special_type_styles:
+                            return self._special_type_styles["hardlink"]
+                except OSError:
+                    pass
+
+            if item_name.startswith('.'):
+                if "hidden" in self._special_type_styles:
+                    return self._special_type_styles["hidden"]
+
+            # Fallback to extension-based styling
             if not is_dir:
                 extension = item_name.split('.')[-1].lower()
                 if extension in self._file_styles:
