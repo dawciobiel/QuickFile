@@ -4,6 +4,7 @@
 
 - **Translation**: Some parts of the UI are not yet translated.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
+- **No column resize in Queue**: W zakładce Queue nie da się zmieniać rozmiaru kolumn.
 
 ## Fixed
 
