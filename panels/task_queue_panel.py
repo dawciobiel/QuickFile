@@ -167,8 +167,7 @@ class TaskQueuePanel(QWidget):
 
         self.view.setItemDelegateForColumn(2, ProgressDelegate(self.view))
 
-        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self.view.setColumnWidth(3, 400)
 
         self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
