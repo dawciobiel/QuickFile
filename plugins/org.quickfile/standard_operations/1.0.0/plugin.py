@@ -13,11 +13,9 @@ if current_dir not in sys.path:
 from plugins.base import StandardOperationsPlugin
 from app.translation_manager import translation_manager
 
-
 class OperationCancelledError(Exception):
     """Exception raised when an operation is cancelled by the user."""
     pass
-
 
 class StandardOperationsPluginImpl(StandardOperationsPlugin):
 
@@ -176,8 +174,11 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                     raise OperationCancelledError("Operation cancelled by user.")
                 task_context.wait_if_paused()
             try:
-                self._copy_item_with_options(source_path, destination_path, options, task_context=task_context, task=task)
+                # Pass the progress_callback down
+                self._copy_item_with_options(source_path, destination_path, options, progress_callback, task_context, task)
                 if progress_callback:
+                    # For batch operations, we currently only report item count progress
+                    # To support dual progress bar here, we'd need to calculate total size of all items first
                     progress_callback.emit(int((i + 1) / total_items * 100))
             except OperationCancelledError:
                 raise
@@ -202,6 +203,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                 task.set_details(base_name)
 
             if os.stat(source_path).st_dev != os.stat(destination_path).st_dev:
+                # Pass the progress_callback down for cross-device move
                 self._copy_item_with_options(source_path, destination_path, options, progress_callback, task_context, task)
 
                 if task_context and task_context.is_cancelled:
@@ -214,7 +216,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             else:
                 if task_context and task_context.is_cancelled:
                     raise OperationCancelledError("Operation cancelled by user.")
-
+                
                 shutil.move(source_path, destination_full_path)
                 if progress_callback:
                     progress_callback.emit(100)
@@ -243,7 +245,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                     raise OperationCancelledError("Operation cancelled by user.")
                 task_context.wait_if_paused()
             try:
-                self._move_item_with_options(source_path, destination_path, options, task_context=task_context, task=task)
+                # Pass the progress_callback down
+                self._move_item_with_options(source_path, destination_path, options, progress_callback, task_context, task)
                 if progress_callback:
                     progress_callback.emit(int((i + 1) / total_items * 100))
             except OperationCancelledError:
@@ -305,7 +308,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                     raise OperationCancelledError("Operation cancelled by user.")
                 if task:
                     task.set_details(f"({i + 1}/{total_items}) {os.path.basename(path)}")
-
+                
                 send2trash.send2trash(path)
 
                 if progress_callback:
@@ -327,7 +330,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                     raise OperationCancelledError("Operation cancelled by user.")
                 if task:
                     task.set_details(f"({i + 1}/{len(all_files)}) {os.path.basename(file_path)}")
-
+                
                 os.remove(file_path)
                 deleted_size += file_size
                 if progress_callback and total_size > 0:

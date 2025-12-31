@@ -52,7 +52,9 @@ class TaskQueueModel(QAbstractTableModel):
             pass
 
     def on_task_progress_changed(self, progress):
+        logging.debug(f"TaskQueueModel: Progress changed to {progress}")
         task = self.sender()
+        task.progress = progress  # Update the task's progress value
         try:
             row = self.manager.tasks.index(task)
             self.dataChanged.emit(self.index(row, 2), self.index(row, 2))  # Progress column
@@ -106,7 +108,6 @@ class TaskQueueModel(QAbstractTableModel):
             elif section == 3:
                 return translation_manager.translate("TaskQueuePanel", "Details")
         return None
-
 
 class ProgressDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
