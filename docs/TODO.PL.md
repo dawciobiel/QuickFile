@@ -10,6 +10,10 @@
 
 ## Zrobione / Zaimplementowane częściowo
 
+- [x] **Refaktoryzacja operacji na plikach (Plugin)**: Przeniesiono operacje kopiowania, przenoszenia i usuwania do dedykowanego pluginu
+  `org.quickfile.standard_operations`. Naprawiono szereg błędów regresji, w tym wyświetlanie zadań w panelu "Queue" i aktualizację paska
+  postępu.
+
 - [x] **Dwukolorowy pasek postępu**: Pasek postępu w oknie dialogowym kopiowania/przenoszenia jest teraz dwukolorowy, reprezentując postęp odczytu i zapisu danych.
 
 - [x] **Uniwersalne okno tworzenia archiwum**: Zaimplementowano `CreateArchiveDialog`, który dynamicznie ładuje dostępne pluginy archiwizujące i pozwala na wybór formatu oraz konfigurację opcji.
