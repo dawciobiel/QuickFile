@@ -8,9 +8,9 @@
 
 - [ ] **Feature**: Pod Windows (i jego systemem plików) czasami może być problem ze zbyt długimi nazwami plików lub zbyt długą ścieżką. Przyjrzeć się temu problemowi i dodać odpowiednią funkcjonalność dla "zachowania nazwy pliku".
 
-- [ ] **Feature improvement**: Pasek postępu w oknie dialogowym do kopiowania/przenoszenia mógłby być w dwóch kolorach. Kolor reprezentowałby odczyt i zapis danych na nośniku. 
-
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Dwukolorowy pasek postępu**: Pasek postępu w oknie dialogowym kopiowania/przenoszenia jest teraz dwukolorowy, reprezentując postęp odczytu i zapisu danych.
 
 - [x] **Uniwersalne okno tworzenia archiwum**: Zaimplementowano `CreateArchiveDialog`, który dynamicznie ładuje dostępne pluginy archiwizujące i pozwala na wybór formatu oraz konfigurację opcji.
 
