@@ -45,24 +45,45 @@ class ApplicationLogicHandler(QObject):
             size = task.result
             self.ui_state_provider.folder_browser.update_directory_size(path, size)
 
+    def _execute_external_command(self, command_template: str, file_path: str):
+        try:
+            if "%f" in command_template:
+                # Ensure the file path is quoted to handle spaces
+                if f'"%f"' in command_template or f"'%f'" in command_template:
+                    # User has already quoted, just replace
+                    command = command_template.replace("%f", file_path)
+                else:
+                    # User has not quoted, add quotes automatically
+                    command = command_template.replace("%f", f'"{file_path}"')
+            else:
+                # Fallback for commands that don't use %f, just append the path
+                command = f'{command_template} "{file_path}"'
+
+            logging.info(f"Executing external command: {command}")
+            subprocess.Popen(command, shell=True)
+        except Exception as e:
+            logging.error(f"Failed to execute command '{command_template}' for file {file_path}: {e}")
+            show_error_message(self.main_window, translation_manager.translate("Global", "Error"), f"Failed to execute command: {e}")
+
     @handle_error
     def _handle_f3_key(self, checked=False):
-        self.dialog_handler.show_file_viewer_dialog()
+        selected_path = self.ui_state_provider.get_current_selected_path()
+        if not selected_path or not os.path.isfile(selected_path):
+            raise ValueError(translation_manager.translate("MenuPanel", "No file selected or selected item is a directory."))
+
+        use_internal = self.settings_handler.settings_manager.get_setting("use_internal_viewer", True)
+        if use_internal:
+            self.dialog_handler.show_file_viewer_dialog()
+        else:
+            viewer_command = self.settings_handler.settings_manager.get_setting("viewer_command", "xdg-open %f")
+            self._execute_external_command(viewer_command, selected_path)
 
     @handle_error
     def _handle_f4_key(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
         if selected_path and os.path.isfile(selected_path):
             editor_command = self.settings_handler.settings_manager.get_setting("editor_command", "xdg-open %f")
-            try:
-                if "%f" in editor_command:
-                    command = editor_command.replace("%f", selected_path)
-                    subprocess.Popen(command, shell=True)
-                else:
-                    subprocess.Popen([editor_command, selected_path])
-            except Exception as e:
-                logging.error(f"Failed to edit file {selected_path}: {e}")
-                show_error_message(self.main_window, translation_manager.translate("Global", "Error"), f"Failed to edit file: {e}")
+            self._execute_external_command(editor_command, selected_path)
 
     @handle_error
     def change_owner(self, checked=False):
