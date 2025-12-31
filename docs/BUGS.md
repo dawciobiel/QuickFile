@@ -4,10 +4,10 @@
 
 - **Translation**: Some parts of the UI are not yet translated.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
-- **No column resize in Queue**: W zakładce Queue nie da się zmieniać rozmiaru kolumn.
 
 ## Fixed
 
+- **No column resize in Queue**: Fixed by setting the resize mode to Interactive.
 - **Space in external command**: Fixed an issue where external commands (F3/F4) would fail if the filename contained spaces and the command template was not quoted.
 - **`AttributeError` on startup**: Multiple `AttributeError` issues related to `MenuPanel` and `UIManager` have been fixed.
 - **`TypeError` in 'Change Owner' dialog**: Fixed by setting layout stretch programmatically.
