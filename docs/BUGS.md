@@ -7,6 +7,12 @@
 
 ## Fixed
 
+- **Hanging selection with Insert**: Fixed an issue where files selected with the Insert key were not cleared after an operation, causing
+  errors on subsequent actions.
+- **Queue Panel Issues**:
+    - Fixed tasks disappearing from the queue panel.
+    - Fixed progress bars not updating.
+    - Fixed column resizing being disabled.
 - **No column resize in Queue**: Fixed by setting the resize mode to Interactive.
 - **Space in external command**: Fixed an issue where external commands (F3/F4) would fail if the filename contained spaces and the command template was not quoted.
 - **`AttributeError` on startup**: Multiple `AttributeError` issues related to `MenuPanel` and `UIManager` have been fixed.
