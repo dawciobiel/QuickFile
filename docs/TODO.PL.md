@@ -8,6 +8,15 @@
 
 - [ ] **Feature**: Pod Windows (i jego systemem plików) czasami może być problem ze zbyt długimi nazwami plików lub zbyt długą ścieżką. Przyjrzeć się temu problemowi i dodać odpowiednią funkcjonalność dla "zachowania nazwy pliku".
 
+- [ ] **Plugin operacji dla Windows**: Stworzyć dedykowany plugin `org.quickfile.windows_operations`, który będzie obsługiwał kopiowanie,
+  przenoszenie i usuwanie plików na systemie Windows, wykorzystując natywne API (np. do obsługi długich ścieżek).
+
+- [ ] **Pasek nawigacyjny w panelu**: Dodać pasek małych przycisków funkcyjnych na górze każdego panelu przeglądarki plików. Przyciski:
+  - `...` (Go Up): Przejdź do katalogu nadrzędnego.
+  - `~` (Home): Przejdź do katalogu domowego.
+  - `/` (Root): Przejdź do katalogu głównego napędu.
+  - `=` (Equal): Przejdź do ścieżki z drugiego panelu.
+
 ## Zrobione / Zaimplementowane częściowo
 
 - [x] **Refaktoryzacja operacji na plikach (Plugin)**: Przeniesiono operacje kopiowania, przenoszenia i usuwania do dedykowanego pluginu
