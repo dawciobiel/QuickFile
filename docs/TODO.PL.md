@@ -12,12 +12,18 @@
   przenoszenie i usuwanie plików na systemie Windows, wykorzystując natywne API (np. do obsługi długich ścieżek).
 
 - [ ] **Pasek nawigacyjny w panelu**: Dodać pasek małych przycisków funkcyjnych na górze każdego panelu przeglądarki plików. Przyciski:
-  - `...` (Go Up): Przejdź do katalogu nadrzędnego.
-  - `~` (Home): Przejdź do katalogu domowego.
-  - `/` (Root): Przejdź do katalogu głównego napędu.
-  - `=` (Equal): Przejdź do ścieżki z drugiego panelu.
+    - `...` (Go Up): Przejdź do katalogu nadrzędnego.
+    - `~` (Home): Przejdź do katalogu domowego.
+    - `/` (Root): Przejdź do katalogu głównego napędu.
+    - `=` (Equal): Przejdź do ścieżki z drugiego panelu.
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Ulepszenia panelu kolejki zadań (Queue)**:
+    - Dodano przyciski akcji ("Pause/Resume", "Cancel", "More") bezpośrednio w wierszach aktywnych zadań.
+    - Dodano kolorowanie wierszy w zależności od statusu zadania (Błąd, Pauza, Ukończone).
+    - Przywrócono przyciski czyszczenia listy ("Clear Completed", "Clear Error", "Clear All").
+    - Naprawiono problem ze znikającymi zadaniami i brakiem aktualizacji paska postępu.
 
 - [x] **Refaktoryzacja operacji na plikach (Plugin)**: Przeniesiono operacje kopiowania, przenoszenia i usuwania do dedykowanego pluginu
   `org.quickfile.standard_operations`. Naprawiono szereg błędów regresji, w tym wyświetlanie zadań w panelu "Queue" i aktualizację paska
