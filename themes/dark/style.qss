@@ -40,9 +40,7 @@ QTableView::item:selected:!active {
 }
 
 /* Ensure unselected items have transparent background to show alternating row colors */
-QTableView::item {
-    background-color: transparent;
-}
+/* REMOVED: QTableView::item { background-color: transparent; } to allow model background colors */
 
 QLineEdit[activePanel="true"] {
     background-color: @@active_panel_border@@;
