@@ -7,6 +7,9 @@
 
 ## Fixed
 
+- **Plugin Loading Error**: Fixed `KeyError: 'id'` during plugin loading by adding missing 'id' fields to all `metadata.json` files.
+- **Blank Window on Startup**: Fixed an issue where the application would start with an empty window if panel settings were corrupted or
+  empty. Added a fallback to default tabs.
 - **Hanging selection with Insert**: Fixed an issue where files selected with the Insert key were not cleared after an operation, causing
   errors on subsequent actions.
 - **Queue Panel Issues**:
