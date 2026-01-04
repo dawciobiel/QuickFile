@@ -1,4 +1,8 @@
 {
+  "id": "org.quickfile.checksum_standard",
+  "group_id": "org.quickfile",
+  "artifact_id": "checksum_standard",
+  "version": "1.0.0",
   "name": "Standard Checksum Algorithms",
   "type": "checksum",
   "description": "Provides support for calculating MD5, SHA1, SHA256, and SHA512 checksums.",

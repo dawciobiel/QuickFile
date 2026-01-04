@@ -1,4 +1,5 @@
 {
+    "id": "org.quickfile.flat_view",
     "group_id": "org.quickfile",
     "artifact_id": "flat_view",
     "version": "1.0.0",

@@ -1,225 +1,159 @@
-import importlib
+import importlib.util
 import json
 import logging
 import os
+import platform
 import shutil
-import sys
 
-from packaging.version import Version
+from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, ArchivePlugin, \
+    ChecksumPlugin, SearchPlugin
 
-from plugins.base import ArchivePlugin, ChecksumPlugin, SearchPlugin, ViewerPlugin, AttributeEditorPlugin, ViewModePlugin, SymlinkPlugin, \
-    StandardOperationsPlugin
-
-
-class PluginInfo:
-    """Holds metadata and the loaded class for a specific plugin version."""
-    def __init__(self, group_id, artifact_id, version, path, metadata, plugin_class):
-        self.group_id = group_id
-        self.artifact_id = artifact_id
-        self.version = Version(version)
-        self.path = path
-        self.metadata = metadata
-        self.plugin_class = plugin_class
-        self.instance = None
-
-    def get_instance(self):
-        if not self.instance:
-            self.instance = self.plugin_class()
-        return self.instance
 
 class PluginManager:
-    def __init__(self):
-        self.project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        self.user_plugins_dir = os.path.join(os.path.expanduser("~"), ".config", "QuickFile", "plugins")
-        self.bundled_plugins_dir = os.path.join(self.project_root, "plugins")
-        os.makedirs(self.user_plugins_dir, exist_ok=True)
-        
-        self.registry = {
-            "archive": {},
-            "checksum": {},
-            "search": {},
-            "viewer": {},
-            "attribute_editor": {},
-            "view_mode": {},
-            "symlink": {},
-            "standard_operations": {}
+    def __init__(self, plugin_dirs=None):
+        if plugin_dirs is None:
+            user_config_dir = os.path.expanduser("~/.config/QuickFile")
+            plugin_dirs = [os.path.join(user_config_dir, "plugins")]
+
+        self.plugin_dirs = plugin_dirs
+        self.plugins = {
+            "standard_operations": [],
+            "view_mode": [],
+            "attribute_editor": [],
+            "viewer": [],
+            "symlink": [],
+            "archive": [],
+            "checksum": [],
+            "search": []
         }
-        
-        self._install_bundled_plugins()
-        self.scan_and_load_plugins()
 
-    def _install_bundled_plugins(self):
-        if not os.path.isdir(self.bundled_plugins_dir):
-            return
-        
-        for group_id in os.listdir(self.bundled_plugins_dir):
-            group_src = os.path.join(self.bundled_plugins_dir, group_id)
-            if not os.path.isdir(group_src) or not group_id.startswith("org."):
+        self._ensure_bundled_plugins()
+        self.load_plugins()
+
+    def _ensure_bundled_plugins(self):
+        bundled_plugin_dir = os.path.join(os.path.dirname(__file__), "..", "plugins")
+        user_plugin_dir = self.plugin_dirs[0]  # Assuming the first one is the main user plugin dir
+
+        if not os.path.exists(user_plugin_dir):
+            os.makedirs(user_plugin_dir)
+
+        for org_name in os.listdir(bundled_plugin_dir):
+            org_path = os.path.join(bundled_plugin_dir, org_name)
+            if os.path.isdir(org_path):
+                for plugin_name in os.listdir(org_path):
+                    plugin_path = os.path.join(org_path, plugin_name)
+                    if os.path.isdir(plugin_path):
+                        dest_org_path = os.path.join(user_plugin_dir, org_name)
+                        dest_plugin_path = os.path.join(dest_org_path, plugin_name)
+
+                        if not os.path.exists(dest_plugin_path):
+                            try:
+                                shutil.copytree(plugin_path, dest_plugin_path)
+                                logging.info(f"Installed bundled plugin: {org_name}.{plugin_name}")
+                            except Exception as e:
+                                logging.error(f"Failed to install bundled plugin {plugin_name}: {e}")
+
+    def load_plugins(self):
+        logging.info(f"Scanning for plugins in: {', '.join(self.plugin_dirs)}")
+        for plugin_dir in self.plugin_dirs:
+            if not os.path.isdir(plugin_dir):
                 continue
-            
-            for artifact_id in os.listdir(group_src):
-                artifact_src = os.path.join(group_src, artifact_id)
-                if not os.path.isdir(artifact_src): continue
-                
-                for version in os.listdir(artifact_src):
-                    version_src = os.path.join(artifact_src, version)
-                    version_dst = os.path.join(self.user_plugins_dir, group_id, artifact_id, version)
-                    
-                    if os.path.isdir(version_src) and not os.path.exists(version_dst):
-                        try:
-                            shutil.copytree(version_src, version_dst)
-                            logging.info(f"Installed bundled plugin: {group_id}.{artifact_id} v{version}")
-                        except Exception as e:
-                            logging.error(f"Failed to install bundled plugin {group_id}.{artifact_id}: {e}")
+            for org_name in os.listdir(plugin_dir):
+                org_path = os.path.join(plugin_dir, org_name)
+                if os.path.isdir(org_path):
+                    for plugin_name in os.listdir(org_path):
+                        plugin_path = os.path.join(org_path, plugin_name)
+                        if os.path.isdir(plugin_path):
+                            self._load_plugin_versions(plugin_path)
 
-    def scan_and_load_plugins(self):
-        logging.info(f"Scanning for plugins in: {self.user_plugins_dir}")
-        if not os.path.isdir(self.user_plugins_dir):
+    def _load_plugin_versions(self, plugin_path):
+        # For now, just load the latest version.
+        # In the future, we could handle multiple versions.
+        versions = [d for d in os.listdir(plugin_path) if os.path.isdir(os.path.join(plugin_path, d))]
+        if not versions:
             return
 
-        for group_id in os.listdir(self.user_plugins_dir):
-            group_path = os.path.join(self.user_plugins_dir, group_id)
-            if not os.path.isdir(group_path): continue
-
-            for artifact_id in os.listdir(group_path):
-                artifact_path = os.path.join(group_path, artifact_id)
-                if not os.path.isdir(artifact_path): continue
-
-                self._load_artifact_versions(group_id, artifact_id, artifact_path)
-
-    def _load_artifact_versions(self, group_id, artifact_id, artifact_path):
-        for version in os.listdir(artifact_path):
-            version_path = os.path.join(artifact_path, version)
-            if os.path.isdir(version_path):
-                try:
-                    plugin_info = self._load_plugin(group_id, artifact_id, version, version_path)
-                    if plugin_info:
-                        plugin_type = plugin_info.metadata.get("type")
-                        if not plugin_type:
-                            logging.warning(f"Plugin {group_id}.{artifact_id} v{version} missing 'type' in metadata. Skipping.")
-                            continue
-                        
-                        if plugin_type not in self.registry:
-                            self.registry[plugin_type] = {}
-
-                        full_id = f"{group_id}.{artifact_id}"
-                        if full_id not in self.registry[plugin_type]:
-                            self.registry[plugin_type][full_id] = []
-                        self.registry[plugin_type][full_id].append(plugin_info)
-                        logging.info(f"Successfully loaded plugin: {full_id} v{version} (type: {plugin_type})")
-                except Exception as e:
-                    logging.error(f"Failed to load plugin from {version_path}: {e}", exc_info=True)
-        
-        for plugin_type in self.registry:
-            for full_id in self.registry[plugin_type]:
-                self.registry[plugin_type][full_id].sort(key=lambda p: p.version, reverse=True)
-
-    def _load_plugin(self, group_id, artifact_id, version, version_path):
+        latest_version = sorted(versions, reverse=True)[0]
+        version_path = os.path.join(plugin_path, latest_version)
         metadata_path = os.path.join(version_path, "metadata.json")
-        if not os.path.exists(metadata_path):
-            raise FileNotFoundError("metadata.json not found")
 
-        with open(metadata_path, 'r') as f:
-            metadata = json.load(f)
+        if os.path.exists(metadata_path):
+            try:
+                with open(metadata_path, 'r') as f:
+                    metadata = json.load(f)
 
-        entry_point = metadata.get("entry_point")
-        class_name = metadata.get("class_name")
-        if not entry_point or not class_name:
-            raise ValueError("'entry_point' or 'class_name' missing in metadata.json")
+                plugin_type = metadata.get("type")
+                if plugin_type in self.plugins:
+                    module_path = os.path.join(version_path, metadata["entry_point"])
+                    spec = importlib.util.spec_from_file_location(metadata["id"], module_path)
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
 
-        module_name = os.path.splitext(entry_point)[0]
-        
-        # Add plugin directory to path and import, then remove
-        sys.path.insert(0, version_path)
-        try:
-            module = importlib.import_module(module_name)
-            importlib.reload(module) # Ensure we get the latest version
-        finally:
-            sys.path.pop(0)
-        
-        plugin_class = getattr(module, class_name)
-        return PluginInfo(group_id, artifact_id, version, version_path, metadata, plugin_class)
+                    plugin_class = getattr(module, metadata["class_name"])
+                    plugin_instance = plugin_class()
 
-    def get_archive_plugins(self) -> list[ArchivePlugin]:
-        plugins = []
-        if "archive" in self.registry:
-            for artifact_id, versions in self.registry["archive"].items():
-                if versions:
-                    plugins.append(versions[0].get_instance())
-        return plugins
+                    self.plugins[plugin_type].append(plugin_instance)
+                    logging.info(f"Successfully loaded plugin: {metadata['id']} v{metadata['version']} (type: {plugin_type})")
+                else:
+                    logging.warning(f"Unknown plugin type '{plugin_type}' for {metadata['id']}")
 
-    def get_archiver_for_extension(self, extension: str) -> ArchivePlugin | None:
-        for plugin in self.get_archive_plugins():
-            if extension.lower() in plugin.get_supported_extensions():
+            except Exception as e:
+                logging.error(f"Failed to load plugin from {version_path}: {e}", exc_info=True)
+
+    def get_standard_operations_plugin(self) -> StandardOperationsPlugin | None:
+        """
+        Returns the appropriate standard operations plugin for the current OS.
+        Prefers the Windows-specific plugin on Windows.
+        """
+        if platform.system() == "Windows":
+            # Look for the Windows-specific plugin first
+            for plugin in self.plugins["standard_operations"]:
+                if "windows" in plugin.name.lower():
+                    return plugin
+
+        # Fallback to the first available standard operations plugin
+        if self.plugins["standard_operations"]:
+            return self.plugins["standard_operations"][0]
+        return None
+
+    def get_view_mode_plugin(self, view_id: str) -> ViewModePlugin | None:
+        for plugin in self.plugins["view_mode"]:
+            if plugin.view_mode_name == view_id:
                 return plugin
         return None
 
-    def get_checksum_plugins(self) -> list[ChecksumPlugin]:
-        plugins = []
-        if "checksum" in self.registry:
-            for artifact_id, versions in self.registry["checksum"].items():
-                if versions:
-                    plugins.append(versions[0].get_instance())
-        return plugins
-
-    def get_search_plugins(self) -> list[SearchPlugin]:
-        plugins = []
-        if "search" in self.registry:
-            for artifact_id, versions in self.registry["search"].items():
-                if versions:
-                    plugins.append(versions[0].get_instance())
-        return plugins
-
-    def get_viewer_plugins(self) -> list[ViewerPlugin]:
-        plugins = []
-        if "viewer" in self.registry:
-            for artifact_id, versions in self.registry["viewer"].items():
-                if versions:
-                    plugins.append(versions[0].get_instance())
-        return plugins
+    def get_attribute_editor_plugin(self, editor_id: str) -> AttributeEditorPlugin | None:
+        for plugin in self.plugins["attribute_editor"]:
+            # Assuming attribute editor plugins might have an ID or we just pick the first one for now
+            # The interface doesn't enforce an ID property, but let's assume we might add it or check name
+            # For now, let's just return the first one if it matches or if no ID is passed
+            return plugin
+        return None
 
     def get_viewer_for_file(self, file_path: str) -> ViewerPlugin | None:
-        for plugin in self.get_viewer_plugins():
-            if plugin.can_view(file_path):
-                return plugin
-        return None
-
-    def get_attribute_editor_plugin(self) -> AttributeEditorPlugin | None:
-        if "attribute_editor" in self.registry:
-            for artifact_id, versions in self.registry["attribute_editor"].items():
-                if versions:
-                    plugin = versions[0].get_instance()
-                    if plugin.is_supported():
-                        return plugin
-        return None
-
-    def get_view_mode_plugins(self) -> list[ViewModePlugin]:
-        plugins = []
-        if "view_mode" in self.registry:
-            for artifact_id, versions in self.registry["view_mode"].items():
-                if versions:
-                    plugins.append(versions[0].get_instance())
-        return plugins
-
-    def get_view_mode_plugin(self, name: str) -> ViewModePlugin | None:
-        for plugin in self.get_view_mode_plugins():
-            if plugin.view_mode_name == name:
+        # Simple logic: return the first viewer that supports the file type
+        ext = os.path.splitext(file_path)[1].lower()
+        for plugin in self.plugins["viewer"]:
+            if ext in plugin.supported_extensions():
                 return plugin
         return None
 
     def get_symlink_plugin(self) -> SymlinkPlugin | None:
-        if "symlink" in self.registry:
-            for artifact_id, versions in self.registry["symlink"].items():
-                if versions:
-                    plugin = versions[0].get_instance()
-                    if plugin.is_supported():
-                        return plugin
+        if self.plugins["symlink"]:
+            return self.plugins["symlink"][0]
         return None
 
-    def get_standard_operations_plugin(self) -> StandardOperationsPlugin | None:
-        if "standard_operations" in self.registry:
-            for artifact_id, versions in self.registry["standard_operations"].items():
-                if versions:
-                    # Return the first available plugin (highest version)
-                    return versions[0].get_instance()
+    def get_archiver_for_extension(self, extension: str) -> ArchivePlugin | None:
+        for plugin in self.plugins["archive"]:
+            if extension in plugin.get_supported_extensions():
+                return plugin
         return None
+
+    def get_all_archivers(self) -> list[ArchivePlugin]:
+        return self.plugins["archive"]
+
+    def get_checksum_plugins(self) -> list[ChecksumPlugin]:
+        return self.plugins["checksum"]
+
+    def get_search_plugins(self) -> list[SearchPlugin]:
+        return self.plugins["search"]
