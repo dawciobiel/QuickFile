@@ -255,8 +255,12 @@ class FolderBrowser(QWidget):
         self.leftTabWidget: QTabWidget | None = None
         self.rightTabWidget: QTabWidget | None = None
         # -----------------------------------------
-        
-        uic.loadUi("ui/folder_browser.ui", self)
+
+        try:
+            uic.loadUi("ui/folder_browser.ui", self)
+        except Exception as e:
+            logging.critical(f"Failed to load UI: {e}", exc_info=True)
+            raise
         
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager
@@ -441,7 +445,13 @@ class FolderBrowser(QWidget):
 
         home_path = os.path.expanduser("~")
         left_tabs = self.settings_manager.get_setting("leftPanelTabs", [home_path])
+        if not left_tabs:
+            left_tabs = [home_path]
+            
         right_tabs = self.settings_manager.get_setting("rightPanelTabs", [home_path])
+        if not right_tabs:
+            right_tabs = [home_path]
+            
         left_active_tab = self.settings_manager.get_setting("leftPanelActiveTab", 0)
         right_active_tab = self.settings_manager.get_setting("rightPanelActiveTab", 0)
 
@@ -600,14 +610,6 @@ class FolderBrowser(QWidget):
         return affected_panels
 
     def clear_selection(self):
-        logging.debug("FolderBrowser: clear_selection called")
         if self.active_panel_widget:
-            logging.debug(f"Active panel widget found: {self.active_panel_widget}")
-            logging.debug(f"File view type: {type(self.active_panel_widget.file_view)}")
             if hasattr(self.active_panel_widget.file_view, 'clear_selection'):
-                logging.debug("Calling file_view.clear_selection()")
                 self.active_panel_widget.file_view.clear_selection()
-            else:
-                logging.warning("Active panel file_view does not have clear_selection method")
-        else:
-            logging.warning("FolderBrowser: No active panel widget to clear selection")

@@ -1,4 +1,5 @@
 {
+  "id": "org.quickfile.standard_operations",
   "group_id": "org.quickfile",
   "artifact_id": "standard_operations",
   "version": "1.0.0",

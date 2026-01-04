@@ -1,4 +1,5 @@
 {
+  "id": "org.quickfile.standard_viewer",
   "group_id": "org.quickfile",
   "artifact_id": "standard_viewer",
   "version": "1.0.0",
