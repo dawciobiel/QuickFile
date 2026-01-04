@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 
 import psutil
 from PyQt6 import uic
@@ -14,6 +15,19 @@ from app.task_queue_manager import TaskType
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from browser.base_view import AbstractFileView
+
+
+def _format_size(bytes_val):
+    """Formats size in bytes to a human-readable string (KB, MB, GB, TB)."""
+    if bytes_val is None:
+        return ""
+    power = 1024
+    n = 0
+    power_labels = {0: 'B', 1: 'KB', 2: 'MB', 3: 'GB', 4: 'TB'}
+    while bytes_val >= power and n < len(power_labels) -1 :
+        bytes_val /= power
+        n += 1
+    return f"{bytes_val:.1f} {power_labels[n]}"
 
 
 class PanelWidget(QWidget):
@@ -83,6 +97,11 @@ class PanelWidget(QWidget):
         self.nav_layout.addWidget(self.btn_equal)
 
         self.nav_layout.addStretch()  # Push buttons to the left
+
+        # Free space label
+        self.free_space_label = QLabel("")
+        self.free_space_label.setObjectName("freeSpaceLabel")
+        self.nav_layout.addWidget(self.free_space_label)
 
         self.layout.addLayout(self.nav_layout)
 
@@ -157,6 +176,7 @@ class PanelWidget(QWidget):
     def _on_path_changed(self, new_path):
         self.path_edit.setText(new_path)
         self.completer_model.setRootPath(new_path)
+        self.update_free_space_display(new_path)
         self.drive_combo.blockSignals(True)
         best_match_index = -1
         longest_match_len = -1
@@ -179,6 +199,28 @@ class PanelWidget(QWidget):
             self.file_view.view.setFocus()
         elif isinstance(self.file_view, AbstractFileView):
             self.path_edit.setText(self.file_view.get_current_path())
+
+    # Architectural Note: The free space display is implemented directly here
+    # instead of as a plugin. This is because it's tightly coupled with the
+    # PanelWidget's internal layout (`nav_layout`). Making it a plugin would
+    # require exposing internal widgets, creating a fragile dependency.
+    # For now, it's considered an integral part of the panel itself.
+    def update_free_space_display(self, path):
+        if not path or not os.path.exists(path):
+            self.free_space_label.setText("")
+            return
+        try:
+            usage = shutil.disk_usage(path)
+            free_str = _format_size(usage.free)
+            total_str = _format_size(usage.total)
+            free_text = translation_manager.translate("PanelWidget", "Free")
+            self.free_space_label.setText(f"{free_text}: {free_str} / {total_str}  ")
+        except FileNotFoundError:
+            # This can happen for network paths or special file systems
+            self.free_space_label.setText("")
+        except Exception as e:
+            logging.warning(f"Could not get disk usage for {path}: {e}")
+            self.free_space_label.setText("")
 
     def toggle_insert_selection(self):
         if isinstance(self.file_view, AbstractFileView):
