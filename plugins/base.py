@@ -19,6 +19,19 @@ class FileOperationPlugin(ABC):
         """A brief description of what the plugin does."""
         pass
 
+class UiExtensionPlugin(FileOperationPlugin):
+    """
+    Interface for plugins that extend the main application's UI.
+    """
+    @abstractmethod
+    def initialize(self, main_window):
+        """
+        Called by the application to allow the plugin to add its UI elements.
+        :param main_window: A reference to the main application window.
+        """
+        pass
+
+
 class ArchivePlugin(FileOperationPlugin):
     """
     Interface for plugins that handle creating and extracting archives.
