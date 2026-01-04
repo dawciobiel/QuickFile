@@ -1,4 +1,8 @@
 {
+  "id": "org.quickfile.search_standard",
+  "group_id": "org.quickfile",
+  "artifact_id": "search_standard",
+  "version": "1.0.0",
   "name": "Standard File Search",
   "type": "search",
   "description": "Provides standard file search functionality using recursive directory scanning.",

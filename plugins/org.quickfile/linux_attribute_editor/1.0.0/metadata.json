@@ -1,4 +1,5 @@
 {
+  "id": "org.quickfile.linux_attribute_editor",
   "group_id": "org.quickfile",
   "artifact_id": "linux_attribute_editor",
   "version": "1.0.0",

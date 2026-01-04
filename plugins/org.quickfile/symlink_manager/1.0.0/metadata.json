@@ -1,4 +1,5 @@
 {
+  "id": "org.quickfile.symlink_manager",
   "group_id": "org.quickfile",
   "artifact_id": "symlink_manager",
   "version": "1.0.0",
