@@ -1,0 +1,11 @@
+{
+  "id": "org.quickfile.windows_operations",
+  "name": "Windows File Operations",
+  "version": "1.0.0",
+  "type": "standard_operations",
+  "description": "Provides standard file operations with support for long paths on Windows.",
+  "author": "QuickFile Team",
+  "dependencies": [],
+  "entry_point": "plugin.py",
+  "class_name": "WindowsOperationsPlugin"
+}
