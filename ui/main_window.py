@@ -81,6 +81,9 @@ class MainWindow(QMainWindow):
         )
 
         self.ui_manager.init_ui(self.application_logic_handler, self.shortcuts_manager)
+        
+        # Initialize UI plugins AFTER the main UI is built
+        self.application_logic_handler.initialize_ui_plugins()
 
         self.ui_state_provider = UIStateProvider(self.ui_manager.folder_browser)
         self.dialog_handler = DialogHandler(

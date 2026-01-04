@@ -4,9 +4,10 @@ import logging
 import os
 import platform
 import shutil
+import sys
 
 from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, ArchivePlugin, \
-    ChecksumPlugin, SearchPlugin
+    ChecksumPlugin, SearchPlugin, UiExtensionPlugin
 
 
 class PluginManager:
@@ -24,7 +25,8 @@ class PluginManager:
             "symlink": [],
             "archive": [],
             "checksum": [],
-            "search": []
+            "search": [],
+            "ui_extension": []
         }
 
         self._ensure_bundled_plugins()
@@ -67,8 +69,6 @@ class PluginManager:
                             self._load_plugin_versions(plugin_path)
 
     def _load_plugin_versions(self, plugin_path):
-        # For now, just load the latest version.
-        # In the future, we could handle multiple versions.
         versions = [d for d in os.listdir(plugin_path) if os.path.isdir(os.path.join(plugin_path, d))]
         if not versions:
             return
@@ -78,7 +78,11 @@ class PluginManager:
         metadata_path = os.path.join(version_path, "metadata.json")
 
         if os.path.exists(metadata_path):
+            original_sys_path = sys.path[:]
             try:
+                # Add plugin's directory to sys.path to allow direct imports
+                sys.path.insert(0, version_path)
+
                 with open(metadata_path, 'r') as f:
                     metadata = json.load(f)
 
@@ -99,6 +103,10 @@ class PluginManager:
 
             except Exception as e:
                 logging.error(f"Failed to load plugin from {version_path}: {e}", exc_info=True)
+            finally:
+                # Restore sys.path
+                sys.path[:] = original_sys_path
+
 
     def get_standard_operations_plugin(self) -> StandardOperationsPlugin | None:
         """
@@ -157,3 +165,6 @@ class PluginManager:
 
     def get_search_plugins(self) -> list[SearchPlugin]:
         return self.plugins["search"]
+
+    def get_ui_extension_plugins(self) -> list[UiExtensionPlugin]:
+        return self.plugins["ui_extension"]

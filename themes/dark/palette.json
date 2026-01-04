@@ -8,5 +8,6 @@
     "selection_foreground": "#d1cac9",
     "selection_background": "#2980b9",
     "active_panel_border": "#470801",
-    "inactive_selection_background": "#4a6278"
+    "inactive_selection_background": "#4a6278",
+    "disabled_foreground": "#808080"
 }
