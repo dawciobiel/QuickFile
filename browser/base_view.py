@@ -1,6 +1,5 @@
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtWidgets import QWidget, QAbstractItemView, QVBoxLayout
-
 
 class AbstractFileView(QWidget):
     path_changed = pyqtSignal(str)
@@ -16,7 +15,7 @@ class AbstractFileView(QWidget):
 
         # These attributes should be initialized by subclasses
         self.view: QAbstractItemView | None = None
-        self.model = None
+        self.model = None 
 
     def set_path(self, path):
         raise NotImplementedError
@@ -48,3 +47,15 @@ class AbstractFileView(QWidget):
 
     def clear_selection(self):
         pass
+
+    def _handle_common_key_events(self, event, current_index):
+        if not self.view or not self.model:
+            return False
+
+        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            if current_index.isValid():
+                # Emit doubleClicked signal to handle navigation or file opening
+                self.view.doubleClicked.emit(current_index)
+                return True
+
+        return False
