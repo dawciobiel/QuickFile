@@ -4,14 +4,16 @@ import os
 import psutil
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QDir, QTimer
-from PyQt6.QtGui import QFileSystemModel, QMovie, QIcon
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter, QTabWidget, QLabel
+from PyQt6.QtGui import QFileSystemModel, QMovie, QIcon, QFont
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox, QSizePolicy, QCompleter, QTabWidget, QLabel, \
+    QToolButton
 
 from app.plugin_manager import PluginManager
 from app.settings_manager import SettingsManager
 from app.task_queue_manager import TaskType
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
+from browser.base_view import AbstractFileView
 
 
 class PanelWidget(QWidget):
@@ -21,16 +23,13 @@ class PanelWidget(QWidget):
         self._folder_browser_event_filter = folder_browser_event_filter
         self.theme_manager = theme_manager
         self.plugin_manager = plugin_manager
+        self.folder_browser = parent  # Reference to the main FolderBrowser instance
         
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(2)
 
-        self.drive_combo = QComboBox()
-        self.drive_combo.setMaximumWidth(140)
-        self.drive_combo.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.layout.addWidget(self.drive_combo)
-
+        # Path Edit (Top Row)
         self.path_edit = QLineEdit()
         self.layout.addWidget(self.path_edit)
 
@@ -39,6 +38,53 @@ class PanelWidget(QWidget):
         self.completer_model = QFileSystemModel(self)
         self.completer.setModel(self.completer_model)
         self.path_edit.setCompleter(self.completer)
+
+        # Navigation Bar Layout (Second Row)
+        self.nav_layout = QHBoxLayout()
+        self.nav_layout.setContentsMargins(0, 0, 0, 0)
+        self.nav_layout.setSpacing(2)
+
+        self.drive_combo = QComboBox()
+        self.drive_combo.setMaximumWidth(100)
+        self.drive_combo.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.nav_layout.addWidget(self.drive_combo)
+
+        # Font for buttons
+        bold_font = QFont()
+        bold_font.setBold(True)
+
+        # Navigation Buttons
+        self.btn_home = QToolButton()
+        self.btn_home.setText("~")
+        self.btn_home.setFont(bold_font)
+        self.btn_home.setToolTip(translation_manager.translate("PanelWidget", "Go to Home"))
+        self.btn_home.clicked.connect(self.go_home)
+        self.nav_layout.addWidget(self.btn_home)
+
+        self.btn_root = QToolButton()
+        self.btn_root.setText("/")
+        self.btn_root.setFont(bold_font)
+        self.btn_root.setToolTip(translation_manager.translate("PanelWidget", "Go to Root"))
+        self.btn_root.clicked.connect(self.go_root)
+        self.nav_layout.addWidget(self.btn_root)
+
+        self.btn_up = QToolButton()
+        self.btn_up.setText("..")
+        self.btn_up.setFont(bold_font)
+        self.btn_up.setToolTip(translation_manager.translate("PanelWidget", "Go Up"))
+        self.btn_up.clicked.connect(self.go_up)
+        self.nav_layout.addWidget(self.btn_up)
+
+        self.btn_equal = QToolButton()
+        self.btn_equal.setText("=")
+        self.btn_equal.setFont(bold_font)
+        self.btn_equal.setToolTip(translation_manager.translate("PanelWidget", "Sync with other panel"))
+        self.btn_equal.clicked.connect(self.sync_with_other_panel)
+        self.nav_layout.addWidget(self.btn_equal)
+
+        self.nav_layout.addStretch()  # Push buttons to the left
+
+        self.layout.addLayout(self.nav_layout)
 
         # Dynamically create the view from a plugin
         view_plugin = self.plugin_manager.get_view_mode_plugin("flat") # Default to flat view
@@ -55,26 +101,29 @@ class PanelWidget(QWidget):
         self.summary_label = QLabel("Summary")
         self.layout.addWidget(self.summary_label)
 
-        self.file_view.path_changed.connect(self._on_path_changed)
-        self.path_edit.returnPressed.connect(self.on_path_edited)
-        self.drive_combo.currentIndexChanged.connect(self._on_drive_selected)
+        if isinstance(self.file_view, AbstractFileView):
+            self.file_view.path_changed.connect(self._on_path_changed)
+            self.path_edit.returnPressed.connect(self.on_path_edited)
+            self.drive_combo.currentIndexChanged.connect(self._on_drive_selected)
 
-        self.file_view.view.selectionModel().currentChanged.connect(self.update_summary_panel)
-        self.file_view.insert_selection_changed.connect(self.update_summary_panel)
+            self.file_view.view.selectionModel().currentChanged.connect(self.update_summary_panel)
+            self.file_view.insert_selection_changed.connect(self.update_summary_panel)
+
+            if self._folder_browser_event_filter:
+                self.file_view.view.installEventFilter(self._folder_browser_event_filter)
 
         self._populate_drive_combo()
 
-        if self._folder_browser_event_filter:
-            self.file_view.view.installEventFilter(self._folder_browser_event_filter)
 
     def set_active(self, is_active):
         self.path_edit.setProperty("activePanel", is_active)
-        self.file_view.view.setProperty("activePanel", is_active)
+        if isinstance(self.file_view, AbstractFileView):
+            self.file_view.view.setProperty("activePanel", is_active)
+            self.file_view.view.style().unpolish(self.file_view.view)
+            self.file_view.view.style().polish(self.file_view.view)
         
         self.path_edit.style().unpolish(self.path_edit)
         self.path_edit.style().polish(self.path_edit)
-        self.file_view.view.style().unpolish(self.file_view.view)
-        self.file_view.view.style().polish(self.file_view.view)
 
     def _populate_drive_combo(self):
         self.drive_combo.clear()
@@ -100,7 +149,7 @@ class PanelWidget(QWidget):
             self.drive_combo.addItem(mp)
 
     def _on_drive_selected(self, index):
-        if index >= 0:
+        if index >= 0 and isinstance(self.file_view, AbstractFileView):
             selected_drive_path = self.drive_combo.itemText(index)
             self.file_view.set_path(selected_drive_path)
             self.file_view.view.setFocus()
@@ -125,17 +174,20 @@ class PanelWidget(QWidget):
 
     def on_path_edited(self):
         path = os.path.expanduser(self.path_edit.text().strip())
-        if os.path.isdir(path):
+        if os.path.isdir(path) and isinstance(self.file_view, AbstractFileView):
             self.file_view.set_path(path)
             self.file_view.view.setFocus()
-        else:
+        elif isinstance(self.file_view, AbstractFileView):
             self.path_edit.setText(self.file_view.get_current_path())
 
     def toggle_insert_selection(self):
-        if self.file_view:
+        if isinstance(self.file_view, AbstractFileView):
             self.file_view.toggle_selection()
 
     def update_summary_panel(self):
+        if not isinstance(self.file_view, AbstractFileView):
+            return
+
         insert_selected_paths = self.file_view.get_insert_selected_paths()
         if insert_selected_paths:
             num_files = 0
@@ -168,6 +220,28 @@ class PanelWidget(QWidget):
             else:
                 self.summary_label.setText("")
 
+    def go_home(self):
+        if isinstance(self.file_view, AbstractFileView):
+            self.file_view.set_path(os.path.expanduser("~"))
+
+    def go_root(self):
+        if isinstance(self.file_view, AbstractFileView):
+            self.file_view.set_path(os.path.abspath(os.sep))
+
+    def go_up(self):
+        if isinstance(self.file_view, AbstractFileView):
+            self.file_view.go_up()
+
+    def sync_with_other_panel(self):
+        if not self.folder_browser:
+            return
+
+        other_panel = self.folder_browser.get_inactive_panel_widget()
+        if other_panel and isinstance(other_panel, PanelWidget) and isinstance(other_panel.file_view, AbstractFileView) and isinstance(
+                self.file_view, AbstractFileView):
+            path = other_panel.file_view.get_current_path()
+            self.file_view.set_path(path)
+
 
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
@@ -176,6 +250,12 @@ class FolderBrowser(QWidget):
 
     def __init__(self, settings_manager: SettingsManager, theme_manager: ThemeManager, plugin_manager: PluginManager, parent=None):
         super().__init__(parent)
+
+        # --- Declare UI attributes for linter ---
+        self.leftTabWidget: QTabWidget | None = None
+        self.rightTabWidget: QTabWidget | None = None
+        # -----------------------------------------
+        
         uic.loadUi("ui/folder_browser.ui", self)
         
         self.settings_manager = settings_manager
@@ -209,10 +289,11 @@ class FolderBrowser(QWidget):
 
     def _create_panel_widget(self, path):
         panel = PanelWidget(self.settings_manager, self, self.theme_manager, self.plugin_manager, self)
-        panel.file_view.set_path(path)
-        panel.file_view.path_changed.connect(lambda new_path, p=panel: self._update_tab_title(p, new_path))
-        panel.file_view.file_selected.connect(self.file_selected.emit)
-        panel.file_view.path_changed.connect(self.current_directory_changed.emit)
+        if isinstance(panel.file_view, AbstractFileView):
+            panel.file_view.set_path(path)
+            panel.file_view.path_changed.connect(lambda new_path, p=panel: self._update_tab_title(p, new_path))
+            panel.file_view.file_selected.connect(self.file_selected.emit)
+            panel.file_view.path_changed.connect(self.current_directory_changed.emit)
         return panel
 
     def add_new_tab(self, target_tab_widget=None, path=None):
@@ -222,7 +303,7 @@ class FolderBrowser(QWidget):
             else:
                 target_tab_widget = self.leftTabWidget
         if path is None:
-            if self.active_panel_widget:
+            if self.active_panel_widget and isinstance(self.active_panel_widget.file_view, AbstractFileView):
                 path = self.active_panel_widget.file_view.get_current_path()
             else:
                 path = os.path.expanduser("~")
@@ -299,7 +380,8 @@ class FolderBrowser(QWidget):
         self.active_panel_widget = panel_widget
         if self.active_panel_widget:
             self.active_panel_widget.set_active(True)
-            self.active_panel_widget.file_view.view.setFocus()
+            if isinstance(self.active_panel_widget.file_view, AbstractFileView):
+                self.active_panel_widget.file_view.view.setFocus()
 
     def switch_active_panel(self):
         current_tab_widget = self._get_parent_tab_widget(self.active_panel_widget)
@@ -310,14 +392,18 @@ class FolderBrowser(QWidget):
         self.set_active_panel(target_widget.currentWidget())
 
     def go_up_directory(self):
-        if self.active_panel_widget:
+        if self.active_panel_widget and isinstance(self.active_panel_widget.file_view, AbstractFileView):
             self.active_panel_widget.file_view.go_up()
 
     def refresh_all_views(self):
         for i in range(self.leftTabWidget.count()):
-            self.leftTabWidget.widget(i).file_view.refresh()
+            widget = self.leftTabWidget.widget(i)
+            if isinstance(widget.file_view, AbstractFileView):
+                widget.file_view.refresh()
         for i in range(self.rightTabWidget.count()):
-            self.rightTabWidget.widget(i).file_view.refresh()
+            widget = self.rightTabWidget.widget(i)
+            if isinstance(widget.file_view, AbstractFileView):
+                widget.file_view.refresh()
 
     def refresh_path(self, path):
         self._paths_to_refresh.add(path)
@@ -332,15 +418,20 @@ class FolderBrowser(QWidget):
 
         for path in paths_to_process:
             for panel in all_panels:
-                if panel and os.path.normpath(panel.file_view.get_current_path()) == os.path.normpath(path):
+                if panel and isinstance(panel.file_view, AbstractFileView) and os.path.normpath(
+                        panel.file_view.get_current_path()) == os.path.normpath(path):
                     logging.debug(f"Refreshing panel at: {path}")
                     panel.file_view.refresh()
 
     def set_panel_paths(self, left_path, right_path):
         if self.leftTabWidget.count() > 0:
-            self.leftTabWidget.widget(0).file_view.set_path(left_path)
+            widget = self.leftTabWidget.widget(0)
+            if isinstance(widget.file_view, AbstractFileView):
+                widget.file_view.set_path(left_path)
         if self.rightTabWidget.count() > 0:
-            self.rightTabWidget.widget(0).file_view.set_path(right_path)
+            widget = self.rightTabWidget.widget(0)
+            if isinstance(widget.file_view, AbstractFileView):
+                widget.file_view.set_path(right_path)
 
     def load_panel_settings(self):
         while self.leftTabWidget.count() > 0:
@@ -369,8 +460,17 @@ class FolderBrowser(QWidget):
             self.set_active_panel(self.leftTabWidget.currentWidget())
 
     def save_panel_settings(self):
-        left_tabs = [self.leftTabWidget.widget(i).file_view.get_current_path() for i in range(self.leftTabWidget.count())]
-        right_tabs = [self.rightTabWidget.widget(i).file_view.get_current_path() for i in range(self.rightTabWidget.count())]
+        left_tabs = []
+        for i in range(self.leftTabWidget.count()):
+            widget = self.leftTabWidget.widget(i)
+            if isinstance(widget.file_view, AbstractFileView):
+                left_tabs.append(widget.file_view.get_current_path())
+
+        right_tabs = []
+        for i in range(self.rightTabWidget.count()):
+            widget = self.rightTabWidget.widget(i)
+            if isinstance(widget.file_view, AbstractFileView):
+                right_tabs.append(widget.file_view.get_current_path())
         
         self.settings_manager.set_setting("leftPanelTabs", left_tabs)
         self.settings_manager.set_setting("rightPanelTabs", right_tabs)
@@ -386,7 +486,7 @@ class FolderBrowser(QWidget):
                 self.settings_manager.set_setting("lastActivePanel", "left")
         
     def get_selected_paths(self):
-        if not self.active_panel_widget:
+        if not self.active_panel_widget or not isinstance(self.active_panel_widget.file_view, AbstractFileView):
             return []
         insert_selected = self.active_panel_widget.file_view.get_insert_selected_paths()
         if insert_selected:
@@ -400,12 +500,12 @@ class FolderBrowser(QWidget):
         return []
         
     def get_current_selected_path(self):
-        if self.active_panel_widget:
+        if self.active_panel_widget and isinstance(self.active_panel_widget.file_view, AbstractFileView):
             return self.active_panel_widget.file_view.get_current_selected_path()
         return None
 
     def navigate_to_path(self, path):
-        if self.active_panel_widget:
+        if self.active_panel_widget and isinstance(self.active_panel_widget.file_view, AbstractFileView):
             self.active_panel_widget.file_view.set_path(path)
 
     def calculate_selected_directory_size(self):
@@ -414,12 +514,12 @@ class FolderBrowser(QWidget):
     def update_directory_size(self, path, size):
         for i in range(self.leftTabWidget.count()):
             panel = self.leftTabWidget.widget(i)
-            if panel.file_view.get_current_path() == os.path.dirname(path):
+            if isinstance(panel.file_view, AbstractFileView) and panel.file_view.get_current_path() == os.path.dirname(path):
                  panel.file_view.model.update_directory_size(path, size)
         
         for i in range(self.rightTabWidget.count()):
             panel = self.rightTabWidget.widget(i)
-            if panel.file_view.get_current_path() == os.path.dirname(path):
+            if isinstance(panel.file_view, AbstractFileView) and panel.file_view.get_current_path() == os.path.dirname(path):
                  panel.file_view.model.update_directory_size(path, size)
 
     def handle_task_completion(self, task):
@@ -432,6 +532,8 @@ class FolderBrowser(QWidget):
                      [self.rightTabWidget.widget(i) for i in range(self.rightTabWidget.count())]
 
         for panel in all_panels:
+            if not isinstance(panel.file_view, AbstractFileView):
+                continue
             current_path = panel.file_view.get_current_path()
             if not os.path.exists(current_path):
                 logging.info(f"Path no longer exists: {current_path}. Navigating up.")
@@ -489,6 +591,8 @@ class FolderBrowser(QWidget):
                      [self.rightTabWidget.widget(i) for i in range(self.rightTabWidget.count())]
         
         for panel in all_panels:
+            if not isinstance(panel.file_view, AbstractFileView):
+                continue
             panel_path = panel.file_view.get_current_path()
             if self._paths_are_related(path, panel_path):
                 affected_panels.append(panel)
