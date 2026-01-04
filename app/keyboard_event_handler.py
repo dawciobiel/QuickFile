@@ -29,12 +29,30 @@ class KeyboardEventManager(QObject):
         }
         
     def eventFilter(self, source, event):
+        if event.type() == QEvent.Type.ShortcutOverride:
+            # This event is sent before a shortcut is executed. We can intercept it
+            # to prevent shortcuts from firing when a character with a modifier
+            # (like AltGr+A for 'ą' in Polish) is being typed.
+            if event.modifiers() and event.text():
+                event.accept()
+                return True
+
+        # If a modal dialog is open, don't process global shortcuts here
         if QApplication.activeModalWidget() is not None:
             return False
 
         if event.type() == QEvent.Type.KeyPress:
+            # The main shortcut system handles QActions. This is for keys
+            # that are not standard shortcuts (e.g., Backspace for 'Go Up').
+            
+            # If the focus is on a text input, we generally want to allow typing.
+            # However, we must be careful not to block our own custom key handling.
             if isinstance(QApplication.focusWidget(), QLineEdit):
-                return False
+                # Allow the event to be processed by the QLineEdit first.
+                # If it's a shortcut, it will be handled by the QAction system.
+                # If it's a regular key press, the QLineEdit will use it.
+                # This logic is now simpler because we don't block events.
+                pass
 
             return self.handle_key_event(event)
             
@@ -44,6 +62,15 @@ class KeyboardEventManager(QObject):
         key = event.key()
         modifiers = event.modifiers()
         
+        # Check if the focused widget is a text input field.
+        # If so, we should not trigger single-key actions like Backspace.
+        is_text_input_focused = isinstance(QApplication.focusWidget(), QLineEdit)
+
+        if is_text_input_focused and modifiers == Qt.KeyboardModifier.NoModifier:
+             # For simple key presses without modifiers (like 'F2', 'Backspace'),
+             # if we are in a text field, we let the text field handle it.
+             return False
+
         action = self.key_actions.get((key, modifiers))
         if action:
             action()
@@ -52,6 +79,7 @@ class KeyboardEventManager(QObject):
         if self.folder_browser.active_panel_widget:
             active_view = self.folder_browser.active_panel_widget.file_view
             if hasattr(active_view, 'handle_key_event'):
+                # Pass the event to the active view (e.g., for navigation like Home/End)
                 return active_view.handle_key_event(event)
             
         return False
