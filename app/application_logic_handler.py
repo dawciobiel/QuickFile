@@ -39,6 +39,18 @@ class ApplicationLogicHandler(QObject):
         
         self.task_queue_manager.task_completed.connect(self._on_task_completed)
 
+    def initialize_ui_plugins(self):
+        """
+        Initializes all UI extension plugins.
+        """
+        ui_plugins = self.task_queue_manager.plugin_manager.get_ui_extension_plugins()
+        for plugin in ui_plugins:
+            try:
+                plugin.initialize(self.main_window)
+                logging.info(f"Initialized UI plugin: {plugin.name}")
+            except Exception as e:
+                logging.error(f"Failed to initialize UI plugin {plugin.name}: {e}")
+
     def _on_task_completed(self, task):
         if task.type == TaskType.CALCULATE_SIZE and task.status == TaskStatus.FINISHED:
             path = task.source_paths[0]
