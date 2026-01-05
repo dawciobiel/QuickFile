@@ -7,11 +7,13 @@
 
 ## Fixed
 
+- **Plugin Initialization Order**: Fixed a bug where UI extension plugins were initialized before the main UI was fully built, preventing them from adding elements to the menu.
+- **Plugin Internal Imports**: Fixed a `ModuleNotFoundError` for plugins with internal dependencies by modifying `sys.path` during the loading process in `PluginManager`.
+- **`TypeError` in `findChildren`**: Fixed a `TypeError` in the feedback plugin caused by passing a string (`"QMenu"`) instead of a type (`QMenu`) to `findChildren`.
+- **Disabled Widget Styling**: Fixed an issue where disabled widgets were not visually "grayed out" by adding styles for the `:disabled` state to the application's QSS files.
 - **Plugin Loading Error**: Fixed `KeyError: 'id'` during plugin loading by adding missing 'id' fields to all `metadata.json` files.
-- **Blank Window on Startup**: Fixed an issue where the application would start with an empty window if panel settings were corrupted or
-  empty. Added a fallback to default tabs.
-- **Hanging selection with Insert**: Fixed an issue where files selected with the Insert key were not cleared after an operation, causing
-  errors on subsequent actions.
+- **Blank Window on Startup**: Fixed an issue where the application would start with an empty window if panel settings were corrupted or empty. Added a fallback to default tabs.
+- **Hanging selection with Insert**: Fixed an issue where files selected with the Insert key were not cleared after an operation, causing errors on subsequent actions.
 - **Queue Panel Issues**:
     - Fixed tasks disappearing from the queue panel.
     - Fixed progress bars not updating.
