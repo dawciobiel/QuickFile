@@ -3,12 +3,16 @@ from PyQt6.QtWidgets import QDialog, QDialogButtonBox
 from PyQt6.uic import loadUi
 
 from app.translation_manager import translation_manager
+from utils.resource_path import get_resource_path
 
 class FeedbackDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         # Load the UI file
+        # Note: This path is relative to the plugin's directory, not the project root.
+        # get_resource_path won't work here unless we adjust it.
+        # For plugins, we assume resources are bundled with them.
         ui_path = os.path.join(os.path.dirname(__file__), "feedback_dialog.ui")
         loadUi(ui_path, self)
 

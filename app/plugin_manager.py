@@ -59,11 +59,23 @@ class PluginManager:
             return False
 
     def _ensure_bundled_plugins(self):
-        bundled_plugin_dir = os.path.join(os.path.dirname(__file__), "..", "plugins")
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle, the PyInstaller bootloader
+            # extends the sys module by a flag frozen=True and sets the app
+            # path into variable _MEIPASS.
+            base_dir = sys._MEIPASS
+        else:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        bundled_plugin_dir = os.path.join(base_dir, "plugins")
         user_plugin_dir = self.plugin_dirs[0]
 
         if not os.path.exists(user_plugin_dir):
             os.makedirs(user_plugin_dir)
+
+        if not os.path.exists(bundled_plugin_dir):
+            logging.warning(f"Bundled plugin directory not found at: {bundled_plugin_dir}")
+            return
 
         for org_name in os.listdir(bundled_plugin_dir):
             org_path = os.path.join(bundled_plugin_dir, org_name)

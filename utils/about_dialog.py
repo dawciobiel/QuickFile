@@ -3,6 +3,7 @@ import os
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QDialogButtonBox
 from app.translation_manager import translation_manager
+from utils.resource_path import get_resource_path
 
 try:
     from __version__ import __version__
@@ -13,7 +14,7 @@ except ImportError:
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        uic.loadUi("ui/about_dialog.ui", self)
+        uic.loadUi(get_resource_path("ui/about_dialog.ui"), self)
         self.setWindowTitle(translation_manager.translate("AboutDialog", "About"))
         
         self._init_ui()
@@ -28,8 +29,7 @@ class AboutDialog(QDialog):
         lang_code = current_locale.split('_')[0].lower()
 
         # Construct the path to the HTML file
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        docs_path = os.path.join(base_path, '..', 'docs', 'about')
+        docs_path = get_resource_path(os.path.join('docs', 'about'))
 
         # Use the extracted language code to select the correct HTML file
         html_file_name = f'about_{lang_code}.html' if lang_code == 'pl' else 'about.html'

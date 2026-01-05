@@ -4,11 +4,12 @@ from PyQt6.QtWidgets import QDialog
 from app.action_logger import action_logger
 from app.translation_manager import translation_manager
 from app.task_queue_manager import Task, TaskType, TaskStatus
+from utils.resource_path import get_resource_path
 
 class DeleteDialog(QDialog):
     def __init__(self, parent, item_paths, task_queue_manager, background_task_manager):
         super().__init__(parent)
-        uic.loadUi("ui/delete_dialog.ui", self)
+        uic.loadUi(get_resource_path("ui/delete_dialog.ui"), self)
         self.setWindowTitle(translation_manager.translate("DeleteDialog", "Delete"))
         
         self.task_queue_manager = task_queue_manager

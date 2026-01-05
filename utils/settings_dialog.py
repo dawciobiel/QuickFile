@@ -6,12 +6,13 @@ from PyQt6.QtWidgets import QDialog, QPushButton, QColorDialog, QDialogButtonBox
 from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
+from utils.resource_path import get_resource_path
 
 
 class SettingsDialog(QDialog):
     def __init__(self, parent, settings_manager: SettingsManager, theme_manager: ThemeManager):
         super().__init__(parent)
-        uic.loadUi("ui/settings_dialog.ui", self)
+        uic.loadUi(get_resource_path("ui/settings_dialog.ui"), self)
         self.setWindowTitle(translation_manager.translate("SettingsDialog", "Application Settings"))
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager

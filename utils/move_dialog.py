@@ -5,12 +5,13 @@ from app.action_logger import action_logger
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from ui.dual_progress_bar import DualProgressBar
+from utils.resource_path import get_resource_path
 
 
 class MoveDialog(QDialog):
     def __init__(self, parent, source_paths, destination_path, task_queue_manager, background_task_manager):
         super().__init__(parent)
-        uic.loadUi("ui/file_operation_dialog.ui", self)
+        uic.loadUi(get_resource_path("ui/file_operation_dialog.ui"), self)
         self.setWindowTitle(translation_manager.translate("MoveDialog", "Move"))
 
         self.task_queue_manager = task_queue_manager

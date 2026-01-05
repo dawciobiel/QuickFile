@@ -2,11 +2,12 @@ from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QLabel, QTextEdit, QDialogButtonBox
 from PyQt6.QtCore import Qt
 from app.translation_manager import translation_manager
+from utils.resource_path import get_resource_path
 
 class PropertiesDialog(QDialog):
     def __init__(self, properties, parent=None):
         super().__init__(parent)
-        uic.loadUi("ui/properties_dialog.ui", self)
+        uic.loadUi(get_resource_path("ui/properties_dialog.ui"), self)
         self.setWindowTitle(translation_manager.translate("PropertiesDialog", "Properties"))
 
         self._init_ui(properties)

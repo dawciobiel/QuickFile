@@ -11,9 +11,7 @@ from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView, QFileIco
 
 from app.settings_manager import SettingsManager
 from app.translation_manager import translation_manager
-from browser.abstract_file_system_model import AbstractFileSystemModel
-from browser.base_view import AbstractFileView
-from browser.styling_delegate import FileStyleDelegate, FileStyleRole
+from plugins.base import AbstractFileSystemModel, AbstractFileView, FileStyleDelegate, FileStyleRole
 from utils.dialogs import show_error_message
 
 
@@ -355,7 +353,7 @@ class FlatFileSystemModel(AbstractFileSystemModel):
         current_state = self.data(index, Qt.ItemDataRole.CheckStateRole)
         if current_state is None:
             return
-        new_check_state = Qt.CheckState.Unchecked if current_state == Qt.CheckState.Checked else Qt.CheckState.Checked
+        new_check_state = Qt.CheckState.Unchecked if current_state == Qt.CheckState.Checked else Qt.CheckState.Unchecked
         self.setData(index, new_check_state, Qt.ItemDataRole.CheckStateRole)
 
     def _get_file_permissions_symbolic(self, mode):
