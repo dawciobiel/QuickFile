@@ -2,6 +2,14 @@
 
 ## Główne funkcje do zaimplementowania
 
+- [ ] **Feature: System powiadomień**:
+    - Przemyślenie i zaprojektowanie systemu powiadomień o ukończeniu zadań w tle (np. kopiowanie, przenoszenie, archiwizacja, generowanie sum kontrolnych).
+    - Należy rozważyć różne formy powiadomień:
+        - Niestandardowe "baloniki" (tooltips) w rogu aplikacji.
+        - Opcjonalne sygnały dźwiękowe.
+        - Integracja z natywnym systemem powiadomień systemu operacyjnego (Windows, Linux).
+    - System powinien być konfigurowalny w ustawieniach aplikacji.
+
 - [ ] **Refactor, Chore, Cleaning**: Być może część starych branchy, które nie są już potrzebne i nie będą — należy skasować.
 
 - [ ] **Feature**: Możliwość ustalania maksymalnej prędkości podczas procesu kopiowaniu plików. To powinien być jakiś suwak lub spinner w oknie dialogowym aktualnie wykonywanego procesu kopiowania. A swoją drogą nie wiem, jak zaimplementować ogranicznik prędkości kopiowanych plików. 
@@ -9,6 +17,17 @@
 - [ ] **Feature**: Pod Windows (i jego systemem plików) czasami może być problem ze zbyt długimi nazwami plików lub zbyt długą ścieżką. Przyjrzeć się temu problemowi i dodać odpowiednią funkcjonalność dla "zachowania nazwy pliku".
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Feature: Budowanie paczek instalacyjnych**:
+    - Zaprojektowano i wykonano skrypt/ów do budowy aplikacji jako paczki instalacyjnej (np. przy użyciu `PyInstaller` lub `cx_Freeze`).
+    - **Cele**:
+        1.  **Dystrybucja binarna**: Stworzenie binarnej, samodzielnej formy aplikacji, aby nie udostępniać kodu źródłowego.
+        2.  **Uruchomienie**: Aplikacja jest w pełni uruchamialna z jednego pliku lub katalogu.
+        3.  **Pluginy**: Architektura wspiera ładowanie zewnętrznych pluginów z dedykowanego katalogu (`plugins`) w folderze użytkownika lub instalacji.
+        4.  **Zasoby**: Paczka zawiera wszystkie niezbędne zasoby (`resources`, `themes`, `translations`, `.ui` files).
+        5.  **Konfiguracja**: Aplikacja poprawnie zarządza plikami konfiguracyjnymi zarówno w katalogu instalacji (domyślne), jak i w katalogu domowym użytkownika (spersonalizowane).
+    - **Platformy**: Początkowo wsparcie dla systemów Linux i Windows.
+    - **Skrypty**: Ewentualne skrypty pomocnicze znajdują się w dedykowanym podkatalogu wewnątrz `scripts/packaging`.
 
 - [x] **Plugin operacji dla Windows**: Stworzono dedykowany plugin `org.quickfile.windows_operations`, który obsługuje kopiowanie,
   przenoszenie i usuwanie plików na systemie Windows, wykorzystując prefiks `\\?\` do obsługi długich ścieżek.
