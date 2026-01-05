@@ -1,0 +1,10 @@
+{
+  "id": "org.quickfile.disk_utils_standard",
+  "version": "1.0.0",
+  "name": "Standard Disk Utils",
+  "author": "QuickFile Team",
+  "description": "Provides standard disk utility functions using Python's shutil module.",
+  "type": "disk_utils",
+  "entry_point": "plugin.py",
+  "class_name": "StandardDiskUtilsPlugin"
+}
