@@ -31,6 +31,18 @@ class UiExtensionPlugin(FileOperationPlugin):
         """
         pass
 
+class DiskUtilsPlugin(FileOperationPlugin):
+    """
+    Interface for plugins that provide disk utility functions (e.g., free space).
+    """
+    @abstractmethod
+    def get_disk_usage(self, path: str) -> tuple[int, int, int] | None:
+        """
+        Returns a tuple of (total, used, free) bytes for the given path.
+        Returns None if usage cannot be determined.
+        """
+        pass
+
 
 class ArchivePlugin(FileOperationPlugin):
     """

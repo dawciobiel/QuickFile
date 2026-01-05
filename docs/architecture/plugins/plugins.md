@@ -2,7 +2,7 @@
 
 ## Przegląd
 
-QuickFile wykorzystuje system wtyczek oparty na interfejsach, aby umożliwić łatwe rozszerzanie funkcjonalności aplikacji bez konieczności modyfikowania jej rdzenia. Głównym celem jest obsługa różnych formatów archiwów (ZIP, RAR, 7z), ale architektura jest zaprojektowana tak, aby wspierać również inne typy operacji w przyszłości (np. sumy kontrolne, szyfrowanie).
+QuickFile wykorzystuje system wtyczek oparty na interfejsach, aby umożliwić łatwe rozszerzanie funkcjonalności aplikacji bez konieczności modyfikowania jej rdzenia. Głównym celem jest obsługa różnych formatów archiwów (ZIP, RAR, 7z), ale architektura jest zaprojektowana tak, aby wspierać również inne typy operacji w przyszłości (np. sumy kontrolne, szyfrowanie, operacje dyskowe, rozszerzenia UI).
 
 ## Struktura Katalogów
 
@@ -44,7 +44,7 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 ```
 
 *   **name**: Wyświetlana nazwa wtyczki.
-*   **type**: Typ wtyczki (np. `archive`, `checksum`). Używany przez `PluginManager` do kategoryzacji.
+*   **type**: Typ wtyczki (np. `archive`, `checksum`, `disk_utils`, `ui_extension`). Używany przez `PluginManager` do kategoryzacji.
 *   **description**: Krótki opis.
 *   **entry_point**: Nazwa pliku `.py` zawierającego klasę wtyczki.
 *   **class_name**: Nazwa klasy implementującej interfejs wtyczki.
@@ -64,18 +64,21 @@ Interfejs dla wtyczek obsługujących archiwizację.
 *   `create_archive(source_paths, destination_path, options, ...)`: Tworzy archiwum.
 *   `extract_archive(archive_path, destination_path, options, ...)`: Wypakowuje archiwum.
 
-Metody te muszą obsługiwać:
-*   **Postęp**: Poprzez `progress_callback.emit(int)`.
-*   **Anulowanie/Pauzę**: Poprzez sprawdzanie `task_context.is_cancelled` i wywoływanie `task_context.wait_if_paused()`.
-*   **Szczegóły**: Poprzez aktualizację obiektu `task` (np. `task.set_details("Processing file...")`).
+### `DiskUtilsPlugin` (Typ: `disk_utils`)
+Interfejs dla wtyczek dostarczających informacje o systemie plików i dyskach. Służy do oddzielenia warstwy prezentacji (UI) od warstwy dostępu do danych systemowych.
+*   `get_disk_usage(path: str) -> tuple[int, int, int] | None`: Zwraca krotkę `(total, used, free)` w bajtach dla podanej ścieżki.
+
+### `UiExtensionPlugin` (Typ: `ui_extension`)
+Interfejs dla wtyczek, które modyfikują główny interfejs użytkownika aplikacji (np. dodają opcje do menu).
+*   `initialize(main_window)`: Metoda wywoływana po zbudowaniu głównego okna, pozwalająca wtyczce na dodanie swoich elementów UI.
 
 ## Zarządzanie Wtyczkami (`PluginManager`)
 
 Klasa `PluginManager` (`app/plugin_manager.py`) odpowiada za:
 1.  **Skanowanie**: Przeszukuje katalog `plugins/` w poszukiwaniu poprawnych struktur wtyczek.
 2.  **Ładowanie**: Dynamicznie ładuje moduły Pythona i tworzy instancje klas wtyczek.
-3.  **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`) i udostępnia je reszcie aplikacji.
-4.  **Instalację wbudowanych wtyczek**: Przy starcie kopiuje wtyczki "systemowe" z katalogu projektu do katalogu użytkownika, jeśli ich tam nie ma.
+3.  **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`, `disk_utils`, `ui_extension`) i udostępnia je reszcie aplikacji.
+4.  **Instalację i Aktualizację**: Przy starcie porównuje wersje wtyczek wbudowanych w aplikację z tymi zainstalowanymi u użytkownika. Jeśli wbudowana wersja jest nowsza, automatycznie aktualizuje wtyczkę w katalogu użytkownika.
 
 ## Integracja z Kolejką Zadań
 
