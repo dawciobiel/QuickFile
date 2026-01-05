@@ -8,7 +8,7 @@ import sys
 from functools import cmp_to_key
 
 from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, ArchivePlugin, \
-    ChecksumPlugin, SearchPlugin, UiExtensionPlugin
+    ChecksumPlugin, SearchPlugin, UiExtensionPlugin, DiskUtilsPlugin
 
 
 class PluginManager:
@@ -27,7 +27,8 @@ class PluginManager:
             "archive": [],
             "checksum": [],
             "search": [],
-            "ui_extension": []
+            "ui_extension": [],
+            "disk_utils": []
         }
 
         self._ensure_bundled_plugins()
@@ -203,3 +204,8 @@ class PluginManager:
 
     def get_ui_extension_plugins(self) -> list[UiExtensionPlugin]:
         return self.plugins["ui_extension"]
+
+    def get_disk_utils_plugin(self) -> DiskUtilsPlugin | None:
+        if self.plugins["disk_utils"]:
+            return self.plugins["disk_utils"][0]
+        return None
