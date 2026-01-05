@@ -81,6 +81,7 @@ class MenuPanel:
             "view.search": (translation_manager.translate("MenuPanel", "Search"), self.app_logic_handler.start_file_search),
             "view.synchronize": (translation_manager.translate("MenuPanel", "Synchronize Directories"),
                                  self.app_logic_handler.synchronize_directories),
+            "view.focus_path": (translation_manager.translate("MenuPanel", "Focus Path Edit"), self.app_logic_handler.set_focus_on_path_edit),
             # Options Menu
             "options.general_settings": (translation_manager.translate("MenuPanel", "General Settings"),
                                          self.app_logic_handler.open_general_settings_dialog),
@@ -196,6 +197,8 @@ class MenuPanel:
         view_menu.addSeparator()
         self._add_action_to_menu(view_menu, "view.search")
         self._add_action_to_menu(view_menu, "view.synchronize")
+        view_menu.addSeparator()
+        self._add_action_to_menu(view_menu, "view.focus_path")
 
     def _create_options_menu(self):
         options_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&Options"))
