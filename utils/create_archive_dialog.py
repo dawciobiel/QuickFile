@@ -4,6 +4,7 @@ from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QFileDialog, QDialogButtonBox, QMessageBox, QLineEdit, QComboBox, QPushButton
 
 from app.translation_manager import translation_manager
+from utils.resource_path import get_resource_path
 
 
 class CreateArchiveDialog(QDialog):
@@ -20,7 +21,7 @@ class CreateArchiveDialog(QDialog):
         self.buttonBox: QDialogButtonBox | None = None
         # -----------------------------------------
 
-        uic.loadUi("ui/create_archive_dialog.ui", self)
+        uic.loadUi(get_resource_path("ui/create_archive_dialog.ui"), self)
         self.setWindowTitle(translation_manager.translate("CreateArchiveDialog", "Create Archive"))
 
         self.plugin_manager = plugin_manager

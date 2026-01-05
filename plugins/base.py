@@ -1,6 +1,8 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 
-from PyQt6.QtWidgets import QWidget, QDialog
+from PyQt6.QtCore import pyqtSignal, Qt, QAbstractTableModel, QModelIndex
+from PyQt6.QtGui import QColor, QPalette
+from PyQt6.QtWidgets import QWidget, QDialog, QAbstractItemView, QVBoxLayout, QStyledItemDelegate, QStyle
 
 
 class FileOperationPlugin(ABC):
@@ -219,3 +221,161 @@ class StandardOperationsPlugin(FileOperationPlugin):
         Deletes items specified in item_paths.
         """
         pass
+
+# --- Base classes for View Plugins ---
+
+class AbstractFileView(QWidget):
+    path_changed = pyqtSignal(str)
+    file_selected = pyqtSignal(str)
+    insert_selection_changed = pyqtSignal()
+
+    def __init__(self, settings_manager, parent=None):
+        super().__init__(parent)
+        self.settings_manager = settings_manager
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+        # These attributes should be initialized by subclasses
+        self.view: QAbstractItemView | None = None
+        self.model = None 
+
+    def set_path(self, path):
+        raise NotImplementedError
+
+    def get_current_path(self):
+        raise NotImplementedError
+
+    def get_selected_paths(self):
+        raise NotImplementedError
+
+    def get_current_selected_path(self):
+        raise NotImplementedError
+
+    def refresh(self):
+        raise NotImplementedError
+
+    def go_up(self):
+        import os
+        current_path = self.get_current_path()
+        parent_path = os.path.dirname(current_path)
+        if os.path.exists(parent_path):
+            self.set_path(parent_path)
+
+    def toggle_selection(self):
+        raise NotImplementedError
+
+    def get_insert_selected_paths(self):
+        return []
+
+    def clear_selection(self):
+        pass
+
+    def _handle_common_key_events(self, event, current_index):
+        if not self.view or not self.model:
+            return False
+
+        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            if current_index.isValid():
+                # Emit doubleClicked signal to handle navigation or file opening
+                self.view.doubleClicked.emit(current_index)
+                return True
+
+        return False
+
+# Custom metaclass to resolve the conflict between QObject's metaclass and ABCMeta
+class QTableModelABCMeta(type(QAbstractTableModel), ABCMeta):
+    pass
+
+class AbstractFileSystemModel(QAbstractTableModel, ABC, metaclass=QTableModelABCMeta):
+    """
+    Abstract base class for custom file system models.
+    It provides a common interface for different view modes,
+    but leaves the data storage and retrieval to subclasses.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    @abstractmethod
+    def filePath(self, index: QModelIndex) -> str:
+        """
+        Should return the full path for the given index.
+        """
+        pass
+
+    @abstractmethod
+    def isDir(self, index: QModelIndex) -> bool:
+        """
+        Should return True if the item at the index is a directory.
+        """
+        pass
+
+    @abstractmethod
+    def fileName(self, index: QModelIndex) -> str:
+        """
+        Should return the file name for the given index.
+        """
+        pass
+
+    @abstractmethod
+    def refresh(self):
+        """
+        Should refresh the model's data from the file system.
+        """
+        pass
+
+    @abstractmethod
+    def set_current_path(self, path: str):
+        """
+        Sets the current path for the model to display.
+        """
+        pass
+
+FileStyleRole = Qt.ItemDataRole.UserRole + 1
+
+class FileStyleDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def paint(self, painter, option, index):
+        # Create a copy of the option to modify it without affecting other delegates
+        opt = option
+        self.initStyleOption(opt, index)
+
+        # Retrieve style data from the model
+        style_data = index.data(FileStyleRole)
+
+        if style_data:
+            # Apply foreground color
+            if "foreground_color" in style_data:
+                color = QColor(style_data["foreground_color"])
+                if color.isValid():
+                    # Only apply custom color if the item is NOT selected
+                    # Otherwise, use the system's selection text color for better contrast
+                    if not (opt.state & QStyle.StateFlag.State_Selected):
+                        opt.palette.setColor(QPalette.ColorRole.Text, color)
+
+            # Apply font styles
+            if "font_weight" in style_data and style_data["font_weight"] == "bold":
+                opt.font.setBold(True)
+            if "font_italic" in style_data and style_data["font_italic"]:
+                opt.font.setItalic(True)
+            if "font_strikethrough" in style_data and style_data["font_strikethrough"]:
+                opt.font.setStrikeOut(True)
+
+        # Let the base class handle the painting with our modified options
+        super().paint(painter, opt, index)
+
+        # Custom styling for insert-selected items (overlay)
+        # We need to access the model directly here as this is specific logic
+        # Ideally, this should also be exposed via data() role, but for now:
+        if hasattr(index.model(), '_insert_selected_items'):
+            file_path = index.model().filePath(index)
+            if file_path and file_path in index.model()._insert_selected_items:
+                if not (opt.state & QStyle.StateFlag.State_Selected):
+                    painter.save()
+                    rect = opt.rect
+                    overlay_color = QColor(255, 255, 0, 40)  # Semi-transparent yellow
+                    painter.fillRect(rect, overlay_color)
+                    painter.restore()

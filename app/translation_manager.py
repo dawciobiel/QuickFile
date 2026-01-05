@@ -3,6 +3,7 @@ import os
 import locale
 import logging
 from app.settings_manager import SettingsManager # Import SettingsManager
+from utils.resource_path import get_resource_path
 
 class TranslationManager:
     _instance = None
@@ -52,7 +53,7 @@ class TranslationManager:
         self.translations = {} # Clear existing translations
         
         # Try to load the specific language file, e.g., 'pl_PL.json'
-        file_path = os.path.join(os.path.dirname(__file__), "..", "translations", f"{lang_code}.json")
+        file_path = get_resource_path(os.path.join("translations", f"{lang_code}.json"))
         if os.path.exists(file_path):
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
@@ -68,7 +69,7 @@ class TranslationManager:
         # Fallback to base language if specific locale fails (e.g., 'en_US' if 'en_GB' fails)
         base_lang = lang_code.split('_')[0]
         if base_lang != lang_code:
-            file_path = os.path.join(os.path.dirname(__file__), "..", "translations", f"{base_lang}.json")
+            file_path = get_resource_path(os.path.join("translations", f"{base_lang}.json"))
             if os.path.exists(file_path):
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
@@ -81,7 +82,7 @@ class TranslationManager:
 
         # Fallback to default English if all else fails
         if lang_code != "en_US":
-            file_path = os.path.join(os.path.dirname(__file__), "..", "translations", "en_US.json")
+            file_path = get_resource_path(os.path.join("translations", "en_US.json"))
             if os.path.exists(file_path):
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:

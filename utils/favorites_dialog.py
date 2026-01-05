@@ -2,11 +2,12 @@ from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QListWidgetItem, QAbstractItemView
 from app.translation_manager import translation_manager
 from favorites.favorites_manager import FavoritesManager
+from utils.resource_path import get_resource_path
 
 class FavoritesDialog(QDialog):
     def __init__(self, favorites, parent=None):
         super().__init__(parent)
-        uic.loadUi("ui/favorites_dialog.ui", self)
+        uic.loadUi(get_resource_path("ui/favorites_dialog.ui"), self)
         self.setWindowTitle(translation_manager.translate("FavoritesDialog", "Favorites"))
         self.favorites = favorites
         self.selected_favorite = None

@@ -4,6 +4,7 @@ import os
 from PyQt6.QtGui import QAction, QIcon
 
 from app.translation_manager import translation_manager
+from utils.resource_path import get_resource_path
 
 
 class MenuPanel:
@@ -18,24 +19,24 @@ class MenuPanel:
     def _create_icon_map(self):
         base_path = "resources/icons/fonts.google.com"
         return {
-            "view.refresh": os.path.join(base_path, "refresh_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "toolbar.go_up": os.path.join(base_path, "arrow_upward_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "operations.view": os.path.join(base_path, "description_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "operations.edit": os.path.join(base_path, "handyman_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "operations.copy": os.path.join(base_path, "file_copy_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "operations.move": os.path.join(base_path, "move_item_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "operations.new_folder": os.path.join(base_path, "create_new_folder_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "operations.delete": os.path.join(base_path, "scan_delete_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "view.search": os.path.join(base_path, "search_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "view.synchronize": os.path.join(base_path, "sync_alt_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "options.general_settings": os.path.join(base_path, "settings_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "operations.rename": os.path.join(base_path, "rename_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "operations.new_file": os.path.join(base_path, "note_add_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "operations.change_owner": os.path.join(base_path, "person_edit_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "view.new_tab": os.path.join(base_path, "new_tab_right_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "view.close_tab": os.path.join(base_path, "close_tab_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "favorites.manage": os.path.join(base_path, "menage_favorites_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
-            "favorites.add": os.path.join(base_path, "bookmark_add_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"),
+            "view.refresh": get_resource_path(os.path.join(base_path, "refresh_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "toolbar.go_up": get_resource_path(os.path.join(base_path, "arrow_upward_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "operations.view": get_resource_path(os.path.join(base_path, "description_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "operations.edit": get_resource_path(os.path.join(base_path, "handyman_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "operations.copy": get_resource_path(os.path.join(base_path, "file_copy_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "operations.move": get_resource_path(os.path.join(base_path, "move_item_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "operations.new_folder": get_resource_path(os.path.join(base_path, "create_new_folder_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "operations.delete": get_resource_path(os.path.join(base_path, "scan_delete_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "view.search": get_resource_path(os.path.join(base_path, "search_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "view.synchronize": get_resource_path(os.path.join(base_path, "sync_alt_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "options.general_settings": get_resource_path(os.path.join(base_path, "settings_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "operations.rename": get_resource_path(os.path.join(base_path, "rename_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "operations.new_file": get_resource_path(os.path.join(base_path, "note_add_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "operations.change_owner": get_resource_path(os.path.join(base_path, "person_edit_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "view.new_tab": get_resource_path(os.path.join(base_path, "new_tab_right_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "view.close_tab": get_resource_path(os.path.join(base_path, "close_tab_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "favorites.manage": get_resource_path(os.path.join(base_path, "menage_favorites_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "favorites.add": get_resource_path(os.path.join(base_path, "bookmark_add_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
         }
 
     def initialize_ui(self):
@@ -117,7 +118,7 @@ class MenuPanel:
 
     def _build_toolbar_from_config(self):
         self.toolbar.clear()
-        config_path = os.path.join(os.path.dirname(__file__), "..", "config", "toolbar_layout.json")
+        config_path = get_resource_path("config/toolbar_layout.json")
         try:
             with open(config_path, 'r') as f:
                 layout_config = json.load(f)

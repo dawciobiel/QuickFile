@@ -20,6 +20,7 @@ from panels.search_results_panel import SearchResultsPanel
 from panels.task_queue_panel import TaskQueuePanel
 from ui.ui_manager import UIManager
 from utils.checksum_result_dialog import ChecksumResultDialog
+from utils.resource_path import get_resource_path
 
 
 class MainWindow(QMainWindow):
@@ -34,7 +35,7 @@ class MainWindow(QMainWindow):
         self.mainToolbar: QToolBar | None = None
         # -----------------------------------------
         
-        uic.loadUi("ui/main_window.ui", self)
+        uic.loadUi(get_resource_path("ui/main_window.ui"), self)
         self.setWindowTitle(f"QuickFile v{__version__}")
         self.background_task_manager = background_task_manager
         self.task_queue_manager = task_queue_manager

@@ -14,7 +14,8 @@ from app.settings_manager import SettingsManager
 from app.task_queue_manager import TaskType
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
-from browser.base_view import AbstractFileView
+from plugins.base import AbstractFileView
+from utils.resource_path import get_resource_path
 
 
 def _format_size(bytes_val):
@@ -200,24 +201,26 @@ class PanelWidget(QWidget):
         elif isinstance(self.file_view, AbstractFileView):
             self.path_edit.setText(self.file_view.get_current_path())
 
-    # Architectural Note: The free space display is implemented directly here
-    # instead of as a plugin. This is because it's tightly coupled with the
-    # PanelWidget's internal layout (`nav_layout`). Making it a plugin would
-    # require exposing internal widgets, creating a fragile dependency.
-    # For now, it's considered an integral part of the panel itself.
     def update_free_space_display(self, path):
         if not path or not os.path.exists(path):
             self.free_space_label.setText("")
             return
-        try:
-            usage = shutil.disk_usage(path)
-            free_str = _format_size(usage.free)
-            total_str = _format_size(usage.total)
-            free_text = translation_manager.translate("PanelWidget", "Free")
-            self.free_space_label.setText(f"{free_text}: {free_str} / {total_str}  ")
-        except FileNotFoundError:
-            # This can happen for network paths or special file systems
+        
+        disk_utils_plugin = self.plugin_manager.get_disk_utils_plugin()
+        if not disk_utils_plugin:
             self.free_space_label.setText("")
+            return
+            
+        try:
+            usage = disk_utils_plugin.get_disk_usage(path)
+            if usage:
+                total, used, free = usage
+                free_str = _format_size(free)
+                total_str = _format_size(total)
+                free_text = translation_manager.translate("PanelWidget", "Free")
+                self.free_space_label.setText(f"{free_text}: {free_str} / {total_str}  ")
+            else:
+                self.free_space_label.setText("")
         except Exception as e:
             logging.warning(f"Could not get disk usage for {path}: {e}")
             self.free_space_label.setText("")
@@ -299,7 +302,7 @@ class FolderBrowser(QWidget):
         # -----------------------------------------
 
         try:
-            uic.loadUi("ui/folder_browser.ui", self)
+            uic.loadUi(get_resource_path("ui/folder_browser.ui"), self)
         except Exception as e:
             logging.critical(f"Failed to load UI: {e}", exc_info=True)
             raise
@@ -321,7 +324,7 @@ class FolderBrowser(QWidget):
         
         self._refresh_timer.timeout.connect(self._do_refresh)
         
-        self.spinner_movie = QMovie("resources/icons/spinner.gif")
+        self.spinner_movie = QMovie(get_resource_path("resources/icons/spinner.gif"))
         self.busy_tabs = set()
         self.spinner_movie.frameChanged.connect(self._update_busy_icons)
         self.spinner_movie.start()

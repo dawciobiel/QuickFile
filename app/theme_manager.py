@@ -3,6 +3,7 @@ import json
 import logging
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import QApplication
+from utils.resource_path import get_resource_path
 
 class ThemeManager(QObject):
     theme_changed = pyqtSignal(str)
@@ -10,7 +11,7 @@ class ThemeManager(QObject):
     def __init__(self, settings_manager):
         super().__init__()
         self.settings_manager = settings_manager
-        self.themes_dir = os.path.join(os.path.dirname(__file__), "..", "themes")
+        self.themes_dir = get_resource_path("themes")
         self.themes = self._discover_themes()
         self.current_theme_path = None
 
