@@ -48,6 +48,7 @@ class KeyboardEventManager(QObject):
             return False
 
         if event.type() == QEvent.Type.KeyPress:
+            # print(f"DEBUG: KeyPress {event.key()} {event.modifiers()}")
             was_handled = self.handle_key_event(event)
             if was_handled:
                 return True
