@@ -110,6 +110,8 @@ class MenuPanel:
             else:
                 action.triggered.connect(slot)
 
+            self.main_window.addAction(action)
+
             self.actions[shortcut_id] = action
 
     def _build_toolbar_from_config(self):
