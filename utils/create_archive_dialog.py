@@ -51,7 +51,7 @@ class CreateArchiveDialog(QDialog):
         self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "Start"))
 
     def _populate_plugins(self):
-        self.plugins = self.plugin_manager.get_archive_plugins()
+        self.plugins = self.plugin_manager.get_all_archivers()
         for plugin in self.plugins:
             # Use the first supported extension as the label, or plugin name
             exts = plugin.get_supported_extensions()

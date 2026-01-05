@@ -37,7 +37,6 @@ class PluginManager:
     def _get_plugin_version(self, plugin_path):
         """Safely reads the version from a plugin's metadata.json."""
         try:
-            # Find the latest version directory inside the plugin path
             versions = [d for d in os.listdir(plugin_path) if os.path.isdir(os.path.join(plugin_path, d))]
             if not versions:
                 return None
@@ -81,14 +80,12 @@ class PluginManager:
                             continue
 
                         if not os.path.exists(dest_path):
-                            # Plugin not installed, simply copy it
                             try:
                                 shutil.copytree(bundled_path, dest_path)
                                 logging.info(f"Installed bundled plugin: {org_name}.{plugin_name} v{bundled_version}")
                             except Exception as e:
                                 logging.error(f"Failed to install bundled plugin {plugin_name}: {e}")
                         else:
-                            # Plugin exists, check if it needs an update
                             user_version = self._get_plugin_version(dest_path)
                             if not user_version:
                                 logging.warning(f"Could not determine version of user-installed plugin '{plugin_name}'. Skipping update.")
@@ -120,7 +117,6 @@ class PluginManager:
         if not versions:
             return
 
-        # Sort versions correctly (e.g., '1.0.10' > '1.0.2')
         versions.sort(key=lambda v: tuple(map(int, v.split('.'))), reverse=True)
         latest_version = versions[0]
         version_path = os.path.join(plugin_path, latest_version)
@@ -154,7 +150,6 @@ class PluginManager:
             finally:
                 sys.path[:] = original_sys_path
 
-
     def get_standard_operations_plugin(self) -> StandardOperationsPlugin | None:
         if platform.system() == "Windows":
             for plugin in self.plugins["standard_operations"]:
@@ -170,15 +165,14 @@ class PluginManager:
                 return plugin
         return None
 
-    def get_attribute_editor_plugin(self, editor_id: str) -> AttributeEditorPlugin | None:
+    def get_attribute_editor_plugin(self, editor_id=None) -> AttributeEditorPlugin | None:
         if self.plugins["attribute_editor"]:
             return self.plugins["attribute_editor"][0]
         return None
 
     def get_viewer_for_file(self, file_path: str) -> ViewerPlugin | None:
-        ext = os.path.splitext(file_path)[1].lower()
         for plugin in self.plugins["viewer"]:
-            if ext in plugin.supported_extensions():
+            if plugin.can_view(file_path):
                 return plugin
         return None
 
