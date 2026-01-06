@@ -218,10 +218,14 @@ class ApplicationLogicHandler(QObject):
                 logging.error("The model is missing required methods: filePath, isDir, or fileName.")
                 break
 
+            file_name = model.fileName(index)
+            # Exclude the parent directory ".." from selection
+            if file_name == "..":
+                continue
+
             if only_files and model.isDir(index):
                 continue
 
-            file_name = model.fileName(index)
             file_name_to_match = file_name if case_sensitive else file_name.lower()
 
             if fnmatch.fnmatch(file_name_to_match, match_pattern):
