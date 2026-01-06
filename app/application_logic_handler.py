@@ -180,7 +180,7 @@ class ApplicationLogicHandler(QObject):
     def show_select_dialog(self, checked=False):
         """Shows a dialog to select files by pattern."""
         logging.debug("show_select_dialog: Opening select dialog.")
-        dialog = SelectDialog(self.main_window)
+        dialog = SelectDialog(self.settings_handler.settings_manager, self.main_window)
         if not dialog.exec():
             logging.debug("show_select_dialog: Dialog cancelled.")
             return
