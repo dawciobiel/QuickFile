@@ -69,6 +69,9 @@ class MenuPanel:
             "operations.new_folder": (translation_manager.translate("MenuPanel", "New Folder"),
                                       self.app_logic_handler.create_new_directory),
             "operations.change_owner": (translation_manager.translate("MenuPanel", "Change Owner"), self.app_logic_handler.change_owner),
+            # Selection Menu
+            "selection.select_by_pattern": (translation_manager.translate("MenuPanel", "Select by Pattern"),
+                                            self.app_logic_handler.show_select_dialog),
             # Favorites Menu
             "favorites.add": (translation_manager.translate("MenuPanel", "Add to Favorites"), self.app_logic_handler.add_favorite),
             "favorites.manage": (translation_manager.translate("MenuPanel", "Manage Favorites"),

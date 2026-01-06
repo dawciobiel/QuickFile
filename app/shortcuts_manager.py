@@ -37,7 +37,7 @@ class ShortcutsManager:
             "view.close_tab": "Ctrl+W",
             "favorites.add": "Ctrl+D",
             "favorites.manage": "Ctrl+Shift+B",
-            "action.calculate_size": "Ctrl+Space",
+            "action.calculate_size": "Ctrl+Space"
         }
         self.shortcuts = self.load_shortcuts()
 

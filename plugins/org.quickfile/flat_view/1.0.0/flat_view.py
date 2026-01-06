@@ -92,7 +92,9 @@ class FlatFileSystemModel(AbstractFileSystemModel):
                     continue
                 item_path = os.path.join(self._current_path, item_name)
                 is_dir = os.path.isdir(item_path)
-                other_items.append((item_name, item_path, is_dir, False))
+                # The fourth element is the "checked" state for standard selection, not "Insert" selection
+                is_checked = item_path in self._insert_selected_items
+                other_items.append((item_name, item_path, is_dir, is_checked))
             
             other_items.sort(key=lambda x: (not x[2], x[0].lower()))
 
@@ -289,7 +291,7 @@ class FlatFileSystemModel(AbstractFileSystemModel):
 
         return None
 
-    def setData(self, index, value, role):
+    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
         if not index.isValid() or not (0 <= index.row() < len(self._items)):
             return False
 
@@ -347,6 +349,23 @@ class FlatFileSystemModel(AbstractFileSystemModel):
     def get_selected_paths(self):
         return [item[1] for item in self._items if item[3] and item[0] != ".."]
 
+    def select_paths(self, paths_to_select):
+        """Selects items in the model based on a list of paths."""
+        logging.debug(f"FlatFileSystemModel: Received {len(paths_to_select)} paths to select.")
+        for path in paths_to_select:
+            self._insert_selected_items.add(path)
+
+        # We need to find which rows were affected and emit dataChanged for them.
+        for row, item in enumerate(self._items):
+            item_path = item[1]
+            if item_path in paths_to_select:
+                logging.debug(f"FlatFileSystemModel: Marking path for redraw: {item_path}")
+                index = self.index(row, 0)
+                # Emit dataChanged for the entire row to ensure all columns are updated if needed
+                self.dataChanged.emit(index, self.index(row, self.columnCount() - 1))
+        logging.debug(
+            f"FlatFileSystemModel: Finished processing selections. Current insert selection count: {len(self._insert_selected_items)}")
+
     def toggle_selection_by_index(self, index):
         if not index.isValid() or not (0 <= index.row() < len(self._items)):
             return
@@ -388,6 +407,9 @@ class FlatFileView(AbstractFileView):
     path_changed = pyqtSignal(str)
     file_selected = pyqtSignal(str)
     insert_selection_changed = pyqtSignal()
+
+    # Type hint for the view attribute
+    view: QTableView
 
     def __init__(self, settings_manager, theme_manager, parent=None):
         super().__init__(settings_manager, parent)
@@ -491,14 +513,23 @@ class FlatFileView(AbstractFileView):
         self.model.dataChanged.emit(current_index, current_index)
         self.insert_selection_changed.emit()
 
+    def select_items_by_paths(self, paths_to_select):
+        """Selects items by adding their paths to the insert selection set."""
+        logging.debug(f"FlatFileView: Calling model.select_paths with {len(paths_to_select)} paths.")
+        self.model.select_paths(paths_to_select)
+        self.insert_selection_changed.emit()
+        logging.debug("FlatFileView: 'insert_selection_changed' signal emitted.")
+
     def get_insert_selected_paths(self):
         return list(self.insert_selected_items)
 
     def clear_selection(self):
-        logging.debug("FlatFileView: clear_selection called")
+        """Clears the 'Insert' selection."""
+        logging.debug(f"FlatFileView: Clearing selection. Current count: {len(self.insert_selected_items)}")
         self.insert_selected_items.clear()
+        self.model.refresh()  # A full refresh is the most reliable way to update visuals
         self.insert_selection_changed.emit()
-        self.model.layoutChanged.emit()
+        logging.debug("FlatFileView: Selection cleared and view refreshed.")
         
     def handle_key_event(self, event):
         if event.key() == Qt.Key.Key_Insert:
