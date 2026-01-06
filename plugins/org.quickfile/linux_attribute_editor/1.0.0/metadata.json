@@ -6,6 +6,6 @@
   "type": "attribute_editor",
   "name": "Linux Attribute Editor",
   "description": "A plugin to edit file/directory owner and permissions on Linux.",
-  "entry_point": "plugin.py",
+  "entry_point": "plugin:LinuxAttributeEditorPlugin",
   "class_name": "LinuxAttributeEditorPlugin"
 }

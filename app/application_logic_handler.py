@@ -95,7 +95,13 @@ class ApplicationLogicHandler(QObject):
     @handle_error
     def _handle_f4_key(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
-        if selected_path and os.path.isfile(selected_path):
+        if not selected_path or not os.path.isfile(selected_path):
+            raise ValueError(translation_manager.translate("MenuPanel", "No file selected or selected item is a directory."))
+
+        use_internal = self.settings_handler.settings_manager.get_setting("use_internal_editor", True)
+        if use_internal:
+            self.dialog_handler.show_file_editor_dialog()
+        else:
             editor_command = self.settings_handler.settings_manager.get_setting("editor_command", "xdg-open %f")
             self._execute_external_command(editor_command, selected_path)
 

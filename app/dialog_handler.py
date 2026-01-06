@@ -78,6 +78,45 @@ class DialogHandler:
             except Exception as e:
                 QMessageBox.critical(self.main_window, "Error", f"Failed to launch external viewer:\n{e}")
 
+    def show_file_editor_dialog(self, checked=False):
+        selected_path = self.ui_state_provider.get_current_selected_path()
+        if not selected_path or not os.path.isfile(selected_path):
+            raise ValueError(translation_manager.translate("MenuPanel", "No file selected or selected item is a directory."))
+
+        action_logger.log_action("edit_file", path=selected_path)
+
+        # We assume there is only one editor plugin for now, or we pick the first one that can handle the file.
+        # In the future, we might want a way to select which editor to use if multiple are available.
+        editor_plugin = self.task_queue_manager.plugin_manager.get_editor_for_file(selected_path)
+        
+        if editor_plugin:
+            # We need to create a dialog to hold the editor widget
+            # For now, let's assume the plugin has a method to open the editor in a dialog or window
+            # But based on the viewer implementation, the plugin might return a widget or handle the window itself.
+            # Let's check how viewer does it: viewer_plugin.view_file(selected_path, self.main_window)
+            # So we should probably add an open_editor method to the EditorPlugin interface.
+            
+            # However, looking at my previous step, I defined create_editor_widget in the plugin.
+            # So I should probably create a dialog here and put the widget in it.
+            
+            from PyQt6.QtWidgets import QDialog, QVBoxLayout
+            
+            # Create a dialog to host the editor
+            editor_dialog = QDialog(self.main_window)
+            editor_dialog.setWindowTitle(f"Editor - {os.path.basename(selected_path)}")
+            editor_dialog.resize(800, 600)
+            layout = QVBoxLayout(editor_dialog)
+            
+            editor_widget = editor_plugin.create_editor_widget(selected_path, editor_dialog)
+            layout.addWidget(editor_widget)
+            
+            # Add save button or menu? The editor widget should probably handle its own toolbar/menus.
+            # But for a simple start, let's just show it.
+            
+            editor_dialog.exec()
+        else:
+             QMessageBox.warning(self.main_window, "Editor Not Found", "No suitable built-in editor plugin found for this file type.")
+
     def show_properties_dialog(self, checked=False, parent=None):
         selected_path = self.ui_state_provider.get_current_selected_path()
         if not selected_path:

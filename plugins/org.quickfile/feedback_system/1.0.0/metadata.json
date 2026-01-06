@@ -5,6 +5,6 @@
   "author": "QuickFile Team",
   "description": "A plugin to collect feedback and bug reports from users via GitHub issues.",
   "type": "ui_extension",
-  "entry_point": "plugin.py",
+  "entry_point": "plugin:FeedbackPlugin",
   "class_name": "FeedbackPlugin"
 }

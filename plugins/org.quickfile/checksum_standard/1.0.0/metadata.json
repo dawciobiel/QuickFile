@@ -6,6 +6,6 @@
   "name": "Standard Checksum Algorithms",
   "type": "checksum",
   "description": "Provides support for calculating MD5, SHA1, SHA256, and SHA512 checksums.",
-  "entry_point": "plugin.py",
+  "entry_point": "plugin:StandardChecksumPlugin",
   "class_name": "StandardChecksumPlugin"
 }

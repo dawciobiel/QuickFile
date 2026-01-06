@@ -6,6 +6,6 @@
     "type": "view_mode",
     "name": "Flat View",
     "description": "A classic flat, two-column file system view.",
-    "entry_point": "plugin.py",
+    "entry_point": "plugin:FlatViewPlugin",
     "class_name": "FlatViewPlugin"
 }

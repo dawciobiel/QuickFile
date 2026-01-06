@@ -3,12 +3,13 @@ import json
 import logging
 import os
 import platform
+import re
 import shutil
 import sys
 from functools import cmp_to_key
 
 from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, ArchivePlugin, \
-    ChecksumPlugin, SearchPlugin, UiExtensionPlugin, DiskUtilsPlugin
+    ChecksumPlugin, SearchPlugin, UiExtensionPlugin, DiskUtilsPlugin, EditorPlugin
 
 
 class PluginManager:
@@ -23,6 +24,7 @@ class PluginManager:
             "view_mode": [],
             "attribute_editor": [],
             "viewer": [],
+            "editor": [],
             "symlink": [],
             "archive": [],
             "checksum": [],
@@ -30,14 +32,19 @@ class PluginManager:
             "ui_extension": [],
             "disk_utils": []
         }
+        self.version_regex = re.compile(r"^\d+(\.\d+)*$")
 
         self._ensure_bundled_plugins()
         self.load_plugins()
 
+    def _is_version_dir(self, dir_name: str) -> bool:
+        """Checks if a directory name matches the version format."""
+        return self.version_regex.match(dir_name) is not None
+
     def _get_plugin_version(self, plugin_path):
         """Safely reads the version from a plugin's metadata.json."""
         try:
-            versions = [d for d in os.listdir(plugin_path) if os.path.isdir(os.path.join(plugin_path, d))]
+            versions = [d for d in os.listdir(plugin_path) if os.path.isdir(os.path.join(plugin_path, d)) and self._is_version_dir(d)]
             if not versions:
                 return None
             latest_version_dir = sorted(versions, key=lambda v: tuple(map(int, v.split('.'))), reverse=True)[0]
@@ -60,9 +67,6 @@ class PluginManager:
 
     def _ensure_bundled_plugins(self):
         if getattr(sys, 'frozen', False):
-            # If the application is run as a bundle, the PyInstaller bootloader
-            # extends the sys module by a flag frozen=True and sets the app
-            # path into variable _MEIPASS.
             base_dir = sys._MEIPASS
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -79,11 +83,13 @@ class PluginManager:
 
         for org_name in os.listdir(bundled_plugin_dir):
             org_path = os.path.join(bundled_plugin_dir, org_name)
-            if os.path.isdir(org_path):
+            if os.path.isdir(org_path) and org_name != "__pycache__":
                 for plugin_name in os.listdir(org_path):
                     bundled_path = os.path.join(org_path, plugin_name)
                     if os.path.isdir(bundled_path):
                         dest_org_path = os.path.join(user_plugin_dir, org_name)
+                        if not os.path.exists(dest_org_path):
+                            os.makedirs(dest_org_path)
                         dest_path = os.path.join(dest_org_path, plugin_name)
 
                         bundled_version = self._get_plugin_version(bundled_path)
@@ -118,14 +124,14 @@ class PluginManager:
                 continue
             for org_name in os.listdir(plugin_dir):
                 org_path = os.path.join(plugin_dir, org_name)
-                if os.path.isdir(org_path):
+                if os.path.isdir(org_path) and org_name != "__pycache__":
                     for plugin_name in os.listdir(org_path):
                         plugin_path = os.path.join(org_path, plugin_name)
                         if os.path.isdir(plugin_path):
                             self._load_plugin_versions(plugin_path)
 
     def _load_plugin_versions(self, plugin_path):
-        versions = [d for d in os.listdir(plugin_path) if os.path.isdir(os.path.join(plugin_path, d))]
+        versions = [d for d in os.listdir(plugin_path) if os.path.isdir(os.path.join(plugin_path, d)) and self._is_version_dir(d)]
         if not versions:
             return
 
@@ -135,32 +141,39 @@ class PluginManager:
         metadata_path = os.path.join(version_path, "metadata.json")
 
         if os.path.exists(metadata_path):
-            original_sys_path = sys.path[:]
-            try:
-                sys.path.insert(0, version_path)
+            self._load_plugin_from_path(version_path, metadata_path)
 
-                with open(metadata_path, 'r') as f:
-                    metadata = json.load(f)
+    def _load_plugin_from_path(self, base_path, metadata_path):
+        original_sys_path = sys.path[:]
+        try:
+            sys.path.insert(0, base_path)
 
-                plugin_type = metadata.get("type")
-                if plugin_type in self.plugins:
-                    module_path = os.path.join(version_path, metadata["entry_point"])
-                    spec = importlib.util.spec_from_file_location(metadata["id"], module_path)
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
 
-                    plugin_class = getattr(module, metadata["class_name"])
-                    plugin_instance = plugin_class()
+            plugin_type = metadata.get("type")
+            if plugin_type in self.plugins:
+                entry_point = metadata["entry_point"]
+                module_name, class_name = entry_point.split(":")
+                
+                module_file_path = os.path.join(base_path, module_name.replace('.', os.sep) + '.py')
 
-                    self.plugins[plugin_type].append(plugin_instance)
-                    logging.info(f"Successfully loaded plugin: {metadata['id']} v{metadata['version']} (type: {plugin_type})")
-                else:
-                    logging.warning(f"Unknown plugin type '{plugin_type}' for {metadata['id']}")
+                spec = importlib.util.spec_from_file_location(metadata["id"], module_file_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
 
-            except Exception as e:
-                logging.error(f"Failed to load plugin from {version_path}: {e}", exc_info=True)
-            finally:
-                sys.path[:] = original_sys_path
+                plugin_class = getattr(module, class_name)
+                plugin_instance = plugin_class()
+
+                self.plugins[plugin_type].append(plugin_instance)
+                logging.info(f"Successfully loaded plugin: {metadata['id']} v{metadata.get('version', 'N/A')} (type: {plugin_type})")
+            else:
+                logging.warning(f"Unknown plugin type '{plugin_type}' for {metadata['id']}")
+
+        except Exception as e:
+            logging.error(f"Failed to load plugin from {base_path}: {e}", exc_info=True)
+        finally:
+            sys.path[:] = original_sys_path
 
     def get_standard_operations_plugin(self) -> StandardOperationsPlugin | None:
         if platform.system() == "Windows":
@@ -185,6 +198,12 @@ class PluginManager:
     def get_viewer_for_file(self, file_path: str) -> ViewerPlugin | None:
         for plugin in self.plugins["viewer"]:
             if plugin.can_view(file_path):
+                return plugin
+        return None
+        
+    def get_editor_for_file(self, file_path: str) -> EditorPlugin | None:
+        for plugin in self.plugins["editor"]:
+            if plugin.can_handle(file_path):
                 return plugin
         return None
 
