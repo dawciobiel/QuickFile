@@ -1,0 +1,152 @@
+
+QWidget {
+    background-color: @@background@@;
+    color: @@foreground@@;
+}
+
+QTableView, QTreeView {
+    background-color: @@secondary_background@@;
+    alternate-background-color: @@alternate_background@@;
+    color: @@foreground@@;
+    selection-background-color: @@selection_background@@;
+    selection-color: @@selection_foreground@@;
+    border: 1px solid @@border@@;
+    gridline-color: @@border@@;
+}
+
+/* Active panel selection */
+QTableView[activePanel="true"]::item:selected,
+QTreeView[activePanel="true"]::item:selected {
+    background-color: @@selection_background@@;
+    color: @@selection_foreground@@;
+}
+
+/* Inactive panel selection - keep it subtle */
+QTableView[activePanel="false"]::item:selected,
+QTreeView[activePanel="false"]::item:selected {
+    background-color: @@inactive_selection_background@@;
+    color: @@foreground@@;
+}
+
+/* General selection for other table views (like Queue) */
+QTableView::item:selected {
+    background-color: @@selection_background@@;
+}
+
+/* Inactive selection for other table views */
+QTableView::item:selected:!active {
+    background-color: @@inactive_selection_background@@;
+    color: @@foreground@@;
+}
+
+/* Ensure unselected items have transparent background to show alternating row colors */
+/* REMOVED: QTableView::item { background-color: transparent; } to allow model background colors */
+
+QLineEdit[activePanel="true"] {
+    background-color: @@active_panel_border@@;
+    color: @@selection_foreground@@;
+    border: 1px solid @@border@@;
+    padding: 2px;
+}
+
+QLineEdit[activePanel="false"] {
+    background-color: @@secondary_background@@;
+    color: @@foreground@@;
+    border: 1px solid @@border@@;
+    padding: 2px;
+}
+
+QComboBox {
+    border: 1px solid @@border@@;
+    padding: 2px;
+    background-color: @@secondary_background@@;
+    color: @@foreground@@;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left-width: 1px;
+    border-left-color: @@border@@;
+    border-left-style: solid;
+}
+
+QComboBox::down-arrow {
+    image: url(resources/icons/arrow_down_light.png);
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid @@border@@;
+    selection-background-color: @@selection_background@@;
+    background-color: @@secondary_background@@;
+    color: @@foreground@@;
+}
+
+QHeaderView::section {
+    background-color: @@background@@;
+    color: @@foreground@@;
+    padding: 4px;
+    border: 1px solid @@border@@;
+}
+
+QToolBar {
+    background-color: @@background@@;
+    border: none;
+    spacing: 5px;
+}
+
+QToolButton {
+    background-color: transparent;
+    border: none;
+    padding: 5px;
+}
+
+QToolButton:hover {
+    background-color: @@secondary_background@@;
+}
+
+QToolButton:pressed {
+    background-color: @@selection_background@@;
+}
+
+QStatusBar {
+    background-color: @@background@@;
+    color: @@foreground@@;
+    border-top: 1px solid @@border@@;
+}
+
+QDialog {
+    background-color: @@background@@;
+    color: @@foreground@@;
+}
+
+/*
+QDialogButtonBox QPushButton, QMessageBox QPushButton {
+    background-color: @@accent@@;
+    color: @@foreground@@;
+    border: 1px solid @@accent@@;
+    padding: 5px 15px;
+    border-radius: 3px;
+}
+
+QDialogButtonBox QPushButton:hover, QMessageBox QPushButton:hover {
+    background-color: @@selection_background@@;
+}
+*/
+
+QTableView[activePanel="true"], QTreeView[activePanel="true"] {
+    border: 2px solid @@active_panel_border@@;
+}
+
+QTableView[activePanel="false"], QTreeView[activePanel="false"] {
+    border: 2px solid @@border@@;
+}
+
+/* Styles for disabled widgets */
+QGroupBox:disabled,
+QCheckBox:disabled,
+QLabel:disabled,
+QRadioButton:disabled {
+    color: @@DisabledText@@;
+}
