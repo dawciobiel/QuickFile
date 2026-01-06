@@ -27,28 +27,34 @@ Taki dualizm jest celowy. `MenuPanel` zapewnia spójność z interfejsem graficz
 
 *   **Rola**: Zarządzanie konfiguracją skrótów.
 *   **Logika**:
-    *   Odczytuje i zapisuje skróty do pliku `config/shortcuts.json`.
+    * Ładuje domyślny schemat skrótów z pliku `config/shortcuts/default.json`.
+    * Odczytuje i zapisuje skróty użytkownika do pliku `quickfile_shortcuts.json` w katalogu konfiguracyjnym użytkownika.
+    * Łączy domyślne skróty z ustawieniami użytkownika.
     *   Udostępnia metodę `get_shortcut_string(shortcut_id)`, z której korzysta `MenuPanel`.
 
 ### 3. `app/keyboard_event_handler.py`
 
 *   **Rola**: Główny i najważniejszy komponent systemu skrótów. Działa jako globalny filtr zdarzeń na poziomie całej aplikacji.
 *   **Logika**:
-    *   Posiada słownik `key_actions`, który mapuje konkretne kombinacje klawiszy (`(Qt.Key, Qt.Modifier)`) na te same metody w `ApplicationLogicHandler`, co `MenuPanel`. Jest to **celowa redundancja**, która gwarantuje działanie.
+    * Posiada słownik `action_handlers`, który mapuje nazwy akcji (np. `view.new_tab`) na metody w `ApplicationLogicHandler`.
+    * Korzysta z `ShortcutsManager` do pobrania aktualnych skrótów dla każdej akcji.
     *   Przechwytuje zdarzenia `KeyPress` jako pierwszy.
-    *   Jeśli kombinacja klawiszy pasuje do wpisu w `key_actions`, wykonuje akcję i **zatrzymuje dalsze przetwarzanie zdarzenia** (zwraca `True`), uniemożliwiając widgetom (np. tabeli) jego "zjedzenie".
-    *   Jeśli kombinacja nie pasuje, **przekazuje zdarzenie dalej** (zwraca `False`), pozwalając na normalne wpisywanie tekstu lub inne domyślne zachowania.
-    *   Obsługuje również zdarzenie `ShortcutOverride`, aby zapobiec konfliktom z klawiszami takimi jak `AltGr` na klawiaturach międzynarodowych.
+    * Dynamicznie sprawdza, czy wciśnięta kombinacja klawiszy pasuje do któregoś ze skonfigurowanych skrótów.
+    * Jeśli kombinacja pasuje, wykonuje przypisaną akcję i **zatrzymuje dalsze przetwarzanie zdarzenia** (zwraca `True`).
+    * Jeśli kombinacja nie pasuje, **przekazuje zdarzenie dalej** (zwraca `False`).
+    * Obsługuje również zdarzenie `ShortcutOverride`, aby zapobiec konfliktom.
+    * Posiada specjalną obsługę klawiatury numerycznej (Keypad), aby zapewnić poprawne działanie skrótów takich jak `+` czy `-`.
 
 ## Przepływ Zdarzenia (Przykład: `Ctrl+T`)
 
 1.  Użytkownik naciska `Ctrl+T`.
 2.  `KeyboardEventManager`, jako globalny filtr, otrzymuje zdarzenie `KeyPress` jako pierwszy.
-3.  Sprawdza swój słownik `key_actions`.
-4.  Znajduje wpis dla `(Qt.Key.Key_T, Qt.KeyboardModifier.ControlModifier)`.
-5.  Wywołuje przypisaną metodę: `self.application_logic_handler.new_tab()`.
-6.  Zwraca `True`, co "konsumuje" zdarzenie.
-7.  Widget, który miał fokus (np. tabela), nigdy nie otrzymuje tego zdarzenia. System `QAction` również nie jest aktywowany, ponieważ zdarzenie zostało obsłużone wcześniej.
+3. Pobiera kod klawisza i modyfikatory ze zdarzenia.
+4. Iteruje po skonfigurowanych skrótach w `ShortcutsManager`.
+5. Znajduje, że `Ctrl+T` jest przypisane do akcji `view.new_tab`.
+6. Pobiera handler dla `view.new_tab` ze słownika `action_handlers`.
+7. Wywołuje przypisaną metodę: `self.application_logic_handler.new_tab()`.
+8. Zwraca `True`, co "konsumuje" zdarzenie.
 
 ## Jak Dodać Nowy Skrót Klawiszowy?
 
@@ -59,16 +65,13 @@ Aby dodać nową, globalną akcję (np. "Przełącz tryb widoku" pod skrótem `C
     ```python
     "view.toggle_mode": (translation_manager.translate("MenuPanel", "Toggle View Mode"), self.app_logic_handler.toggle_view_mode),
     ```
-3.  **Dodaj skrót do `KeyboardEventManager`**: W `app/keyboard_event_handler.py`, w słowniku `key_actions`, dodaj nowy wpis:
+3. **Zarejestruj handler w `KeyboardEventManager`**: W `app/keyboard_event_handler.py`, w słowniku `action_handlers`, dodaj mapowanie:
     ```python
-    (Qt.Key.Key_M, Qt.KeyboardModifier.ControlModifier): self.application_logic_handler.toggle_view_mode,
+    "view.toggle_mode": self.application_logic_handler.toggle_view_mode,
     ```
-4.  **Dodaj domyślną konfigurację**: W pliku `config/shortcuts.json`, dodaj wpis dla nowej akcji:
+4. **Dodaj domyślną konfigurację**: W pliku `config/shortcuts/default.json`, dodaj wpis dla nowej akcji:
     ```json
-    {
-      "id": "view.toggle_mode",
-      "shortcut": "Ctrl+M"
-    }
+    "view.toggle_mode": "Ctrl+M"
     ```
 5.  **(Opcjonalnie)** Dodaj nową akcję do któregoś z menu w metodach `_build_menus()` w `MenuPanel`.
 

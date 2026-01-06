@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 
 from PyQt6.QtCore import QStandardPaths
 from PyQt6.QtGui import QKeySequence
+
+from utils.resource_path import get_resource_path
 
 
 class ShortcutsManager:
@@ -17,41 +20,35 @@ class ShortcutsManager:
 
         self.shortcuts_file = os.path.join(quickfile_config_dir, "quickfile_shortcuts.json")
         self.actions = {}
-        self.default_shortcuts = {
-            "file.exit": "Ctrl+Q",
-            "toolbar.go_up": "",
-            "view.refresh": "Ctrl+R",
-            "operations.new_file": "Shift+F4",
-            "operations.new_folder": "F7",
-            "view.search": "",
-            "operations.copy": "F5",
-            "operations.paste": "Ctrl+V",
-            "operations.move": "F6",
-            "operations.rename": "F2",
-            "operations.delete": "F8",
-            "file.compare": "F9",
-            "view.synchronize": "",
-            "file.create_archive": "",
-            "file.extract_archive": "",
-            "view.new_tab": "Ctrl+T",
-            "view.close_tab": "Ctrl+W",
-            "favorites.add": "Ctrl+D",
-            "favorites.manage": "Ctrl+Shift+B",
-            "action.calculate_size": "Ctrl+Space"
-        }
+
+        self.default_shortcuts = self._load_default_scheme()
         self.shortcuts = self.load_shortcuts()
+
+    def _load_default_scheme(self):
+        scheme_path = get_resource_path("config/shortcuts/default.json")
+        try:
+            with open(scheme_path, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logging.error(f"Failed to load default shortcuts scheme from {scheme_path}: {e}")
+            # Fallback to empty or minimal defaults if file is missing
+            return {}
 
     def load_shortcuts(self):
         if os.path.exists(self.shortcuts_file):
             with open(self.shortcuts_file, 'r') as f:
-                loaded_settings = json.load(f)
-                # Migrate old keys if necessary (simple check)
-                if "action.exit" in loaded_settings:
-                    return self.default_shortcuts.copy()  # Force defaults if old keys detected
+                try:
+                    loaded_settings = json.load(f)
+                    # Migrate old keys if necessary (simple check)
+                    if "action.exit" in loaded_settings:
+                        return self.default_shortcuts.copy()  # Force defaults if old keys detected
 
-                defaults = self.default_shortcuts.copy()
-                defaults.update(loaded_settings)
-                return defaults
+                    defaults = self.default_shortcuts.copy()
+                    defaults.update(loaded_settings)
+                    return defaults
+                except json.JSONDecodeError:
+                    logging.error(f"Failed to parse user shortcuts file: {self.shortcuts_file}")
+                    return self.default_shortcuts.copy()
         return self.default_shortcuts.copy()
 
     def save_shortcuts(self, shortcuts):
