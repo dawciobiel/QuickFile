@@ -503,7 +503,11 @@ class FlatFileView(AbstractFileView):
         current_index = self.view.currentIndex()
         if not current_index.isValid():
             return
-        
+
+        # Prevent selecting the ".." item
+        if self.model.fileName(current_index) == "..":
+            return
+
         file_path = self.model.filePath(current_index)
         if file_path in self.insert_selected_items:
             self.insert_selected_items.remove(file_path)
