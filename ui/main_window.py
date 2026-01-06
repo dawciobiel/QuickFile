@@ -210,6 +210,13 @@ class MainWindow(QMainWindow):
         if show_toolbar_action:
             show_toolbar_action.setChecked(toolbar_visible)
 
+        # Set the active panel based on saved settings
+        last_active_panel = self.settings_manager.get_setting("lastActivePanel", "left")
+        if last_active_panel == "right":
+            self.ui_manager.folder_browser.set_active_panel(self.ui_manager.folder_browser.get_right_panel_widget())
+        else:
+            self.ui_manager.folder_browser.set_active_panel(self.ui_manager.folder_browser.get_left_panel_widget())
+
     def save_settings(self):
         self.settings_manager.save_window_settings(self)
         self.ui_manager.save_panel_settings()
