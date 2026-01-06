@@ -22,6 +22,8 @@ class KeyboardEventManager(QObject):
             (Qt.Key.Key_F2, Qt.KeyboardModifier.NoModifier): self.application_logic_handler.rename_selected_item,
             (Qt.Key.Key_F3, Qt.KeyboardModifier.NoModifier): self.application_logic_handler._handle_f3_key,
             (Qt.Key.Key_F4, Qt.KeyboardModifier.NoModifier): self.application_logic_handler._handle_f4_key,
+            # noinspection PyTypeChecker
+            (Qt.Key.Key_F4, Qt.KeyboardModifier.ShiftModifier): self.application_logic_handler.create_new_file,
             (Qt.Key.Key_F5, Qt.KeyboardModifier.NoModifier): self.application_logic_handler.copy_selected_item,
             (Qt.Key.Key_F6, Qt.KeyboardModifier.NoModifier): self.application_logic_handler.move_selected_item,
             (Qt.Key.Key_F7, Qt.KeyboardModifier.NoModifier): self.application_logic_handler.create_new_directory,
@@ -64,18 +66,10 @@ class KeyboardEventManager(QObject):
         key = event.key()
         modifiers = event.modifiers()
 
-        # Check for an exact match first
         action = self.key_actions.get((key, modifiers))
         if action:
             action()
             return True
-
-        # Handle cases where KeypadModifier might be combined with NoModifier implicitly
-        if modifiers & Qt.KeyboardModifier.KeypadModifier:
-            action = self.key_actions.get((key, Qt.KeyboardModifier.KeypadModifier))
-            if action:
-                action()
-                return True
 
         # Fallback to panel-specific key handling if no global shortcut was found
         if self.folder_browser.active_panel_widget:
