@@ -6,6 +6,6 @@
   "description": "Provides standard file operations with support for long paths on Windows.",
   "author": "QuickFile Team",
   "dependencies": [],
-  "entry_point": "plugin.py",
+  "entry_point": "plugin:WindowsOperationsPlugin",
   "class_name": "WindowsOperationsPlugin"
 }

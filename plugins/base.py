@@ -132,6 +132,24 @@ class ViewerPlugin(FileOperationPlugin):
         """
         pass
 
+class EditorPlugin(FileOperationPlugin):
+    """
+    Interface for plugins that provide a file editing capability.
+    """
+    @abstractmethod
+    def can_handle(self, file_path: str) -> bool:
+        """
+        Returns True if the plugin can handle editing this file type.
+        """
+        pass
+
+    @abstractmethod
+    def create_editor_widget(self, file_path: str, parent: QWidget = None) -> QWidget:
+        """
+        Creates and returns the main widget for the editor.
+        """
+        pass
+
 class AttributeEditorPlugin(FileOperationPlugin):
     """
     Interface for plugins that provide a file attribute editing capability.

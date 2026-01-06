@@ -54,6 +54,7 @@ class SettingsDialog(QDialog):
         self.current_manual_language = self.settings_manager.get_setting("manual_language")
         self.current_theme = self.settings_manager.get_setting("theme", "dark")
         self.current_use_internal_viewer = self.settings_manager.get_setting("use_internal_viewer", True)
+        self.current_use_internal_editor = self.settings_manager.get_setting("use_internal_editor", True)
         self.current_viewer_command = self.settings_manager.get_setting("viewer_command")
         self.current_editor_command = self.settings_manager.get_setting("editor_command")
         self.current_bring_to_front = self.settings_manager.get_setting("bringToFrontOnStartup")
@@ -87,12 +88,15 @@ class SettingsDialog(QDialog):
 
         self.external_editors_group.setTitle(translation_manager.translate("SettingsDialog", "External Editors"))
         self.use_internal_viewer_checkbox.setText(translation_manager.translate("SettingsDialog", "Use built-in viewer (F3)"))
+        self.use_internal_editor_checkbox.setText(translation_manager.translate("SettingsDialog", "Use built-in editor (F4)"))
         self.viewer_label.setText(translation_manager.translate("SettingsDialog", "External Viewer (F3):"))
         self.editor_label.setText(translation_manager.translate("SettingsDialog", "Editor (F4):"))
         self.use_internal_viewer_checkbox.setChecked(self.current_use_internal_viewer)
+        self.use_internal_editor_checkbox.setChecked(self.current_use_internal_editor)
         self.viewer_command_edit.setText(self.current_viewer_command)
         self.editor_command_edit.setText(self.current_editor_command)
         self.viewer_command_edit.setEnabled(not self.current_use_internal_viewer)
+        self.editor_command_edit.setEnabled(not self.current_use_internal_editor)
 
         self.startup_group.setTitle(translation_manager.translate("SettingsDialog", "Startup"))
         self.bring_to_front_checkbox.setText(translation_manager.translate("SettingsDialog", "Bring window to front on startup"))
@@ -138,6 +142,8 @@ class SettingsDialog(QDialog):
         self.category_tree.selectionModel().currentRowChanged.connect(self.change_page)
         self.use_internal_viewer_checkbox.stateChanged.connect(
             lambda state: self.viewer_command_edit.setEnabled(state == Qt.CheckState.Unchecked.value))
+        self.use_internal_editor_checkbox.stateChanged.connect(
+            lambda state: self.editor_command_edit.setEnabled(state == Qt.CheckState.Unchecked.value))
         self.insert_text_color_button.clicked.connect(self._pick_insert_text_color)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
@@ -168,6 +174,7 @@ class SettingsDialog(QDialog):
             "manual_language": self.language_combo.currentData(),
             "theme": self.theme_combo.currentData(),
             "use_internal_viewer": self.use_internal_viewer_checkbox.isChecked(),
+            "use_internal_editor": self.use_internal_editor_checkbox.isChecked(),
             "viewer_command": self.viewer_command_edit.text(),
             "editor_command": self.editor_command_edit.text(),
             "bringToFrontOnStartup": self.bring_to_front_checkbox.isChecked(),

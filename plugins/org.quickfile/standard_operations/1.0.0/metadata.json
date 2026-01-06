@@ -6,6 +6,6 @@
   "type": "standard_operations",
   "name": "Standard File Operations",
   "description": "Provides standard file operations like copy, move, and delete.",
-  "entry_point": "plugin.py",
+  "entry_point": "plugin:StandardOperationsPluginImpl",
   "class_name": "StandardOperationsPluginImpl"
 }

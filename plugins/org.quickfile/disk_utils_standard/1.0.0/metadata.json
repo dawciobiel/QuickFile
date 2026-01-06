@@ -5,6 +5,6 @@
   "author": "QuickFile Team",
   "description": "Provides standard disk utility functions using Python's shutil module.",
   "type": "disk_utils",
-  "entry_point": "plugin.py",
+  "entry_point": "plugin:StandardDiskUtilsPlugin",
   "class_name": "StandardDiskUtilsPlugin"
 }
