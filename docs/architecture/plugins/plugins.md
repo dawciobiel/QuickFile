@@ -2,7 +2,9 @@
 
 ## Przegląd
 
-QuickFile wykorzystuje system wtyczek oparty na interfejsach, aby umożliwić łatwe rozszerzanie funkcjonalności aplikacji bez konieczności modyfikowania jej rdzenia. Głównym celem jest obsługa różnych formatów archiwów (ZIP, RAR, 7z), ale architektura jest zaprojektowana tak, aby wspierać również inne typy operacji w przyszłości (np. sumy kontrolne, szyfrowanie, operacje dyskowe, rozszerzenia UI).
+QuickFile wykorzystuje system wtyczek oparty na interfejsach, aby umożliwić łatwe rozszerzanie funkcjonalności aplikacji bez konieczności
+modyfikowania jej rdzenia. Głównym celem jest obsługa różnych formatów archiwów (ZIP, RAR, 7z), ale architektura jest zaprojektowana tak,
+aby wspierać również inne typy operacji w przyszłości (np. sumy kontrolne, szyfrowanie, operacje dyskowe, rozszerzenia UI, podgląd plików).
 
 ## Struktura Katalogów
 
@@ -44,7 +46,7 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 ```
 
 *   **name**: Wyświetlana nazwa wtyczki.
-*   **type**: Typ wtyczki (np. `archive`, `checksum`, `disk_utils`, `ui_extension`). Używany przez `PluginManager` do kategoryzacji.
+* **type**: Typ wtyczki (np. `archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`). Używany przez `PluginManager` do kategoryzacji.
 *   **description**: Krótki opis.
 *   **entry_point**: Nazwa pliku `.py` zawierającego klasę wtyczki.
 *   **class_name**: Nazwa klasy implementującej interfejs wtyczki.
@@ -72,12 +74,32 @@ Interfejs dla wtyczek dostarczających informacje o systemie plików i dyskach. 
 Interfejs dla wtyczek, które modyfikują główny interfejs użytkownika aplikacji (np. dodają opcje do menu).
 *   `initialize(main_window)`: Metoda wywoływana po zbudowaniu głównego okna, pozwalająca wtyczce na dodanie swoich elementów UI.
 
+### `ViewerPlugin` (Typ: `viewer`)
+
+Interfejs dla wtyczek zapewniających podgląd plików (F3).
+
+* `can_view(file_path: str) -> bool`: Zwraca `True`, jeśli wtyczka potrafi wyświetlić dany plik.
+* `view_file(file_path: str, parent: QWidget)`: Otwiera okno podglądu dla danego pliku.
+
+## Dostępne Wtyczki Standardowe
+
+### `org.quickfile.standard_viewer`
+
+Wbudowana przeglądarka plików, która obsługuje:
+
+* **Tekst**: Podgląd plików tekstowych z obsługą różnych kodowań.
+* **Obrazy**: Wyświetlanie plików graficznych (PNG, JPG, BMP, GIF, SVG, ICO, TIFF, WEBP) z automatycznym skalowaniem.
+* **Markdown**: Renderowanie sformatowanego tekstu z plików `.md` i `.markdown` (z obsługą linków).
+* **Kod Źródłowy**: Kolorowanie składni dla wielu języków programowania (wykorzystuje bibliotekę `Pygments` i styl `monokai`).
+* **Tryby Binarne**: Podgląd w trybach HEX, DEC, BIN.
+
 ## Zarządzanie Wtyczkami (`PluginManager`)
 
 Klasa `PluginManager` (`app/plugin_manager.py`) odpowiada za:
 1.  **Skanowanie**: Przeszukuje katalog `plugins/` w poszukiwaniu poprawnych struktur wtyczek.
 2.  **Ładowanie**: Dynamicznie ładuje moduły Pythona i tworzy instancje klas wtyczek.
-3.  **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`, `disk_utils`, `ui_extension`) i udostępnia je reszcie aplikacji.
+3. **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`) i udostępnia je reszcie
+   aplikacji.
 4.  **Instalację i Aktualizację**: Przy starcie porównuje wersje wtyczek wbudowanych w aplikację z tymi zainstalowanymi u użytkownika. Jeśli wbudowana wersja jest nowsza, automatycznie aktualizuje wtyczkę w katalogu użytkownika.
 
 ## Integracja z Kolejką Zadań

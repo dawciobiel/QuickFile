@@ -2,10 +2,10 @@
   "id": "org.quickfile.standard_viewer",
   "group_id": "org.quickfile",
   "artifact_id": "standard_viewer",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "type": "viewer",
   "name": "Standard File Viewer",
-  "description": "A built-in viewer for text files, images, and markdown.",
+  "description": "A built-in viewer for text files, images, markdown, and source code.",
   "entry_point": "plugin.py",
   "class_name": "StandardViewerPlugin"
 }
