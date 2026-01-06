@@ -72,6 +72,32 @@
                                 </item>
                             </layout>
                         </widget>
+                        <widget class="QWidget" name="markdown_page">
+                            <layout class="QVBoxLayout" name="verticalLayout_4">
+                                <property name="spacing">
+                                    <number>0</number>
+                                </property>
+                                <property name="leftMargin">
+                                    <number>0</number>
+                                </property>
+                                <property name="topMargin">
+                                    <number>0</number>
+                                </property>
+                                <property name="rightMargin">
+                                    <number>0</number>
+                                </property>
+                                <property name="bottomMargin">
+                                    <number>0</number>
+                                </property>
+                                <item>
+                                    <widget class="QTextBrowser" name="markdown_browser">
+                                        <property name="openExternalLinks">
+                                            <bool>true</bool>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </widget>
                     </widget>
                 </item>
             </layout>

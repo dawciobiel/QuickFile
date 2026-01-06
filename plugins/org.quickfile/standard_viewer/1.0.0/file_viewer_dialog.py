@@ -5,7 +5,7 @@ from PyQt6 import uic
 from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize
 from PyQt6.QtGui import QAction, QPainter, QColor, QActionGroup, QPixmap, QIcon
 from PyQt6.QtWidgets import QMainWindow, QPlainTextEdit, QWidget, QComboBox, QLabel, QMessageBox, QSizePolicy, QToolBar, QStackedWidget, \
-    QStatusBar
+    QStatusBar, QTextBrowser
 
 from app.translation_manager import translation_manager
 
@@ -54,6 +54,7 @@ class FileViewerWindow(QMainWindow):
     closed = pyqtSignal()
 
     IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.bmp', '.gif', '.svg', '.ico', '.tiff', '.webp']
+    MARKDOWN_EXTENSIONS = ['.md', '.markdown']
 
     # Type hinting for UI elements loaded dynamically
     text_edit: QPlainTextEdit
@@ -62,6 +63,8 @@ class FileViewerWindow(QMainWindow):
     stackedWidget: QStackedWidget
     text_page: QWidget
     image_page: QWidget
+    markdown_page: QWidget
+    markdown_browser: QTextBrowser
     statusBar: QStatusBar
 
     def __init__(self, file_path, parent=None):
@@ -150,6 +153,12 @@ class FileViewerWindow(QMainWindow):
         self.view_mode_group.addAction(self.picture_mode_action)
         self.toolBar.addAction(self.picture_mode_action)
 
+        self.markdown_mode_action = QAction("Markdown", self)
+        self.markdown_mode_action.setCheckable(True)
+        self.markdown_mode_action.triggered.connect(lambda: self.change_view_mode('markdown'))
+        self.view_mode_group.addAction(self.markdown_mode_action)
+        self.toolBar.addAction(self.markdown_mode_action)
+
         self.hex_mode_action = QAction("HEX", self)
         self.hex_mode_action.setCheckable(True)
         self.hex_mode_action.triggered.connect(lambda: self.change_view_mode('hex'))
@@ -184,14 +193,22 @@ class FileViewerWindow(QMainWindow):
             self.original_pixmap = QPixmap(self.file_path)
             if not self.original_pixmap.isNull():
                 self.picture_mode_action.setEnabled(True)
+                self.markdown_mode_action.setEnabled(False)
                 self.picture_mode_action.setChecked(True)
                 self.change_view_mode('picture')
             else:
                 self.picture_mode_action.setEnabled(False)
+                self.markdown_mode_action.setEnabled(False)
                 self.text_mode_action.setChecked(True)
                 self.change_view_mode('text')
+        elif file_extension in self.MARKDOWN_EXTENSIONS:
+            self.picture_mode_action.setEnabled(False)
+            self.markdown_mode_action.setEnabled(True)
+            self.markdown_mode_action.setChecked(True)
+            self.change_view_mode('markdown')
         else:
             self.picture_mode_action.setEnabled(False)
+            self.markdown_mode_action.setEnabled(False)
             self.text_mode_action.setChecked(True)
             self.change_view_mode('text')
 
@@ -245,6 +262,20 @@ class FileViewerWindow(QMainWindow):
                 status_message = f"Image: {self.original_pixmap.width()}x{self.original_pixmap.height()}"
             else:
                 self.image_label.setText("Invalid Image")
+            self.statusBar.showMessage(status_message, 0)
+            return
+
+        if self.current_view_mode == 'markdown':
+            self.stackedWidget.setCurrentWidget(self.markdown_page)
+            try:
+                # Try to decode with UTF-8 for markdown
+                text = self.raw_bytes.decode('utf-8')
+                self.markdown_browser.setMarkdown(text)
+                status_message = "View Mode: Markdown"
+            except UnicodeDecodeError:
+                self.markdown_browser.setPlainText("Error: Markdown file must be UTF-8 encoded.")
+                status_message = "Error: Invalid encoding for Markdown"
+
             self.statusBar.showMessage(status_message, 0)
             return
 
