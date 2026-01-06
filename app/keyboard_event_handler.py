@@ -36,6 +36,7 @@ class KeyboardEventManager(QObject):
             (Qt.Key.Key_D, Qt.KeyboardModifier.ControlModifier): self.application_logic_handler.compare_selected_items,
             (Qt.Key.Key_B, Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier): self.application_logic_handler.open_favorites_dialog,
             (Qt.Key.Key_R, Qt.KeyboardModifier.ControlModifier): self.application_logic_handler.refresh_all_views,
+            (Qt.Key.Key_Space, Qt.KeyboardModifier.ControlModifier): self.application_logic_handler.calculate_directory_size,
         }
         
     def eventFilter(self, source, event):
