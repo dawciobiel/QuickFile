@@ -12,6 +12,10 @@
     "visible": true
   },
   {
+    "id": "file.properties",
+    "visible": true
+  },
+  {
     "id": "operations.view",
     "visible": true
   },

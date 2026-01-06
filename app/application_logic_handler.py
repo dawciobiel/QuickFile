@@ -169,8 +169,8 @@ class ApplicationLogicHandler(QObject):
         self.dialog_handler.open_shortcuts_dialog()
 
     @handle_error
-    def show_properties_dialog(self, checked=False):
-        self.dialog_handler.show_properties_dialog()
+    def show_properties_dialog(self, checked=False, parent=None):
+        self.dialog_handler.show_properties_dialog(checked, parent)
 
     @handle_error
     def show_about_dialog(self, checked=False):

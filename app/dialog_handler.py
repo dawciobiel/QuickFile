@@ -78,14 +78,17 @@ class DialogHandler:
             except Exception as e:
                 QMessageBox.critical(self.main_window, "Error", f"Failed to launch external viewer:\n{e}")
 
-    def show_properties_dialog(self, checked=False):
+    def show_properties_dialog(self, checked=False, parent=None):
         selected_path = self.ui_state_provider.get_current_selected_path()
         if not selected_path:
             raise ValueError(translation_manager.translate("MenuPanel", "No file or folder selected."))
         action_logger.log_action("show_properties", path=selected_path)
         properties = get_file_properties(selected_path)
+
+        dialog_parent = parent if parent else self.main_window
+        
         if properties:
-            PropertiesDialog(properties, self.main_window).exec()
+            PropertiesDialog(properties, dialog_parent).exec()
         else:
             raise ValueError(f"Could not retrieve properties for: {selected_path}")
 
@@ -158,7 +161,7 @@ class DialogHandler:
 
                 action_logger.log_action("create_archive", sources=paths_to_archive, destination=archive_path, options=options)
 
-                task = Task(TaskType.ARCHIVE, source_paths=paths_to_archive, destination_path=archive_path, options=options)
+                task = Task(TaskType.CREATE_ARCHIVE, source_paths=paths_to_archive, destination_path=archive_path, options=options)
                 self.task_queue_manager.add_task(task)
                 self.main_window.statusBar().showMessage("Added archive task to queue.")
                 self.ui_state_provider.folder_browser.refresh_all_views()
@@ -171,8 +174,8 @@ class DialogHandler:
         extract_path, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "Extract Archive"), translation_manager.translate("DialogHandler", "Destination path:"), text=os.path.dirname(selected_archive_path))
         if ok and extract_path:
             action_logger.log_action("extract_archive", source=selected_archive_path, destination=extract_path)
-            
-            task = Task(TaskType.EXTRACT, source_paths=[selected_archive_path], destination_path=extract_path)
+
+            task = Task(TaskType.EXTRACT_ARCHIVE, source_paths=[selected_archive_path], destination_path=extract_path)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage("Added extract task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
