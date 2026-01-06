@@ -3,9 +3,21 @@ import os
 
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize
-from PyQt6.QtGui import QAction, QPainter, QColor, QActionGroup, QPixmap, QIcon
+from PyQt6.QtGui import QAction, QPainter, QColor, QActionGroup, QPixmap, QIcon, QPalette
 from PyQt6.QtWidgets import QMainWindow, QPlainTextEdit, QWidget, QComboBox, QLabel, QMessageBox, QSizePolicy, QToolBar, QStackedWidget, \
     QStatusBar, QTextBrowser
+
+# Try to import Pygments
+try:
+    from pygments import highlight
+    from pygments.lexers import get_lexer_for_filename, get_lexer_by_name
+    from pygments.lexers.special import TextLexer
+    from pygments.formatters import HtmlFormatter
+    from pygments.util import ClassNotFound
+
+    PYGMENTS_AVAILABLE = True
+except ImportError:
+    PYGMENTS_AVAILABLE = False
 
 from app.translation_manager import translation_manager
 
@@ -63,8 +75,8 @@ class FileViewerWindow(QMainWindow):
     stackedWidget: QStackedWidget
     text_page: QWidget
     image_page: QWidget
-    markdown_page: QWidget
-    markdown_browser: QTextBrowser
+    rich_text_page: QWidget
+    rich_text_browser: QTextBrowser
     statusBar: QStatusBar
 
     def __init__(self, file_path, parent=None):
@@ -80,6 +92,7 @@ class FileViewerWindow(QMainWindow):
         self.current_view_mode = 'text'
         self.current_encoding = 'utf-8'
         self.original_pixmap = None
+        self.lexer = None
 
         self.setWindowTitle(f"{translation_manager.translate('FileViewer', 'File Viewer')} - {self.file_path}")
 
@@ -144,38 +157,46 @@ class FileViewerWindow(QMainWindow):
         self.text_mode_action.setCheckable(True)
         self.text_mode_action.setChecked(True)
         self.text_mode_action.triggered.connect(lambda: self.change_view_mode('text'))
-        self.view_mode_group.addAction(self.text_mode_action)
         self.toolBar.addAction(self.text_mode_action)
+        self.view_mode_group.addAction(self.text_mode_action)
 
         self.picture_mode_action = QAction("Picture", self)
         self.picture_mode_action.setCheckable(True)
         self.picture_mode_action.triggered.connect(lambda: self.change_view_mode('picture'))
-        self.view_mode_group.addAction(self.picture_mode_action)
         self.toolBar.addAction(self.picture_mode_action)
-
+        self.view_mode_group.addAction(self.picture_mode_action)
+        
         self.markdown_mode_action = QAction("Markdown", self)
         self.markdown_mode_action.setCheckable(True)
         self.markdown_mode_action.triggered.connect(lambda: self.change_view_mode('markdown'))
-        self.view_mode_group.addAction(self.markdown_mode_action)
         self.toolBar.addAction(self.markdown_mode_action)
+        self.view_mode_group.addAction(self.markdown_mode_action)
+
+        self.code_mode_action = QAction("Code", self)
+        self.code_mode_action.setCheckable(True)
+        self.code_mode_action.triggered.connect(lambda: self.change_view_mode('code'))
+        self.toolBar.addAction(self.code_mode_action)
+        self.view_mode_group.addAction(self.code_mode_action)
+
+        self.toolBar.addSeparator()  # Add separator before binary modes
 
         self.hex_mode_action = QAction("HEX", self)
         self.hex_mode_action.setCheckable(True)
         self.hex_mode_action.triggered.connect(lambda: self.change_view_mode('hex'))
-        self.view_mode_group.addAction(self.hex_mode_action)
         self.toolBar.addAction(self.hex_mode_action)
+        self.view_mode_group.addAction(self.hex_mode_action)
 
         self.dec_mode_action = QAction("DEC", self)
         self.dec_mode_action.setCheckable(True)
         self.dec_mode_action.triggered.connect(lambda: self.change_view_mode('dec'))
-        self.view_mode_group.addAction(self.dec_mode_action)
         self.toolBar.addAction(self.dec_mode_action)
+        self.view_mode_group.addAction(self.dec_mode_action)
 
         self.bin_mode_action = QAction("BIN", self)
         self.bin_mode_action.setCheckable(True)
         self.bin_mode_action.triggered.connect(lambda: self.change_view_mode('bin'))
-        self.view_mode_group.addAction(self.bin_mode_action)
         self.toolBar.addAction(self.bin_mode_action)
+        self.view_mode_group.addAction(self.bin_mode_action)
 
     def _load_file(self):
         file_extension = os.path.splitext(self.file_path)[1].lower()
@@ -189,40 +210,56 @@ class FileViewerWindow(QMainWindow):
             self.stackedWidget.setCurrentWidget(self.text_page)
             return
 
+        # Disable all special modes initially
+        self.picture_mode_action.setEnabled(False)
+        self.markdown_mode_action.setEnabled(False)
+        self.code_mode_action.setEnabled(False)
+
         if file_extension in self.IMAGE_EXTENSIONS:
             self.original_pixmap = QPixmap(self.file_path)
             if not self.original_pixmap.isNull():
                 self.picture_mode_action.setEnabled(True)
-                self.markdown_mode_action.setEnabled(False)
                 self.picture_mode_action.setChecked(True)
                 self.change_view_mode('picture')
-            else:
-                self.picture_mode_action.setEnabled(False)
-                self.markdown_mode_action.setEnabled(False)
-                self.text_mode_action.setChecked(True)
-                self.change_view_mode('text')
+                return
+        
         elif file_extension in self.MARKDOWN_EXTENSIONS:
-            self.picture_mode_action.setEnabled(False)
             self.markdown_mode_action.setEnabled(True)
             self.markdown_mode_action.setChecked(True)
             self.change_view_mode('markdown')
-        else:
-            self.picture_mode_action.setEnabled(False)
-            self.markdown_mode_action.setEnabled(False)
+            return
+
+        # Explicitly handle .txt as plain text to avoid "Code" mode with TextLexer
+        if file_extension == '.txt':
             self.text_mode_action.setChecked(True)
             self.change_view_mode('text')
+            return
+
+        # Try to detect code
+        if PYGMENTS_AVAILABLE:
+            try:
+                self.lexer = get_lexer_for_filename(self.file_path)
+                # If the detected lexer is just a generic TextLexer, prefer standard text mode
+                if isinstance(self.lexer, TextLexer):
+                    self.text_mode_action.setChecked(True)
+                    self.change_view_mode('text')
+                    return
+
+                self.code_mode_action.setEnabled(True)
+                self.code_mode_action.setChecked(True)
+                self.change_view_mode('code')
+                return
+            except ClassNotFound:
+                pass
+
+        # Fallback to text
+        self.text_mode_action.setChecked(True)
+        self.change_view_mode('text')
 
     def open_properties(self):
         # Try to access the main window's logic handler
         parent = self.parent()
         if parent and hasattr(parent, 'application_logic_handler'):
-            # We need to ensure the correct item is selected in the main window
-            # The viewer might be open for a file that is not currently selected
-            # But show_properties_dialog works on the selected item.
-            # For now, we assume the user wants properties of the selected item in the browser.
-            # Ideally, we should pass the file path to show_properties_dialog, but it doesn't accept arguments.
-            # So we just call it and hope the selection matches.
-            # A better approach would be to select the file in the browser first, but that's complex.
             parent.application_logic_handler.show_properties_dialog(parent=self)
         else:
             QMessageBox.warning(self, "Error", "Could not access application logic.")
@@ -266,15 +303,56 @@ class FileViewerWindow(QMainWindow):
             return
 
         if self.current_view_mode == 'markdown':
-            self.stackedWidget.setCurrentWidget(self.markdown_page)
+            self.stackedWidget.setCurrentWidget(self.rich_text_page)
+            # Reset style sheet for markdown to use default theme colors
+            self.rich_text_browser.setStyleSheet("")
             try:
-                # Try to decode with UTF-8 for markdown
                 text = self.raw_bytes.decode('utf-8')
-                self.markdown_browser.setMarkdown(text)
+                self.rich_text_browser.setMarkdown(text)
                 status_message = "View Mode: Markdown"
             except UnicodeDecodeError:
-                self.markdown_browser.setPlainText("Error: Markdown file must be UTF-8 encoded.")
+                self.rich_text_browser.setPlainText("Error: Markdown file must be UTF-8 encoded.")
                 status_message = "Error: Invalid encoding for Markdown"
+
+            self.statusBar.showMessage(status_message, 0)
+            return
+
+        if self.current_view_mode == 'code':
+            self.stackedWidget.setCurrentWidget(self.rich_text_page)
+            try:
+                text = self.raw_bytes.decode(self.current_encoding)
+                if PYGMENTS_AVAILABLE and self.lexer:
+                    # Always use monokai for code view to ensure consistency and readability
+                    # regardless of the application theme.
+                    formatter = HtmlFormatter(full=True, style='monokai', noclasses=True,
+                                              cssstyles='margin:0; padding:0; line-height: 1.2;')
+                    html_content = highlight(text, self.lexer, formatter)
+
+                    # Get background color from the formatter style to match QTextBrowser background
+                    style_bg_color = formatter.style.background_color
+
+                    # Inject custom CSS to remove borders/margins from pre tag and set body background
+                    custom_css = f"""
+                    <style>
+                        body {{ background-color: {style_bg_color}; }}
+                        pre {{ margin: 0; padding: 0; border: none; background-color: {style_bg_color}; }}
+                    </style>
+                    """
+                    # Insert CSS before </head>
+                    html_content = html_content.replace('</head>', f'{custom_css}</head>')
+
+                    # Set the widget background color to match Pygments style
+                    self.rich_text_browser.setStyleSheet(f"background-color: {style_bg_color}; color: #f8f8f2;")
+
+                    self.rich_text_browser.setHtml(html_content)
+                    status_message = f"View Mode: Code ({self.lexer.name})"
+                else:
+                    self.rich_text_browser.setStyleSheet("")
+                    self.rich_text_browser.setPlainText(text)
+                    status_message = "View Mode: Code (No highlighter)"
+            except UnicodeDecodeError:
+                self.rich_text_browser.setPlainText(f"Error: Cannot decode file with {self.current_encoding}")
+                status_message = f"Error: Invalid encoding {self.current_encoding}"
 
             self.statusBar.showMessage(status_message, 0)
             return
