@@ -17,6 +17,13 @@ class UIStateProvider:
         # Fallback to the left panel if no panel has focus
         return self.folder_browser.get_left_panel_widget()
 
+    def get_active_panel_view(self):
+        """Returns the file view of the active panel."""
+        active_panel = self.get_active_panel_widget()
+        if active_panel:
+            return active_panel.file_view
+        return None
+
     def get_active_panel_path(self):
         """Returns the current path of the active panel."""
         active_panel = self.get_active_panel_widget()

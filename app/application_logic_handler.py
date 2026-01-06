@@ -1,3 +1,4 @@
+import fnmatch
 import functools
 import logging
 import os
@@ -9,6 +10,7 @@ from PyQt6.QtWidgets import QMessageBox
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from utils.dialogs import show_error_message
+from utils.select_dialog import SelectDialog
 
 
 def handle_error(func):
@@ -173,6 +175,68 @@ class ApplicationLogicHandler(QObject):
     @handle_error
     def show_about_dialog(self, checked=False):
         self.dialog_handler.show_about_dialog()
+
+    @handle_error
+    def show_select_dialog(self, checked=False):
+        """Shows a dialog to select files by pattern."""
+        logging.debug("show_select_dialog: Opening select dialog.")
+        dialog = SelectDialog(self.main_window)
+        if not dialog.exec():
+            logging.debug("show_select_dialog: Dialog cancelled.")
+            return
+
+        options = dialog.get_selection_options()
+        logging.debug(f"show_select_dialog: Options received: {options}")
+        pattern = options["pattern"]
+        case_sensitive = options["case_sensitive"]
+        only_files = options["only_files"]
+
+        active_view_wrapper = self.ui_state_provider.get_active_panel_view()
+        if not active_view_wrapper:
+            logging.warning("show_select_dialog: No active view found.")
+            return
+
+        # Clear existing selection before applying new one
+        if hasattr(active_view_wrapper, 'clear_selection'):
+            logging.debug("show_select_dialog: Clearing existing selection.")
+            active_view_wrapper.clear_selection()
+
+        model = active_view_wrapper.model
+        if not model:
+            logging.warning("show_select_dialog: No model found for the active view.")
+            return
+
+        match_pattern = pattern if case_sensitive else pattern.lower()
+        paths_to_select = []
+
+        for row in range(model.rowCount()):
+            index = model.index(row, 0)
+            if not index.isValid():
+                continue
+
+            if not hasattr(model, 'filePath') or not hasattr(model, 'isDir') or not hasattr(model, 'fileName'):
+                logging.error("The model is missing required methods: filePath, isDir, or fileName.")
+                break
+
+            if only_files and model.isDir(index):
+                continue
+
+            file_name = model.fileName(index)
+            file_name_to_match = file_name if case_sensitive else file_name.lower()
+
+            if fnmatch.fnmatch(file_name_to_match, match_pattern):
+                paths_to_select.append(model.filePath(index))
+
+        logging.debug(f"show_select_dialog: Found {len(paths_to_select)} matching paths: {paths_to_select}")
+
+        if paths_to_select:
+            if hasattr(active_view_wrapper, 'select_items_by_paths'):
+                logging.debug("show_select_dialog: Calling 'select_items_by_paths' on the active view.")
+                active_view_wrapper.select_items_by_paths(paths_to_select)
+            else:
+                logging.error("The active view does not support 'select_items_by_paths'.")
+        else:
+            logging.debug("show_select_dialog: No paths to select.")
 
     @handle_error
     def compare_selected_items(self, checked=False):

@@ -1,9 +1,10 @@
-import logging
 from PyQt6.QtCore import Qt, QEvent, QObject
-from PyQt6.QtWidgets import QApplication, QLineEdit
-from app.translation_manager import translation_manager
+from PyQt6.QtWidgets import QApplication
+
 from app.application_logic_handler import ApplicationLogicHandler
+from app.translation_manager import translation_manager
 from browser.folder_browser import FolderBrowser
+
 
 class KeyboardEventManager(QObject):
     def __init__(self, main_window, application_logic_handler: ApplicationLogicHandler, folder_browser: FolderBrowser):
@@ -28,7 +29,10 @@ class KeyboardEventManager(QObject):
             (Qt.Key.Key_F9, Qt.KeyboardModifier.NoModifier): self.application_logic_handler.compare_selected_items,
             (Qt.Key.Key_F10, Qt.KeyboardModifier.NoModifier): self.main_window.close,
             (Qt.Key.Key_E, Qt.KeyboardModifier.ControlModifier): self.application_logic_handler.set_focus_on_path_edit,
-            
+
+            # Handle Numpad '+' key
+            (Qt.Key.Key_Plus, Qt.KeyboardModifier.KeypadModifier): self.application_logic_handler.show_select_dialog,
+
             # Global shortcuts restored to ensure functionality
             (Qt.Key.Key_T, Qt.KeyboardModifier.ControlModifier): self.application_logic_handler.new_tab,
             (Qt.Key.Key_W, Qt.KeyboardModifier.ControlModifier): self.application_logic_handler.close_tab,
@@ -49,9 +53,9 @@ class KeyboardEventManager(QObject):
             return False
 
         if event.type() == QEvent.Type.KeyPress:
-            # print(f"DEBUG: KeyPress {event.key()} {event.modifiers()}")
             was_handled = self.handle_key_event(event)
             if was_handled:
+                event.accept()
                 return True
 
         return super().eventFilter(source, event)
@@ -59,25 +63,21 @@ class KeyboardEventManager(QObject):
     def handle_key_event(self, event):
         key = event.key()
         modifiers = event.modifiers()
-        
-        is_text_input_focused = isinstance(QApplication.focusWidget(), QLineEdit)
 
-        # Do not trigger single-key actions (like Backspace) when typing in a text field
-        # But ALLOW shortcuts with Control (like Ctrl+F, Ctrl+T) even in text fields
-        if is_text_input_focused:
-             # If it's a simple key (no modifier or just Shift), let the text input handle it
-             if modifiers in [Qt.KeyboardModifier.NoModifier, Qt.KeyboardModifier.ShiftModifier]:
-                 if self.key_actions.get((key, modifiers)):
-                     return False
-             # If it has Control or Alt, we generally want to process it as a command
-             # UNLESS it's a standard text editing shortcut (like Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A, Ctrl+Z)
-             # For now, our list doesn't conflict with those, so we can proceed.
-
+        # Check for an exact match first
         action = self.key_actions.get((key, modifiers))
         if action:
             action()
             return True
-        
+
+        # Handle cases where KeypadModifier might be combined with NoModifier implicitly
+        if modifiers & Qt.KeyboardModifier.KeypadModifier:
+            action = self.key_actions.get((key, Qt.KeyboardModifier.KeypadModifier))
+            if action:
+                action()
+                return True
+
+        # Fallback to panel-specific key handling if no global shortcut was found
         if self.folder_browser.active_panel_widget:
             active_view = self.folder_browser.active_panel_widget.file_view
             if hasattr(active_view, 'handle_key_event'):

@@ -2,7 +2,7 @@
     "id": "org.quickfile.flat_view",
     "group_id": "org.quickfile",
     "artifact_id": "flat_view",
-    "version": "1.0.0",
+  "version": "1.0.1",
     "type": "view_mode",
     "name": "Flat View",
     "description": "A classic flat, two-column file system view.",
