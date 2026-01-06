@@ -7,6 +7,16 @@
 
 ## Fixed
 
+### Viewer (`standard_viewer`)
+
+- **Focus Issues**: Fixed a bug where the viewer window would not get focus upon opening.
+- **Rendering Artifacts**: Fixed horizontal lines appearing in the code view by synchronizing widget background with the Pygments style.
+- **Missing Toolbar Buttons**: Fixed an issue where some view mode buttons (HEX, DEC) were not visible on the toolbar.
+- **Incorrect Dialog Parenting**: Fixed a bug where opening the "Properties" dialog from the viewer would cause the main window to
+  incorrectly come to the foreground.
+- **Incorrect Default Mode**: Fixed an issue where `.txt` files were incorrectly opened in "Code" mode instead of "Text" mode.
+
+### General
 - **Plugin Initialization Order**: Fixed a bug where UI extension plugins were initialized before the main UI was fully built, preventing them from adding elements to the menu.
 - **Plugin Internal Imports**: Fixed a `ModuleNotFoundError` for plugins with internal dependencies by modifying `sys.path` during the loading process in `PluginManager`.
 - **`TypeError` in `findChildren`**: Fixed a `TypeError` in the feedback plugin caused by passing a string (`"QMenu"`) instead of a type (`QMenu`) to `findChildren`.

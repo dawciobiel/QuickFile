@@ -2,6 +2,27 @@
 
 ## Główne funkcje do zaimplementowania
 
+- [ ] **Feature: Wbudowany edytor kodu (Plugin)**:
+    - Stworzyć nowy plugin typu `editor`, który będzie służył jako wbudowany edytor plików (dla akcji F4).
+    - **Wymagania**:
+        - Kolorowanie składni (z wykorzystaniem `QSyntaxHighlighter` i `Pygments`).
+        - Obsługa numeracji linii.
+        - Podstawowe funkcje edycyjne (cofnij/ponów, wytnij/kopiuj/wklej).
+        - Wyszukiwanie i zamiana tekstu.
+        - Zapisywanie zmian w pliku.
+
+- [ ] **Feature: Wyświetlanie prędkości transferu**:
+    - W oknach dialogowych kopiowania i przenoszenia plików, podczas trwania operacji, powinna być wyświetlana aktualna prędkość transferu (
+      np. w MB/s).
+
+- [ ] **Feature: Dialog "Select" do zaznaczania plików (+)**:
+    - Zaprojektować i stworzyć okno dialogowe "Select", aktywowane klawiszem `+` na klawiaturze numerycznej.
+    - **Funkcjonalność okna**:
+        - Pole z rozwijaną listą (`ComboBox`) do wpisywania i zapamiętywania wzorców (np. `*.exe`, `*.py`).
+        - Opcja "Uwzględniaj wielkość liter" (`Case sensitive`).
+        - Opcja "Tylko pliki" (`Only files`).
+    - Po zatwierdzeniu (`Enter`), akcja powinna zaznaczyć wszystkie pasujące elementy w aktywnym panelu.
+
 - [ ] **Feature: System powiadomień**:
     - Przemyślenie i zaprojektowanie systemu powiadomień o ukończeniu zadań w tle (np. kopiowanie, przenoszenie, archiwizacja, generowanie sum kontrolnych).
     - Należy rozważyć różne formy powiadomień:
@@ -18,6 +39,21 @@
 
 ## Zrobione / Zaimplementowane częściowo
 
+- [x] **Feature: Zaawansowany wbudowany podgląd plików (F3)**:
+    - Znacząco rozbudowano plugin `standard_viewer`, dodając obsługę:
+        - **Obrazów**: Wyświetlanie plików graficznych z automatycznym skalowaniem.
+        - **Markdown**: Renderowanie sformatowanego tekstu z plików `.md`.
+        - **Kodu Źródłowego**: Kolorowanie składni dla wielu języków programowania przy użyciu `Pygments`.
+    - Zaimplementowano dynamiczne dopasowanie tła podglądu kodu do motywu aplikacji (jasny/ciemny).
+    - Dodano możliwość przełączania między widokiem sformatowanym a surowym tekstem.
+    - Zintegrowano podgląd z oknem "Właściwości" i poprawiono błędy związane z fokusem okna.
+
+- [x] **Refactor: System skrótów klawiszowych**:
+    - Przeprowadzono gruntowną refaktoryzację systemu skrótów.
+    - Usunięto "sztywno" zakodowane skróty, przenosząc je do plików konfiguracyjnych `.json` w `config/shortcuts/`.
+    - Stworzono fundament pod obsługę wielu profili skrótów (np. `default.json`, `explorer_like.json`).
+    - `KeyboardEventManager` został przepisany, aby dynamicznie obsługiwać skróty z aktywnego profilu.
+
 - [x] **Feature: Budowanie paczek instalacyjnych**:
     - Zaprojektowano i wykonano skrypt/ów do budowy aplikacji jako paczki instalacyjnej (np. przy użyciu `PyInstaller` lub `cx_Freeze`).
     - **Cele**:
@@ -26,8 +62,10 @@
         3.  **Pluginy**: Architektura wspiera ładowanie zewnętrznych pluginów z dedykowanego katalogu (`plugins`) w folderze użytkownika lub instalacji.
         4.  **Zasoby**: Paczka zawiera wszystkie niezbędne zasoby (`resources`, `themes`, `translations`, `.ui` files).
         5.  **Konfiguracja**: Aplikacja poprawnie zarządza plikami konfiguracyjnymi zarówno w katalogu instalacji (domyślne), jak i w katalogu domowym użytkownika (spersonalizowane).
-    - **Platformy**: Początkowo wsparcie dla systemów Linux i Windows.
-    - **Skrypty**: Ewentualne skrypty pomocnicze znajdują się w dedykowanym podkatalogu wewnątrz `scripts/packaging`.
+  - **Platformy**:
+      - [x] **Linux**: Skrypt budujący (`scripts/packaging/build_app.py`) został stworzony i przetestowany.
+      - [ ] **Windows**: Skrypt wymaga przetestowania i ewentualnych modyfikacji (np. dodanie ikony, obsługa specyficznych dla Windows
+        bibliotek DLL).
 
 - [x] **Plugin operacji dla Windows**: Stworzono dedykowany plugin `org.quickfile.windows_operations`, który obsługuje kopiowanie,
   przenoszenie i usuwanie plików na systemie Windows, wykorzystując prefiks `\\?\` do obsługi długich ścieżek.
@@ -67,8 +105,6 @@
 - [x] **Zaawansowana edycja atrybutów plików (Plugin)**: Stworzono fundament pod edycję atrybutów w formie pluginu. Zaimplementowano pierwszy plugin (`linux_attribute_editor`) do zmiany właściciela i grupy plików na systemach POSIX.
 
 - [x] **Odtwarzanie logów akcji**: Stworzono skrypt `scripts/replay_actions.py`, który odtwarza zanonimizowane logi akcji użytkownika w bezpiecznej piaskownicy (sandbox), co ułatwia debugowanie. Zintegrowano logowanie z kluczowymi operacjami.
-
-- [x] **Wbudowany podgląd plików (F3)**: Zaimplementowano zaawansowany podgląd plików jako niezależny plugin. Obsługuje tryby Text, HEX, DEC, BIN, wybór kodowania, zawijanie wierszy i numerację linii. Dodano opcję w ustawieniach do przełączania między wbudowanym a zewnętrznym viewerem.
 
 - [x] **Dynamiczne odświeżanie widoku plików**: Zaimplementowano fundament pod dynamiczne odświeżanie. Aplikacja jest odporna na usunięcie katalogu, w którym znajduje się użytkownik (przechodzi w górę). Dodano konfigurowalny interwał odświeżania oraz wskaźnik "spinner" na kartach, na których odbywają się operacje w tle. Naprawiono szereg błędów związanych z wieloma zadaniami i zamykaniem kart.
 
