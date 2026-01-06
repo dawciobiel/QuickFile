@@ -46,3 +46,5 @@ class StandardViewerPlugin(ViewerPlugin):
 
         self.open_viewers[file_path] = viewer
         viewer.show()
+        viewer.raise_()
+        viewer.activateWindow()

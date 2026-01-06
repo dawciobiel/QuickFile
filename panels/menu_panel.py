@@ -37,6 +37,7 @@ class MenuPanel:
             "view.close_tab": get_resource_path(os.path.join(base_path, "close_tab_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
             "favorites.manage": get_resource_path(os.path.join(base_path, "menage_favorites_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
             "favorites.add": get_resource_path(os.path.join(base_path, "bookmark_add_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
+            "file.properties": get_resource_path(os.path.join(base_path, "properties.svg")),
         }
 
     def initialize_ui(self):
