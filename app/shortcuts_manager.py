@@ -21,7 +21,7 @@ class ShortcutsManager:
             "file.exit": "Ctrl+Q",
             "toolbar.go_up": "",
             "view.refresh": "Ctrl+R",
-            "operations.new_file": "",
+            "operations.new_file": "Shift+F4",
             "operations.new_folder": "F7",
             "view.search": "",
             "operations.copy": "F5",
