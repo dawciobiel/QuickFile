@@ -50,6 +50,8 @@ class Task(QObject):
     def set_status(self, status):
         if self._status != status:
             self._status = status
+            if status == TaskStatus.FINISHED:
+                self.set_progress(100)
             self.status_changed.emit(status)
 
     @property

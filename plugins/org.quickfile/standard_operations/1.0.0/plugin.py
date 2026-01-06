@@ -218,8 +218,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                     raise OperationCancelledError("Operation cancelled by user.")
                 
                 shutil.move(source_path, destination_full_path)
-                if progress_callback:
-                    progress_callback.emit(100)
+                if task:
+                    task.set_progress(100)
 
             if task:
                 task.directory_changed.emit(source_dir)
@@ -247,8 +247,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             try:
                 # Pass the progress_callback down
                 self._move_item_with_options(source_path, destination_path, options, progress_callback, task_context, task)
-                if progress_callback:
-                    progress_callback.emit(int((i + 1) / total_items * 100))
+                if task:
+                    task.set_overall_progress(int((i + 1) / total_items * 100))
             except OperationCancelledError:
                 raise
             except Exception as e:
@@ -303,6 +303,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
 
         if move_to_trash:
             total_items = len(item_paths)
+            if task:
+                task.set_progress(0)
             for i, path in enumerate(item_paths):
                 if task_context and task_context.is_cancelled:
                     raise OperationCancelledError("Operation cancelled by user.")
@@ -311,8 +313,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                 
                 send2trash.send2trash(path)
 
-                if progress_callback:
-                    progress_callback.emit(int((i + 1) / total_items * 100))
+                if task:
+                    task.set_progress(int((i + 1) / total_items * 100))
 
             if task:
                 for dir_path in affected_dirs:
@@ -324,6 +326,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             all_files, all_dirs, total_size = self._get_paths_and_total_size(item_paths, task_context, task)
 
             deleted_size = 0
+            if task:
+                task.set_progress(0)
 
             for i, (file_path, file_size) in enumerate(all_files):
                 if task_context and task_context.is_cancelled:
@@ -333,9 +337,9 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                 
                 os.remove(file_path)
                 deleted_size += file_size
-                if progress_callback and total_size > 0:
+                if task and total_size > 0:
                     progress = int((deleted_size / total_size) * 100)
-                    progress_callback.emit(progress)
+                    task.set_progress(progress)
 
             for dir_path in all_dirs:
                 if task_context and task_context.is_cancelled:
