@@ -155,7 +155,7 @@ class EditorWidget(QWidget):
             if self.theme_manager:
                 theme_data = self.theme_manager.get_current_theme_data()
                 styles = theme_data.get("code_highlighting", {})
-
+                
             line_color = QColor(styles.get("current_line_background", "#e8f0fe"))
             selection.format.setBackground(line_color)
             selection.format.setProperty(QTextFormat.Property.FullWidthSelection, True)

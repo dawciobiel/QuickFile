@@ -3,13 +3,13 @@ import sys
 from PyQt6.QtWidgets import QWidget, QDialog, QVBoxLayout, QDialogButtonBox
 from plugins.base import EditorPlugin
 
-class CodeEditorPlugin(EditorPlugin):
+class StandardEditorPlugin(EditorPlugin):
     def __init__(self):
         super().__init__()
 
     @property
     def name(self) -> str:
-        return "Code Editor"
+        return "Standard Editor"
 
     @property
     def description(self) -> str:
@@ -19,8 +19,6 @@ class CodeEditorPlugin(EditorPlugin):
         return True
 
     def open_editor(self, file_path: str, theme_manager, parent: QWidget):
-        # This is a workaround to solve relative import issues when the plugin
-        # is loaded dynamically.
         plugin_dir = os.path.dirname(__file__)
         if plugin_dir not in sys.path:
             sys.path.insert(0, plugin_dir)
