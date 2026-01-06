@@ -1,22 +1,30 @@
 {
   "name": "Monokai",
   "type": "dark",
-  "colors": {
-    "Window": "#272822",
-    "WindowText": "#F8F8F2",
-    "Base": "#2D2E26",
-    "AlternateBase": "#3E3D32",
-    "ToolTipBase": "#4A4A4A",
-    "ToolTipText": "#F8F8F2",
-    "Text": "#F8F8F2",
-    "Button": "#49483E",
-    "ButtonText": "#F8F8F2",
-    "BrightText": "#FFFFFF",
-    "Link": "#AE81FF",
-    "Highlight": "#AE81FF",
-    "HighlightedText": "#272822",
-    "DisabledText": "#75715E",
-    "DisabledButtonText": "#75715E",
-    "DisabledWindowText": "#75715E"
+  "background": "#272822",
+  "secondary_background": "#2D2E26",
+  "alternate_background": "#3E3D32",
+  "foreground": "#F8F8F2",
+  "accent": "#AE81FF",
+  "border": "#272822",
+  "selection_foreground": "#272822",
+  "selection_background": "#AE81FF",
+  "active_panel_border": "#FD971F",
+  "inactive_selection_background": "#49483E",
+  "disabled_foreground": "#75715E",
+
+  "code_highlighting": {
+    "background": "#272822",
+    "line_number_background": "#3E3D32",
+    "line_number_foreground": "#75715E",
+    "current_line_background": "#49483E",
+    "text": "#F8F8F2",
+    "keyword": "#F92672",
+    "operator": "#F92672",
+    "comment": "#75715E",
+    "string": "#E6DB74",
+    "number": "#AE81FF",
+    "class_name": "#A6E22E",
+    "function_name": "#66D9EF"
   }
 }
