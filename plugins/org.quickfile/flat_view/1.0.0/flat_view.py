@@ -35,27 +35,25 @@ class FlatFileSystemModel(AbstractFileSystemModel):
         self._directory_sizes = {}
         
         if self.theme_manager:
-            self.on_theme_changed(self.theme_manager.get_theme_path())
+            self.on_theme_changed()
             
         self._populate_items()
 
-    def on_theme_changed(self, theme_path):
-        if not theme_path:
+    def on_theme_changed(self):
+        if not self.theme_manager:
             return
-        styles_path = os.path.join(theme_path, "file_styles.json")
-        if os.path.exists(styles_path):
-            try:
-                with open(styles_path, 'r') as f:
-                    data = json.load(f)
-                    self._file_styles = data
-                    self._special_type_styles = data.get("special_types", {})
-                    logging.info(f"Loaded file styles from {styles_path}. Special types: {list(self._special_type_styles.keys())}")
-            except Exception as e:
-                logging.error(f"Failed to load file styles: {e}")
-        else:
-            logging.warning(f"File styles not found at {styles_path}")
+        
+        theme_data = self.theme_manager.get_current_theme_data()
+        if not theme_data:
+            logging.warning("on_theme_changed: Could not get current theme data.")
             self._file_styles = {}
             self._special_type_styles = {}
+            self.layoutChanged.emit()
+            return
+
+        self._file_styles = theme_data
+        self._special_type_styles = theme_data.get("special_types", {})
+        logging.info(f"Loaded file styles. Special types: {list(self._special_type_styles.keys())}")
         self.layoutChanged.emit()
 
     def set_current_path(self, path):
@@ -92,7 +90,6 @@ class FlatFileSystemModel(AbstractFileSystemModel):
                     continue
                 item_path = os.path.join(self._current_path, item_name)
                 is_dir = os.path.isdir(item_path)
-                # The fourth element is the "checked" state for standard selection, not "Insert" selection
                 is_checked = item_path in self._insert_selected_items
                 other_items.append((item_name, item_path, is_dir, is_checked))
             
@@ -105,7 +102,6 @@ class FlatFileSystemModel(AbstractFileSystemModel):
 
         self._items = dot_dot_item + other_items
 
-        # Clean up selected items that no longer exist
         for path in list(self._insert_selected_items):
             if not os.path.exists(path):
                 self._insert_selected_items.remove(path)
@@ -177,12 +173,10 @@ class FlatFileSystemModel(AbstractFileSystemModel):
                 return font
 
         if role == FileStyleRole:
-            # Check for special types first
             if os.path.islink(item_path):
                 if "symlink" in self._special_type_styles:
                     return self._special_type_styles["symlink"]
 
-            # Check for hardlinks (only for files)
             if not is_dir:
                 try:
                     stat_info = os.stat(item_path)
@@ -196,7 +190,6 @@ class FlatFileSystemModel(AbstractFileSystemModel):
                 if "hidden" in self._special_type_styles:
                     return self._special_type_styles["hidden"]
 
-            # Fallback to extension-based styling
             if not is_dir:
                 extension = item_name.split('.')[-1].lower()
                 if extension in self._file_styles:
@@ -350,18 +343,15 @@ class FlatFileSystemModel(AbstractFileSystemModel):
         return [item[1] for item in self._items if item[3] and item[0] != ".."]
 
     def select_paths(self, paths_to_select):
-        """Selects items in the model based on a list of paths."""
         logging.debug(f"FlatFileSystemModel: Received {len(paths_to_select)} paths to select.")
         for path in paths_to_select:
             self._insert_selected_items.add(path)
 
-        # We need to find which rows were affected and emit dataChanged for them.
         for row, item in enumerate(self._items):
             item_path = item[1]
             if item_path in paths_to_select:
                 logging.debug(f"FlatFileSystemModel: Marking path for redraw: {item_path}")
                 index = self.index(row, 0)
-                # Emit dataChanged for the entire row to ensure all columns are updated if needed
                 self.dataChanged.emit(index, self.index(row, self.columnCount() - 1))
         logging.debug(
             f"FlatFileSystemModel: Finished processing selections. Current insert selection count: {len(self._insert_selected_items)}")
@@ -408,7 +398,6 @@ class FlatFileView(AbstractFileView):
     file_selected = pyqtSignal(str)
     insert_selection_changed = pyqtSignal()
 
-    # Type hint for the view attribute
     view: QTableView
 
     def __init__(self, settings_manager, theme_manager, parent=None):
@@ -504,7 +493,6 @@ class FlatFileView(AbstractFileView):
         if not current_index.isValid():
             return
 
-        # Prevent selecting the ".." item
         if self.model.fileName(current_index) == "..":
             return
 
@@ -518,7 +506,6 @@ class FlatFileView(AbstractFileView):
         self.insert_selection_changed.emit()
 
     def select_items_by_paths(self, paths_to_select):
-        """Selects items by adding their paths to the insert selection set."""
         logging.debug(f"FlatFileView: Calling model.select_paths with {len(paths_to_select)} paths.")
         self.model.select_paths(paths_to_select)
         self.insert_selection_changed.emit()
@@ -528,10 +515,9 @@ class FlatFileView(AbstractFileView):
         return list(self.insert_selected_items)
 
     def clear_selection(self):
-        """Clears the 'Insert' selection."""
         logging.debug(f"FlatFileView: Clearing selection. Current count: {len(self.insert_selected_items)}")
         self.insert_selected_items.clear()
-        self.model.refresh()  # A full refresh is the most reliable way to update visuals
+        self.model.refresh()
         self.insert_selection_changed.emit()
         logging.debug("FlatFileView: Selection cleared and view refreshed.")
         

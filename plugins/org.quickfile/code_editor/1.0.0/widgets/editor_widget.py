@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QPlainTextEdit, QWidget, QHBoxLayout, QTextEdit
-from PyQt6.QtGui import QColor, QPainter, QTextFormat
+from PyQt6.QtWidgets import QPlainTextEdit, QWidget, QHBoxLayout, QTextEdit, QVBoxLayout, QToolBar, QStyle
+from PyQt6.QtGui import QColor, QPainter, QTextFormat, QIcon
 from PyQt6.QtCore import Qt, QRect, QSize
 
 from .highlighter import PygmentsHighlighter
@@ -28,12 +28,47 @@ class EditorWidget(QWidget):
         self.highlight_current_line()
 
     def init_ui(self):
-        layout = QHBoxLayout(self)
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.line_number_area)
-        layout.addWidget(self.editor)
-        self.setLayout(layout)
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.toolbar = QToolBar()
+        main_layout.addWidget(self.toolbar)
+        self._setup_toolbar()
+
+        editor_layout = QHBoxLayout()
+        editor_layout.setSpacing(0)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.addWidget(self.line_number_area)
+        editor_layout.addWidget(self.editor)
+        
+        main_layout.addLayout(editor_layout)
+        self.setLayout(main_layout)
+
+    def _setup_toolbar(self):
+        style = self.style()
+        
+        save_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton), "Save")
+        save_action.triggered.connect(self.save_file)
+        
+        self.toolbar.addSeparator()
+        
+        undo_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_ArrowBack), "Undo")
+        undo_action.triggered.connect(self.editor.undo)
+        
+        redo_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_ArrowForward), "Redo")
+        redo_action.triggered.connect(self.editor.redo)
+        
+        self.toolbar.addSeparator()
+        
+        cut_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_DialogResetButton), "Cut")
+        cut_action.triggered.connect(self.editor.cut)
+        
+        copy_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView), "Copy")
+        copy_action.triggered.connect(self.editor.copy)
+        
+        paste_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton), "Paste")
+        paste_action.triggered.connect(self.editor.paste)
 
     def connect_signals(self):
         self.editor.blockCountChanged.connect(self.update_line_number_area_width)

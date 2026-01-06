@@ -51,32 +51,27 @@ class ThemeManager(QObject):
         if not os.path.exists(palette_path):
             logging.warning(f"palette.json not found for theme '{theme_name}'.")
             self.current_theme_data = {}
-            return
-            
-        with open(palette_path, 'r') as f:
-            self.current_theme_data = json.load(f)
+        else:
+            with open(palette_path, 'r') as f:
+                self.current_theme_data = json.load(f)
 
         stylesheet_path = os.path.join(theme_path, "style.qss")
         if not os.path.exists(stylesheet_path):
             logging.warning(f"style.qss not found for theme '{theme_name}'.")
-            return
-            
-        with open(stylesheet_path, 'r') as f:
-            stylesheet = f.read()
-
-        # Replace placeholders from the "colors" dictionary
-        if "colors" in self.current_theme_data:
-            for key, value in self.current_theme_data["colors"].items():
-                stylesheet = stylesheet.replace(f"@@{key}@@", value)
+            # We don't return here, as the palette might still be useful
         else:
-            # Fallback for old flat structure
+            with open(stylesheet_path, 'r') as f:
+                stylesheet = f.read()
+
+            # Replace placeholders
             for key, value in self.current_theme_data.items():
                 if isinstance(value, str):
                     stylesheet = stylesheet.replace(f"@@{key}@@", value)
-
-        app = QApplication.instance()
-        assert isinstance(app, QApplication)
-        app.setStyleSheet(stylesheet)
+            
+            app = QApplication.instance()
+            if app:
+                app.setStyleSheet(stylesheet)
 
         logging.info(f"Applied theme: {theme_name}")
+        # Emit the signal AFTER all data is loaded and stylesheet is applied
         self.theme_changed.emit(theme_name)
