@@ -8,5 +8,21 @@
     "selection_foreground": "#ffffff",
     "selection_background": "#007bff",
     "inactive_selection_background": "#e0e0e0",
-    "active_panel_border": "#470801"
+    "active_panel_border": "#007bff",
+    "disabled_foreground": "#a0a0a0",
+
+    "code_highlighting": {
+        "background": "#ffffff",
+        "line_number_background": "#f0f0f0",
+        "line_number_foreground": "#a0a0a0",
+        "current_line_background": "#e8f0fe",
+        "text": "#333333",
+        "keyword": "#005cc5",
+        "operator": "#d73a49",
+        "comment": "#6a737d",
+        "string": "#032f62",
+        "number": "#005cc5",
+        "class_name": "#6f42c1",
+        "function_name": "#d73a49"
+    }
 }

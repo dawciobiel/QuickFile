@@ -144,9 +144,9 @@ class EditorPlugin(FileOperationPlugin):
         pass
 
     @abstractmethod
-    def create_editor_widget(self, file_path: str, parent: QWidget = None) -> QWidget:
+    def open_editor(self, file_path: str, theme_manager, parent: QWidget):
         """
-        Creates and returns the main widget for the editor.
+        Opens a dialog or window to edit the file.
         """
         pass
 

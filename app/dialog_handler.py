@@ -1,6 +1,7 @@
 import logging
 import os
 import subprocess
+import sys
 
 from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 
@@ -34,7 +35,7 @@ class DialogHandler:
     def __init__(self, main_window, file_manager: FileManager, file_comparator: FileComparator,
                  favorites_manager: FavoritesManager, directory_synchronizer: DirectorySynchronizer, 
                  ui_state_provider: UIStateProvider, settings_manager: SettingsManager, 
-                 background_task_manager: BackgroundTaskManager, task_queue_manager: TaskQueueManager = None):
+                 background_task_manager: BackgroundTaskManager, task_queue_manager: TaskQueueManager = None, theme_manager=None):
         self.main_window = main_window
         self.file_manager = file_manager
         self.file_comparator = file_comparator
@@ -44,6 +45,7 @@ class DialogHandler:
         self.settings_manager = settings_manager
         self.background_task_manager = background_task_manager
         self.task_queue_manager = task_queue_manager
+        self.theme_manager = theme_manager
 
     def show_about_dialog(self, checked=False):
         action_logger.log_action("show_about")
@@ -72,7 +74,6 @@ class DialogHandler:
                 return
 
             try:
-                # Replace %f with the selected file path
                 full_command = command.replace("%f", f'"{selected_path}"')
                 subprocess.Popen(full_command, shell=True)
             except Exception as e:
@@ -85,35 +86,10 @@ class DialogHandler:
 
         action_logger.log_action("edit_file", path=selected_path)
 
-        # We assume there is only one editor plugin for now, or we pick the first one that can handle the file.
-        # In the future, we might want a way to select which editor to use if multiple are available.
         editor_plugin = self.task_queue_manager.plugin_manager.get_editor_for_file(selected_path)
         
         if editor_plugin:
-            # We need to create a dialog to hold the editor widget
-            # For now, let's assume the plugin has a method to open the editor in a dialog or window
-            # But based on the viewer implementation, the plugin might return a widget or handle the window itself.
-            # Let's check how viewer does it: viewer_plugin.view_file(selected_path, self.main_window)
-            # So we should probably add an open_editor method to the EditorPlugin interface.
-            
-            # However, looking at my previous step, I defined create_editor_widget in the plugin.
-            # So I should probably create a dialog here and put the widget in it.
-            
-            from PyQt6.QtWidgets import QDialog, QVBoxLayout
-            
-            # Create a dialog to host the editor
-            editor_dialog = QDialog(self.main_window)
-            editor_dialog.setWindowTitle(f"Editor - {os.path.basename(selected_path)}")
-            editor_dialog.resize(800, 600)
-            layout = QVBoxLayout(editor_dialog)
-            
-            editor_widget = editor_plugin.create_editor_widget(selected_path, editor_dialog)
-            layout.addWidget(editor_widget)
-            
-            # Add save button or menu? The editor widget should probably handle its own toolbar/menus.
-            # But for a simple start, let's just show it.
-            
-            editor_dialog.exec()
+            editor_plugin.open_editor(selected_path, self.theme_manager, self.main_window)
         else:
              QMessageBox.warning(self.main_window, "Editor Not Found", "No suitable built-in editor plugin found for this file type.")
 

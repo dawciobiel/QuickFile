@@ -96,7 +96,8 @@ class MainWindow(QMainWindow):
             ui_state_provider=self.ui_state_provider,
             settings_manager=self.settings_manager,
             background_task_manager=self.background_task_manager,
-            task_queue_manager=self.task_queue_manager
+            task_queue_manager=self.task_queue_manager,
+            theme_manager=self.theme_manager
         )
 
         self.application_logic_handler.ui_state_provider = self.ui_state_provider

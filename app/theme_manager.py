@@ -16,7 +16,8 @@ class ThemeManager(QObject):
         self.settings_manager = settings_manager
         self.themes_dir = get_resource_path("themes")
         self.themes = self._discover_themes()
-        self.current_theme_path = None
+        self.current_theme_name = None
+        self.current_theme_data = {}
 
     def _discover_themes(self):
         themes = []
@@ -30,8 +31,13 @@ class ThemeManager(QObject):
     def get_themes(self):
         return self.themes
 
+    def get_current_theme_data(self):
+        return self.current_theme_data
+
     def get_theme_path(self):
-        return self.current_theme_path
+        if self.current_theme_name:
+            return os.path.join(self.themes_dir, self.current_theme_name)
+        return None
 
     def apply_theme(self, theme_name):
         theme_path = os.path.join(self.themes_dir, theme_name)
@@ -39,18 +45,17 @@ class ThemeManager(QObject):
             logging.warning(f"Theme '{theme_name}' not found.")
             return
 
-        self.current_theme_path = theme_path
+        self.current_theme_name = theme_name
         
-        # Load palette
         palette_path = os.path.join(theme_path, "palette.json")
         if not os.path.exists(palette_path):
             logging.warning(f"palette.json not found for theme '{theme_name}'.")
+            self.current_theme_data = {}
             return
             
         with open(palette_path, 'r') as f:
-            palette = json.load(f)
+            self.current_theme_data = json.load(f)
 
-        # Load stylesheet
         stylesheet_path = os.path.join(theme_path, "style.qss")
         if not os.path.exists(stylesheet_path):
             logging.warning(f"style.qss not found for theme '{theme_name}'.")
@@ -60,25 +65,18 @@ class ThemeManager(QObject):
             stylesheet = f.read()
 
         # Replace placeholders from the "colors" dictionary
-        if "colors" in palette:
-            for key, value in palette["colors"].items():
+        if "colors" in self.current_theme_data:
+            for key, value in self.current_theme_data["colors"].items():
                 stylesheet = stylesheet.replace(f"@@{key}@@", value)
         else:
             # Fallback for old flat structure
-            for key, value in palette.items():
+            for key, value in self.current_theme_data.items():
                 if isinstance(value, str):
                     stylesheet = stylesheet.replace(f"@@{key}@@", value)
 
-        # Replace dynamic colors from settings
-        active_color = self.settings_manager.get_setting("active_selection_color")
-        inactive_color = self.settings_manager.get_setting("inactive_selection_color")
-        
-        stylesheet = stylesheet.replace("@@selection_background@@", active_color)
-        stylesheet = stylesheet.replace("@@inactive_selection_background@@", inactive_color)
-
         app = QApplication.instance()
-        assert isinstance(app, QApplication)  # Help linter understand the type
+        assert isinstance(app, QApplication)
         app.setStyleSheet(stylesheet)
 
         logging.info(f"Applied theme: {theme_name}")
-        self.theme_changed.emit(theme_path)
+        self.theme_changed.emit(theme_name)
