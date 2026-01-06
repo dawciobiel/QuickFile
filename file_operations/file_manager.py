@@ -25,6 +25,91 @@ class FileManager:
                 raise IsADirectoryError(translation_manager.translate("FileManager", f"{name} '{path}' is not a file."))
         return path
 
+    def _get_total_size(self, paths):
+        total_size = 0
+        for path in paths:
+            if os.path.isdir(path):
+                for dirpath, dirnames, filenames in os.walk(path):
+                    for f in filenames:
+                        fp = os.path.join(dirpath, f)
+                        if not os.path.islink(fp):
+                            try:
+                                total_size += os.path.getsize(fp)
+                            except OSError:
+                                pass
+            else:
+                if not os.path.islink(path):
+                    try:
+                        total_size += os.path.getsize(path)
+                    except OSError:
+                        pass
+        return total_size
+
+    def copy_items_with_options(self, source_paths, destination_path, options, task):
+        total_size = self._get_total_size(source_paths)
+        copied_size = 0
+
+        for src_path in source_paths:
+            if task.status == "CANCELLED":
+                break
+            
+            base_name = os.path.basename(src_path)
+            dest_full_path = os.path.join(destination_path, base_name)
+
+            if os.path.exists(dest_full_path) and not options.get("overwrite"):
+                continue
+
+            if os.path.isdir(src_path):
+                # We need to manually walk and copy to update overall progress
+                for dirpath, dirnames, filenames in os.walk(src_path):
+                    if task.status == "CANCELLED":
+                        break
+
+                    # Create corresponding directories in destination
+                    relative_dir = os.path.relpath(dirpath, src_path)
+                    dest_dir = os.path.join(dest_full_path, relative_dir)
+                    os.makedirs(dest_dir, exist_ok=True)
+
+                    for filename in filenames:
+                        if task.status == "CANCELLED":
+                            break
+                        
+                        src_file = os.path.join(dirpath, filename)
+                        dest_file = os.path.join(dest_dir, filename)
+                        
+                        copied_size = self._copy_file_with_progress(src_file, dest_file, task, total_size, copied_size)
+            else:
+                copied_size = self._copy_file_with_progress(src_path, dest_full_path, task, total_size, copied_size)
+
+    def _copy_file_with_progress(self, src, dst, task, total_size, copied_size):
+        try:
+            file_size = os.path.getsize(src)
+        except OSError:
+            return copied_size # Skip if file size can't be determined
+
+        task.set_details(f"Copying: {os.path.basename(src)}")
+        
+        with open(src, 'rb') as fsrc, open(dst, 'wb') as fdst:
+            copied = 0
+            while True:
+                if task.status == "CANCELLED":
+                    break
+                buf = fsrc.read(16 * 1024)
+                if not buf:
+                    break
+                fdst.write(buf)
+                copied += len(buf)
+                
+                if file_size > 0:
+                    task.set_progress(int(copied * 100 / file_size))
+                
+                if total_size > 0:
+                    overall_copied = copied_size + copied
+                    task.set_overall_progress(int(overall_copied * 100 / total_size))
+
+        shutil.copymode(src, dst)
+        return copied_size + file_size
+
     def copy_to_clipboard(self, path):
         try:
             self._validate_path(path, must_exist=True, name="Path")

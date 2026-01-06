@@ -33,14 +33,14 @@ class CopyDialog(QDialog):
         self.retranslate_ui()
 
     def _replace_progress_bar(self):
-        # Replace the standard QProgressBar from UI with DualProgressBar
+        # Replace the standard QProgressBar from UI with DualProgressBar for the current file
         layout = self.progress_page.layout()
         index = layout.indexOf(self.progressBar)
         layout.removeWidget(self.progressBar)
         self.progressBar.deleteLater()
         
-        self.progressBar = DualProgressBar()
-        layout.insertWidget(index, self.progressBar)
+        self.fileProgressBar = DualProgressBar()
+        layout.insertWidget(index, self.fileProgressBar)
 
     def _init_ui(self):
         self.stackedWidget.setCurrentWidget(self.options_page)
@@ -70,6 +70,7 @@ class CopyDialog(QDialog):
         self.destination_label_title.setText(translation_manager.translate("CopyDialog", "Destination:"))
         self.overwrite_checkbox.setText(translation_manager.translate("CopyDialog", "Overwrite existing files"))
         self.preserve_timestamp_checkbox.setText(translation_manager.translate("CopyDialog", "Preserve original modification date"))
+        self.overall_progress_label.setText(translation_manager.translate("CopyDialog", "Overall Progress:"))
         
         self.start_button.setText(translation_manager.translate("Buttons", "Start"))
         self.queue_button.setText(translation_manager.translate("Buttons", "Queue"))
@@ -93,16 +94,17 @@ class CopyDialog(QDialog):
         self.task = Task(TaskType.COPY, self.source_paths, self.destination_path, options)
         self.task_queue_manager.add_task(self.task)
 
-        self.task.progress_changed.connect(self.update_progress)
+        self.task.progress_changed.connect(self.update_file_progress)
+        self.task.overall_progress_changed.connect(self.overallProgressBar.setValue)
         self.task.status_changed.connect(self.on_task_status_changed)
 
-    def update_progress(self, value):
+    def update_file_progress(self, value):
         if isinstance(value, tuple):
             read_val, write_val = value
-            self.progressBar.setReadValue(read_val)
-            self.progressBar.setValue(write_val)
+            self.fileProgressBar.setReadValue(read_val)
+            self.fileProgressBar.setValue(write_val)
         else:
-            self.progressBar.setValue(value)
+            self.fileProgressBar.setValue(value)
 
     def queue_operation(self):
         options = self.get_options()

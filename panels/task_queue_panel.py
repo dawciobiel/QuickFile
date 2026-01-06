@@ -37,7 +37,7 @@ class TaskActionsWidget(QWidget):
         self.update_button_state()
 
     def toggle_pause_resume(self):
-        if self.task.status == TaskStatus.RUNNING:
+        if self.task.status == TaskStatus.IN_PROGRESS:
             self.manager.pause_task(self.task.id)
         elif self.task.status == TaskStatus.PAUSED:
             self.manager.resume_task(self.task.id)
@@ -49,7 +49,7 @@ class TaskActionsWidget(QWidget):
         QMessageBox.information(self, "Info", "More options not implemented yet.")
 
     def update_button_state(self):
-        if self.task.status == TaskStatus.RUNNING:
+        if self.task.status == TaskStatus.IN_PROGRESS:
             self.pause_resume_btn.setText(translation_manager.translate("TaskQueuePanel", "Pause"))
             self.pause_resume_btn.setEnabled(True)
             self.cancel_btn.setEnabled(True)
@@ -88,16 +88,15 @@ class TaskQueueModel(QAbstractTableModel):
     def on_task_status_changed(self, status):
         task = self.sender()
         try:
-            row = self.manager.tasks.index(task)
+            row = self.manager.all_tasks.index(task)
             self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
         except ValueError:
             pass
 
     def on_task_progress_changed(self, progress):
         task = self.sender()
-        task.progress = progress
         try:
-            row = self.manager.tasks.index(task)
+            row = self.manager.all_tasks.index(task)
             self.dataChanged.emit(self.index(row, 2), self.index(row, 2))
         except ValueError:
             pass
@@ -105,13 +104,13 @@ class TaskQueueModel(QAbstractTableModel):
     def on_task_details_changed(self, details):
         task = self.sender()
         try:
-            row = self.manager.tasks.index(task)
+            row = self.manager.all_tasks.index(task)
             self.dataChanged.emit(self.index(row, 3), self.index(row, 3))
         except ValueError:
             pass
 
     def rowCount(self, parent=QModelIndex()):
-        return len(self.manager.tasks)
+        return len(self.manager.all_tasks)
 
     def columnCount(self, parent=QModelIndex()):
         return 5  # Type, Status, Progress, Details, Actions
@@ -120,7 +119,7 @@ class TaskQueueModel(QAbstractTableModel):
         if not index.isValid() or not (0 <= index.row() < self.rowCount()):
             return None
 
-        task = self.manager.tasks[index.row()]
+        task = self.manager.all_tasks[index.row()]
 
         if role == Qt.ItemDataRole.DisplayRole:
             if index.column() == 0: return task.type.name
@@ -190,7 +189,7 @@ class TaskQueuePanel(QWidget):
         self.model = TaskQueueModel(self.manager)
         self.view.setModel(self.model)
 
-        self.manager.task_started.connect(lambda: QTimer.singleShot(0, self._update_action_widgets))
+        self.manager.task_added.connect(lambda: QTimer.singleShot(0, self._update_action_widgets))
         self.manager.task_finished.connect(lambda: QTimer.singleShot(0, self._update_action_widgets))
         
         self.view.setItemDelegateForColumn(2, ProgressDelegate(self.view))
@@ -221,10 +220,10 @@ class TaskQueuePanel(QWidget):
     def _update_action_widgets(self):
         row_count = self.model.rowCount()
         for row in range(row_count):
-            task = self.manager.tasks[row]
+            task = self.manager.all_tasks[row]
             index = self.model.index(row, 4)  # Actions column
 
-            if task.status in [TaskStatus.RUNNING, TaskStatus.PAUSED]:
+            if task.status in [TaskStatus.IN_PROGRESS, TaskStatus.PAUSED]:
                 existing_widget = self.view.indexWidget(index)
                 if existing_widget:
                     existing_widget.update_button_state()
