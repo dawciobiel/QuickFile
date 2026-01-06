@@ -1,9 +1,12 @@
-import os
 import json
 import logging
+import os
+
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import QApplication
+
 from utils.resource_path import get_resource_path
+
 
 class ThemeManager(QObject):
     theme_changed = pyqtSignal(str)
@@ -56,10 +59,16 @@ class ThemeManager(QObject):
         with open(stylesheet_path, 'r') as f:
             stylesheet = f.read()
 
-        # Replace placeholders
-        for key, value in palette.items():
-            stylesheet = stylesheet.replace(f"@@{key}@@", value)
-            
+        # Replace placeholders from the "colors" dictionary
+        if "colors" in palette:
+            for key, value in palette["colors"].items():
+                stylesheet = stylesheet.replace(f"@@{key}@@", value)
+        else:
+            # Fallback for old flat structure
+            for key, value in palette.items():
+                if isinstance(value, str):
+                    stylesheet = stylesheet.replace(f"@@{key}@@", value)
+
         # Replace dynamic colors from settings
         active_color = self.settings_manager.get_setting("active_selection_color")
         inactive_color = self.settings_manager.get_setting("inactive_selection_color")
@@ -67,6 +76,9 @@ class ThemeManager(QObject):
         stylesheet = stylesheet.replace("@@selection_background@@", active_color)
         stylesheet = stylesheet.replace("@@inactive_selection_background@@", inactive_color)
 
-        QApplication.instance().setStyleSheet(stylesheet)
+        app = QApplication.instance()
+        assert isinstance(app, QApplication)  # Help linter understand the type
+        app.setStyleSheet(stylesheet)
+
         logging.info(f"Applied theme: {theme_name}")
         self.theme_changed.emit(theme_path)

@@ -1,0 +1,22 @@
+{
+  "name": "Monokai",
+  "type": "dark",
+  "colors": {
+    "Window": "#272822",
+    "WindowText": "#F8F8F2",
+    "Base": "#2D2E26",
+    "AlternateBase": "#3E3D32",
+    "ToolTipBase": "#4A4A4A",
+    "ToolTipText": "#F8F8F2",
+    "Text": "#F8F8F2",
+    "Button": "#49483E",
+    "ButtonText": "#F8F8F2",
+    "BrightText": "#FFFFFF",
+    "Link": "#AE81FF",
+    "Highlight": "#AE81FF",
+    "HighlightedText": "#272822",
+    "DisabledText": "#75715E",
+    "DisabledButtonText": "#75715E",
+    "DisabledWindowText": "#75715E"
+  }
+}
