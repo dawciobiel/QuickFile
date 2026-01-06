@@ -65,6 +65,9 @@ def main():
         )
 
         window.show()
+        window.raise_()
+        window.activateWindow()
+
         sys.exit(app.exec())
 
     except Exception as e:
