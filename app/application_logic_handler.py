@@ -307,7 +307,7 @@ class ApplicationLogicHandler(QObject):
         self.ui_state_provider.folder_browser.close_current_tab()
 
     @handle_error
-    def set_focus_on_path_edit(self):
+    def set_focus_on_path_edit(self, checked=False):
         if self.ui_state_provider.folder_browser.active_panel_widget:
             self.ui_state_provider.folder_browser.active_panel_widget.path_edit.setFocus()
             self.ui_state_provider.folder_browser.active_panel_widget.path_edit.selectAll()
