@@ -18,7 +18,13 @@ def test_move_single_item_with_dialog(create_app_handler, mocker):
 
     app_handler.move_selected_item()
 
-    MockMoveDialog.assert_called_once_with(app_handler.main_window, ["/path/to/source"], "/path/to/dest")
+    MockMoveDialog.assert_called_once_with(
+        app_handler.main_window,
+        ["/path/to/source"],
+        "/path/to/dest",
+        app_handler.task_queue_manager,
+        app_handler.background_task_manager
+    )
 
 def test_move_multiple_items(create_app_handler, mocker):
     MockMoveDialog = mocker.patch('app.dialog_handler.MoveDialog')
@@ -33,7 +39,13 @@ def test_move_multiple_items(create_app_handler, mocker):
 
     app_handler.move_selected_item()
 
-    MockMoveDialog.assert_called_once_with(app_handler.main_window, ["/path/1", "/path/2"], "/dest")
+    MockMoveDialog.assert_called_once_with(
+        app_handler.main_window,
+        ["/path/1", "/path/2"],
+        "/dest",
+        app_handler.task_queue_manager,
+        app_handler.background_task_manager
+    )
 
 def test_move_no_source_selected(create_app_handler, mocker):
     app_handler = create_app_handler()
