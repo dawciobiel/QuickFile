@@ -23,7 +23,13 @@ def test_copy_single_item_with_dialog(create_app_handler, mocker):
     app_handler.copy_selected_item()
 
     # Assert
-    MockCopyDialog.assert_called_once_with(app_handler.main_window, ["/path/to/source"], "/path/to/dest")
+    MockCopyDialog.assert_called_once_with(
+        app_handler.main_window,
+        ["/path/to/source"],
+        "/path/to/dest",
+        app_handler.task_queue_manager,
+        app_handler.background_task_manager
+    )
 
 def test_copy_multiple_items(create_app_handler, mocker):
     MockCopyDialog = mocker.patch('app.dialog_handler.CopyDialog')
@@ -38,7 +44,13 @@ def test_copy_multiple_items(create_app_handler, mocker):
 
     app_handler.copy_selected_item()
 
-    MockCopyDialog.assert_called_once_with(app_handler.main_window, ["/path/1", "/path/2"], "/dest")
+    MockCopyDialog.assert_called_once_with(
+        app_handler.main_window,
+        ["/path/1", "/path/2"],
+        "/dest",
+        app_handler.task_queue_manager,
+        app_handler.background_task_manager
+    )
 
 def test_copy_no_source_selected(create_app_handler, mocker):
     app_handler = create_app_handler()
