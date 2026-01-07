@@ -1,3 +1,7 @@
+# Copyright (C) 2025 Dawid Bielecki
+# This file is part of QuickFile and is licensed under the GPLv3.
+# See LICENSE file for details.
+
 from PyQt6.QtWidgets import QMessageBox, QSpacerItem, QSizePolicy, QGridLayout, QWidget
 from PyQt6.QtCore import QSize
 from app.translation_manager import translation_manager # Import our new manager

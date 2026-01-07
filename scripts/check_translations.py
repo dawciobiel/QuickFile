@@ -1,13 +1,6 @@
-# ==============================================================================
-# Project: QuickFile
-# Script: check_translations.py
-# Description: Checks for missing or obsolete translation keys in the project.
-#
-# Author: Dawid Bielecki "dawciobiel"
-# GitHub: https://github.com/dawciobiel/QuickFile
-# License: GPL 3.0
-# Date: 2025-12-25
-# ==============================================================================
+# Copyright (C) 2025 Dawid Bielecki
+# This file is part of QuickFile and is licensed under the GPLv3.
+# See LICENSE file for details.
 
 import os
 import re

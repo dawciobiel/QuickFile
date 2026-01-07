@@ -1,3 +1,7 @@
+# Copyright (C) 2025 Dawid Bielecki
+# This file is part of QuickFile and is licensed under the GPLv3.
+# See LICENSE file for details.
+
 import os
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog
@@ -30,7 +34,7 @@ class DeleteDialog(QDialog):
             filename = os.path.basename(full_path)
             
             if directory != os.path.sep:
-                directory += os.sep
+                directory += os.path.sep
 
             question = translation_manager.translate("DeleteDialog", "Are you sure you want to delete:")
             rich_text = f"{question}<br><br>{directory}<b>{filename}</b>?"

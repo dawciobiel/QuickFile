@@ -2,7 +2,7 @@
 
 # QuickFile - File Manager Application
 
-QuickFile is a modern file manager application built using Python and PyQt5, designed to provide an intuitive, user-friendly interface for managing files and directories on your system. This project aims to simplify file browsing, organization, and management tasks while offering a sleek and responsive experience.
+QuickFile is a modern file manager application built using Python and PyQt6, designed to provide an intuitive, user-friendly interface for managing files and directories on your system. This project aims to simplify file browsing, organization, and management tasks while offering a sleek and responsive experience.
 
 ## Features
 
@@ -18,7 +18,7 @@ QuickFile is a modern file manager application built using Python and PyQt5, des
 ## Requirements
 
 - Python 3.9+
-- PyQt5
+- PyQt6
 - Additional libraries (listed in `requirements.txt`)
 
 ## Installation
@@ -47,10 +47,12 @@ The application window will appear, allowing you to start managing your files.
 
 Feel free to fork this repository, submit issues, or contribute code via pull requests. Contributions are welcome to help improve the functionality, fix bugs, or enhance the user interface.
 
+**Note:** By contributing to this project, you agree to the terms of the Contributor License Agreement (CLA). This ensures that the project can remain open source while protecting the rights of all contributors. Please see `CLA.md` for details.
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://opensource.org/licenses/MIT) file for details.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
+In case of forks, it is required to preserve author information and clearly mark changes.
 
 ------
-

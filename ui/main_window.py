@@ -46,6 +46,10 @@ class MainWindow(QMainWindow):
         self.settings_manager = SettingsManager()
         self.theme_manager = ThemeManager(self.settings_manager)
         
+        # Apply theme BEFORE initializing UI components that might need theme data
+        initial_theme = self.settings_manager.get_setting("theme", "dark")
+        self.theme_manager.apply_theme(initial_theme)
+        
         self.file_comparator = FileComparator()
         self.favorites_manager = FavoritesManager()
 
@@ -128,9 +132,6 @@ class MainWindow(QMainWindow):
 
         self.shortcuts_manager.apply_shortcuts()
         self.load_settings()
-        
-        initial_theme = self.settings_manager.get_setting("theme", "dark")
-        self.theme_manager.apply_theme(initial_theme)
         
         self.retranslate_ui()
 

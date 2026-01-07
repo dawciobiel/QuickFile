@@ -1,19 +1,7 @@
 #!/usr/bin/env python3
-# ==============================================================================
-# Project: QuickFile
-# Script: slice_spritesheet.py
-# Description: Slices a spritesheet image into individual tiles.
-#
-# Requirements: Pillow (pip install Pillow)
-#
-# Usage:
-# python scripts/slice_spritesheet.py <path_to_spritesheet> <output_dir> --tile_width 64 --tile_height 64
-#
-# Author: Dawid Bielecki "dawciobiel" & Gemini AI
-# GitHub: https://github.com/dawciobiel/QuickFile
-# License: GPL 3.0
-# Date: 2025-12-30
-# ==============================================================================
+# Copyright (C) 2025 Dawid Bielecki
+# This file is part of QuickFile and is licensed under the GPLv3.
+# See LICENSE file for details.
 
 import os
 import argparse
