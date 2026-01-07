@@ -5,6 +5,7 @@
 import pytest
 from file_operations.file_manager import FileManager, FileManagerError
 
+# region Create Tests
 def test_create_file_successfully(tmp_path):
     """
     Test that a file is created successfully in a given directory.
@@ -55,3 +56,205 @@ def test_create_file_in_non_existent_directory(tmp_path):
     
     with pytest.raises(FileNotFoundError):
         fm.create_file(non_existent_dir, "test.txt")
+
+def test_create_directory_successfully(tmp_path):
+    """
+    Test that a directory is created successfully.
+    """
+    fm = FileManager()
+    parent_dir = tmp_path
+    dir_name = "new_dir"
+    
+    fm.create_directory(parent_dir, dir_name)
+    
+    created_dir_path = parent_dir / dir_name
+    assert created_dir_path.exists()
+    assert created_dir_path.is_dir()
+
+def test_create_directory_that_already_exists(tmp_path):
+    """
+    Test that creating a directory that already exists raises FileExistsError.
+    """
+    fm = FileManager()
+    parent_dir = tmp_path
+    dir_name = "existing_dir"
+    
+    (parent_dir / dir_name).mkdir()
+    
+    with pytest.raises(FileExistsError):
+        fm.create_directory(parent_dir, dir_name)
+
+def test_create_directory_with_empty_name(tmp_path):
+    """
+    Test that creating a directory with an empty name raises ValueError.
+    """
+    fm = FileManager()
+    parent_dir = tmp_path
+    
+    with pytest.raises(ValueError):
+        fm.create_directory(parent_dir, "")
+
+def test_create_directory_in_non_existent_parent(tmp_path):
+    """
+    Test that creating a directory in a non-existent parent directory raises FileNotFoundError.
+    """
+    fm = FileManager()
+    non_existent_parent = tmp_path / "non_existent"
+    
+    with pytest.raises(FileNotFoundError):
+        fm.create_directory(non_existent_parent, "new_dir")
+# endregion
+
+# region Rename Tests
+def test_rename_file_successfully(tmp_path):
+    """
+    Test that a file is renamed successfully.
+    """
+    fm = FileManager()
+    file_path = tmp_path / "original_name.txt"
+    file_path.touch()
+    
+    new_name = "new_name.txt"
+    fm.rename_item(str(file_path), new_name)
+    
+    assert not file_path.exists()
+    assert (tmp_path / new_name).exists()
+
+def test_rename_directory_successfully(tmp_path):
+    """
+    Test that a directory is renamed successfully.
+    """
+    fm = FileManager()
+    dir_path = tmp_path / "original_dir"
+    dir_path.mkdir()
+    
+    new_name = "new_dir_name"
+    fm.rename_item(str(dir_path), new_name)
+    
+    assert not dir_path.exists()
+    assert (tmp_path / new_name).exists()
+
+def test_rename_to_existing_name(tmp_path):
+    """
+    Test that renaming to an already existing name raises FileExistsError.
+    """
+    fm = FileManager()
+    file_to_rename = tmp_path / "file1.txt"
+    existing_file = tmp_path / "file2.txt"
+    file_to_rename.touch()
+    existing_file.touch()
+    
+    with pytest.raises(FileExistsError):
+        fm.rename_item(str(file_to_rename), "file2.txt")
+
+def test_rename_non_existent_file(tmp_path):
+    """
+    Test that renaming a non-existent file raises FileNotFoundError.
+    """
+    fm = FileManager()
+    non_existent_path = tmp_path / "non_existent.txt"
+    
+    with pytest.raises(FileNotFoundError):
+        fm.rename_item(str(non_existent_path), "new_name.txt")
+
+def test_rename_to_empty_name(tmp_path):
+    """
+    Test that renaming to an empty name raises ValueError.
+    """
+    fm = FileManager()
+    file_path = tmp_path / "some_file.txt"
+    file_path.touch()
+    
+    with pytest.raises(ValueError):
+        fm.rename_item(str(file_path), "")
+# endregion
+
+# region Clipboard and Paste Tests
+def test_copy_and_paste_file(tmp_path):
+    fm = FileManager()
+    source_file = tmp_path / "source.txt"
+    source_file.touch()
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+
+    fm.copy_to_clipboard(str(source_file))
+    fm.paste_item(str(dest_dir))
+
+    assert (dest_dir / "source.txt").exists()
+    assert source_file.exists() # Original should still exist
+
+def test_cut_and_paste_file(tmp_path):
+    fm = FileManager()
+    source_file = tmp_path / "source.txt"
+    source_file.touch()
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+
+    fm.cut_to_clipboard(str(source_file))
+    fm.paste_item(str(dest_dir))
+
+    assert (dest_dir / "source.txt").exists()
+    assert not source_file.exists() # Original should be gone
+
+def test_copy_and_paste_directory(tmp_path):
+    fm = FileManager()
+    source_dir = tmp_path / "source_dir"
+    source_dir.mkdir()
+    (source_dir / "child.txt").touch()
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+
+    fm.copy_to_clipboard(str(source_dir))
+    fm.paste_item(str(dest_dir))
+
+    assert (dest_dir / "source_dir").is_dir()
+    assert (dest_dir / "source_dir" / "child.txt").exists()
+    assert source_dir.exists()
+
+def test_cut_and_paste_directory(tmp_path):
+    fm = FileManager()
+    source_dir = tmp_path / "source_dir"
+    source_dir.mkdir()
+    (source_dir / "child.txt").touch()
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+
+    fm.cut_to_clipboard(str(source_dir))
+    fm.paste_item(str(dest_dir))
+
+    assert (dest_dir / "source_dir").is_dir()
+    assert (dest_dir / "source_dir" / "child.txt").exists()
+    assert not source_dir.exists()
+
+def test_paste_with_empty_clipboard(tmp_path):
+    fm = FileManager()
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+
+    with pytest.raises(ValueError, match="Clipboard is empty"):
+        fm.paste_item(str(dest_dir))
+
+def test_paste_to_non_existent_directory(tmp_path):
+    fm = FileManager()
+    source_file = tmp_path / "source.txt"
+    source_file.touch()
+    non_existent_dest = tmp_path / "non_existent"
+
+    fm.copy_to_clipboard(str(source_file))
+
+    with pytest.raises(FileNotFoundError):
+        fm.paste_item(str(non_existent_dest))
+
+def test_copy_paste_over_existing_file(tmp_path):
+    fm = FileManager()
+    source_file = tmp_path / "source.txt"
+    source_file.touch()
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+    (dest_dir / "source.txt").touch()
+
+    fm.copy_to_clipboard(str(source_file))
+
+    with pytest.raises(FileExistsError):
+        fm.paste_item(str(dest_dir))
+# endregion
