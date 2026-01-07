@@ -62,13 +62,17 @@ class ThemeManager(QObject):
         
         self.current_theme_data = palette_data.copy()
 
-        # Load and merge file styles
+        # Load file styles, ensuring keys always exist
         file_styles_path = os.path.join(theme_path, "file_styles.json")
         if os.path.exists(file_styles_path):
             with open(file_styles_path, 'r') as f:
                 file_styles = json.load(f)
                 self.current_theme_data['file_styles'] = file_styles.get('file_styles', {})
                 self.current_theme_data['special_types'] = file_styles.get('special_types', {})
+        else:
+            # Ensure keys exist even if file is missing
+            self.current_theme_data['file_styles'] = {}
+            self.current_theme_data['special_types'] = {}
 
         # Apply stylesheet
         stylesheet_path = os.path.join(theme_path, "style.qss")
