@@ -2,26 +2,9 @@
 
 ## Główne funkcje do zaimplementowania
 
-- [ ] **Feature: Wbudowany edytor kodu (Plugin)**:
-    - Stworzyć nowy plugin typu `editor`, który będzie służył jako wbudowany edytor plików (dla akcji F4).
-    - **Wymagania**:
-        - Kolorowanie składni (z wykorzystaniem `QSyntaxHighlighter` i `Pygments`).
-        - Obsługa numeracji linii.
-        - Podstawowe funkcje edycyjne (cofnij/ponów, wytnij/kopiuj/wklej).
-        - Wyszukiwanie i zamiana tekstu.
-        - Zapisywanie zmian w pliku.
-
 - [ ] **Feature: Wyświetlanie prędkości transferu**:
     - W oknach dialogowych kopiowania i przenoszenia plików, podczas trwania operacji, powinna być wyświetlana aktualna prędkość transferu (
       np. w MB/s).
-
-- [ ] **Feature: Dialog "Select" do zaznaczania plików (+)**:
-    - Zaprojektować i stworzyć okno dialogowe "Select", aktywowane klawiszem `+` na klawiaturze numerycznej.
-    - **Funkcjonalność okna**:
-        - Pole z rozwijaną listą (`ComboBox`) do wpisywania i zapamiętywania wzorców (np. `*.exe`, `*.py`).
-        - Opcja "Uwzględniaj wielkość liter" (`Case sensitive`).
-        - Opcja "Tylko pliki" (`Only files`).
-    - Po zatwierdzeniu (`Enter`), akcja powinna zaznaczyć wszystkie pasujące elementy w aktywnym panelu.
 
 - [ ] **Feature: System powiadomień**:
     - Przemyślenie i zaprojektowanie systemu powiadomień o ukończeniu zadań w tle (np. kopiowanie, przenoszenie, archiwizacja, generowanie sum kontrolnych).
@@ -31,6 +14,19 @@
         - Integracja z natywnym systemem powiadomień systemu operacyjnego (Windows, Linux).
     - System powinien być konfigurowalny w ustawieniach aplikacji.
 
+- [ ] **Feature: System aktualizacji**:
+    - Zaprojektowanie odpowiedniego systemu pobierania i instalowania aktualizacji dla aplikacji, motywów, zasobów, tłumaczeń i pluginów.
+    - System aktualizacji powinien wspierać wersję oficjalną aplikacji.
+    - Przydałby się również system do aktualizacji wersji beta (przewidziana jako wersja binarna, bez kodów źródłowych).
+
+- [ ] **Licencjonowanie aplikacji**:
+    - Ustalenie i wpisanie w projekcie (deklaracja w pliku `LICENSE`, komentarze dokumentacyjne w skryptach i katalogach) oraz systemie kontroli wersji (GitHub).
+    - To bardzo ważny punkt z wysokim priorytetem, który trzeba zrealizować przed wypuszczeniem pierwszych wersji beta aplikacji.
+
+- [ ] **Zabezpieczenie kodu źródłowego**:
+    - Zabezpieczenie kodu źródłowego aplikacji przed kradzieżą.
+    - Dodanie licencji, ukrycie kodu źródłowego co najmniej w wersji beta.
+
 - [ ] **Refactor, Chore, Cleaning**: Być może część starych branchy, które nie są już potrzebne i nie będą — należy skasować.
 
 - [ ] **Feature**: Możliwość ustalania maksymalnej prędkości podczas procesu kopiowaniu plików. To powinien być jakiś suwak lub spinner w oknie dialogowym aktualnie wykonywanego procesu kopiowania. A swoją drogą nie wiem, jak zaimplementować ogranicznik prędkości kopiowanych plików. 
@@ -38,6 +34,19 @@
 - [ ] **Feature**: Pod Windows (i jego systemem plików) czasami może być problem ze zbyt długimi nazwami plików lub zbyt długą ścieżką. Przyjrzeć się temu problemowi i dodać odpowiednią funkcjonalność dla "zachowania nazwy pliku".
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Feature: Wbudowany edytor kodu (Plugin)**:
+    - Stworzono wtyczkę `standard_editor` (F4) z podstawową funkcjonalnością.
+    - **Zaimplementowano**:
+        - Kolorowanie składni dla wielu języków (Pygments), zintegrowane z motywami aplikacji.
+        - Numerację linii.
+        - Pasek narzędzi z podstawowymi akcjami (Zapisz, Cofnij/Ponów, Wytnij/Kopiuj/Wklej).
+        - Podstawowe wyszukiwanie tekstu (`Ctrl+F`) i znajdowanie następnego (`F3`).
+    - **Do zrobienia w przyszłości**:
+        - [ ] Funkcja "Zamień" (Replace).
+        - [ ] Funkcja "Zapisz jako..." (Save as...).
+        - [ ] Bardziej zaawansowany panel wyszukiwania.
+        - [ ] Wyświetlanie informacji o kodowaniu i możliwość jego zmiany.
 
 - [x] **Feature: Zaawansowany wbudowany podgląd plików (F3)**:
     - Znacząco rozbudowano plugin `standard_viewer`, dodając obsługę:
