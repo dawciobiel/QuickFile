@@ -4,6 +4,8 @@
 
 import pytest
 from file_operations.file_manager import FileManager, FileManagerError
+from app.task_queue_manager import TaskStatus
+import os
 
 # region Create Tests
 def test_create_file_successfully(tmp_path):
@@ -257,4 +259,147 @@ def test_copy_paste_over_existing_file(tmp_path):
 
     with pytest.raises(FileExistsError):
         fm.paste_item(str(dest_dir))
+# endregion
+
+# region Calculate Size Tests
+def test_calculate_directory_size_successfully(tmp_path, mocker):
+    """
+    Test that directory size is calculated correctly, including subdirectories.
+    """
+    fm = FileManager()
+    test_dir = tmp_path / "test_dir"
+    test_dir.mkdir()
+    
+    # Create files and subdirectories
+    (test_dir / "file1.txt").write_text("12345")  # 5 bytes
+    sub_dir = test_dir / "sub"
+    sub_dir.mkdir()
+    (sub_dir / "file2.txt").write_text("1234567890")  # 10 bytes
+    
+    expected_size = 15
+    
+    # Mock the task object
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+    
+    # Action
+    calculated_size = fm.calculate_directory_size(str(test_dir), task=mock_task)
+    
+    # Assert
+    assert calculated_size == expected_size
+    mock_task.set_progress.assert_called_with(100)
+    mock_task.set_details.assert_called_with("Found 2 files.")
+
+def test_calculate_directory_size_cancelled(tmp_path, mocker):
+    """
+    Test that the calculation stops when the task is cancelled.
+    """
+    fm = FileManager()
+    test_dir = tmp_path / "test_dir"
+    test_dir.mkdir()
+    
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+
+    # Mock os.walk to return a controlled list of files
+    mocker.patch('file_operations.file_manager.os.walk', return_value=[
+        (str(test_dir), [], ['file1.txt', 'file2.txt']),
+    ])
+
+    # Mock getsize to cancel the task on the first call
+    mock_getsize = mocker.patch('file_operations.file_manager.os.path.getsize')
+    
+    def getsize_side_effect(path):
+        # The first time this is called (for file1.txt), cancel the task
+        mock_task.status = TaskStatus.CANCELLED
+        return 5 # return a dummy value
+
+    mock_getsize.side_effect = getsize_side_effect
+    
+    # Action
+    size = fm.calculate_directory_size(str(test_dir), task=mock_task)
+    
+    # Assert
+    assert size == 0
+    # The loop should break after processing the first file, so getsize is called only once
+    mock_getsize.assert_called_once()
+# endregion
+
+# region Copy Items With Options Tests
+def test_copy_items_with_options_single_file(tmp_path, mocker):
+    fm = FileManager()
+    source_file = tmp_path / "source.txt"
+    source_file.write_text("12345")
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+    
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+    
+    fm.copy_items_with_options([str(source_file)], str(dest_dir), {}, mock_task)
+    
+    assert (dest_dir / "source.txt").exists()
+    assert (dest_dir / "source.txt").read_text() == "12345"
+    mock_task.set_overall_progress.assert_called()
+
+def test_copy_items_with_options_directory(tmp_path, mocker):
+    fm = FileManager()
+    source_dir = tmp_path / "source_dir"
+    source_dir.mkdir()
+    (source_dir / "file.txt").write_text("hello")
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+
+    fm.copy_items_with_options([str(source_dir)], str(dest_dir), {}, mock_task)
+
+    assert (dest_dir / "source_dir").is_dir()
+    assert (dest_dir / "source_dir" / "file.txt").exists()
+    mock_task.set_overall_progress.assert_called()
+
+def test_copy_items_overwrite_existing(tmp_path, mocker):
+    fm = FileManager()
+    source_file = tmp_path / "source.txt"
+    source_file.write_text("new_content")
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+    (dest_dir / "source.txt").write_text("old_content")
+
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+
+    fm.copy_items_with_options([str(source_file)], str(dest_dir), {"overwrite": True}, mock_task)
+
+    assert (dest_dir / "source.txt").read_text() == "new_content"
+
+def test_copy_items_no_overwrite(tmp_path, mocker):
+    fm = FileManager()
+    source_file = tmp_path / "source.txt"
+    source_file.write_text("new_content")
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+    (dest_dir / "source.txt").write_text("old_content")
+
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+
+    fm.copy_items_with_options([str(source_file)], str(dest_dir), {"overwrite": False}, mock_task)
+
+    assert (dest_dir / "source.txt").read_text() == "old_content"
+
+def test_copy_items_cancelled(tmp_path, mocker):
+    fm = FileManager()
+    source_file = tmp_path / "source.txt"
+    source_file.write_text("content")
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.CANCELLED # Cancel before starting
+
+    fm.copy_items_with_options([str(source_file)], str(dest_dir), {}, mock_task)
+
+    assert not (dest_dir / "source.txt").exists()
 # endregion
