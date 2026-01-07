@@ -35,7 +35,13 @@ class UIManager:
         self.main_window.mainToolbar.setObjectName("MainToolBar")
         self.main_window.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.main_window.mainToolbar)
 
-        self.menu_panel = MenuPanel(self.main_window, self.main_window.mainToolbar, app_logic_handler, shortcuts_manager)
+        self.menu_panel = MenuPanel(
+            main_window=self.main_window,
+            toolbar=self.main_window.mainToolbar,
+            app_logic_handler=app_logic_handler,
+            shortcuts_manager=shortcuts_manager,
+            theme_manager=self.theme_manager
+        )
         self.menu_panel.initialize_ui()
 
         self.bottom_panel = FunctionKeyPanel(self.main_window)

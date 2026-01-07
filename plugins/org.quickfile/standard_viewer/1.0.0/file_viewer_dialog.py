@@ -20,6 +20,8 @@ except ImportError:
     PYGMENTS_AVAILABLE = False
 
 from app.translation_manager import translation_manager
+from app.theme_manager import ThemeManager
+from utils.icon_manager import get_colorized_icon
 
 
 class LineNumberArea(QWidget):
@@ -79,7 +81,7 @@ class FileViewerWindow(QMainWindow):
     rich_text_browser: QTextBrowser
     statusBar: QStatusBar
 
-    def __init__(self, file_path, parent=None):
+    def __init__(self, file_path, theme_manager: ThemeManager, parent=None):
         super().__init__(parent)
 
         ui_path = os.path.join(os.path.dirname(__file__), "file_viewer_dialog.ui")
@@ -88,11 +90,13 @@ class FileViewerWindow(QMainWindow):
         self.setWindowFlags(Qt.WindowType.Window)
 
         self.file_path = file_path
+        self.theme_manager = theme_manager
         self.raw_bytes = b''
         self.current_view_mode = 'text'
         self.current_encoding = 'utf-8'
         self.original_pixmap = None
         self.lexer = None
+        self.icon_color = self.theme_manager.get_current_theme_data().get("foreground", "#000000")
 
         self.setWindowTitle(f"{translation_manager.translate('FileViewer', 'File Viewer')} - {self.file_path}")
 
@@ -115,7 +119,7 @@ class FileViewerWindow(QMainWindow):
         # Properties Action
         icon_path = os.path.join(os.path.dirname(__file__), "icons", "properties.svg")
         if os.path.exists(icon_path):
-            icon = QIcon(icon_path)
+            icon = get_colorized_icon(icon_path, self.icon_color)
             self.properties_action = QAction(icon, translation_manager.translate("FileViewer", "Properties"), self)
         else:
             self.properties_action = QAction(translation_manager.translate("FileViewer", "Properties"), self)

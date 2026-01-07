@@ -129,7 +129,7 @@ class ViewerPlugin(FileOperationPlugin):
         pass
 
     @abstractmethod
-    def view_file(self, file_path: str, parent: QWidget):
+    def view_file(self, file_path: str, theme_manager=None, parent: QWidget = None):
         """
         Opens a non-modal dialog or a new window to view the file.
         The parent widget is provided to ensure proper window management.

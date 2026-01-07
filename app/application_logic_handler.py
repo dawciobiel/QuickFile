@@ -83,7 +83,7 @@ class ApplicationLogicHandler(QObject):
     def _handle_f3_key(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
         if not selected_path or not os.path.isfile(selected_path):
-            raise ValueError(translation_manager.translate("MenuPanel", "No file selected or selected item is a directory."))
+            return  # Silently ignore if not a file
 
         use_internal = self.settings_handler.settings_manager.get_setting("use_internal_viewer", True)
         if use_internal:
@@ -96,7 +96,7 @@ class ApplicationLogicHandler(QObject):
     def _handle_f4_key(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
         if not selected_path or not os.path.isfile(selected_path):
-            raise ValueError(translation_manager.translate("MenuPanel", "No file selected or selected item is a directory."))
+            return  # Silently ignore if not a file
 
         use_internal = self.settings_handler.settings_manager.get_setting("use_internal_editor", True)
         if use_internal:

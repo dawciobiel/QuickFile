@@ -8,40 +8,44 @@ import os
 from PyQt6.QtGui import QAction, QIcon
 
 from app.translation_manager import translation_manager
+from utils.icon_manager import get_colorized_icon
 from utils.resource_path import get_resource_path
 
 
 class MenuPanel:
-    def __init__(self, main_window, toolbar, app_logic_handler, shortcuts_manager):
+    def __init__(self, main_window, toolbar, app_logic_handler, shortcuts_manager, theme_manager):
         self.main_window = main_window
         self.toolbar = toolbar
         self.app_logic_handler = app_logic_handler
         self.shortcuts_manager = shortcuts_manager
+        self.theme_manager = theme_manager
         self.actions = {}
         self.icon_map = self._create_icon_map()
+        self.icon_color = self.theme_manager.get_current_theme_data().get("foreground", "#000000")
 
     def _create_icon_map(self):
         base_path = "resources/icons/fonts.google.com"
+        
         return {
-            "view.refresh": get_resource_path(os.path.join(base_path, "refresh_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "toolbar.go_up": get_resource_path(os.path.join(base_path, "arrow_upward_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "operations.view": get_resource_path(os.path.join(base_path, "description_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "operations.edit": get_resource_path(os.path.join(base_path, "handyman_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "operations.copy": get_resource_path(os.path.join(base_path, "file_copy_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "operations.move": get_resource_path(os.path.join(base_path, "move_item_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "operations.new_folder": get_resource_path(os.path.join(base_path, "create_new_folder_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "operations.delete": get_resource_path(os.path.join(base_path, "scan_delete_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "view.search": get_resource_path(os.path.join(base_path, "search_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "view.synchronize": get_resource_path(os.path.join(base_path, "sync_alt_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "options.general_settings": get_resource_path(os.path.join(base_path, "settings_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "operations.rename": get_resource_path(os.path.join(base_path, "rename_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "operations.new_file": get_resource_path(os.path.join(base_path, "note_add_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "operations.change_owner": get_resource_path(os.path.join(base_path, "person_edit_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "view.new_tab": get_resource_path(os.path.join(base_path, "new_tab_right_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "view.close_tab": get_resource_path(os.path.join(base_path, "close_tab_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "favorites.manage": get_resource_path(os.path.join(base_path, "menage_favorites_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "favorites.add": get_resource_path(os.path.join(base_path, "bookmark_add_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg")),
-            "file.properties": get_resource_path(os.path.join(base_path, "properties.svg")),
+            "view.refresh": get_resource_path(os.path.join(base_path, "refresh.svg")),
+            "toolbar.go_up": get_resource_path(os.path.join(base_path, "go_up.svg")),
+            "operations.view": get_resource_path(os.path.join(base_path, "view.svg")),
+            "operations.edit": get_resource_path(os.path.join(base_path, "edit.svg")),
+            "operations.copy": get_resource_path(os.path.join(base_path, "copy.svg")),
+            "operations.move": get_resource_path(os.path.join(base_path, "move.svg")),
+            "operations.new_folder": get_resource_path(os.path.join(base_path, "new_folder.svg")),
+            "operations.delete": get_resource_path(os.path.join(base_path, "delete.svg")),
+            "view.search": get_resource_path(os.path.join(base_path, "search.svg")),
+            "view.synchronize": get_resource_path(os.path.join(base_path, "synchronize.svg")),
+            "options.general_settings": get_resource_path(os.path.join(base_path, "settings.svg")),
+            "operations.rename": get_resource_path(os.path.join(base_path, "rename.svg")),
+            "operations.new_file": get_resource_path(os.path.join(base_path, "new_file.svg")),
+            "operations.change_owner": get_resource_path(os.path.join(base_path, "change_owner.svg")),
+            "view.new_tab": get_resource_path(os.path.join(base_path, "new_tab.svg")),
+            "view.close_tab": get_resource_path(os.path.join(base_path, "close_tab.svg")),
+            "favorites.manage": get_resource_path(os.path.join(base_path, "manage_favorites.svg")),
+            "favorites.add": get_resource_path(os.path.join(base_path, "add_favorite.svg")),
+            "file.properties": get_resource_path(os.path.join(base_path, "file_properties.svg")),
         }
 
     def initialize_ui(self):
@@ -109,7 +113,8 @@ class MenuPanel:
             action.setCheckable(checkable)
 
             if shortcut_id in self.icon_map:
-                action.setIcon(QIcon(self.icon_map[shortcut_id]))
+                icon_path = self.icon_map[shortcut_id]
+                action.setIcon(get_colorized_icon(icon_path, self.icon_color))
 
             shortcut = self.shortcuts_manager.get_shortcut_string(shortcut_id)
             if shortcut:

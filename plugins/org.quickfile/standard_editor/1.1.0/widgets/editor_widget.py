@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt, QRect, QSize
 
 from .highlighter import PygmentsHighlighter
 from .line_number_area import LineNumberArea
+from utils.icon_manager import get_colorized_icon
 
 class EditorWidget(QWidget):
     def __init__(self, file_path: str, theme_manager, parent: QWidget = None):
@@ -12,6 +13,7 @@ class EditorWidget(QWidget):
         self.file_path = file_path
         self.theme_manager = theme_manager
         self.last_search_query = ""
+        self.icon_color = self.theme_manager.get_current_theme_data().get("foreground", "#000000")
         
         self.editor = QPlainTextEdit()
         self.line_number_area = LineNumberArea(self)
@@ -51,27 +53,20 @@ class EditorWidget(QWidget):
         plugin_dir = os.path.dirname(os.path.dirname(__file__))
         icons_path = os.path.join(plugin_dir, "icons")
 
-        save_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "save.svg")), "Save")
-        save_action.triggered.connect(self.save_file)
-        
+        def create_action(icon_name, text, slot):
+            icon_path = os.path.join(icons_path, icon_name)
+            action = self.toolbar.addAction(get_colorized_icon(icon_path, self.icon_color), text)
+            action.triggered.connect(slot)
+            return action
+
+        create_action("save.svg", "Save", self.save_file)
         self.toolbar.addSeparator()
-        
-        undo_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "undo.svg")), "Undo")
-        undo_action.triggered.connect(self.editor.undo)
-        
-        redo_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "redo.svg")), "Redo")
-        redo_action.triggered.connect(self.editor.redo)
-        
+        create_action("undo.svg", "Undo", self.editor.undo)
+        create_action("redo.svg", "Redo", self.editor.redo)
         self.toolbar.addSeparator()
-        
-        cut_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "cut.svg")), "Cut")
-        cut_action.triggered.connect(self.editor.cut)
-        
-        copy_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "copy.svg")), "Copy")
-        copy_action.triggered.connect(self.editor.copy)
-        
-        paste_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "paste.svg")), "Paste")
-        paste_action.triggered.connect(self.editor.paste)
+        create_action("cut.svg", "Cut", self.editor.cut)
+        create_action("copy.svg", "Copy", self.editor.copy)
+        create_action("paste.svg", "Paste", self.editor.paste)
 
     def find_text(self):
         query, ok = QInputDialog.getText(self, "Find Text", "Enter text to find:")
