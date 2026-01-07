@@ -51,7 +51,7 @@ class FlatFileSystemModel(AbstractFileSystemModel):
             self.layoutChanged.emit()
             return
 
-        self._file_styles = theme_data
+        self._file_styles = theme_data.get("file_styles", {})
         self._special_type_styles = theme_data.get("special_types", {})
         logging.info(f"Loaded file styles. Special types: {list(self._special_type_styles.keys())}")
         self.layoutChanged.emit()
@@ -173,28 +173,29 @@ class FlatFileSystemModel(AbstractFileSystemModel):
                 return font
 
         if role == FileStyleRole:
+            style = None
             if os.path.islink(item_path):
-                if "symlink" in self._special_type_styles:
-                    return self._special_type_styles["symlink"]
-
-            if not is_dir:
+                style = self._special_type_styles.get("symlink")
+            elif not is_dir:
                 try:
                     stat_info = os.stat(item_path)
                     if stat_info.st_nlink > 1:
-                        if "hardlink" in self._special_type_styles:
-                            return self._special_type_styles["hardlink"]
+                        style = self._special_type_styles.get("hardlink")
                 except OSError:
                     pass
+            
+            if not style and item_name.startswith('.'):
+                style = self._special_type_styles.get("hidden")
 
-            if item_name.startswith('.'):
-                if "hidden" in self._special_type_styles:
-                    return self._special_type_styles["hidden"]
-
-            if not is_dir:
+            if not style and not is_dir:
                 extension = item_name.split('.')[-1].lower()
-                if extension in self._file_styles:
-                    return self._file_styles[extension]
-            return None
+                style = self._file_styles.get(extension)
+            
+            # If no specific style is found, use the "default" style
+            if not style:
+                style = self._file_styles.get("default")
+                
+            return style
 
         if role == Qt.ItemDataRole.CheckStateRole and index.column() == 0:
             if item_name == "..":

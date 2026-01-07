@@ -51,24 +51,35 @@ class ThemeManager(QObject):
 
         self.current_theme_name = theme_name
         
+        # Load palette
+        palette_data = {}
         palette_path = os.path.join(theme_path, "palette.json")
         if not os.path.exists(palette_path):
             logging.warning(f"palette.json not found for theme '{theme_name}'.")
-            self.current_theme_data = {}
         else:
             with open(palette_path, 'r') as f:
-                self.current_theme_data = json.load(f)
+                palette_data = json.load(f)
+        
+        self.current_theme_data = palette_data.copy()
 
+        # Load and merge file styles
+        file_styles_path = os.path.join(theme_path, "file_styles.json")
+        if os.path.exists(file_styles_path):
+            with open(file_styles_path, 'r') as f:
+                file_styles = json.load(f)
+                self.current_theme_data['file_styles'] = file_styles.get('file_styles', {})
+                self.current_theme_data['special_types'] = file_styles.get('special_types', {})
+
+        # Apply stylesheet
         stylesheet_path = os.path.join(theme_path, "style.qss")
         if not os.path.exists(stylesheet_path):
             logging.warning(f"style.qss not found for theme '{theme_name}'.")
-            # We don't return here, as the palette might still be useful
         else:
             with open(stylesheet_path, 'r') as f:
                 stylesheet = f.read()
 
-            # Replace placeholders
-            for key, value in self.current_theme_data.items():
+            # Replace placeholders ONLY from the original palette data
+            for key, value in palette_data.items():
                 if isinstance(value, str):
                     stylesheet = stylesheet.replace(f"@@{key}@@", value)
             
@@ -77,5 +88,4 @@ class ThemeManager(QObject):
                 app.setStyleSheet(stylesheet)
 
         logging.info(f"Applied theme: {theme_name}")
-        # Emit the signal AFTER all data is loaded and stylesheet is applied
         self.theme_changed.emit(theme_name)

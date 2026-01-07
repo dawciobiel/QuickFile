@@ -7,7 +7,6 @@ QWidget {
 QTableView, QTreeView {
     background-color: @@secondary_background@@;
     alternate-background-color: @@alternate_background@@;
-    color: @@foreground@@;
     selection-background-color: @@selection_background@@;
     selection-color: @@selection_foreground@@;
     border: 1px solid @@border@@;
