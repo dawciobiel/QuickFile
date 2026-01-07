@@ -296,24 +296,23 @@ def test_calculate_directory_size_cancelled(tmp_path, mocker):
     """
     fm = FileManager()
     test_dir = tmp_path / "test_dir"
-    test_dir.mkdir()
-    
-    # We don't need to create real files, as we're mocking os.walk
+    test_dir.mkdir() # This was missing
     
     mock_task = mocker.Mock()
     mock_task.status = TaskStatus.IN_PROGRESS
 
     # Mock os.walk to return a controlled list of files
-    mock_walk = mocker.patch('file_operations.file_manager.os.walk')
-    mock_walk.return_value = [
+    mocker.patch('file_operations.file_manager.os.walk', return_value=[
         (str(test_dir), [], ['file1.txt', 'file2.txt']),
-    ]
+    ])
 
     # Mock getsize to cancel the task on the first call
     mock_getsize = mocker.patch('file_operations.file_manager.os.path.getsize')
+    
     def getsize_side_effect(path):
+        # The first time this is called (for file1.txt), cancel the task
         mock_task.status = TaskStatus.CANCELLED
-        return 10 # Return some size
+        return 5 # return a dummy value
 
     mock_getsize.side_effect = getsize_side_effect
     
@@ -322,6 +321,6 @@ def test_calculate_directory_size_cancelled(tmp_path, mocker):
     
     # Assert
     assert size == 0
-    # The loop should break after the first file, so getsize is called only once
+    # The loop should break after processing the first file, so getsize is called only once
     mock_getsize.assert_called_once()
 # endregion
