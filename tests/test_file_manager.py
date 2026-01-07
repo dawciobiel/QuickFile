@@ -4,6 +4,8 @@
 
 import pytest
 from file_operations.file_manager import FileManager, FileManagerError
+from app.task_queue_manager import TaskStatus
+import os
 
 # region Create Tests
 def test_create_file_successfully(tmp_path):
@@ -257,4 +259,69 @@ def test_copy_paste_over_existing_file(tmp_path):
 
     with pytest.raises(FileExistsError):
         fm.paste_item(str(dest_dir))
+# endregion
+
+# region Calculate Size Tests
+def test_calculate_directory_size_successfully(tmp_path, mocker):
+    """
+    Test that directory size is calculated correctly, including subdirectories.
+    """
+    fm = FileManager()
+    test_dir = tmp_path / "test_dir"
+    test_dir.mkdir()
+    
+    # Create files and subdirectories
+    (test_dir / "file1.txt").write_text("12345")  # 5 bytes
+    sub_dir = test_dir / "sub"
+    sub_dir.mkdir()
+    (sub_dir / "file2.txt").write_text("1234567890")  # 10 bytes
+    
+    expected_size = 15
+    
+    # Mock the task object
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+    
+    # Action
+    calculated_size = fm.calculate_directory_size(str(test_dir), task=mock_task)
+    
+    # Assert
+    assert calculated_size == expected_size
+    mock_task.set_progress.assert_called_with(100)
+    mock_task.set_details.assert_called_with("Found 2 files.")
+
+def test_calculate_directory_size_cancelled(tmp_path, mocker):
+    """
+    Test that the calculation stops when the task is cancelled.
+    """
+    fm = FileManager()
+    test_dir = tmp_path / "test_dir"
+    test_dir.mkdir()
+    
+    # We don't need to create real files, as we're mocking os.walk
+    
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+
+    # Mock os.walk to return a controlled list of files
+    mock_walk = mocker.patch('file_operations.file_manager.os.walk')
+    mock_walk.return_value = [
+        (str(test_dir), [], ['file1.txt', 'file2.txt']),
+    ]
+
+    # Mock getsize to cancel the task on the first call
+    mock_getsize = mocker.patch('file_operations.file_manager.os.path.getsize')
+    def getsize_side_effect(path):
+        mock_task.status = TaskStatus.CANCELLED
+        return 10 # Return some size
+
+    mock_getsize.side_effect = getsize_side_effect
+    
+    # Action
+    size = fm.calculate_directory_size(str(test_dir), task=mock_task)
+    
+    # Assert
+    assert size == 0
+    # The loop should break after the first file, so getsize is called only once
+    mock_getsize.assert_called_once()
 # endregion
