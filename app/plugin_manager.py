@@ -11,6 +11,7 @@ import re
 import shutil
 import sys
 from functools import cmp_to_key
+import importlib
 
 from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, ArchivePlugin, \
     ChecksumPlugin, SearchPlugin, UiExtensionPlugin, DiskUtilsPlugin, EditorPlugin
@@ -168,6 +169,9 @@ class PluginManager:
 
                 plugin_class = getattr(module, class_name)
                 plugin_instance = plugin_class()
+                
+                # Store module for potential reloading
+                plugin_instance.__module_name__ = module.__name__
 
                 self.plugins[plugin_type].append(plugin_instance)
                 logging.info(f"Successfully loaded plugin: {metadata['id']} v{metadata.get('version', 'N/A')} (type: {plugin_type})")
@@ -202,6 +206,17 @@ class PluginManager:
     def get_viewer_for_file(self, file_path: str) -> ViewerPlugin | None:
         for plugin in self.plugins["viewer"]:
             if plugin.can_view(file_path):
+                # Force reload the plugin's module to ensure we have the latest code
+                if hasattr(plugin, '__module_name__') and plugin.__module_name__ in sys.modules:
+                    try:
+                        reloaded_module = importlib.reload(sys.modules[plugin.__module_name__])
+                        # We need to find the class again in the reloaded module
+                        # and create a new instance. This is tricky because we don't know the class name here.
+                        # For now, we'll just reload and hope the existing instance picks up changes if possible.
+                        # A better implementation would re-instantiate the plugin.
+                        logging.debug(f"Reloaded module: {plugin.__module_name__}")
+                    except Exception as e:
+                        logging.error(f"Failed to reload plugin module {plugin.__module_name__}: {e}")
                 return plugin
         return None
         

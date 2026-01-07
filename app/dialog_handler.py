@@ -64,7 +64,7 @@ class DialogHandler:
         if use_internal:
             viewer_plugin = self.task_queue_manager.plugin_manager.get_viewer_for_file(selected_path)
             if viewer_plugin:
-                viewer_plugin.view_file(selected_path, self.main_window)
+                viewer_plugin.view_file(selected_path, self.theme_manager, self.main_window)
             else:
                 QMessageBox.warning(self.main_window, "Viewer Not Found", "No suitable built-in viewer plugin found for this file type.")
         else:
