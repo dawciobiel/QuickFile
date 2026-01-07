@@ -44,7 +44,7 @@ class UIManager:
         )
         self.menu_panel.initialize_ui()
 
-        self.bottom_panel = FunctionKeyPanel(self.main_window)
+        self.bottom_panel = FunctionKeyPanel(self.main_window, self.menu_panel.actions)
         self.main_window.centralWidget().layout().addWidget(self.bottom_panel)
 
         # Connect signals
