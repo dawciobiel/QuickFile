@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 
+from app.task_queue_manager import TaskStatus
 from app.translation_manager import translation_manager
 
 
@@ -49,12 +50,73 @@ class FileManager:
                         pass
         return total_size
 
+    def calculate_directory_size(self, directory_path, task=None):
+        """
+        Calculates the total size of a directory and all its subdirectories.
+        """
+        self._validate_path(directory_path, must_exist=True, is_directory=True, name="Directory")
+        total_size = 0
+        file_count = 0
+        try:
+            # First, count the number of files for progress calculation
+            total_files = 0
+            for _, _, filenames in os.walk(directory_path):
+                if task and task.status == TaskStatus.CANCELLED:
+                    break
+                total_files += len(filenames)
+
+            if task and task.status == TaskStatus.CANCELLED:
+                return 0
+
+            processed_files = 0
+            for dirpath, dirnames, filenames in os.walk(directory_path):
+                if task and task.status == TaskStatus.CANCELLED:
+                    break
+
+                for f in filenames:
+                    if task and task.status == TaskStatus.CANCELLED:
+                        break
+
+                    fp = os.path.join(dirpath, f)
+
+                    if task:
+                        task.set_details(f"Scanning: {os.path.basename(f)}")
+
+                    if not os.path.islink(fp):
+                        try:
+                            total_size += os.path.getsize(fp)
+                            file_count += 1
+                        except OSError as e:
+                            logging.warning(f"Could not get size of {fp}: {e}")
+                            pass
+
+                    processed_files += 1
+                    if task and total_files > 0:
+                        progress = int(processed_files * 100 / total_files)
+                        task.set_progress(progress)
+
+                if task and task.status == TaskStatus.CANCELLED:
+                    break
+
+        except Exception as e:
+            logging.error(f"Error calculating size for {directory_path}: {e}")
+            raise FileManagerError(f"Error calculating size: {e}")
+
+        if task and task.status == TaskStatus.CANCELLED:
+            return 0
+
+        if task:
+            task.set_details(f"Found {file_count} files.")
+            task.set_progress(100)
+
+        return total_size
+
     def copy_items_with_options(self, source_paths, destination_path, options, task):
         total_size = self._get_total_size(source_paths)
         copied_size = 0
 
         for src_path in source_paths:
-            if task.status == "CANCELLED":
+            if task.status == TaskStatus.CANCELLED:
                 break
             
             base_name = os.path.basename(src_path)
@@ -66,7 +128,7 @@ class FileManager:
             if os.path.isdir(src_path):
                 # We need to manually walk and copy to update overall progress
                 for dirpath, dirnames, filenames in os.walk(src_path):
-                    if task.status == "CANCELLED":
+                    if task.status == TaskStatus.CANCELLED:
                         break
 
                     # Create corresponding directories in destination
@@ -75,7 +137,7 @@ class FileManager:
                     os.makedirs(dest_dir, exist_ok=True)
 
                     for filename in filenames:
-                        if task.status == "CANCELLED":
+                        if task.status == TaskStatus.CANCELLED:
                             break
                         
                         src_file = os.path.join(dirpath, filename)
@@ -96,7 +158,7 @@ class FileManager:
         with open(src, 'rb') as fsrc, open(dst, 'wb') as fdst:
             copied = 0
             while True:
-                if task.status == "CANCELLED":
+                if task.status == TaskStatus.CANCELLED:
                     break
                 buf = fsrc.read(16 * 1024)
                 if not buf:
