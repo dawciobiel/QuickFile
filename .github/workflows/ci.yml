@@ -40,8 +40,14 @@ jobs:
           if [ -f requirements-dev.txt ]; then
             pip install -r requirements-dev.txt
           fi
+      
+      # Install system dependencies for PyQt
+      - name: Install Qt dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-glx libegl1-mesa xvfb
 
-      # Runs pytest
+      # Runs pytest with a virtual screen
       - name: Run tests with pytest
         run: |
-          pytest
+          xvfb-run -a pytest
