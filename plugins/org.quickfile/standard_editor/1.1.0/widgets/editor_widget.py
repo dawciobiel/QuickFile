@@ -1,4 +1,5 @@
-from PyQt6.QtWidgets import QPlainTextEdit, QWidget, QHBoxLayout, QTextEdit, QVBoxLayout, QToolBar, QStyle
+import os
+from PyQt6.QtWidgets import QPlainTextEdit, QWidget, QHBoxLayout, QTextEdit, QVBoxLayout, QToolBar, QStyle, QInputDialog
 from PyQt6.QtGui import QColor, QPainter, QTextFormat, QIcon
 from PyQt6.QtCore import Qt, QRect, QSize
 
@@ -10,6 +11,7 @@ class EditorWidget(QWidget):
         super().__init__(parent)
         self.file_path = file_path
         self.theme_manager = theme_manager
+        self.last_search_query = ""
         
         self.editor = QPlainTextEdit()
         self.line_number_area = LineNumberArea(self)
@@ -46,29 +48,40 @@ class EditorWidget(QWidget):
         self.setLayout(main_layout)
 
     def _setup_toolbar(self):
-        style = self.style()
-        
-        save_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton), "Save")
+        plugin_dir = os.path.dirname(os.path.dirname(__file__))
+        icons_path = os.path.join(plugin_dir, "icons")
+
+        save_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "save.svg")), "Save")
         save_action.triggered.connect(self.save_file)
         
         self.toolbar.addSeparator()
         
-        undo_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_ArrowBack), "Undo")
+        undo_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "undo.svg")), "Undo")
         undo_action.triggered.connect(self.editor.undo)
         
-        redo_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_ArrowForward), "Redo")
+        redo_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "redo.svg")), "Redo")
         redo_action.triggered.connect(self.editor.redo)
         
         self.toolbar.addSeparator()
         
-        cut_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_DialogResetButton), "Cut")
+        cut_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "cut.svg")), "Cut")
         cut_action.triggered.connect(self.editor.cut)
         
-        copy_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView), "Copy")
+        copy_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "copy.svg")), "Copy")
         copy_action.triggered.connect(self.editor.copy)
         
-        paste_action = self.toolbar.addAction(style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton), "Paste")
+        paste_action = self.toolbar.addAction(QIcon(os.path.join(icons_path, "paste.svg")), "Paste")
         paste_action.triggered.connect(self.editor.paste)
+
+    def find_text(self):
+        query, ok = QInputDialog.getText(self, "Find Text", "Enter text to find:")
+        if ok and query:
+            self.last_search_query = query
+            self.find_next()
+
+    def find_next(self):
+        if self.last_search_query:
+            self.editor.find(self.last_search_query)
 
     def connect_signals(self):
         self.editor.blockCountChanged.connect(self.update_line_number_area_width)
