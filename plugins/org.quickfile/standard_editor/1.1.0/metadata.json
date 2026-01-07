@@ -1,9 +1,9 @@
 {
   "id": "org.quickfile.standard_editor",
   "name": "Standard Editor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "QuickFile Team",
-  "description": "A built-in code editor with syntax highlighting.",
+  "description": "A built-in code editor with syntax highlighting and a toolbar.",
   "type": "editor",
   "entry_point": "plugin:StandardEditorPlugin",
   "class_name": "StandardEditorPlugin"
