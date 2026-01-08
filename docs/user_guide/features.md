@@ -25,4 +25,3 @@
 
 - archiwizacja wybranych plików/folderów
 - przeglądanie archiwów jak zwykłych folderów
-

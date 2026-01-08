@@ -1,19 +1,12 @@
-------
-
 # QuickFile - File Manager Application
 
 QuickFile is a modern file manager application built using Python and PyQt6, designed to provide an intuitive, user-friendly interface for managing files and directories on your system. This project aims to simplify file browsing, organization, and management tasks while offering a sleek and responsive experience.
 
-## Features
-
-- **User-friendly Interface**: An easy-to-navigate GUI with a clean design.
-- **File Browsing**: Browse and manage files and folders with ease.
-- **File Operations**: Supports common file operations such as copy, move, delete, and rename.
-- **Search Functionality**: Quickly search for files or directories across the system.
-- **Multi-Platform**: Designed to work on Windows, macOS, and Linux (tested on Manjaro).
-- **Customization**: Adjustable UI with resizable windows and tables.
-
 ![Main Window Screenshot](resources/screenshots/quickfile-mainwindow_tableview_theme-dark_2025-12-29_12-54-40.png)
+
+## Documentation
+
+For detailed information about installation, features, and configuration, please see our [**Full Documentation**](docs/index.md).
 
 ## Requirements
 
@@ -45,7 +38,7 @@ The application window will appear, allowing you to start managing your files.
 
 ## Contributing
 
-Feel free to fork this repository, submit issues, or contribute code via pull requests. Contributions are welcome to help improve the functionality, fix bugs, or enhance the user interface.
+Please see our [**Contributing Guide**](docs/developer_guide/contributing.md) for details on how to contribute to this project.
 
 **Note:** By contributing to this project, you agree to the terms of the Contributor License Agreement (CLA). This ensures that the project can remain open source while protecting the rights of all contributors. Please see `CLA.md` for details.
 
@@ -54,5 +47,3 @@ Feel free to fork this repository, submit issues, or contribute code via pull re
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 In case of forks, it is required to preserve author information and clearly mark changes.
-
-------
