@@ -61,6 +61,8 @@ class SettingsDialog(QDialog):
         self.current_use_internal_editor = self.settings_manager.get_setting("use_internal_editor", True)
         self.current_viewer_command = self.settings_manager.get_setting("viewer_command")
         self.current_editor_command = self.settings_manager.get_setting("editor_command")
+        self.current_use_default_terminal = self.settings_manager.get_setting("use_default_terminal", True)
+        self.current_custom_terminal_command = self.settings_manager.get_setting("custom_terminal_command")
         self.current_bring_to_front = self.settings_manager.get_setting("bringToFrontOnStartup")
         self.current_insert_selection_text_color = self.settings_manager.get_setting("insert_selection_text_color")
         self.current_insert_selection_font_bold = self.settings_manager.get_setting("insert_selection_font_bold")
@@ -101,6 +103,13 @@ class SettingsDialog(QDialog):
         self.editor_command_edit.setText(self.current_editor_command)
         self.viewer_command_edit.setEnabled(not self.current_use_internal_viewer)
         self.editor_command_edit.setEnabled(not self.current_use_internal_editor)
+
+        self.terminal_group.setTitle(translation_manager.translate("SettingsDialog", "Terminal"))
+        self.use_default_terminal_checkbox.setText(translation_manager.translate("SettingsDialog", "Use system default terminal"))
+        self.custom_terminal_label.setText(translation_manager.translate("SettingsDialog", "Custom command:"))
+        self.use_default_terminal_checkbox.setChecked(self.current_use_default_terminal)
+        self.custom_terminal_command_edit.setText(self.current_custom_terminal_command)
+        self.custom_terminal_command_edit.setEnabled(not self.current_use_default_terminal)
 
         self.startup_group.setTitle(translation_manager.translate("SettingsDialog", "Startup"))
         self.bring_to_front_checkbox.setText(translation_manager.translate("SettingsDialog", "Bring window to front on startup"))
@@ -148,6 +157,8 @@ class SettingsDialog(QDialog):
             lambda state: self.viewer_command_edit.setEnabled(state == Qt.CheckState.Unchecked.value))
         self.use_internal_editor_checkbox.stateChanged.connect(
             lambda state: self.editor_command_edit.setEnabled(state == Qt.CheckState.Unchecked.value))
+        self.use_default_terminal_checkbox.stateChanged.connect(
+            lambda state: self.custom_terminal_command_edit.setEnabled(state == Qt.CheckState.Unchecked.value))
         self.insert_text_color_button.clicked.connect(self._pick_insert_text_color)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
@@ -181,6 +192,8 @@ class SettingsDialog(QDialog):
             "use_internal_editor": self.use_internal_editor_checkbox.isChecked(),
             "viewer_command": self.viewer_command_edit.text(),
             "editor_command": self.editor_command_edit.text(),
+            "use_default_terminal": self.use_default_terminal_checkbox.isChecked(),
+            "custom_terminal_command": self.custom_terminal_command_edit.text(),
             "bringToFrontOnStartup": self.bring_to_front_checkbox.isChecked(),
             "insert_selection_text_color": self.selected_insert_selection_text_color,
             "insert_selection_font_bold": self.insert_font_bold_checkbox.isChecked(),
