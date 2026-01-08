@@ -42,6 +42,7 @@ class MenuPanel:
             "operations.new_file": get_resource_path(os.path.join(base_path, "new_file.svg")),
             "operations.change_owner": get_resource_path(os.path.join(base_path, "change_owner.svg")),
             "operations.open_terminal": get_resource_path(os.path.join(base_path, "subdirectory_arrow_right.svg")),
+            "operations.open_admin_terminal": get_resource_path(os.path.join(base_path, "subdirectory_arrow_right.svg")), # Re-using icon
             "view.new_tab": get_resource_path(os.path.join(base_path, "new_tab.svg")),
             "view.close_tab": get_resource_path(os.path.join(base_path, "close_tab.svg")),
             "favorites.manage": get_resource_path(os.path.join(base_path, "manage_favorites.svg")),
@@ -80,6 +81,7 @@ class MenuPanel:
                                       self.app_logic_handler.create_new_directory),
             "operations.change_owner": (translation_manager.translate("MenuPanel", "Change Owner"), self.app_logic_handler.change_owner),
             "operations.open_terminal": (translation_manager.translate("MenuPanel", "Open Terminal Here"), self.app_logic_handler.open_terminal_here),
+            "operations.open_admin_terminal": (translation_manager.translate("MenuPanel", "Open Admin Terminal Here"), self.app_logic_handler.open_admin_terminal_here),
             # Selection Menu
             "selection.select_by_pattern": (translation_manager.translate("MenuPanel", "Select by Pattern"),
                                             self.app_logic_handler.show_select_dialog),
@@ -198,6 +200,7 @@ class MenuPanel:
         self._add_action_to_menu(operations_menu, "operations.change_owner")
         operations_menu.addSeparator()
         self._add_action_to_menu(operations_menu, "operations.open_terminal")
+        self._add_action_to_menu(operations_menu, "operations.open_admin_terminal")
 
     def _create_favorites_menu(self):
         favorites_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "F&avorites"))

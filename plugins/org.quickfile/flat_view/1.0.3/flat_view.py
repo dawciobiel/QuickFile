@@ -562,14 +562,18 @@ class FlatFileView(AbstractFileView):
             
             # Add actions
             open_terminal_action = QAction(translation_manager.translate("MenuPanel", "Open Terminal Here"), self)
-            open_terminal_action.triggered.connect(lambda: self._open_terminal_context(app_logic))
+            open_terminal_action.triggered.connect(lambda: self._open_terminal_context(app_logic, admin=False))
             menu.addAction(open_terminal_action)
+
+            open_admin_terminal_action = QAction(translation_manager.translate("MenuPanel", "Open Admin Terminal Here"), self)
+            open_admin_terminal_action.triggered.connect(lambda: self._open_terminal_context(app_logic, admin=True))
+            menu.addAction(open_admin_terminal_action)
             
             # You can add more actions here (Copy, Paste, etc.)
             
             menu.exec(self.view.mapToGlobal(point))
 
-    def _open_terminal_context(self, app_logic):
+    def _open_terminal_context(self, app_logic, admin=False):
         # Determine the path to open terminal in
         # If clicked on a directory, open that directory
         # If clicked on a file, open the parent directory
@@ -585,4 +589,7 @@ class FlatFileView(AbstractFileView):
                     path_to_open = item_path
             # If it's a file, path_to_open remains the current directory (parent)
             
-        app_logic.open_terminal_in_path(path_to_open)
+        if admin:
+            app_logic.open_admin_terminal_in_path(path_to_open)
+        else:
+            app_logic.open_terminal_in_path(path_to_open)
