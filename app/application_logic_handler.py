@@ -3,6 +3,8 @@ import functools
 import logging
 import os
 import subprocess
+import platform
+import shutil
 
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QMessageBox
@@ -69,8 +71,14 @@ class ApplicationLogicHandler(QObject):
                 else:
                     # User has not quoted, add quotes automatically
                     command = command_template.replace("%f", f'"{file_path}"')
+            elif "%d" in command_template:
+                 # Ensure the directory path is quoted to handle spaces
+                if f'"%d"' in command_template or f"'%d'" in command_template:
+                    command = command_template.replace("%d", file_path)
+                else:
+                    command = command_template.replace("%d", f'"{file_path}"')
             else:
-                # Fallback for commands that don't use %f, just append the path
+                # Fallback for commands that don't use placeholders, just append the path
                 command = f'{command_template} "{file_path}"'
 
             logging.info(f"Executing external command: {command}")
@@ -78,6 +86,58 @@ class ApplicationLogicHandler(QObject):
         except Exception as e:
             logging.error(f"Failed to execute command '{command_template}' for file {file_path}: {e}")
             show_error_message(self.main_window, translation_manager.translate("Global", "Error"), f"Failed to execute command: {e}")
+
+    @handle_error
+    def open_terminal_in_path(self, path):
+        if not path or not os.path.isdir(path):
+            logging.warning(f"Cannot open terminal: Invalid path '{path}'")
+            return
+
+        use_default = self.settings_handler.settings_manager.get_setting("use_default_terminal", True)
+        
+        if use_default:
+            try:
+                system = platform.system()
+                if system == "Windows":
+                    os.startfile(path) # Opens in default file explorer, usually has "Open in Terminal"
+                    # Alternatively for cmd: subprocess.Popen(['start', 'cmd', '/k', 'cd', '/d', path], shell=True)
+                elif system == "Darwin": # macOS
+                    subprocess.Popen(["open", "-a", "Terminal", path])
+                else: # Linux
+                    # Try to be smart about Linux terminals
+                    # xdg-open usually opens the file manager, which isn't what we want for "Open Terminal"
+                    # We try a few common terminals
+                    terminals = ["gnome-terminal", "konsole", "xfce4-terminal", "x-terminal-emulator", "xterm"]
+                    for term in terminals:
+                        if shutil.which(term):
+                            if term == "gnome-terminal":
+                                subprocess.Popen([term, "--working-directory", path])
+                            elif term == "konsole":
+                                subprocess.Popen([term, "--workdir", path])
+                            elif term == "xfce4-terminal":
+                                subprocess.Popen([term, "--working-directory", path])
+                            else:
+                                # Fallback for others, might not support setting dir directly via arg easily without specific flags
+                                # But we can try setting cwd
+                                subprocess.Popen([term], cwd=path)
+                            return
+                    
+                    # If no known terminal found, try xdg-open as last resort (opens file manager)
+                    subprocess.Popen(["xdg-open", path])
+            except Exception as e:
+                logging.error(f"Failed to open default terminal at {path}: {e}")
+                show_error_message(self.main_window, translation_manager.translate("Global", "Error"), f"Failed to open terminal: {e}")
+        else:
+            command_template = self.settings_handler.settings_manager.get_setting("custom_terminal_command")
+            if command_template:
+                self._execute_external_command(command_template, path)
+            else:
+                QMessageBox.warning(self.main_window, "Configuration Error", "Custom terminal command is empty.")
+
+    @handle_error
+    def open_terminal_here(self, checked=False):
+        current_path = self.ui_state_provider.get_active_panel_path()
+        self.open_terminal_in_path(current_path)
 
     @handle_error
     def _handle_f3_key(self, checked=False):

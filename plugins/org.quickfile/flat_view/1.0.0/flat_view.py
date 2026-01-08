@@ -6,8 +6,8 @@ import os
 import pwd
 
 from PyQt6.QtCore import pyqtSignal, Qt, QModelIndex, QDir, QTimer
-from PyQt6.QtGui import QColor, QFont
-from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView, QFileIconProvider
+from PyQt6.QtGui import QColor, QFont, QAction
+from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView, QFileIconProvider, QMenu
 
 from app.settings_manager import SettingsManager
 from app.translation_manager import translation_manager
@@ -421,6 +421,8 @@ class FlatFileView(AbstractFileView):
         self.view.setModel(self.model)
         self.view.setAlternatingRowColors(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.view.customContextMenuRequested.connect(self.show_context_menu)
         
         self.delegate = FileStyleDelegate(self.view)
         self.view.setItemDelegate(self.delegate)
@@ -550,3 +552,37 @@ class FlatFileView(AbstractFileView):
             return True
 
         return self._handle_common_key_events(event, self.view.currentIndex())
+
+    def show_context_menu(self, point):
+        main_window = self.window()
+        if hasattr(main_window, 'application_logic_handler'):
+            app_logic = main_window.application_logic_handler
+            
+            menu = QMenu(self)
+            
+            # Add actions
+            open_terminal_action = QAction(translation_manager.translate("MenuPanel", "Open Terminal Here"), self)
+            open_terminal_action.triggered.connect(lambda: self._open_terminal_context(app_logic))
+            menu.addAction(open_terminal_action)
+            
+            # You can add more actions here (Copy, Paste, etc.)
+            
+            menu.exec(self.view.mapToGlobal(point))
+
+    def _open_terminal_context(self, app_logic):
+        # Determine the path to open terminal in
+        # If clicked on a directory, open that directory
+        # If clicked on a file, open the parent directory
+        # If nothing selected (clicked on empty space), open current directory
+        
+        current_index = self.view.currentIndex()
+        path_to_open = self.get_current_path()
+        
+        if current_index.isValid():
+            item_path = self.model.filePath(current_index)
+            if self.model.isDir(current_index):
+                if self.model.fileName(current_index) != "..":
+                    path_to_open = item_path
+            # If it's a file, path_to_open remains the current directory (parent)
+            
+        app_logic.open_terminal_in_path(path_to_open)

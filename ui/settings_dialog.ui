@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>550</width>
-    <height>450</height>
+    <height>500</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -114,6 +114,36 @@
                              <widget class="QLineEdit" name="editor_command_edit"/>
                          </item>
                      </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="terminal_group">
+          <property name="title">
+           <string>Terminal</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_terminal">
+           <item>
+            <widget class="QCheckBox" name="use_default_terminal_checkbox">
+             <property name="text">
+              <string>Use system default terminal</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_terminal">
+             <item>
+              <widget class="QLabel" name="custom_terminal_label">
+               <property name="text">
+                <string>Custom command:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="custom_terminal_command_edit"/>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>

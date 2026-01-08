@@ -5,6 +5,7 @@
 import json
 import os
 import shutil
+import platform
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QMainWindow
@@ -37,10 +38,22 @@ class SettingsManager:
             "insert_selection_font_italic": False,
             "viewer_command": "xdg-open %f",
             "editor_command": "xdg-open %f",
+            "use_default_terminal": True,
+            "custom_terminal_command": self.get_default_terminal_command(),
             "bringToFrontOnStartup": True,
             "theme": "dark"
         }
         self.settings = self.load_settings_from_file()
+
+    def get_default_terminal_command(self):
+        system = platform.system()
+        if system == "Windows":
+            return 'cmd.exe /c "cd /d %d && start cmd.exe"'
+        elif system == "Darwin": # macOS
+            return 'open -a Terminal %d'
+        else: # Linux and other Unix-like
+            # x-terminal-emulator is a Debian standard that points to the default terminal
+            return 'x-terminal-emulator --working-directory=%d'
 
     def load_settings_from_file(self):
         if os.path.exists(self.settings_file):
