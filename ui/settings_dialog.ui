@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>550</width>
-    <height>500</height>
+    <height>550</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -142,6 +142,36 @@
              </item>
              <item>
               <widget class="QLineEdit" name="custom_terminal_command_edit"/>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="admin_terminal_group">
+          <property name="title">
+           <string>Admin Terminal</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_admin_terminal">
+           <item>
+            <widget class="QCheckBox" name="use_default_admin_terminal_checkbox">
+             <property name="text">
+              <string>Use system default admin terminal</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_admin_terminal">
+             <item>
+              <widget class="QLabel" name="custom_admin_terminal_label">
+               <property name="text">
+                <string>Custom command:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="custom_admin_terminal_command_edit"/>
              </item>
             </layout>
            </item>

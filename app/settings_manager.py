@@ -40,6 +40,8 @@ class SettingsManager:
             "editor_command": "xdg-open %f",
             "use_default_terminal": True,
             "custom_terminal_command": self.get_default_terminal_command(),
+            "use_default_admin_terminal": True,
+            "custom_admin_terminal_command": self.get_default_admin_terminal_command(),
             "bringToFrontOnStartup": True,
             "theme": "dark"
         }
@@ -52,8 +54,26 @@ class SettingsManager:
         elif system == "Darwin": # macOS
             return 'open -a Terminal %d'
         else: # Linux and other Unix-like
-            # x-terminal-emulator is a Debian standard that points to the default terminal
-            return 'x-terminal-emulator --working-directory=%d'
+            # Try to find a suitable terminal
+            terminals = {"gnome-terminal": "--working-directory=%d", "konsole": "--workdir %d", "xfce4-terminal": "--working-directory=%d"}
+            for term, arg in terminals.items():
+                if shutil.which(term):
+                    return f"{term} {arg}"
+            return 'x-terminal-emulator' # Fallback
+
+    def get_default_admin_terminal_command(self):
+        system = platform.system()
+        if system == "Windows":
+            return 'powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList \'/k cd /d %d\'"'
+        elif system == "Darwin": # macOS
+            return "osascript -e 'do shell script \"cd \\\"%d\\\"; open -a Terminal .\" with administrator privileges'"
+        else: # Linux
+            # Find a suitable terminal and construct the sudo command
+            terminals = {"konsole": "--workdir %d -e sudo -s", "gnome-terminal": "--working-directory=%d -- bash -c \"sudo -s; exec bash\"", "xfce4-terminal": "--working-directory=%d -e 'sudo -s'"}
+            for term, cmd_format in terminals.items():
+                if shutil.which(term):
+                    return f"{term} {cmd_format}"
+            return 'x-terminal-emulator -e "sudo -s"' # Fallback
 
     def load_settings_from_file(self):
         if os.path.exists(self.settings_file):
