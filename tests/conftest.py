@@ -6,7 +6,7 @@ import os
 import shutil
 import sys
 import pytest
-from PyQt6.QtCore import QTimer  # <-- ADDED THIS IMPORT
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from unittest.mock import MagicMock
 
@@ -42,43 +42,36 @@ def isolated_env(tmp_path_factory):
     config_dir.mkdir()
 
     # --- Test-specific directories ---
-    # Search
     search_data_dir = base_dir / "search_data"
     search_data_dir.mkdir()
     (search_data_dir / "found_me.txt").touch()
 
-    # Copy
     source_dir = base_dir / "source"
     source_dir.mkdir()
     (source_dir / "file_to_copy.txt").write_text("This is a test file.")
     destination_dir = base_dir / "destination"
     destination_dir.mkdir()
 
-    # Sync
     sync_source_dir = base_dir / "sync_source"
     sync_source_dir.mkdir()
     (sync_source_dir / "file_to_sync.txt").write_text("Sync me.")
     sync_dest_dir = base_dir / "sync_dest"
     sync_dest_dir.mkdir()
 
-    # Delete
     delete_dir = base_dir / "delete_dir"
     delete_dir.mkdir()
     (delete_dir / "file_to_delete.txt").write_text("Delete me.")
 
-    # Move
     move_source_dir = base_dir / "move_source"
     move_source_dir.mkdir()
     (move_source_dir / "file_to_move.txt").write_text("Move me.")
     move_dest_dir = base_dir / "move_dest"
     move_dest_dir.mkdir()
 
-    # Rename
     rename_dir = base_dir / "rename_dir"
     rename_dir.mkdir()
     (rename_dir / "file_to_rename.txt").touch()
 
-    # Create
     creation_dir = base_dir / "creation_dir"
     creation_dir.mkdir()
 
@@ -165,10 +158,13 @@ def create_app_handler(qtbot, mocker):
         from favorites.favorites_manager import FavoritesManager
         from file_operations.file_comparator import FileComparator
         from app.theme_manager import ThemeManager
+        from app.notification_manager import NotificationManager
 
         mock_main_window = mocker.Mock(spec=QMainWindow)
         mock_main_window.statusBar = mocker.Mock()
         mock_main_window.statusBar().showMessage = mocker.Mock()
+        # Add the notification_manager mock to the main_window mock
+        mock_main_window.notification_manager = mocker.Mock(spec=NotificationManager)
         
         mock_file_manager = mocker.Mock(spec=FileManager)
         mock_file_comparator = mocker.Mock(spec=FileComparator)
