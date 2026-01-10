@@ -147,5 +147,5 @@ QGroupBox:disabled,
 QCheckBox:disabled,
 QLabel:disabled,
 QRadioButton:disabled {
-    color: @@DisabledText@@;
+    color: @@disabled_foreground@@;
 }

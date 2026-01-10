@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import re
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import QApplication
@@ -86,6 +87,11 @@ class ThemeManager(QObject):
             for key, value in palette_data.items():
                 if isinstance(value, str):
                     stylesheet = stylesheet.replace(f"@@{key}@@", value)
+            
+            # Check for unreplaced placeholders
+            unreplaced = set(re.findall(r'@@(\w+)@@', stylesheet))
+            if unreplaced:
+                logging.error(f"Theme '{theme_name}' has unreplaced placeholders: {unreplaced}")
             
             app = QApplication.instance()
             if app:

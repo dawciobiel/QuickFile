@@ -142,7 +142,7 @@ class PluginManager:
 
         versions.sort(key=lambda v: tuple(map(int, v.split('.'))), reverse=True)
         latest_version = versions[0]
-        print(f"DEBUG: For plugin {os.path.basename(plugin_path)}, latest version found: {latest_version}")
+        logging.debug(f"For plugin {os.path.basename(plugin_path)}, latest version found: {latest_version}")
         version_path = os.path.join(plugin_path, latest_version)
         metadata_path = os.path.join(version_path, "metadata.json")
 
