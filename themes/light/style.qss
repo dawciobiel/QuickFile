@@ -129,6 +129,13 @@ QDialog {
     color: @@foreground@@;
 }
 
+QMenu::separator {
+    height: 1px;
+    background-color: @@icon_color@@;
+    margin-left: 10px;
+    margin-right: 5px;
+}
+
 /*
 QDialogButtonBox QPushButton, QMessageBox QPushButton {
     background-color: @@accent@@;
