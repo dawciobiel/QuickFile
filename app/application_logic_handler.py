@@ -56,10 +56,18 @@ class ApplicationLogicHandler(QObject):
                 logging.error(f"Failed to initialize UI plugin {plugin.name}: {e}")
 
     def _on_task_completed(self, task):
-        if task.type == TaskType.CALCULATE_SIZE and task.status == TaskStatus.FINISHED:
+        if task.status != TaskStatus.FINISHED:
+            return
+
+        if task.type == TaskType.CALCULATE_SIZE:
             path = task.source_paths[0]
             size = task.result
             self.ui_state_provider.folder_browser.update_directory_size(path, size)
+        elif task.type == TaskType.SEARCH:
+            if task.result:
+                self.dialog_handler.show_search_results(task.result)
+            else:
+                logging.info("Search finished with no results.")
 
     def _execute_external_command(self, command_template: str, file_path: str):
         try:
