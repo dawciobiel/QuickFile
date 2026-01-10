@@ -8,9 +8,10 @@ import importlib.util
 
 # Helper to load the plugin class dynamically
 def load_search_plugin_class():
+    # Construct an absolute path from the project root to the plugin
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
     plugin_path = os.path.join(
-        os.path.dirname(__file__), 
-        "..", 
+        project_root,
         "plugins", 
         "org.quickfile",
         "search_standard", 
