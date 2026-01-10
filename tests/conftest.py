@@ -31,17 +31,28 @@ def isolated_env(tmp_path_factory):
     """Creates an isolated environment with temporary directories for tests."""
     base_dir = tmp_path_factory.mktemp("quickfile_test_run")
     
+    # --- Directories for core app functionality ---
     plugin_dir = base_dir / "plugins"
     plugin_dir.mkdir()
     
     config_dir = base_dir / "config"
     config_dir.mkdir()
 
+    # --- Directories for search tests ---
     search_data_dir = base_dir / "search_data"
     search_data_dir.mkdir()
     (search_data_dir / "found_me.txt").touch()
     (search_data_dir / "another_file.log").touch()
 
+    # --- Directories for file operation tests (e.g., copy, move) ---
+    source_dir = base_dir / "source"
+    source_dir.mkdir()
+    (source_dir / "file_to_copy.txt").write_text("This is a test file.")
+
+    destination_dir = base_dir / "destination"
+    destination_dir.mkdir()
+
+    # --- Copy bundled plugins ---
     bundled_plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plugins'))
     if os.path.exists(bundled_plugin_path):
         shutil.copytree(bundled_plugin_path, plugin_dir, dirs_exist_ok=True)
@@ -49,7 +60,9 @@ def isolated_env(tmp_path_factory):
     return {
         "plugin_dir": str(plugin_dir),
         "config_dir": str(config_dir),
-        "search_data_dir": str(search_data_dir)
+        "search_data_dir": str(search_data_dir),
+        "source_dir": str(source_dir),
+        "destination_dir": str(destination_dir),
     }
 
 @pytest.fixture
@@ -57,8 +70,6 @@ def main_window(qapp, qtbot, isolated_env, monkeypatch):
     """
     Fixture to provide a fully initialized, real MainWindow instance for E2E tests.
     """
-    # This mock correctly handles both string and bytes paths, fixing the
-    # "Can't mix strings and bytes" TypeError from the send2trash library.
     def mock_expanduser(path):
         config_dir_str = str(isolated_env["config_dir"])
         if isinstance(path, bytes):
@@ -67,7 +78,6 @@ def main_window(qapp, qtbot, isolated_env, monkeypatch):
     
     monkeypatch.setattr(os.path, 'expanduser', mock_expanduser)
 
-    # Initialize core components with the isolated plugin path
     background_task_manager = BackgroundTaskManager()
     plugin_manager = PluginManager(plugin_dirs=[isolated_env["plugin_dir"]])
     file_manager = FileManager()
@@ -80,7 +90,6 @@ def main_window(qapp, qtbot, isolated_env, monkeypatch):
         background_task_manager=background_task_manager
     )
 
-    # Create the main window
     window = MainWindow(
         background_task_manager=background_task_manager,
         task_queue_manager=task_queue_manager,
