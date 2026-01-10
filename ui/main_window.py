@@ -5,10 +5,11 @@ from __version__ import __version__
 from app.application_logic_handler import ApplicationLogicHandler
 from app.dialog_handler import DialogHandler
 from app.keyboard_event_handler import KeyboardEventManager
+from app.notification_manager import NotificationManager
 from app.settings_handler import SettingsHandler
 from app.settings_manager import SettingsManager
 from app.shortcuts_manager import ShortcutsManager
-from app.task_queue_manager import TaskQueueManager, Task, TaskType
+from app.task_queue_manager import TaskQueueManager, Task, TaskType, TaskStatus
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
@@ -45,6 +46,7 @@ class MainWindow(QMainWindow):
         self.shortcuts_manager = ShortcutsManager(self)
         self.settings_manager = SettingsManager()
         self.theme_manager = ThemeManager(self.settings_manager)
+        self.notification_manager = NotificationManager(self)
         
         # Apply theme BEFORE initializing UI components that might need theme data
         initial_theme = self.settings_manager.get_setting("theme", "dark")
@@ -157,7 +159,6 @@ class MainWindow(QMainWindow):
                 if panel not in task_panels:
                     task_panels.append(panel)
                     
-                    # Increment busy counter and show spinner if it's the first task for this panel
                     current_count = self.panel_busy_counters.get(panel, 0)
                     if current_count == 0:
                         self.ui_manager.folder_browser.set_tab_busy_indicator(panel, True)
@@ -182,6 +183,13 @@ class MainWindow(QMainWindow):
 
     def on_task_finished(self, task: Task):
         """This slot is called when a task finishes, regardless of status (success, error, cancelled)."""
+        if task.status == TaskStatus.FINISHED:
+            self.notification_manager.show_success(f"Task '{task.type.name}' completed.")
+        elif task.status == TaskStatus.ERROR:
+            self.notification_manager.show_error(f"Task '{task.type.name}' failed: {task.details}")
+        elif task.status == TaskStatus.CANCELLED:
+            self.notification_manager.show_info(f"Task '{task.type.name}' cancelled.")
+
         if task.id not in self.active_task_panels:
             return
 
@@ -203,21 +211,18 @@ class MainWindow(QMainWindow):
                 del self.panel_busy_counters[panel]
 
     def show_status_message(self, message):
-        self.statusBar().showMessage(message, 5000)  # Show for 5 seconds
+        self.statusBar().showMessage(message, 5000)
 
     def load_settings(self):
         self.settings_manager.load_window_settings(self)
         self.ui_manager.load_panel_settings()
 
-        # Load toolbar visibility
         toolbar_visible = self.settings_manager.get_setting("toolbar_visible", True)
         self.mainToolbar.setVisible(toolbar_visible)
-        # Update the checkbox in the menu
         show_toolbar_action = self.ui_manager.menu_panel.actions.get("view.show_toolbar")
         if show_toolbar_action:
             show_toolbar_action.setChecked(toolbar_visible)
 
-        # Set the active panel based on saved settings
         last_active_panel = self.settings_manager.get_setting("lastActivePanel", "left")
         if last_active_panel == "right":
             self.ui_manager.folder_browser.set_active_panel(self.ui_manager.folder_browser.get_right_panel_widget())
