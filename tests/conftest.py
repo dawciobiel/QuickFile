@@ -30,6 +30,14 @@ def qapp():
         app = QApplication([])
     return app
 
+@pytest.fixture(autouse=True)
+def mute_sounds(mocker):
+    """
+    Automatically mocks QSoundEffect.play for all tests to prevent
+    actual sound playback and avoid system dependency issues in CI.
+    """
+    mocker.patch('PyQt6.QtMultimedia.QSoundEffect.play', return_value=None)
+
 @pytest.fixture
 def isolated_env(tmp_path_factory):
     """Creates an isolated environment with temporary directories for all E2E tests."""
@@ -163,7 +171,6 @@ def create_app_handler(qtbot, mocker):
         mock_main_window = mocker.Mock(spec=QMainWindow)
         mock_main_window.statusBar = mocker.Mock()
         mock_main_window.statusBar().showMessage = mocker.Mock()
-        # Add the notification_manager mock to the main_window mock
         mock_main_window.notification_manager = mocker.Mock(spec=NotificationManager)
         
         mock_file_manager = mocker.Mock(spec=FileManager)
