@@ -388,6 +388,22 @@
          </widget>
         </item>
         <item>
+         <widget class="QGroupBox" name="notifications_group">
+          <property name="title">
+           <string>Notifications</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_13">
+           <item>
+            <widget class="QCheckBox" name="sound_notifications_checkbox">
+             <property name="text">
+              <string>Enable sound notifications</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer_3">
           <property name="orientation">
            <enum>Qt::Vertical</enum>

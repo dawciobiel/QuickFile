@@ -70,6 +70,7 @@ class SettingsDialog(QDialog):
         self.current_insert_selection_font_bold = self.settings_manager.get_setting("insert_selection_font_bold")
         self.current_insert_selection_font_italic = self.settings_manager.get_setting("insert_selection_font_italic")
         self.current_dynamic_refresh_interval = self.settings_manager.get_setting("dynamic_refresh_interval", 2000)
+        self.current_sound_notifications = self.settings_manager.get_setting("sound_notifications_enabled", True)
         self.selected_insert_selection_text_color = self.current_insert_selection_text_color
 
     def _init_ui(self):
@@ -155,6 +156,10 @@ class SettingsDialog(QDialog):
         self.insert_font_bold_checkbox.setChecked(self.current_insert_selection_font_bold)
         self.insert_font_italic_checkbox.setChecked(self.current_insert_selection_font_italic)
 
+        self.notifications_group.setTitle(translation_manager.translate("SettingsDialog", "Notifications"))
+        self.sound_notifications_checkbox.setText(translation_manager.translate("SettingsDialog", "Enable sound notifications"))
+        self.sound_notifications_checkbox.setChecked(self.current_sound_notifications)
+
         self.buttonBox.button(QDialogButtonBox.StandardButton.Save).setText(translation_manager.translate("SettingsDialog", "Save"))
         self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("SettingsDialog", "Cancel"))
 
@@ -211,5 +216,6 @@ class SettingsDialog(QDialog):
             "insert_selection_text_color": self.selected_insert_selection_text_color,
             "insert_selection_font_bold": self.insert_font_bold_checkbox.isChecked(),
             "insert_selection_font_italic": self.insert_font_italic_checkbox.isChecked(),
-            "dynamic_refresh_interval": self.refresh_interval_spinbox.value()
+            "dynamic_refresh_interval": self.refresh_interval_spinbox.value(),
+            "sound_notifications_enabled": self.sound_notifications_checkbox.isChecked(),
         }

@@ -43,7 +43,8 @@ class SettingsManager:
             "use_default_admin_terminal": True,
             "custom_admin_terminal_command": self.get_default_admin_terminal_command(),
             "bringToFrontOnStartup": True,
-            "theme": "dark"
+            "theme": "dark",
+            "sound_notifications_enabled": True,
         }
         self.settings = self.load_settings_from_file()
 

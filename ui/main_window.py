@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         self.shortcuts_manager = ShortcutsManager(self)
         self.settings_manager = SettingsManager()
         self.theme_manager = ThemeManager(self.settings_manager)
-        self.notification_manager = NotificationManager(self)
+        self.notification_manager = NotificationManager(self, self.settings_manager)
         
         # Apply theme BEFORE initializing UI components that might need theme data
         initial_theme = self.settings_manager.get_setting("theme", "dark")

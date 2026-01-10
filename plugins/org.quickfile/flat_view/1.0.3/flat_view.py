@@ -85,7 +85,7 @@ class FlatFileSystemModel(AbstractFileSystemModel):
         
         if self._current_path == "/root":
             msg = translation_manager.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
-            show_error_message(self.parent_widget, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
+            show_error_message(self.parent_widget.notification_manager, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
             other_items = []
 
         try:
@@ -101,7 +101,7 @@ class FlatFileSystemModel(AbstractFileSystemModel):
 
         except OSError as e:
             msg = translation_manager.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
-            show_error_message(self.parent_widget, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
+            show_error_message(self.parent_widget.notification_manager, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
             other_items = []
 
         self._items = dot_dot_item + other_items
@@ -411,7 +411,7 @@ class FlatFileView(AbstractFileView):
         self.insert_selected_items = set()
 
         self.model = FlatFileSystemModel(
-            parent=self,
+            parent=self.parent(), # Pass PanelWidget as parent
             show_dot_files=self.settings_manager.get_setting("showDotFiles", True),
             file_permissions_display_mode=self.settings_manager.get_setting("file_permissions_display_mode", "symbolic"),
             show_uid_column=self.settings_manager.get_setting("show_uid_column", True),
