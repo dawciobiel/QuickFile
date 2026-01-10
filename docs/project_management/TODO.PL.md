@@ -156,3 +156,5 @@
     - Kopiowania, przenoszenia, usuwania
 
 - [x] **Menu kontekstowe**: Dodano podstawowe menu kontekstowe (prawy przycisk myszy) dla plików i folderów.
+
+- [x] **Odświeżanie listy napędów**: Zaimplementowano dynamiczne odświeżanie listy napędów w pasku nawigacyjnym. Lista jest aktualizowana automatycznie w momencie rozwinięcia menu (kliknięcia), co pozwala na szybki dostęp do nowo zamontowanych urządzeń (np. pendrive).
