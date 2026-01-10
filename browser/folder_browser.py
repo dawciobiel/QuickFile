@@ -31,6 +31,14 @@ def _format_size(bytes_val):
     return f"{bytes_val:.1f} {power_labels[n]}"
 
 
+class DriveComboBox(QComboBox):
+    popup_about_to_show = pyqtSignal()
+
+    def showPopup(self):
+        self.popup_about_to_show.emit()
+        super().showPopup()
+
+
 class PanelWidget(QWidget):
     def __init__(self, settings_manager, folder_browser_event_filter, theme_manager, plugin_manager: PluginManager, notification_manager, parent=None):
         super().__init__(parent)
@@ -60,9 +68,10 @@ class PanelWidget(QWidget):
         self.nav_layout.setContentsMargins(0, 0, 0, 0)
         self.nav_layout.setSpacing(2)
 
-        self.drive_combo = QComboBox()
+        self.drive_combo = DriveComboBox()
         self.drive_combo.setMaximumWidth(100)
         self.drive_combo.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.drive_combo.popup_about_to_show.connect(self._refresh_drive_combo)
         self.nav_layout.addWidget(self.drive_combo)
 
         # Font for buttons
@@ -159,8 +168,11 @@ class PanelWidget(QWidget):
         self.path_edit.style().unpolish(self.path_edit)
         self.path_edit.style().polish(self.path_edit)
 
-    def _populate_drive_combo(self):
-        self.drive_combo.clear()
+    def _get_available_drives(self):
+        """
+        Scans the system for available drives and mount points.
+        Returns a sorted list of paths.
+        """
         mount_points = set()
         for drive in QDir.drives():
             mount_points.add(drive.path())
@@ -178,9 +190,27 @@ class PanelWidget(QWidget):
                     mount_points.add(p.mountpoint)
         except Exception as e:
             logging.warning(f"Failed to get disk partitions with psutil: {e}")
-        sorted_mount_points = sorted(list(mount_points))
-        for mp in sorted_mount_points:
-            self.drive_combo.addItem(mp)
+        return sorted(list(mount_points))
+
+    def _populate_drive_combo(self):
+        self.drive_combo.clear()
+        drives = self._get_available_drives()
+        self.drive_combo.addItems(drives)
+
+    def _refresh_drive_combo(self):
+        """Refreshes the drive list when the user opens the dropdown."""
+        new_drives = self._get_available_drives()
+        current_drives = [self.drive_combo.itemText(i) for i in range(self.drive_combo.count())]
+
+        if new_drives != current_drives:
+            logging.debug("Drive list changed, refreshing dropdown.")
+            self.drive_combo.blockSignals(True)
+            self.drive_combo.clear()
+            self.drive_combo.addItems(new_drives)
+            self.drive_combo.blockSignals(False)
+
+            if isinstance(self.file_view, AbstractFileView):
+                self._update_drive_selection(self.file_view.get_current_path())
 
     def _on_drive_selected(self, index):
         if index >= 0 and isinstance(self.file_view, AbstractFileView):
@@ -192,6 +222,9 @@ class PanelWidget(QWidget):
         self.path_edit.setText(new_path)
         self.completer_model.setRootPath(new_path)
         self.update_free_space_display(new_path)
+        self._update_drive_selection(new_path)
+
+    def _update_drive_selection(self, path):
         self.drive_combo.blockSignals(True)
         best_match_index = -1
         longest_match_len = -1
@@ -199,7 +232,7 @@ class PanelWidget(QWidget):
             drive_path = self.drive_combo.itemText(i)
             if drive_path != '/' and not drive_path.endswith(os.sep):
                 drive_path += os.sep
-            if new_path.startswith(drive_path):
+            if path.startswith(drive_path):
                 if len(drive_path) > longest_match_len:
                     longest_match_len = len(drive_path)
                     best_match_index = i
