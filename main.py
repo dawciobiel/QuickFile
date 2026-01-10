@@ -58,7 +58,8 @@ def main():
         task_queue_manager = TaskQueueManager(
             file_manager=file_manager,
             directory_synchronizer=directory_synchronizer,
-            plugin_manager=plugin_manager
+            plugin_manager=plugin_manager,
+            background_task_manager=background_task_manager
         )
 
         window = MainWindow(

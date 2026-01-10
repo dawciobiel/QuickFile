@@ -43,6 +43,7 @@ class Task(QObject):
         self.destination_path = destination_path
         self.options = options or {}
         self.result = None
+        self.context = None  # To hold the TaskContext from BackgroundTaskManager
         self._status = TaskStatus.PENDING
         self._progress = 0
         self._overall_progress = 0
@@ -101,6 +102,9 @@ class Task(QObject):
 
 class WorkerSignaller(QObject):
     progress = pyqtSignal(object)
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
 
 class TaskWorker(QRunnable):
     def __init__(self, task, file_manager, directory_synchronizer, plugin_manager):
@@ -109,12 +113,15 @@ class TaskWorker(QRunnable):
         self.file_manager = file_manager
         self.directory_synchronizer = directory_synchronizer
         self.plugin_manager = plugin_manager
-        self.signaller = WorkerSignaller()
-        self.signaller.progress.connect(self.task.set_progress)
+        self.signals = WorkerSignaller()
+        self.signals.progress.connect(self.task.set_progress)
 
     def run(self):
         try:
             self.task.set_status(TaskStatus.IN_PROGRESS)
+            
+            # The task context is now set by BackgroundTaskManager on the task object
+            task_context = self.task.context
             
             if self.task.type in [TaskType.COPY, TaskType.MOVE, TaskType.DELETE]:
                 plugin = self.plugin_manager.get_standard_operations_plugin()
@@ -122,35 +129,35 @@ class TaskWorker(QRunnable):
                     raise RuntimeError("No standard operations plugin found.")
                 
                 if self.task.type == TaskType.COPY:
-                    plugin.copy_items(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signaller.progress, task=self.task)
+                    plugin.copy_items(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
                 elif self.task.type == TaskType.MOVE:
-                    plugin.move_items(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signaller.progress, task=self.task)
+                    plugin.move_items(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
                 elif self.task.type == TaskType.DELETE:
-                    plugin.delete_items(self.task.source_paths, self.task.options, progress_callback=self.signaller.progress, task=self.task)
+                    plugin.delete_items(self.task.source_paths, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
 
             elif self.task.type == TaskType.SYNC:
-                self.directory_synchronizer.synchronize(self.task.source_paths[0], self.task.destination_path, self.task.options, task=self.task)
+                self.directory_synchronizer.synchronize(self.task.source_paths[0], self.task.destination_path, self.task.options, task_context=task_context, task=self.task)
             elif self.task.type == TaskType.CREATE_ARCHIVE:
                 plugin = self.task.options.get("plugin")
                 if plugin:
-                    plugin.create_archive(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signaller.progress, task=self.task)
+                    plugin.create_archive(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
             elif self.task.type == TaskType.EXTRACT_ARCHIVE:
                 plugin = self.task.options.get("plugin")
                 if plugin:
-                    plugin.extract_archive(self.task.source_paths[0], self.task.destination_path, self.task.options, progress_callback=self.signaller.progress, task=self.task)
+                    plugin.extract_archive(self.task.source_paths[0], self.task.destination_path, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
             elif self.task.type == TaskType.CHECKSUM:
                 plugin = self.task.options.get("plugin")
                 algorithm = self.task.options.get("algorithm")
                 if plugin and algorithm:
-                    checksum = plugin.calculate_checksum(self.task.source_paths[0], algorithm, progress_callback=self.signaller.progress, task=self.task)
+                    checksum = plugin.calculate_checksum(self.task.source_paths[0], algorithm, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
                     self.task.result = checksum
             elif self.task.type == TaskType.SEARCH:
                 plugin = self.task.options.get("plugin")
                 if plugin:
-                    results = plugin.search(self.task.source_paths[0], self.task.options.get("query"), self.task.options, progress_callback=self.signaller.progress, task=self.task)
+                    results = plugin.search(self.task.source_paths[0], self.task.options.get("query"), self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
                     self.task.result = results
             elif self.task.type == TaskType.CALCULATE_SIZE:
-                size = self.file_manager.calculate_directory_size(self.task.source_paths[0], task=self.task)
+                size = self.file_manager.calculate_directory_size(self.task.source_paths[0], task_context=task_context, task=self.task)
                 self.task.result = size
 
             if self.task.status != TaskStatus.CANCELLED:
@@ -161,7 +168,7 @@ class TaskWorker(QRunnable):
             self.task.set_details(str(e))
             self.task.set_status(TaskStatus.ERROR)
         finally:
-            self.task.finished.emit()
+            self.signals.finished.emit()
 
 
 class TaskQueueManager(QObject):
@@ -170,16 +177,15 @@ class TaskQueueManager(QObject):
     task_finished = pyqtSignal(Task)  # Emitted on success, error, or cancel
     queue_cleared = pyqtSignal()
 
-    def __init__(self, file_manager, directory_synchronizer, plugin_manager, max_threads=4):
+    def __init__(self, file_manager, directory_synchronizer, plugin_manager, background_task_manager):
         super().__init__()
         self.file_manager = file_manager
         self.directory_synchronizer = directory_synchronizer
         self.plugin_manager = plugin_manager
+        self.background_task_manager = background_task_manager
         self.queue = []
         self.active_tasks = {}
         self.all_tasks = [] # Keep track of all tasks, including finished ones
-        self.thread_pool = QThreadPool()
-        self.thread_pool.setMaxThreadCount(max_threads)
 
     def add_task(self, task: Task):
         self.queue.append(task)
@@ -188,19 +194,21 @@ class TaskQueueManager(QObject):
         self.process_queue()
 
     def process_queue(self):
-        if self.thread_pool.activeThreadCount() < self.thread_pool.maxThreadCount():
+        # Check if we can start a new task
+        if len(self.active_tasks) < self.background_task_manager.thread_pool.maxThreadCount():
             if self.queue:
                 task = self.queue.pop(0)
                 self.active_tasks[task.id] = task
                 
                 worker = TaskWorker(task, self.file_manager, self.directory_synchronizer, self.plugin_manager)
-                worker.setAutoDelete(True)
                 
-                # Connect the task's finished signal to a slot that removes it from active_tasks
-                task.finished.connect(lambda: self._on_task_finished(task))
+                # Use BackgroundTaskManager to run the worker
+                signals = self.background_task_manager.run_task(task, worker)
                 
-                self.thread_pool.start(worker)
-
+                # Connect the finished signal from the background manager
+                if signals:
+                    signals.finished.connect(lambda: self._on_task_finished(task))
+                
     def _on_task_finished(self, task):
         if task.id in self.active_tasks:
             del self.active_tasks[task.id]
@@ -214,9 +222,21 @@ class TaskQueueManager(QObject):
     def cancel_task(self, task_id):
         if task_id in self.active_tasks:
             task = self.active_tasks[task_id]
-            task.set_status(TaskStatus.CANCELLED)
-            # The running worker needs to check for this status change
-    
+            self.background_task_manager.cancel_task(task_id)
+            # No need to set status here, the worker will handle it via task_context
+
+    def pause_task(self, task_id):
+        if task_id in self.active_tasks:
+            task = self.active_tasks[task_id]
+            self.background_task_manager.pause_task(task_id)
+            task.set_status(TaskStatus.PAUSED)
+
+    def resume_task(self, task_id):
+        if task_id in self.active_tasks:
+            task = self.active_tasks[task_id]
+            self.background_task_manager.resume_task(task_id)
+            task.set_status(TaskStatus.IN_PROGRESS)
+
     def clear_completed_tasks(self):
         self.all_tasks = [task for task in self.all_tasks if task.status != TaskStatus.FINISHED]
         self.queue_cleared.emit()
