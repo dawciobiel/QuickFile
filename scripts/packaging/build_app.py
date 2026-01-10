@@ -3,12 +3,33 @@ import sys
 import subprocess
 import platform
 
+def get_platform_specific_options(project_root):
+    """Returns a dictionary of platform-specific options for PyInstaller."""
+    system = platform.system()
+    options = {}
+    
+    if system == "Windows":
+        icon_path = os.path.join(project_root, "resources", "icons", "app_icon.ico")
+        if os.path.exists(icon_path):
+            options['icon'] = icon_path
+    elif system == "Darwin": # macOS
+        icon_path = os.path.join(project_root, "resources", "icons", "app_icon.icns")
+        if os.path.exists(icon_path):
+            options['icon'] = icon_path
+    # Linux does not use a single icon file in the same way for executables.
+    # Desktop entries are used instead.
+    
+    return options
+
 def build():
     # Determine paths
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     main_script = os.path.join(project_root, "main.py")
     dist_dir = os.path.join(project_root, "dist")
     build_dir = os.path.join(project_root, "build")
+    
+    # Get platform-specific options
+    platform_opts = get_platform_specific_options(project_root)
     
     # PyInstaller arguments
     args = [
@@ -43,6 +64,10 @@ def build():
         # Main script
         main_script
     ]
+    
+    # Add platform-specific arguments
+    if 'icon' in platform_opts:
+        args.extend(["--icon", platform_opts['icon']])
 
     print("Starting build process...")
     print(f"Command: {' '.join(args)}")
