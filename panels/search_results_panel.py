@@ -55,5 +55,5 @@ class SearchResultsPanel(QWidget):
         
         self.layout.addWidget(self.table_view)
 
-    def display_results(self, results):
+    def set_results(self, results):
         self.model.set_results(results)

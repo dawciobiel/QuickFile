@@ -140,6 +140,9 @@ class MainWindow(QMainWindow):
         self.mainTabWidget.setTabText(self.mainTabWidget.indexOf(self.queue_tab), translation_manager.translate("MainWindow", "Queue"))
         self.mainTabWidget.setTabText(self.mainTabWidget.indexOf(self.search_tab), translation_manager.translate("MainWindow", "Search Results"))
 
+    def switchToSearchResultsTab(self):
+        self.mainTabWidget.setCurrentWidget(self.search_tab)
+
     def on_task_added(self, task: Task):
         task.directory_changed.connect(self.ui_manager.folder_browser.refresh_path)
         
@@ -170,7 +173,7 @@ class MainWindow(QMainWindow):
                 dialog = ChecksumResultDialog(self, "Checksum Result", str(task.result))
                 dialog.exec()
         elif task.type == TaskType.SEARCH and task.result is not None:
-            self.search_results_panel.display_results(task.result)
+            self.search_results_panel.set_results(task.result)
             self.mainTabWidget.setCurrentWidget(self.search_tab)
         
         self.ui_manager.folder_browser.handle_task_completion(task)

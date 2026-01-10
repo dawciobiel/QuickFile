@@ -125,7 +125,12 @@ class DialogHandler:
             self.main_window.shortcuts_manager.apply_shortcuts_settings(new_shortcuts)
 
     def show_search_results(self, results):
-        pass
+        if self.main_window.search_results_panel:
+            self.main_window.search_results_panel.set_results(results)
+            # Assuming you have a method to switch to the search results tab
+            self.main_window.switchToSearchResultsTab()
+        else:
+            logging.error("Search results panel is not available.")
 
     def _compare_files(self, file1_path, file2_path):
         action_logger.log_action("compare_files", file1=file1_path, file2=file2_path)
@@ -233,9 +238,16 @@ class DialogHandler:
             query = options.get("file_name")
             start_path = options.get("start_path", current_path)
             
+            search_plugins = self.task_queue_manager.plugin_manager.get_search_plugins()
+            if not search_plugins:
+                QMessageBox.critical(self.main_window, "Error", "No search plugin found.")
+                return
+            search_plugin = search_plugins[0]
+
             if query:
+                options_with_plugin = {"plugin": search_plugin, "query": query, **options}
                 action_logger.log_action("search", path=start_path, query=query, options=options)
-                task = Task(TaskType.SEARCH, source_paths=[start_path], options={"query": query, **options})
+                task = Task(TaskType.SEARCH, source_paths=[start_path], options=options_with_plugin)
                 self.task_queue_manager.add_task(task)
                 self.main_window.statusBar().showMessage("Added search task to queue.")
 
