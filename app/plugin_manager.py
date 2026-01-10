@@ -158,6 +158,19 @@ class PluginManager:
             with open(metadata_path, 'r') as f:
                 metadata = json.load(f)
 
+            # Check platform compatibility
+            if "platforms" in metadata:
+                current_platform = platform.system().lower()
+                supported_platforms = [p.lower() for p in metadata["platforms"]]
+                
+                # Handle macOS alias
+                if current_platform == "darwin" and "macos" in supported_platforms:
+                    current_platform = "macos"
+                
+                if current_platform not in supported_platforms:
+                    logging.debug(f"Skipping plugin {metadata.get('id')} as it is not supported on {platform.system()}. Supported: {supported_platforms}")
+                    return
+
             plugin_type = metadata.get("type")
             if plugin_type in self.plugins:
                 entry_point = metadata["entry_point"]
@@ -174,6 +187,7 @@ class PluginManager:
                 
                 # Store module for potential reloading
                 plugin_instance.__module_name__ = module.__name__
+                plugin_instance.metadata = metadata
 
                 self.plugins[plugin_type].append(plugin_instance)
                 logging.info(f"Successfully loaded plugin: {metadata['id']} v{metadata.get('version', 'N/A')} (type: {plugin_type})")
@@ -190,6 +204,12 @@ class PluginManager:
             for plugin in self.plugins["standard_operations"]:
                 if "windows" in plugin.name.lower():
                     return plugin
+        
+        # On non-Windows systems, prefer plugins that don't have "windows" in the name
+        for plugin in self.plugins["standard_operations"]:
+            if "windows" not in plugin.name.lower():
+                return plugin
+
         if self.plugins["standard_operations"]:
             return self.plugins["standard_operations"][0]
         return None
