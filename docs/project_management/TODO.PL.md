@@ -2,10 +2,6 @@
 
 ## Główne funkcje do zaimplementowania
 
-- [ ] **Feature: Wyświetlanie prędkości transferu**:
-    - W oknach dialogowych kopiowania i przenoszenia plików, podczas trwania operacji, powinna być wyświetlana aktualna prędkość transferu (
-      np. w MB/s).
-
 - [ ] **Feature: System powiadomień**:
     - Przemyślenie i zaprojektowanie systemu powiadomień o ukończeniu zadań w tle (np. kopiowanie, przenoszenie, archiwizacja, generowanie sum kontrolnych).
     - Należy rozważyć różne formy powiadomień:
@@ -18,10 +14,6 @@
     - Zaprojektowanie odpowiedniego systemu pobierania i instalowania aktualizacji dla aplikacji, motywów, zasobów, tłumaczeń i pluginów.
     - System aktualizacji powinien wspierać wersję oficjalną aplikacji.
     - Przydałby się również system do aktualizacji wersji beta (przewidziana jako wersja binarna, bez kodów źródłowych).
-
-- [ ] **Licencjonowanie aplikacji**:
-    - Ustalenie i wpisanie w projekcie (deklaracja w pliku `LICENSE`, komentarze dokumentacyjne w skryptach i katalogach) oraz systemie kontroli wersji (GitHub).
-    - To bardzo ważny punkt z wysokim priorytetem, który trzeba zrealizować przed wypuszczeniem pierwszych wersji beta aplikacji.
 
 - [ ] **Zabezpieczenie kodu źródłowego**:
     - Zabezpieczenie kodu źródłowego aplikacji przed kradzieżą.
