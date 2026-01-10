@@ -7,5 +7,10 @@
   "name": "Standard File Operations",
   "description": "Provides standard file operations like copy, move, and delete.",
   "entry_point": "plugin:StandardOperationsPluginImpl",
-  "class_name": "StandardOperationsPluginImpl"
+  "class_name": "StandardOperationsPluginImpl",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ]
 }

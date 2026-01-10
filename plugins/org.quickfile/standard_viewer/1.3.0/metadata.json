@@ -7,5 +7,10 @@
   "name": "Standard File Viewer",
   "description": "A built-in viewer for text files, images, markdown, and source code.",
   "entry_point": "plugin:StandardViewerPlugin",
-  "class_name": "StandardViewerPlugin"
+  "class_name": "StandardViewerPlugin",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ]
 }
