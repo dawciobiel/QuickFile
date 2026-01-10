@@ -22,7 +22,12 @@ def handle_error(func):
             return func(self, *args, **kwargs)
         except Exception as e:
             logging.exception(f"An unexpected error occurred in {func.__name__}: {e}")
-            show_error_message(self.main_window, translation_manager.translate("Global", "Error"), str(e))
+            # Access notification_manager through the dialog_handler which is guaranteed to exist
+            if self.dialog_handler and hasattr(self.dialog_handler.main_window, 'notification_manager'):
+                show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), str(e))
+            else:
+                # Fallback for early errors before full initialization
+                QMessageBox.critical(None, translation_manager.translate("Global", "Critical Error"), str(e))
     return wrapper
 
 
@@ -93,7 +98,7 @@ class ApplicationLogicHandler(QObject):
             subprocess.Popen(command, shell=True)
         except Exception as e:
             logging.error(f"Failed to execute command '{command_template}' for file {file_path}: {e}")
-            show_error_message(self.main_window, translation_manager.translate("Global", "Error"), f"Failed to execute command: {e}")
+            show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), f"Failed to execute command: {e}")
 
     @handle_error
     def open_terminal_in_path(self, path):
@@ -321,7 +326,7 @@ class ApplicationLogicHandler(QObject):
             elif os.path.isdir(path1) and os.path.isdir(path2):
                 self.dialog_handler._compare_directories(path1, path2)
             else:
-                show_error_message(self.main_window, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Cannot compare a file with a directory."))
+                show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Cannot compare a file with a directory."))
         elif len(selected_paths) == 1:
             # Compare with item in other panel
             path1 = selected_paths[0]
@@ -335,13 +340,13 @@ class ApplicationLogicHandler(QObject):
                      elif os.path.isdir(path1) and os.path.isdir(path2):
                         self.dialog_handler._compare_directories(path1, path2)
                      else:
-                        show_error_message(self.main_window, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Cannot compare a file with a directory."))
+                        show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Cannot compare a file with a directory."))
                 else:
-                     show_error_message(self.main_window, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Item not found in the other panel."))
+                     show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Item not found in the other panel."))
             else:
-                 show_error_message(self.main_window, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "No other panel active."))
+                 show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "No other panel active."))
         else:
-            show_error_message(self.main_window, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Select exactly two items to compare, or one item to compare with the other panel."))
+            show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), translation_manager.translate("MenuPanel", "Select exactly two items to compare, or one item to compare with the other panel."))
 
     @handle_error
     def create_archive(self, checked=False):

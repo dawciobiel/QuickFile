@@ -27,6 +27,7 @@ class UIManager:
             settings_manager=self.settings_manager,
             theme_manager=self.theme_manager,
             plugin_manager=self.plugin_manager,
+            notification_manager=self.main_window.notification_manager,
             parent=self.main_window
         )
         self.main_window.browser_tab.layout().addWidget(self.folder_browser)
