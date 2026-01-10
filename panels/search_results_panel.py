@@ -50,6 +50,9 @@ class SearchResultsPanel(QWidget):
         header = self.table_view.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         
+        # Set activePanel property to true to use the same header style as active browser panels
+        header.setProperty("activePanel", True)
+        
         self.layout.addWidget(self.table_view)
 
     def display_results(self, results):

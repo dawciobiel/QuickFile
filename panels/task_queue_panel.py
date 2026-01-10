@@ -214,6 +214,9 @@ class TaskQueuePanel(QWidget):
         self.view.setColumnWidth(4, 100) # Speed column
         self.view.setColumnWidth(5, 250)  # Actions column
         
+        # Set activePanel property to true to use the same header style as active browser panels
+        self.view.horizontalHeader().setProperty("activePanel", True)
+        
         self.layout.addWidget(self.view)
 
         self.buttons_layout = QHBoxLayout()
