@@ -88,34 +88,46 @@ class BackgroundTaskManager(QObject):
     def __init__(self):
         super().__init__()
         self.thread_pool = QThreadPool()
-        self.current_worker = None
-        self.current_context = None
+        self.contexts = {}
         logging.info(f"Multithreading with maximum {self.thread_pool.maxThreadCount()} threads.")
 
-    def run_task(self, fn, *args, **kwargs):
-        # Create a task context (handles cancellation and pause)
-        self.current_context = TaskContext()
+    def run_task(self, task, runnable: QRunnable):
+        # Create a task context
+        context = TaskContext()
+        self.contexts[task.id] = context
         
-        # Pass the context to the function via 'task_context' argument
-        kwargs['task_context'] = self.current_context
+        # Assign context to the task object
+        task.context = context
         
-        worker = Worker(fn, *args, **kwargs)
-        self.thread_pool.start(worker)
-        self.current_worker = worker
-        return worker.signals
+        # The runnable (e.g., TaskWorker) should have a 'task' attribute
+        # and should use the context from it.
+        if hasattr(runnable, 'task'):
+            runnable.task.context = context
+        
+        # The runnable should also have a 'signals' attribute
+        if hasattr(runnable, 'signals'):
+            # Remove worker and context when finished
+            runnable.signals.finished.connect(lambda: self._on_task_finished(task.id))
+        
+        self.thread_pool.start(runnable)
+        
+        return getattr(runnable, 'signals', None)
 
-    def cancel_current_task(self):
-        if self.current_context:
-            logging.info("Cancelling current task...")
-            self.current_context.cancel()
-        self.thread_pool.clear()
+    def _on_task_finished(self, task_id):
+        if task_id in self.contexts:
+            del self.contexts[task_id]
 
-    def pause_current_task(self):
-        if self.current_context:
-            logging.info("Pausing current task...")
-            self.current_context.pause()
+    def cancel_task(self, task_id):
+        if task_id in self.contexts:
+            logging.info(f"Cancelling task {task_id}...")
+            self.contexts[task_id].cancel()
 
-    def resume_current_task(self):
-        if self.current_context:
-            logging.info("Resuming current task...")
-            self.current_context.resume()
+    def pause_task(self, task_id):
+        if task_id in self.contexts:
+            logging.info(f"Pausing task {task_id}...")
+            self.contexts[task_id].pause()
+
+    def resume_task(self, task_id):
+        if task_id in self.contexts:
+            logging.info(f"Resuming task {task_id}...")
+            self.contexts[task_id].resume()
