@@ -5,6 +5,7 @@
   "secondary_background": "#2D2E26",
   "alternate_background": "#3E3D32",
   "foreground": "#F8F8F2",
+  "icon_color": "#F8F8F2",
   "accent": "#AE81FF",
   "border": "#272822",
   "selection_foreground": "#272822",

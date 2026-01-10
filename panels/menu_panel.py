@@ -21,7 +21,9 @@ class MenuPanel:
         self.theme_manager = theme_manager
         self.actions = {}
         self.icon_map = self._create_icon_map()
-        self.icon_color = self.theme_manager.get_current_theme_data().get("foreground", "#000000")
+        theme_data = self.theme_manager.get_current_theme_data()
+        self.icon_color = theme_data.get("icon_color", theme_data.get("foreground", "#000000"))
+
 
     def _create_icon_map(self):
         base_path = "resources/icons/fonts.google.com"
@@ -54,6 +56,7 @@ class MenuPanel:
         self._create_all_actions()
         self._build_toolbar_from_config()
         self._build_menus()
+        self._add_plugin_actions()
 
     def _create_all_actions(self):
         """Create all possible actions that can be used in menus or toolbars."""
@@ -170,62 +173,107 @@ class MenuPanel:
             menu.addAction(self.actions[shortcut_id])
 
     def _create_file_menu(self):
-        file_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&File"))
-        self._add_action_to_menu(file_menu, "file.properties")
-        self._add_action_to_menu(file_menu, "file.compare")
-        file_menu.addSeparator()
-        self._add_action_to_menu(file_menu, "file.create_archive")
-        self._add_action_to_menu(file_menu, "file.extract_archive")
-        file_menu.addSeparator()
-        self._add_action_to_menu(file_menu, "file.calculate_checksum")
-        file_menu.addSeparator()
-        self._add_action_to_menu(file_menu, "file.create_link")
-        self._add_action_to_menu(file_menu, "file.modify_link")
-        file_menu.addSeparator()
-        self._add_action_to_menu(file_menu, "file.exit")
+        self.file_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&File"))
+        self._add_action_to_menu(self.file_menu, "file.properties")
+        self._add_action_to_menu(self.file_menu, "file.compare")
+        self.file_menu.addSeparator()
+        self._add_action_to_menu(self.file_menu, "file.create_archive")
+        self._add_action_to_menu(self.file_menu, "file.extract_archive")
+        self.file_menu.addSeparator()
+        self._add_action_to_menu(self.file_menu, "file.create_link")
+        self._add_action_to_menu(self.file_menu, "file.modify_link")
+        # "Exit" and plugin actions will be added later
 
     def _create_operations_menu(self):
-        operations_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&Operations"))
-        self._add_action_to_menu(operations_menu, "operations.view")
-        self._add_action_to_menu(operations_menu, "operations.edit")
-        operations_menu.addSeparator()
-        self._add_action_to_menu(operations_menu, "operations.copy")
-        self._add_action_to_menu(operations_menu, "operations.move")
-        self._add_action_to_menu(operations_menu, "operations.delete")
-        self._add_action_to_menu(operations_menu, "operations.rename")
-        operations_menu.addSeparator()
-        self._add_action_to_menu(operations_menu, "operations.new_file")
-        self._add_action_to_menu(operations_menu, "operations.new_folder")
-        operations_menu.addSeparator()
-        self._add_action_to_menu(operations_menu, "operations.change_owner")
-        operations_menu.addSeparator()
-        self._add_action_to_menu(operations_menu, "operations.open_terminal")
-        self._add_action_to_menu(operations_menu, "operations.open_admin_terminal")
+        self.operations_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&Operations"))
+        self._add_action_to_menu(self.operations_menu, "operations.view")
+        self._add_action_to_menu(self.operations_menu, "operations.edit")
+        self.operations_menu.addSeparator()
+        self._add_action_to_menu(self.operations_menu, "operations.copy")
+        self._add_action_to_menu(self.operations_menu, "operations.move")
+        self._add_action_to_menu(self.operations_menu, "operations.delete")
+        self._add_action_to_menu(self.operations_menu, "operations.rename")
+        self.operations_menu.addSeparator()
+        self._add_action_to_menu(self.operations_menu, "operations.new_file")
+        self._add_action_to_menu(self.operations_menu, "operations.new_folder")
+        
+        if "operations.change_owner" in self.actions:
+            self.operations_menu.addSeparator()
+            self._add_action_to_menu(self.operations_menu, "operations.change_owner")
+
+        self.operations_menu.addSeparator()
+        self._add_action_to_menu(self.operations_menu, "operations.open_terminal")
+        self._add_action_to_menu(self.operations_menu, "operations.open_admin_terminal")
 
     def _create_favorites_menu(self):
-        favorites_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "F&avorites"))
-        self._add_action_to_menu(favorites_menu, "favorites.add")
-        self._add_action_to_menu(favorites_menu, "favorites.manage")
+        self.favorites_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "F&avorites"))
+        self._add_action_to_menu(self.favorites_menu, "favorites.add")
+        self._add_action_to_menu(self.favorites_menu, "favorites.manage")
 
     def _create_view_menu(self):
-        view_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&View"))
-        self._add_action_to_menu(view_menu, "view.refresh")
-        view_menu.addSeparator()
-        self._add_action_to_menu(view_menu, "view.show_toolbar")
-        view_menu.addSeparator()
-        self._add_action_to_menu(view_menu, "view.new_tab")
-        self._add_action_to_menu(view_menu, "view.close_tab")
-        view_menu.addSeparator()
-        self._add_action_to_menu(view_menu, "view.search")
-        self._add_action_to_menu(view_menu, "view.synchronize")
-        view_menu.addSeparator()
-        self._add_action_to_menu(view_menu, "view.focus_path")
+        self.view_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&View"))
+        self._add_action_to_menu(self.view_menu, "view.refresh")
+        self.view_menu.addSeparator()
+        self._add_action_to_menu(self.view_menu, "view.show_toolbar")
+        self.view_menu.addSeparator()
+        self._add_action_to_menu(self.view_menu, "view.new_tab")
+        self._add_action_to_menu(self.view_menu, "view.close_tab")
+        self.view_menu.addSeparator()
+        self._add_action_to_menu(self.view_menu, "view.search")
+        self._add_action_to_menu(self.view_menu, "view.synchronize")
+        self.view_menu.addSeparator()
+        self._add_action_to_menu(self.view_menu, "view.focus_path")
 
     def _create_options_menu(self):
-        options_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&Options"))
-        self._add_action_to_menu(options_menu, "options.general_settings")
-        self._add_action_to_menu(options_menu, "options.shortcuts")
+        self.options_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&Options"))
+        self._add_action_to_menu(self.options_menu, "options.general_settings")
+        self._add_action_to_menu(self.options_menu, "options.shortcuts")
 
     def _create_help_menu(self):
-        help_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&Help"))
-        self._add_action_to_menu(help_menu, "help.about")
+        self.help_menu = self.main_window.menuBar().addMenu(translation_manager.translate("MenuPanel", "&Help"))
+        self._add_action_to_menu(self.help_menu, "help.about")
+
+    def _add_plugin_actions(self):
+        menu_plugins = self.app_logic_handler.task_queue_manager.plugin_manager.get_menu_action_plugins()
+        
+        menus = {
+            "file": self.file_menu,
+            "operations": self.operations_menu,
+            "view": self.view_menu,
+            "options": self.options_menu,
+            "help": self.help_menu
+        }
+        
+        plugin_actions_by_menu = {name: [] for name in menus.keys()}
+        if menu_plugins:
+            for plugin in menu_plugins:
+                for action_info in plugin.get_menu_actions():
+                    target_menu_name = action_info.get("menu", "").lower()
+                    if target_menu_name in plugin_actions_by_menu:
+                        action = QAction(action_info["text"], self.main_window)
+                        action.triggered.connect(action_info["callback"])
+                        if "icon_path" in action_info:
+                            action.setIcon(get_colorized_icon(action_info["icon_path"], self.icon_color))
+                        plugin_actions_by_menu[target_menu_name].append(action)
+
+        # --- Finalize File Menu ---
+        file_tools_actions = [self.actions.get("file.calculate_checksum")] + plugin_actions_by_menu["file"]
+        file_tools_actions = [action for action in file_tools_actions if action]
+
+        if file_tools_actions:
+            self.file_menu.addSeparator()
+            for action in file_tools_actions:
+                self.file_menu.addAction(action)
+        
+        self.file_menu.addSeparator()
+        self._add_action_to_menu(self.file_menu, "file.exit")
+
+        # --- Finalize Other Menus ---
+        for menu_name, menu_widget in menus.items():
+            if menu_name == "file":
+                continue
+            
+            if plugin_actions_by_menu[menu_name]:
+                menu_widget.addSeparator()
+                for action in plugin_actions_by_menu[menu_name]:
+                    menu_widget.addAction(action)

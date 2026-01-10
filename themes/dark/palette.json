@@ -3,6 +3,7 @@
     "secondary_background": "#34495e",
     "alternate_background": "#3a5369",
     "foreground": "#ecf0f1",
+    "icon_color": "#ecf0f1",
     "accent": "#3498db",
     "border": "#2c3e50",
     "selection_foreground": "#ffffff",
