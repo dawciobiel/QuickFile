@@ -2,13 +2,18 @@
 
 ## Główne funkcje do zaimplementowania
 
-- [ ] **Feature: System powiadomień**:
-    - Przemyślenie i zaprojektowanie systemu powiadomień o ukończeniu zadań w tle (np. kopiowanie, przenoszenie, archiwizacja, generowanie sum kontrolnych).
-    - Należy rozważyć różne formy powiadomień:
-        - Niestandardowe "baloniki" (tooltips) w rogu aplikacji.
-        - Opcjonalne sygnały dźwiękowe.
-        - Integracja z natywnym systemem powiadomień systemu operacyjnego (Windows, Linux).
-    - System powinien być konfigurowalny w ustawieniach aplikacji.
+- [ ] **Feature: Dzielenie plików (Plugin)**:
+    - Dokończenie implementacji pluginu `file_splitter`.
+    - Stworzenie UI (`split_dialog.ui`) z opcjami:
+        - Wybór katalogu docelowego.
+        - Wybór predefiniowanego rozmiaru części (1.44 MB, 650 MB, 700 MB, 4.5 GB).
+        - Możliwość podania własnego rozmiaru.
+        - Opcja generowania pliku z sumami kontrolnymi (CRC32).
+    - Implementacja logiki dzielenia plików w tle z obsługą postępu.
+
+- [ ] **UI/UX: Ulepszenie przycisków w oknach operacji**:
+    - Przycisk "Pauza" powinien dynamicznie zmieniać swój tekst (lub ikonę) na "Wznów" po wciśnięciu.
+    - Rozważyć zastąpienie tekstów na przyciskach ("Pauza", "Anuluj") uniwersalnymi ikonami, aby poprawić spójność interfejsu. Należy zadbać o odpowiedni rozmiar i czytelność przycisków.
 
 - [ ] **Feature: System aktualizacji**:
     - Zaprojektowanie odpowiedniego systemu pobierania i instalowania aktualizacji dla aplikacji, motywów, zasobów, tłumaczeń i pluginów.
@@ -26,6 +31,30 @@
 - [ ] **Feature**: Pod Windows (i jego systemem plików) czasami może być problem ze zbyt długimi nazwami plików lub zbyt długą ścieżką. Przyjrzeć się temu problemowi i dodać odpowiednią funkcjonalność dla "zachowania nazwy pliku".
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Feature: System powiadomień**:
+    - Zaimplementowano system powiadomień wizualnych (dymki/toasty) dla zadań w tle.
+    - Dodano powiadomienia dźwiękowe dla statusów zadań (sukces, błąd, anulowanie) oraz dla blokujących okien dialogowych z błędami.
+    - Dodano możliwość włączenia/wyłączenia powiadomień dźwiękowych w ustawieniach.
+    - **Do zrobienia w przyszłości**:
+        - [ ] Integracja z natywnym systemem powiadomień systemu operacyjnego (jako opcja).
+
+- [x] **Testowanie (E2E)**:
+    - Stworzono solidny fundament pod testy End-to-End przy użyciu `pytest-qt`.
+    - Zaimplementowano testy dla kluczowych przepływów użytkownika:
+        - Wyszukiwanie plików (`test_search_flow.py`)
+        - Kopiowanie (`test_copy_flow.py`)
+        - Przenoszenie (`test_move_flow.py`)
+        - Usuwanie (`test_delete_flow.py`)
+        - Zmiana nazwy (`test_rename_flow.py`)
+        - Tworzenie nowego katalogu (`test_new_folder_flow.py`)
+        - Synchronizacja katalogów (`test_sync_flow.py`)
+    - Naprawiono błędy w środowisku testowym CI (GitHub Actions) związane z zależnościami i logiką testów.
+
+- [x] **Architektura pluginów (Menu)**:
+    - Stworzono nowy interfejs `MenuActionPlugin`, który pozwala pluginom na dynamiczne dodawanie własnych akcji do menu głównego aplikacji.
+    - Zintegrowano nowy mechanizm z `PluginManager` i `MenuPanel`.
+    - Stworzono szkielet pluginu `file_splitter` jako pierwszą implementację tego mechanizmu.
 
 - [x] **Feature: Wbudowany edytor kodu (Plugin)**:
     - Stworzono wtyczkę `standard_editor` (F4) z podstawową funkcjonalnością.
