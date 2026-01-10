@@ -30,14 +30,6 @@ def qapp():
         app = QApplication([])
     return app
 
-@pytest.fixture(autouse=True)
-def mute_sounds(mocker):
-    """
-    Automatically mocks QSoundEffect.play for all tests to prevent
-    actual sound playback and avoid system dependency issues in CI.
-    """
-    mocker.patch('PyQt6.QtMultimedia.QSoundEffect.play', return_value=None)
-
 @pytest.fixture
 def isolated_env(tmp_path_factory):
     """Creates an isolated environment with temporary directories for all E2E tests."""
