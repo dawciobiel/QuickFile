@@ -143,9 +143,9 @@ class TaskQueueModel(QAbstractTableModel):
 
         if role == Qt.ItemDataRole.BackgroundRole:
             if task.status == TaskStatus.ERROR:
-                return QColor(Qt.GlobalColor.red)
+                return QColor(Qt.GlobalColor.darkRed)
             elif task.status == TaskStatus.PAUSED:
-                return QColor(Qt.GlobalColor.yellow)
+                return QColor(Qt.GlobalColor.blue)
             elif task.status == TaskStatus.FINISHED:
                 return QColor(Qt.GlobalColor.darkGreen)
         
