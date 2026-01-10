@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import QTableView, QVBoxLayout, QHBoxLayout, QWidget, QHead
 
 from app.task_queue_manager import TaskQueueManager, TaskStatus
 from app.translation_manager import translation_manager
-
+from utils.formatters import format_speed
 
 class TaskActionsWidget(QWidget):
     """A widget containing buttons for a single task."""
@@ -81,6 +81,7 @@ class TaskQueueModel(QAbstractTableModel):
         task.status_changed.connect(self.on_task_status_changed)
         task.progress_changed.connect(self.on_task_progress_changed)
         task.details_changed.connect(self.on_task_details_changed)
+        task.speed_changed.connect(self.on_task_speed_changed)
 
     def on_task_finished(self, task):
         self.layoutChanged.emit()
@@ -113,11 +114,19 @@ class TaskQueueModel(QAbstractTableModel):
         except ValueError:
             pass
 
+    def on_task_speed_changed(self, speed):
+        task = self.sender()
+        try:
+            row = self.manager.all_tasks.index(task)
+            self.dataChanged.emit(self.index(row, 4), self.index(row, 4))
+        except ValueError:
+            pass
+
     def rowCount(self, parent=QModelIndex()):
         return len(self.manager.all_tasks)
 
     def columnCount(self, parent=QModelIndex()):
-        return 5  # Type, Status, Progress, Details, Actions
+        return 6  # Type, Status, Progress, Details, Speed, Actions
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid() or not (0 <= index.row() < self.rowCount()):
@@ -130,6 +139,7 @@ class TaskQueueModel(QAbstractTableModel):
             if index.column() == 1: return task.status.name
             if index.column() == 2: return task.progress
             if index.column() == 3: return task.details
+            if index.column() == 4: return format_speed(task.speed)
 
         if role == Qt.ItemDataRole.BackgroundRole:
             if task.status == TaskStatus.ERROR:
@@ -148,7 +158,8 @@ class TaskQueueModel(QAbstractTableModel):
                 1: translation_manager.translate("TaskQueuePanel", "Status"),
                 2: translation_manager.translate("TaskQueuePanel", "Progress"),
                 3: translation_manager.translate("TaskQueuePanel", "Details"),
-                4: translation_manager.translate("TaskQueuePanel", "Actions")
+                4: translation_manager.translate("TaskQueuePanel", "Speed"),
+                5: translation_manager.translate("TaskQueuePanel", "Actions")
             }
             return headers.get(section)
         return None
@@ -200,7 +211,8 @@ class TaskQueuePanel(QWidget):
 
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self.view.setColumnWidth(3, 400)
-        self.view.setColumnWidth(4, 250)  # Increased width for 3 buttons
+        self.view.setColumnWidth(4, 100) # Speed column
+        self.view.setColumnWidth(5, 250)  # Actions column
         
         self.layout.addWidget(self.view)
 
@@ -225,7 +237,7 @@ class TaskQueuePanel(QWidget):
         row_count = self.model.rowCount()
         for row in range(row_count):
             task = self.manager.all_tasks[row]
-            index = self.model.index(row, 4)  # Actions column
+            index = self.model.index(row, 5)  # Actions column
 
             if task.status in [TaskStatus.IN_PROGRESS, TaskStatus.PAUSED]:
                 existing_widget = self.view.indexWidget(index)
