@@ -6,7 +6,8 @@ import os
 import shutil
 import sys
 import pytest
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMainWindow
+from unittest.mock import MagicMock
 
 # Add the project root directory to sys.path so imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -17,6 +18,8 @@ from app.task_queue_manager import TaskQueueManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_manager import FileManager
 from ui.main_window import MainWindow
+
+# --- Fixtures for E2E tests ---
 
 @pytest.fixture(scope="session")
 def qapp():
@@ -31,20 +34,16 @@ def isolated_env(tmp_path_factory):
     """Creates an isolated environment with temporary directories for tests."""
     base_dir = tmp_path_factory.mktemp("quickfile_test_run")
     
-    # --- Directories for core app functionality ---
     plugin_dir = base_dir / "plugins"
     plugin_dir.mkdir()
     
     config_dir = base_dir / "config"
     config_dir.mkdir()
 
-    # --- Directories for search tests ---
     search_data_dir = base_dir / "search_data"
     search_data_dir.mkdir()
     (search_data_dir / "found_me.txt").touch()
-    (search_data_dir / "another_file.log").touch()
 
-    # --- Directories for file operation tests (e.g., copy, move) ---
     source_dir = base_dir / "source"
     source_dir.mkdir()
     (source_dir / "file_to_copy.txt").write_text("This is a test file.")
@@ -52,7 +51,6 @@ def isolated_env(tmp_path_factory):
     destination_dir = base_dir / "destination"
     destination_dir.mkdir()
 
-    # --- Copy bundled plugins ---
     bundled_plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plugins'))
     if os.path.exists(bundled_plugin_path):
         shutil.copytree(bundled_plugin_path, plugin_dir, dirs_exist_ok=True)
@@ -67,9 +65,7 @@ def isolated_env(tmp_path_factory):
 
 @pytest.fixture
 def main_window(qapp, qtbot, isolated_env, monkeypatch):
-    """
-    Fixture to provide a fully initialized, real MainWindow instance for E2E tests.
-    """
+    """Fixture to provide a fully initialized, real MainWindow for E2E tests."""
     def mock_expanduser(path):
         config_dir_str = str(isolated_env["config_dir"])
         if isinstance(path, bytes):
@@ -103,3 +99,82 @@ def main_window(qapp, qtbot, isolated_env, monkeypatch):
     yield window, isolated_env
 
     window.close()
+
+# --- Fixtures for older, unit-style tests ---
+
+@pytest.fixture
+def create_app_handler(qtbot, mocker):
+    """
+    Returns a factory function to create a mocked ApplicationLogicHandler.
+    This is used by older tests that need to inspect calls without a full UI.
+    """
+    def _create():
+        from app.application_logic_handler import ApplicationLogicHandler
+        from app.ui_state_provider import UIStateProvider
+        from app.dialog_handler import DialogHandler
+        from app.settings_manager import SettingsManager
+        from favorites.favorites_manager import FavoritesManager
+        from file_operations.file_comparator import FileComparator
+        from app.theme_manager import ThemeManager
+
+        mock_main_window = mocker.Mock(spec=QMainWindow)
+        mock_main_window.statusBar = mocker.Mock()
+        mock_main_window.statusBar().showMessage = mocker.Mock()
+        
+        mock_file_manager = mocker.Mock(spec=FileManager)
+        mock_file_comparator = mocker.Mock(spec=FileComparator)
+        mock_favorites_manager = mocker.Mock(spec=FavoritesManager)
+        mock_directory_synchronizer = mocker.Mock(spec=DirectorySynchronizer)
+        mock_theme_manager = mocker.Mock(spec=ThemeManager)
+        
+        mock_ui_state_provider = mocker.Mock(spec=UIStateProvider)
+        mock_folder_browser = mocker.Mock()
+        mock_left_panel = mocker.Mock()
+        mock_file_view = mocker.Mock()
+        mock_left_panel.file_view = mock_file_view
+        mock_folder_browser.left_panel_widget = mock_left_panel
+        mock_folder_browser.get_left_panel_widget.return_value = mock_left_panel
+        mock_ui_state_provider.folder_browser = mock_folder_browser
+        
+        mock_settings_handler = mocker.Mock()
+        mock_background_task_manager = mocker.Mock(spec=BackgroundTaskManager)
+        mock_task_queue_manager = mocker.Mock(spec=TaskQueueManager)
+        mock_settings_manager = mocker.Mock(spec=SettingsManager)
+
+        real_dialog_handler = DialogHandler(
+            main_window=mock_main_window,
+            file_manager=mock_file_manager,
+            file_comparator=mock_file_comparator,
+            favorites_manager=mock_favorites_manager,
+            directory_synchronizer=mock_directory_synchronizer,
+            ui_state_provider=mock_ui_state_provider,
+            settings_manager=mock_settings_manager,
+            background_task_manager=mock_background_task_manager,
+            task_queue_manager=mock_task_queue_manager
+        )
+
+        handler = ApplicationLogicHandler(
+            main_window=mock_main_window,
+            file_manager=mock_file_manager,
+            file_comparator=mock_file_comparator,
+            favorites_manager=mock_favorites_manager,
+            directory_synchronizer=mock_directory_synchronizer,
+            theme_manager=mock_theme_manager,
+            ui_state_provider=mock_ui_state_provider,
+            dialog_handler=real_dialog_handler,
+            settings_handler=mock_settings_handler,
+            background_task_manager=mock_background_task_manager,
+            task_queue_manager=mock_task_queue_manager
+        )
+        
+        handler.ui_state_provider = mock_ui_state_provider
+        handler.file_manager = mock_file_manager
+        
+        return handler
+
+    return _create
+
+@pytest.fixture
+def app_handler(create_app_handler):
+    """Backward compatibility fixture."""
+    return create_app_handler()
