@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 import pytest
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from unittest.mock import MagicMock
 
@@ -34,19 +35,16 @@ def isolated_env(tmp_path_factory):
     """Creates an isolated environment with temporary directories for tests."""
     base_dir = tmp_path_factory.mktemp("quickfile_test_run")
     
-    # --- Directories for core app functionality ---
     plugin_dir = base_dir / "plugins"
     plugin_dir.mkdir()
     
     config_dir = base_dir / "config"
     config_dir.mkdir()
 
-    # --- Directories for search tests ---
     search_data_dir = base_dir / "search_data"
     search_data_dir.mkdir()
     (search_data_dir / "found_me.txt").touch()
 
-    # --- Directories for file operation tests (e.g., copy, move) ---
     source_dir = base_dir / "source"
     source_dir.mkdir()
     (source_dir / "file_to_copy.txt").write_text("This is a test file.")
@@ -54,7 +52,6 @@ def isolated_env(tmp_path_factory):
     destination_dir = base_dir / "destination"
     destination_dir.mkdir()
 
-    # --- Directories for sync tests ---
     sync_source_dir = base_dir / "sync_source"
     sync_source_dir.mkdir()
     (sync_source_dir / "file_to_sync.txt").write_text("Sync me.")
@@ -62,7 +59,10 @@ def isolated_env(tmp_path_factory):
     sync_dest_dir = base_dir / "sync_dest"
     sync_dest_dir.mkdir()
 
-    # --- Copy bundled plugins ---
+    delete_dir = base_dir / "delete_dir"
+    delete_dir.mkdir()
+    (delete_dir / "file_to_delete.txt").write_text("Delete me.")
+
     bundled_plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plugins'))
     if os.path.exists(bundled_plugin_path):
         shutil.copytree(bundled_plugin_path, plugin_dir, dirs_exist_ok=True)
@@ -75,6 +75,7 @@ def isolated_env(tmp_path_factory):
         "destination_dir": str(destination_dir),
         "sync_source_dir": str(sync_source_dir),
         "sync_dest_dir": str(sync_dest_dir),
+        "delete_dir": str(delete_dir),
     }
 
 @pytest.fixture
@@ -114,13 +115,23 @@ def main_window(qapp, qtbot, isolated_env, monkeypatch):
 
     window.close()
 
+@pytest.fixture
+def handle_modal_dialog():
+    """
+    A helper fixture to handle modal dialogs in E2E tests.
+    It uses a QTimer to run the interaction logic after the dialog appears.
+    """
+    def _handler(trigger_action, interaction_logic, delay=100):
+        QTimer.singleShot(delay, interaction_logic)
+        trigger_action.trigger()
+    return _handler
+
 # --- Fixtures for older, unit-style tests ---
 
 @pytest.fixture
 def create_app_handler(qtbot, mocker):
     """
     Returns a factory function to create a mocked ApplicationLogicHandler.
-    This is used by older tests that need to inspect calls without a full UI.
     """
     def _create():
         from app.application_logic_handler import ApplicationLogicHandler
