@@ -6,7 +6,7 @@ import os
 import shutil
 import sys
 import pytest
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer  # <-- ADDED THIS IMPORT
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from unittest.mock import MagicMock
 
@@ -32,37 +32,57 @@ def qapp():
 
 @pytest.fixture
 def isolated_env(tmp_path_factory):
-    """Creates an isolated environment with temporary directories for tests."""
+    """Creates an isolated environment with temporary directories for all E2E tests."""
     base_dir = tmp_path_factory.mktemp("quickfile_test_run")
     
+    # --- Setup for all tests ---
     plugin_dir = base_dir / "plugins"
     plugin_dir.mkdir()
-    
     config_dir = base_dir / "config"
     config_dir.mkdir()
 
+    # --- Test-specific directories ---
+    # Search
     search_data_dir = base_dir / "search_data"
     search_data_dir.mkdir()
     (search_data_dir / "found_me.txt").touch()
 
+    # Copy
     source_dir = base_dir / "source"
     source_dir.mkdir()
     (source_dir / "file_to_copy.txt").write_text("This is a test file.")
-
     destination_dir = base_dir / "destination"
     destination_dir.mkdir()
 
+    # Sync
     sync_source_dir = base_dir / "sync_source"
     sync_source_dir.mkdir()
     (sync_source_dir / "file_to_sync.txt").write_text("Sync me.")
-
     sync_dest_dir = base_dir / "sync_dest"
     sync_dest_dir.mkdir()
 
+    # Delete
     delete_dir = base_dir / "delete_dir"
     delete_dir.mkdir()
     (delete_dir / "file_to_delete.txt").write_text("Delete me.")
 
+    # Move
+    move_source_dir = base_dir / "move_source"
+    move_source_dir.mkdir()
+    (move_source_dir / "file_to_move.txt").write_text("Move me.")
+    move_dest_dir = base_dir / "move_dest"
+    move_dest_dir.mkdir()
+
+    # Rename
+    rename_dir = base_dir / "rename_dir"
+    rename_dir.mkdir()
+    (rename_dir / "file_to_rename.txt").touch()
+
+    # Create
+    creation_dir = base_dir / "creation_dir"
+    creation_dir.mkdir()
+
+    # --- Copy bundled plugins ---
     bundled_plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plugins'))
     if os.path.exists(bundled_plugin_path):
         shutil.copytree(bundled_plugin_path, plugin_dir, dirs_exist_ok=True)
@@ -76,6 +96,10 @@ def isolated_env(tmp_path_factory):
         "sync_source_dir": str(sync_source_dir),
         "sync_dest_dir": str(sync_dest_dir),
         "delete_dir": str(delete_dir),
+        "move_source_dir": str(move_source_dir),
+        "move_dest_dir": str(move_dest_dir),
+        "rename_dir": str(rename_dir),
+        "creation_dir": str(creation_dir),
     }
 
 @pytest.fixture
