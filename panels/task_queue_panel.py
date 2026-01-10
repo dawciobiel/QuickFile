@@ -142,7 +142,7 @@ class TaskQueueModel(QAbstractTableModel):
             if index.column() == 4: return format_speed(task.speed)
 
         if role == Qt.ItemDataRole.BackgroundRole:
-            if task.status == TaskStatus.ERROR:
+            if task.status == TaskStatus.ERROR or task.status == TaskStatus.CANCELLED:
                 return QColor(Qt.GlobalColor.darkRed)
             elif task.status == TaskStatus.PAUSED:
                 return QColor(Qt.GlobalColor.blue)
