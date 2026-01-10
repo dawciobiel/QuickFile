@@ -7,5 +7,10 @@
   "type": "archive",
   "description": "Provides support for creating and extracting ZIP archives.",
   "entry_point": "plugin:ZipPlugin",
-  "class_name": "ZipPlugin"
+  "class_name": "ZipPlugin",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ]
 }

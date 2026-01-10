@@ -7,5 +7,10 @@
   "type": "search",
   "description": "Provides standard file search functionality using recursive directory scanning.",
   "entry_point": "plugin:StandardSearchPlugin",
-  "class_name": "StandardSearchPlugin"
+  "class_name": "StandardSearchPlugin",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ]
 }

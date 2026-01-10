@@ -6,5 +6,10 @@
   "description": "A built-in code editor with syntax highlighting and a toolbar.",
   "type": "editor",
   "entry_point": "plugin:StandardEditorPlugin",
-  "class_name": "StandardEditorPlugin"
+  "class_name": "StandardEditorPlugin",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ]
 }

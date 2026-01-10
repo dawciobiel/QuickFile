@@ -7,5 +7,10 @@
   "type": "archive",
   "description": "Provides support for extracting RAR archives using system 'unrar' utility.",
   "entry_point": "plugin:RarPlugin",
-  "class_name": "RarPlugin"
+  "class_name": "RarPlugin",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ]
 }

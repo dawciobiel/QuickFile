@@ -7,5 +7,10 @@
   "name": "Symlink Manager",
   "description": "Provides functionality to create and modify symbolic and hard links.",
   "entry_point": "plugin:SymlinkManagerPlugin",
-  "class_name": "SymlinkManagerPlugin"
+  "class_name": "SymlinkManagerPlugin",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ]
 }
