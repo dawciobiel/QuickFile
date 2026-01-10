@@ -264,7 +264,6 @@ class DialogHandler:
             task = Task(TaskType.SYNC, source_paths=[left_path], destination_path=right_path, options=options)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage("Added sync task to queue.")
-            self.ui_state_provider.folder_browser.refresh_all_views()
 
     def create_new_file(self, current_dir=None, checked=False):
         if not current_dir:

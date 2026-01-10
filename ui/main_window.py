@@ -175,6 +175,8 @@ class MainWindow(QMainWindow):
         elif task.type == TaskType.SEARCH and task.result is not None:
             self.search_results_panel.set_results(task.result)
             self.mainTabWidget.setCurrentWidget(self.search_tab)
+        elif task.type == TaskType.SYNC:
+            self.ui_manager.folder_browser.refresh_all_views()
         
         self.ui_manager.folder_browser.handle_task_completion(task)
 
