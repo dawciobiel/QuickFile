@@ -164,9 +164,19 @@ class TaskWorker(QRunnable):
                 self.task.set_status(TaskStatus.FINISHED)
 
         except Exception as e:
-            logging.error(f"Error executing task {self.task.id}: {e}", exc_info=True)
-            self.task.set_details(str(e))
-            self.task.set_status(TaskStatus.ERROR)
+            # Check if task was cancelled (either via context flag or specific exception message)
+            if (self.task.context and self.task.context.is_cancelled) or "cancelled" in str(e).lower():
+                logging.info(f"Task {self.task.id} cancelled by user.")
+                self.task.set_status(TaskStatus.CANCELLED)
+            # Handle FileNotFoundError specifically for DELETE tasks (treat as success/warning)
+            elif self.task.type == TaskType.DELETE and isinstance(e, FileNotFoundError):
+                logging.warning(f"Task {self.task.id}: File not found during deletion (ignored): {e}")
+                self.task.set_details(f"File already gone: {e}")
+                self.task.set_status(TaskStatus.FINISHED)
+            else:
+                logging.error(f"Error executing task {self.task.id}: {e}", exc_info=True)
+                self.task.set_details(str(e))
+                self.task.set_status(TaskStatus.ERROR)
         finally:
             self.signals.finished.emit()
 
