@@ -7,5 +7,6 @@
   "author": "QuickFile Team",
   "dependencies": [],
   "entry_point": "plugin:WindowsOperationsPlugin",
-  "class_name": "WindowsOperationsPlugin"
+  "class_name": "WindowsOperationsPlugin",
+  "platforms": ["windows"]
 }
