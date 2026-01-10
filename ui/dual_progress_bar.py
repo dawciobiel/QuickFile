@@ -24,7 +24,7 @@ class DualProgressBar(QProgressBar):
         painter = QStylePainter(self)
         opt = QStyleOptionProgressBar()
         self.initStyleOption(opt)
-
+        
         # Draw the groove (background)
         painter.drawControl(QStyle.ControlElement.CE_ProgressBarGroove, opt)
 
@@ -37,17 +37,18 @@ class DualProgressBar(QProgressBar):
             read_ratio = max(0.0, min(1.0, read_ratio))
 
             if read_ratio > 0:
-                # Create a copy of options for the read bar
-                read_opt = QStyleOptionProgressBar(opt)
-                # We need to manually calculate the rect because CE_ProgressBarContents usually draws the main value
-                # This is a simplified approach; for perfect native look, it's tricky.
-                # We'll draw a custom rect for the read part.
-
-                groove_rect = self.style().subElementRect(QStyle.SubElement.SE_ProgressBarGroove, opt, self)
-                # Adjust for margins if necessary, but usually groove_rect is what we want to fill
-
-                read_width = int(groove_rect.width() * read_ratio)
-                read_rect = QRect(groove_rect.x(), groove_rect.y(), read_width, groove_rect.height())
+                # Use SE_ProgressBarContents to draw inside the groove (border)
+                contents_rect = self.style().subElementRect(QStyle.SubElement.SE_ProgressBarContents, opt, self)
+                
+                read_width = int(contents_rect.width() * read_ratio)
+                
+                # Adjust rect to avoid painting over the border
+                # We shrink it slightly to be safe
+                read_rect = QRect(contents_rect.x(), contents_rect.y(), read_width, contents_rect.height())
+                
+                # Ensure we don't draw outside the contents rect on the right side
+                if read_rect.right() > contents_rect.right():
+                    read_rect.setRight(contents_rect.right())
 
                 # Draw the read chunk
                 painter.save()

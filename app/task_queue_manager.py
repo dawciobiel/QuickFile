@@ -32,6 +32,7 @@ class Task(QObject):
     overall_progress_changed = pyqtSignal(int)
     details_changed = pyqtSignal(str)
     directory_changed = pyqtSignal(str)
+    speed_changed = pyqtSignal(float)
     finished = pyqtSignal()
 
     def __init__(self, task_type, source_paths, destination_path=None, options=None):
@@ -46,6 +47,7 @@ class Task(QObject):
         self._progress = 0
         self._overall_progress = 0
         self._details = ""
+        self._speed = 0.0
 
     @property
     def status(self):
@@ -63,8 +65,14 @@ class Task(QObject):
         return self._progress
 
     def set_progress(self, progress):
-        self._progress = progress
-        self.progress_changed.emit(progress)
+        # If progress is a tuple (read, write, speed), extract speed
+        if isinstance(progress, tuple) and len(progress) == 3:
+            self._progress = (progress[0], progress[1])
+            self.set_speed(progress[2])
+            self.progress_changed.emit(self._progress)
+        else:
+            self._progress = progress
+            self.progress_changed.emit(progress)
         
     @property
     def overall_progress(self):
@@ -83,6 +91,17 @@ class Task(QObject):
             self._details = details
             self.details_changed.emit(details)
 
+    @property
+    def speed(self):
+        return self._speed
+
+    def set_speed(self, speed):
+        self._speed = speed
+        self.speed_changed.emit(speed)
+
+class WorkerSignaller(QObject):
+    progress = pyqtSignal(object)
+
 class TaskWorker(QRunnable):
     def __init__(self, task, file_manager, directory_synchronizer, plugin_manager):
         super().__init__()
@@ -90,6 +109,8 @@ class TaskWorker(QRunnable):
         self.file_manager = file_manager
         self.directory_synchronizer = directory_synchronizer
         self.plugin_manager = plugin_manager
+        self.signaller = WorkerSignaller()
+        self.signaller.progress.connect(self.task.set_progress)
 
     def run(self):
         try:
@@ -101,32 +122,32 @@ class TaskWorker(QRunnable):
                     raise RuntimeError("No standard operations plugin found.")
                 
                 if self.task.type == TaskType.COPY:
-                    self.file_manager.copy_items_with_options(self.task.source_paths, self.task.destination_path, self.task.options, task=self.task)
+                    plugin.copy_items(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signaller.progress, task=self.task)
                 elif self.task.type == TaskType.MOVE:
-                    plugin.move_items(self.task.source_paths, self.task.destination_path, self.task.options, task=self.task)
+                    plugin.move_items(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signaller.progress, task=self.task)
                 elif self.task.type == TaskType.DELETE:
-                    plugin.delete_items(self.task.source_paths, self.task.options, task=self.task)
+                    plugin.delete_items(self.task.source_paths, self.task.options, progress_callback=self.signaller.progress, task=self.task)
 
             elif self.task.type == TaskType.SYNC:
                 self.directory_synchronizer.synchronize(self.task.source_paths[0], self.task.destination_path, self.task.options, task=self.task)
             elif self.task.type == TaskType.CREATE_ARCHIVE:
                 plugin = self.task.options.get("plugin")
                 if plugin:
-                    plugin.create_archive(self.task.source_paths, self.task.destination_path, self.task.options, task=self.task)
+                    plugin.create_archive(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signaller.progress, task=self.task)
             elif self.task.type == TaskType.EXTRACT_ARCHIVE:
                 plugin = self.task.options.get("plugin")
                 if plugin:
-                    plugin.extract_archive(self.task.source_paths[0], self.task.destination_path, self.task.options, task=self.task)
+                    plugin.extract_archive(self.task.source_paths[0], self.task.destination_path, self.task.options, progress_callback=self.signaller.progress, task=self.task)
             elif self.task.type == TaskType.CHECKSUM:
                 plugin = self.task.options.get("plugin")
                 algorithm = self.task.options.get("algorithm")
                 if plugin and algorithm:
-                    checksum = plugin.calculate_checksum(self.task.source_paths[0], algorithm, task=self.task)
+                    checksum = plugin.calculate_checksum(self.task.source_paths[0], algorithm, progress_callback=self.signaller.progress, task=self.task)
                     self.task.result = checksum
             elif self.task.type == TaskType.SEARCH:
                 plugin = self.task.options.get("plugin")
                 if plugin:
-                    results = plugin.search(self.task.source_paths[0], self.task.options.get("query"), self.task.options, task=self.task)
+                    results = plugin.search(self.task.source_paths[0], self.task.options.get("query"), self.task.options, progress_callback=self.signaller.progress, task=self.task)
                     self.task.result = results
             elif self.task.type == TaskType.CALCULATE_SIZE:
                 size = self.file_manager.calculate_directory_size(self.task.source_paths[0], task=self.task)

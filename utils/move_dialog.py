@@ -3,13 +3,15 @@
 # See LICENSE file for details.
 
 from PyQt6 import uic
-from PyQt6.QtWidgets import QDialog
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QDialog, QLabel, QHBoxLayout, QSizePolicy, QWidget
 
 from app.action_logger import action_logger
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from ui.dual_progress_bar import DualProgressBar
 from utils.resource_path import get_resource_path
+from utils.formatters import format_speed
 
 
 class MoveDialog(QDialog):
@@ -31,20 +33,36 @@ class MoveDialog(QDialog):
 
         self.destination_path = destination_path
 
-        self._replace_progress_bar()
         self._init_ui()
+        self._replace_progress_bar()
         self._connect_signals()
         self.retranslate_ui()
 
     def _replace_progress_bar(self):
-        # Replace the standard QProgressBar from UI with DualProgressBar for the current file
+        # Replace the standard QProgressBar from UI with DualProgressBar
         layout = self.progress_page.layout()
         index = layout.indexOf(self.progressBar)
-        layout.removeWidget(self.progressBar)
-        self.progressBar.deleteLater()
+        
+        # Hide the original progress bar instead of removing it
+        self.progressBar.setVisible(False)
+        
+        # Copy properties from the original progress bar
+        min_size = self.progressBar.minimumSize()
         
         self.fileProgressBar = DualProgressBar()
-        layout.insertWidget(index, self.fileProgressBar)
+        self.fileProgressBar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.fileProgressBar.setMinimumSize(min_size)
+        
+        wrapper = QWidget()
+        wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        wrapper_layout = QHBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0) # Removed right margin
+        wrapper_layout.addWidget(self.fileProgressBar)
+        
+        layout.insertWidget(index, wrapper)
+        
+        # Insert speed label right after the file progress bar wrapper
+        layout.insertWidget(index + 1, self.speed_label)
 
     def _init_ui(self):
         self.stackedWidget.setCurrentWidget(self.options_page)
@@ -60,6 +78,10 @@ class MoveDialog(QDialog):
         self.destination_path_label.setWordWrap(True)
 
         self.preserve_timestamp_checkbox.setVisible(False)
+
+        # Create speed label
+        self.speed_label = QLabel("")
+        self.speed_label.setAlignment(Qt.AlignmentFlag.AlignRight)
 
         self.adjustSize()
 
@@ -88,6 +110,10 @@ class MoveDialog(QDialog):
         self.start_button.setVisible(False)
         self.queue_button.setVisible(False)
         self.cancel_button.setText(translation_manager.translate("Buttons", "Hide"))
+        
+        # Force layout update
+        self.progress_page.layout().activate()
+        self.adjustSize()
 
         options = self.get_options()
         action_logger.log_action("move", sources=self.source_paths, destination=self.destination_path, options=options)
@@ -98,14 +124,19 @@ class MoveDialog(QDialog):
         self.task.progress_changed.connect(self.update_file_progress)
         self.task.overall_progress_changed.connect(self.overallProgressBar.setValue)
         self.task.status_changed.connect(self.on_task_status_changed)
+        self.task.speed_changed.connect(self.update_speed)
 
     def update_file_progress(self, value):
         if isinstance(value, tuple):
-            read_val, write_val = value
-            self.fileProgressBar.setReadValue(read_val)
-            self.fileProgressBar.setValue(write_val)
+            if len(value) >= 2:
+                read_val, write_val = value[0], value[1]
+                self.fileProgressBar.setReadValue(read_val)
+                self.fileProgressBar.setValue(write_val)
         else:
             self.fileProgressBar.setValue(value)
+
+    def update_speed(self, speed):
+        self.speed_label.setText(format_speed(speed))
 
     def queue_operation(self):
         self.accept()
