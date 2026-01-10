@@ -25,6 +25,24 @@ class FileOperationPlugin(ABC):
         """A brief description of what the plugin does."""
         pass
 
+class MenuActionPlugin(FileOperationPlugin):
+    """
+    Interface for plugins that add custom actions to the main menu.
+    """
+    @abstractmethod
+    def get_menu_actions(self) -> list[dict]:
+        """
+        Returns a list of actions to be added to the menu.
+        Each action is a dictionary, e.g.:
+        {
+            'menu': 'tools',  # Target menu (e.g., 'file', 'tools', 'help')
+            'text': 'My Custom Action',
+            'callback': self.my_callback_function,
+            'icon_path': 'path/to/icon.svg' # Optional
+        }
+        """
+        pass
+
 class UiExtensionPlugin(FileOperationPlugin):
     """
     Interface for plugins that extend the main application's UI.

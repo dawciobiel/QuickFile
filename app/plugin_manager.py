@@ -14,7 +14,7 @@ from functools import cmp_to_key
 import importlib
 
 from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, ArchivePlugin, \
-    ChecksumPlugin, SearchPlugin, UiExtensionPlugin, DiskUtilsPlugin, EditorPlugin
+    ChecksumPlugin, SearchPlugin, UiExtensionPlugin, DiskUtilsPlugin, EditorPlugin, MenuActionPlugin
 
 
 class PluginManager:
@@ -35,7 +35,8 @@ class PluginManager:
             "checksum": [],
             "search": [],
             "ui_extension": [],
-            "disk_utils": []
+            "disk_utils": [],
+            "menu_action": [],
         }
         self.version_regex = re.compile(r"^\d+(\.\d+)*$")
 
@@ -254,3 +255,6 @@ class PluginManager:
         if self.plugins["disk_utils"]:
             return self.plugins["disk_utils"][0]
         return None
+
+    def get_menu_action_plugins(self) -> list[MenuActionPlugin]:
+        return self.plugins["menu_action"]
