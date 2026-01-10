@@ -4,14 +4,14 @@
 
 import os
 import pytest
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialogButtonBox
 from app.task_queue_manager import TaskType, Task
 from utils.sync_dialog import SyncDialog
 
-def test_sync_end_to_end(main_window, qtbot):
+def test_sync_end_to_end(main_window, qtbot, handle_modal_dialog):
     """
-    Tests the entire directory synchronization process from a user's perspective.
+    Tests the entire directory synchronization process using the modal dialog helper.
     """
     window, isolated_env = main_window
     source_dir = isolated_env["sync_source_dir"]
@@ -19,7 +19,7 @@ def test_sync_end_to_end(main_window, qtbot):
     file_to_sync = "file_to_sync.txt"
     synced_file_path = os.path.join(dest_dir, file_to_sync)
 
-    # --- Setup: Navigate panels ---
+    # --- Setup ---
     left_panel = window.ui_manager.folder_browser.get_left_panel_widget()
     right_panel = window.ui_manager.folder_browser.get_right_panel_widget()
 
@@ -31,24 +31,22 @@ def test_sync_end_to_end(main_window, qtbot):
     window.ui_manager.folder_browser.navigate_to_path(dest_dir)
     qtbot.waitUntil(lambda: right_panel.path_edit.text() == dest_dir)
 
-    # --- Action: Trigger sync ---
-    def interact_with_sync_dialog():
-        dialog = window.findChild(SyncDialog)
-        assert dialog is not None, "SyncDialog did not appear."
-        # Find the OK button in the QDialogButtonBox
-        ok_button = dialog.buttonBox.button(QDialogButtonBox.StandardButton.Ok)
-        assert ok_button is not None, "OK button not found in SyncDialog."
-        qtbot.mouseClick(ok_button, Qt.MouseButton.LeftButton)
-
     captured_task = []
     def on_task_completed(task: Task):
         captured_task.append(task)
     window.task_queue_manager.task_completed.connect(on_task_completed)
 
-    QTimer.singleShot(100, interact_with_sync_dialog)
-    
-    sync_action = window.ui_manager.menu_panel.actions["view.synchronize"]
-    sync_action.trigger()
+    # --- Action ---
+    def interaction_logic():
+        dialog = window.findChild(SyncDialog)
+        assert dialog is not None, "SyncDialog did not appear."
+        ok_button = dialog.buttonBox.button(QDialogButtonBox.StandardButton.Ok)
+        qtbot.mouseClick(ok_button, Qt.MouseButton.LeftButton)
+
+    handle_modal_dialog(
+        trigger_action=window.ui_manager.menu_panel.actions["view.synchronize"],
+        interaction_logic=interaction_logic
+    )
 
     # --- Verification ---
     qtbot.waitUntil(lambda: len(captured_task) > 0, timeout=5000)
@@ -60,16 +58,14 @@ def test_sync_end_to_end(main_window, qtbot):
     assert task_result.source_paths[0] == source_dir
     assert task_result.destination_path == dest_dir
 
-    assert os.path.exists(synced_file_path), "File was not synchronized to the destination directory."
+    assert os.path.exists(synced_file_path)
 
     def does_item_exist_in_model(model, name):
         for row in range(model.rowCount()):
-            index = model.index(row, 0)
-            if model.data(index) == name:
+            if model.data(model.index(row, 0)) == name:
                 return True
         return False
 
     right_view_model = right_panel.file_view.model
     qtbot.waitUntil(lambda: does_item_exist_in_model(right_view_model, file_to_sync), timeout=2000)
-    
-    assert does_item_exist_in_model(right_view_model, file_to_sync), "Synced file did not appear in the destination panel's view."
+    assert does_item_exist_in_model(right_view_model, file_to_sync)
