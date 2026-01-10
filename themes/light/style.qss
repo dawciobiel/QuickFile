@@ -143,3 +143,11 @@ QTableView[activePanel="true"], QTreeView[activePanel="true"] {
 QTableView[activePanel="false"], QTreeView[activePanel="false"] {
     border: 2px solid @@border@@;
 }
+
+/* Styles for disabled widgets */
+QGroupBox:disabled,
+QCheckBox:disabled,
+QLabel:disabled,
+QRadioButton:disabled {
+    color: @@disabled_foreground@@;
+}
