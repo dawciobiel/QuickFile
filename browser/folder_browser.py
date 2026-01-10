@@ -139,8 +139,21 @@ class PanelWidget(QWidget):
         self.path_edit.setProperty("activePanel", is_active)
         if isinstance(self.file_view, AbstractFileView):
             self.file_view.view.setProperty("activePanel", is_active)
+            # Force style update for the view and its header
             self.file_view.view.style().unpolish(self.file_view.view)
             self.file_view.view.style().polish(self.file_view.view)
+            
+            # Also update the header view specifically
+            header = None
+            if hasattr(self.file_view.view, 'header'):
+                header = self.file_view.view.header()
+            elif hasattr(self.file_view.view, 'horizontalHeader'):
+                header = self.file_view.view.horizontalHeader()
+            
+            if header:
+                header.setProperty("activePanel", is_active)
+                header.style().unpolish(header)
+                header.style().polish(header)
         
         self.path_edit.style().unpolish(self.path_edit)
         self.path_edit.style().polish(self.path_edit)
