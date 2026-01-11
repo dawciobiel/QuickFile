@@ -178,6 +178,9 @@ class MainWindow(QMainWindow):
             self.mainTabWidget.setCurrentWidget(self.search_tab)
         elif task.type == TaskType.SYNC:
             self.ui_manager.folder_browser.refresh_all_views()
+        elif task.type == TaskType.SPLIT_FILE:
+            if task.destination_path:
+                self.ui_manager.folder_browser.refresh_path(task.destination_path)
         
         self.ui_manager.folder_browser.handle_task_completion(task)
 
