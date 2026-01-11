@@ -143,4 +143,12 @@ class FileSplitterPlugin(MenuActionPlugin):
                 part_num += 1
                 if bytes_read >= file_size: break
         if generate_checksum:
-            with open(os.path.join(dest_dir, base_name + ".crc32"), 'w') as f: f.write(f"{crc32 & 0xFFFFFFFF:08x}")
+            crc32_hex = f"{crc32 & 0xFFFFFFFF:08X}"
+            content = (
+                f"filename={base_name}\n"
+                f"filenameutf8={base_name}\n"
+                f"size={file_size}\n"
+                f"crc32={crc32_hex}\n"
+            )
+            with open(os.path.join(dest_dir, base_name + ".crc32"), 'w', encoding='utf-8') as f:
+                f.write(content)

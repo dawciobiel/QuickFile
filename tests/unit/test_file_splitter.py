@@ -1,5 +1,6 @@
 import os
 import sys
+import zlib
 import pytest
 from unittest.mock import MagicMock
 
@@ -57,6 +58,14 @@ def test_split_file_logic(tmp_path, splitter_plugin):
     
     assert len(part_files) == 4, f"Oczekiwano 4 części, znaleziono {len(part_files)}"
     assert len(checksum_files) == 1, "Nie znaleziono pliku sumy kontrolnej"
+    
+    # Sprawdzenie zawartości pliku .crc32
+    crc_content = checksum_files[0].read_text(encoding='utf-8')
+    expected_crc = f"{zlib.crc32(content) & 0xFFFFFFFF:08X}"
+    assert f"filename={source_file.name}" in crc_content
+    assert f"filenameutf8={source_file.name}" in crc_content
+    assert f"size={len(content)}" in crc_content
+    assert f"crc32={expected_crc}" in crc_content
     
     # Sprawdzenie nazw plików
     assert part_files[0].name.endswith(".001")
