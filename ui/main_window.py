@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
         )
         QApplication.instance().installEventFilter(self.keyboard_event_manager)
 
-        self.task_queue_panel = TaskQueuePanel(self.task_queue_manager)
+        self.task_queue_panel = TaskQueuePanel(self.task_queue_manager, self.theme_manager)
         self.queue_tab.layout().addWidget(self.task_queue_panel)
         
         self.search_results_panel = SearchResultsPanel()
