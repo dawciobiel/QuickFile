@@ -1,5 +1,5 @@
 from PyQt6 import uic, sip
-from PyQt6.QtWidgets import QMainWindow, QApplication, QWidget, QTabWidget, QToolBar
+from PyQt6.QtWidgets import QMainWindow, QApplication, QWidget, QTabWidget, QToolBar, QMessageBox
 
 from __version__ import __version__
 from app.application_logic_handler import ApplicationLogicHandler
@@ -193,6 +193,9 @@ class MainWindow(QMainWindow):
             self.notification_manager.show_success(f"Task '{task.type.name}' completed.")
         elif task.status == TaskStatus.ERROR:
             self.notification_manager.show_error(f"Task '{task.type.name}' failed: {task.details}")
+            task_name = task.type.name.replace('_', ' ').capitalize()
+            QMessageBox.critical(self, translation_manager.translate("MainWindow", "Task Failed"), 
+                                 f"{task_name}: {task.details}")
         elif task.status == TaskStatus.CANCELLED:
             self.notification_manager.show_info(f"Task '{task.type.name}' cancelled.")
 

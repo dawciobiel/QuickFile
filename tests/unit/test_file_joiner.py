@@ -124,7 +124,7 @@ def test_join_dialog_logic_guess_filename(tmp_path):
     crc_path = source_file[:-4] + ".crc32"
     
     if os.path.exists(crc_path):
-        with open(crc_path, 'r', encoding='utf-8') as f:
+        with open(crc_path, 'r', encoding='utf-8-sig') as f:
             for line in f:
                 line = line.rstrip('\n')
                 if line.startswith("filename="):
