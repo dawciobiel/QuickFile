@@ -323,6 +323,42 @@ def test_calculate_directory_size_cancelled(tmp_path, mocker):
     assert size == 0
     # The loop should break after processing the first file, so getsize is called only once
     mock_getsize.assert_called_once()
+
+def test_calculate_directory_size_with_context(tmp_path, mocker):
+    """
+    Test that directory size calculation accepts task_context.
+    """
+    fm = FileManager()
+    test_dir = tmp_path / "test_dir"
+    test_dir.mkdir()
+    (test_dir / "file1.txt").write_text("12345")
+
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+    
+    mock_context = mocker.Mock()
+    mock_context.is_cancelled = False
+    
+    size = fm.calculate_directory_size(str(test_dir), task_context=mock_context, task=mock_task)
+    assert size == 5
+
+def test_calculate_directory_size_cancelled_via_context(tmp_path, mocker):
+    """
+    Test that directory size calculation stops when task_context is cancelled.
+    """
+    fm = FileManager()
+    test_dir = tmp_path / "test_dir"
+    test_dir.mkdir()
+    (test_dir / "file1.txt").write_text("12345")
+
+    mock_task = mocker.Mock()
+    mock_task.status = TaskStatus.IN_PROGRESS
+    
+    mock_context = mocker.Mock()
+    mock_context.is_cancelled = True
+    
+    size = fm.calculate_directory_size(str(test_dir), task_context=mock_context, task=mock_task)
+    assert size == 0
 # endregion
 
 # region Copy Items With Options Tests

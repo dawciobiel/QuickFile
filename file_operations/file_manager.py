@@ -50,7 +50,7 @@ class FileManager:
                         pass
         return total_size
 
-    def calculate_directory_size(self, directory_path, task=None):
+    def calculate_directory_size(self, directory_path, task_context=None, task=None):
         """
         Calculates the total size of a directory and all its subdirectories.
         """
@@ -63,18 +63,26 @@ class FileManager:
             for _, _, filenames in os.walk(directory_path):
                 if task and task.status == TaskStatus.CANCELLED:
                     break
+                if task_context and task_context.is_cancelled:
+                    break
                 total_files += len(filenames)
 
             if task and task.status == TaskStatus.CANCELLED:
+                return 0
+            if task_context and task_context.is_cancelled:
                 return 0
 
             processed_files = 0
             for dirpath, dirnames, filenames in os.walk(directory_path):
                 if task and task.status == TaskStatus.CANCELLED:
                     break
+                if task_context and task_context.is_cancelled:
+                    break
 
                 for f in filenames:
                     if task and task.status == TaskStatus.CANCELLED:
+                        break
+                    if task_context and task_context.is_cancelled:
                         break
 
                     fp = os.path.join(dirpath, f)
@@ -97,12 +105,16 @@ class FileManager:
 
                 if task and task.status == TaskStatus.CANCELLED:
                     break
+                if task_context and task_context.is_cancelled:
+                    break
 
         except Exception as e:
             logging.error(f"Error calculating size for {directory_path}: {e}")
             raise FileManagerError(f"Error calculating size: {e}")
 
         if task and task.status == TaskStatus.CANCELLED:
+            return 0
+        if task_context and task_context.is_cancelled:
             return 0
 
         if task:
