@@ -293,7 +293,7 @@ class DialogHandler:
         if not destination_path:
             raise ValueError("No inactive panel path to copy to.")
 
-        dialog = CopyDialog(self.main_window, source_paths, destination_path, self.task_queue_manager, self.background_task_manager)
+        dialog = CopyDialog(self.main_window, source_paths, destination_path, self.task_queue_manager, self.background_task_manager, self.theme_manager)
         dialog.exec()
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
@@ -316,7 +316,7 @@ class DialogHandler:
         if not destination_path:
             raise ValueError("No inactive panel path to move to.")
         
-        dialog = MoveDialog(self.main_window, paths_to_move, destination_path, self.task_queue_manager, self.background_task_manager)
+        dialog = MoveDialog(self.main_window, paths_to_move, destination_path, self.task_queue_manager, self.background_task_manager, self.theme_manager)
         dialog.exec()
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
@@ -345,7 +345,7 @@ class DialogHandler:
         if not selected_paths:
             raise ValueError("No file/folder selected for deletion.")
         
-        dialog = DeleteDialog(self.main_window, selected_paths, self.task_queue_manager, self.background_task_manager)
+        dialog = DeleteDialog(self.main_window, selected_paths, self.task_queue_manager, self.background_task_manager, self.theme_manager)
         dialog.exec()
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
