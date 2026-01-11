@@ -270,7 +270,7 @@ class FileSplitterPlugin(MenuActionPlugin):
         # If .crc32 file is selected, try to read metadata
         if source_basename.endswith(".crc32"):
             try:
-                with open(source_path, 'r', encoding='utf-8') as f:
+                with open(source_path, 'r', encoding='utf-8-sig') as f:
                     for line in f:
                         line = line.rstrip('\n')
                         if line.startswith("crc32="):
@@ -286,6 +286,14 @@ class FileSplitterPlugin(MenuActionPlugin):
             # If we couldn't determine base name from crc, assume it's the crc filename without extension
             if part_base is None:
                 part_base = source_basename[:-6] # remove .crc32
+            
+            # Check if parts exist for the determined part_base. If not, fallback to filename derived from .crc32 file.
+            first_part_path = os.path.join(base_dir, f"{part_base}.001")
+            if not os.path.exists(first_part_path):
+                fallback_base = source_basename[:-6]
+                if fallback_base != part_base:
+                    if os.path.exists(os.path.join(base_dir, f"{fallback_base}.001")):
+                        part_base = fallback_base
         elif source_basename.endswith(".001"):
             part_base = source_basename[:-4]
             # Try to find crc32 file for verification
