@@ -151,6 +151,7 @@
     - Stworzono interfejs użytkownika (`split_dialog.ui`) z opcjami wyboru rozmiaru (predefiniowane i własne) oraz katalogu docelowego.
     - Dodano opcję generowania sumy kontrolnej CRC32 dla podzielonych plików.
     - Operacja jest wykonywana w tle z obsługą paska postępu, pauzy i anulowania.
+    - Dodano funkcjonalność łączenia plików (`Join Files`) z weryfikacją sumy kontrolnej CRC32.
 
 - [x] **UI/UX: Ulepszenie przycisków w oknach dialogowych operacji**:
     - Zastąpiono standardowe przyciski w oknach dialogowych (`CopyDialog`, `MoveDialog`, `DeleteDialog`) komponentem `TaskActionsWidget`.

@@ -181,6 +181,9 @@ class MainWindow(QMainWindow):
         elif task.type == TaskType.SPLIT_FILE:
             if task.destination_path:
                 self.ui_manager.folder_browser.refresh_path(task.destination_path)
+        elif task.type == TaskType.JOIN_FILES:
+            if task.destination_path:
+                self.ui_manager.folder_browser.refresh_path(task.destination_path)
         
         self.ui_manager.folder_browser.handle_task_completion(task)
 
