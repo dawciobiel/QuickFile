@@ -20,7 +20,8 @@ def test_delete_items_to_trash(create_app_handler, mocker):
         app_handler.main_window,
         ["/path/1", "/path/2"],
         app_handler.task_queue_manager,
-        app_handler.background_task_manager
+        app_handler.background_task_manager,
+        app_handler.dialog_handler.theme_manager
     )
 
 def test_delete_items_permanently(create_app_handler, mocker):
@@ -38,7 +39,8 @@ def test_delete_items_permanently(create_app_handler, mocker):
         app_handler.main_window,
         ["/path/1"],
         app_handler.task_queue_manager,
-        app_handler.background_task_manager
+        app_handler.background_task_manager,
+        app_handler.dialog_handler.theme_manager
     )
 
 def test_delete_items_cancelled(create_app_handler, mocker):
