@@ -8,10 +8,11 @@ from PyQt6.QtWidgets import QDialog
 from app.action_logger import action_logger
 from app.translation_manager import translation_manager
 from app.task_queue_manager import Task, TaskType, TaskStatus
+from panels.task_queue_panel import TaskActionsWidget
 from utils.resource_path import get_resource_path
 
 class DeleteDialog(QDialog):
-    def __init__(self, parent, item_paths, task_queue_manager, background_task_manager):
+    def __init__(self, parent, item_paths, task_queue_manager, background_task_manager, theme_manager):
         super().__init__(parent)
         uic.loadUi(get_resource_path("ui/delete_dialog.ui"), self)
         self.setWindowTitle(translation_manager.translate("DeleteDialog", "Delete"))
@@ -19,6 +20,7 @@ class DeleteDialog(QDialog):
         self.task_queue_manager = task_queue_manager
         self.background_task_manager = background_task_manager
         self.task = None
+        self.theme_manager = theme_manager
         
         self.item_paths = item_paths
         self._init_ui()
@@ -81,6 +83,10 @@ class DeleteDialog(QDialog):
         
         self.task.progress_changed.connect(self.progressBar.setValue)
         self.task.status_changed.connect(self.on_task_status_changed)
+
+        # Add action buttons (Pause, Cancel, More)
+        self.actions_widget = TaskActionsWidget(self.task, self.task_queue_manager, self.theme_manager)
+        self.progress_page.layout().addWidget(self.actions_widget)
 
     def queue_operation(self):
         self.accept()

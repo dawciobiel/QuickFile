@@ -2,10 +2,6 @@
 
 ## Główne funkcje do zaimplementowania
 
-- [ ] **UI/UX: Ulepszenie przycisków w oknach operacji**:
-    - Przycisk "Pauza" powinien dynamicznie zmieniać swój tekst (lub ikonę) na "Wznów" po wciśnięciu.
-    - Rozważyć zastąpienie tekstów na przyciskach ("Pauza", "Anuluj") uniwersalnymi ikonami, aby poprawić spójność interfejsu. Należy zadbać o odpowiedni rozmiar i czytelność przycisków.
-
 - [ ] **Feature: System aktualizacji**:
     - Zaprojektowanie odpowiedniego systemu pobierania i instalowania aktualizacji dla aplikacji, motywów, zasobów, tłumaczeń i pluginów.
     - System aktualizacji powinien wspierać wersję oficjalną aplikacji.
@@ -155,3 +151,7 @@
     - Stworzono interfejs użytkownika (`split_dialog.ui`) z opcjami wyboru rozmiaru (predefiniowane i własne) oraz katalogu docelowego.
     - Dodano opcję generowania sumy kontrolnej CRC32 dla podzielonych plików.
     - Operacja jest wykonywana w tle z obsługą paska postępu, pauzy i anulowania.
+
+- [x] **UI/UX: Ulepszenie przycisków w oknach dialogowych operacji**:
+    - Zastąpiono standardowe przyciski w oknach dialogowych (`CopyDialog`, `MoveDialog`, `DeleteDialog`) komponentem `TaskActionsWidget`.
+    - Dodano obsługę ikon (Play, Pause, Cancel, More) oraz dynamiczną zmianę stanu (Pauza/Wznów).

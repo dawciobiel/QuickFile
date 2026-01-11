@@ -10,12 +10,13 @@ from app.action_logger import action_logger
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from ui.dual_progress_bar import DualProgressBar
+from panels.task_queue_panel import TaskActionsWidget
 from utils.resource_path import get_resource_path
 from utils.formatters import format_speed
 
 
 class CopyDialog(QDialog):
-    def __init__(self, parent, source_paths, destination_path, task_queue_manager, background_task_manager):
+    def __init__(self, parent, source_paths, destination_path, task_queue_manager, background_task_manager, theme_manager):
         super().__init__(parent)
         uic.loadUi(get_resource_path("ui/file_operation_dialog.ui"), self)
         self.setWindowTitle(translation_manager.translate("CopyDialog", "Copy"))
@@ -23,6 +24,7 @@ class CopyDialog(QDialog):
         self.task_queue_manager = task_queue_manager
         self.background_task_manager = background_task_manager
         self.task = None
+        self.theme_manager = theme_manager
         
         self.setMinimumWidth(600)
         
@@ -128,6 +130,10 @@ class CopyDialog(QDialog):
         self.task.overall_progress_changed.connect(self.overallProgressBar.setValue)
         self.task.status_changed.connect(self.on_task_status_changed)
         self.task.speed_changed.connect(self.update_speed)
+
+        # Add action buttons (Pause, Cancel, More)
+        self.actions_widget = TaskActionsWidget(self.task, self.task_queue_manager, self.theme_manager)
+        self.progress_page.layout().addWidget(self.actions_widget)
 
     def update_file_progress(self, value):
         if isinstance(value, tuple):
