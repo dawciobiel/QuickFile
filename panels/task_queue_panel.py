@@ -8,7 +8,7 @@ import os
 from PyQt6.QtCore import QAbstractTableModel, Qt, QModelIndex, QTimer
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import QTableView, QVBoxLayout, QHBoxLayout, QWidget, QHeaderView, QProgressBar, QStyledItemDelegate, \
-    QPushButton, QMessageBox
+    QPushButton, QMessageBox, QAbstractItemView
 
 from app.task_queue_manager import TaskQueueManager, TaskStatus
 from app.translation_manager import translation_manager
@@ -236,6 +236,8 @@ class TaskQueuePanel(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.view = QTableView()
+        self.view.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.view.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.model = TaskQueueModel(self.manager)
         self.view.setModel(self.model)
 
