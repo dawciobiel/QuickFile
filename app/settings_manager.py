@@ -9,6 +9,7 @@ import platform
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QMainWindow
+from app.task_queue_manager import TaskType
 
 
 class SettingsManager:
@@ -46,6 +47,11 @@ class SettingsManager:
             "theme": "dark",
             "sound_notifications_enabled": True,
         }
+        
+        # Add default notification settings for all task types
+        for task_type in TaskType:
+            self.default_settings[f"notify_on_{task_type.name.lower()}"] = True
+
         self.settings = self.load_settings_from_file()
 
     def get_default_terminal_command(self):
