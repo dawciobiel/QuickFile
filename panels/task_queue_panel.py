@@ -3,6 +3,7 @@
 # See LICENSE file for details.
 
 import logging
+import os
 
 from PyQt6.QtCore import QAbstractTableModel, Qt, QModelIndex, QTimer
 from PyQt6.QtGui import QColor
@@ -12,14 +13,20 @@ from PyQt6.QtWidgets import QTableView, QVBoxLayout, QHBoxLayout, QWidget, QHead
 from app.task_queue_manager import TaskQueueManager, TaskStatus
 from app.translation_manager import translation_manager
 from utils.formatters import format_speed
+from utils.icon_manager import get_colorized_icon
+from utils.resource_path import get_resource_path
 
 class TaskActionsWidget(QWidget):
     """A widget containing buttons for a single task."""
 
-    def __init__(self, task, manager, parent=None):
+    def __init__(self, task, manager, theme_manager, parent=None):
         super().__init__(parent)
         self.task = task
         self.manager = manager
+        self.theme_manager = theme_manager
+        
+        theme_data = self.theme_manager.get_current_theme_data()
+        self.icon_color = theme_data.get("icon_color", theme_data.get("foreground", "#000000"))
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(2, 2, 2, 2)
@@ -28,6 +35,19 @@ class TaskActionsWidget(QWidget):
         self.pause_resume_btn = QPushButton()
         self.cancel_btn = QPushButton(translation_manager.translate("TaskQueuePanel", "Cancel"))
         self.more_btn = QPushButton(translation_manager.translate("TaskQueuePanel", "More"))
+
+        cancel_icon_path = get_resource_path("resources/icons/cancel.svg")
+        settings_icon_path = get_resource_path("resources/icons/settings.svg")
+
+        if os.path.exists(cancel_icon_path):
+            self.cancel_btn.setIcon(get_colorized_icon(cancel_icon_path, self.icon_color))
+            self.cancel_btn.setText("")
+            self.cancel_btn.setToolTip(translation_manager.translate("TaskQueuePanel", "Cancel"))
+
+        if os.path.exists(settings_icon_path):
+            self.more_btn.setIcon(get_colorized_icon(settings_icon_path, self.icon_color))
+            self.more_btn.setText("")
+            self.more_btn.setToolTip(translation_manager.translate("TaskQueuePanel", "More"))
 
         self.pause_resume_btn.clicked.connect(self.toggle_pause_resume)
         self.cancel_btn.clicked.connect(self.cancel_task)
@@ -38,6 +58,7 @@ class TaskActionsWidget(QWidget):
         layout.addWidget(self.more_btn)
         layout.addStretch()
 
+        self.task.status_changed.connect(self.update_button_state)
         self.update_button_state()
 
     def toggle_pause_resume(self):
@@ -52,14 +73,27 @@ class TaskActionsWidget(QWidget):
     def show_more_options(self):
         QMessageBox.information(self, "Info", "More options not implemented yet.")
 
-    def update_button_state(self):
+    def update_button_state(self, status=None):
+        play_icon_path = get_resource_path("resources/icons/play.svg")
+        pause_icon_path = get_resource_path("resources/icons/pause.svg")
+
         if self.task.status == TaskStatus.IN_PROGRESS:
-            self.pause_resume_btn.setText(translation_manager.translate("TaskQueuePanel", "Pause"))
+            if os.path.exists(pause_icon_path):
+                self.pause_resume_btn.setIcon(get_colorized_icon(pause_icon_path, self.icon_color))
+                self.pause_resume_btn.setText("")
+            else:
+                self.pause_resume_btn.setText(translation_manager.translate("TaskQueuePanel", "Pause"))
+            self.pause_resume_btn.setToolTip(translation_manager.translate("TaskQueuePanel", "Pause"))
             self.pause_resume_btn.setEnabled(True)
             self.cancel_btn.setEnabled(True)
             self.more_btn.setEnabled(True)
         elif self.task.status == TaskStatus.PAUSED:
-            self.pause_resume_btn.setText(translation_manager.translate("TaskQueuePanel", "Resume"))
+            if os.path.exists(play_icon_path):
+                self.pause_resume_btn.setIcon(get_colorized_icon(play_icon_path, self.icon_color))
+                self.pause_resume_btn.setText("")
+            else:
+                self.pause_resume_btn.setText(translation_manager.translate("TaskQueuePanel", "Resume"))
+            self.pause_resume_btn.setToolTip(translation_manager.translate("TaskQueuePanel", "Resume"))
             self.pause_resume_btn.setEnabled(True)
             self.cancel_btn.setEnabled(True)
             self.more_btn.setEnabled(True)
@@ -194,9 +228,10 @@ class ProgressDelegate(QStyledItemDelegate):
             super().paint(painter, option, index)
 
 class TaskQueuePanel(QWidget):
-    def __init__(self, manager: TaskQueueManager, parent=None):
+    def __init__(self, manager: TaskQueueManager, theme_manager, parent=None):
         super().__init__(parent)
         self.manager = manager
+        self.theme_manager = theme_manager
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
 
@@ -247,7 +282,7 @@ class TaskQueuePanel(QWidget):
                 if existing_widget:
                     existing_widget.update_button_state()
                 else:
-                    widget = TaskActionsWidget(task, self.manager)
+                    widget = TaskActionsWidget(task, self.manager, self.theme_manager)
                     self.view.setIndexWidget(index, widget)
             else:
                 if self.view.indexWidget(index):
