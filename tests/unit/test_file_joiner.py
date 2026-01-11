@@ -131,3 +131,23 @@ def test_join_dialog_logic_guess_filename(tmp_path):
                     suggested_name = line.split("=", 1)[1]
     
     assert suggested_name == "RealMovieName.mkv"
+
+def test_join_files_missing_part_detected(tmp_path, splitter_plugin):
+    """Testuje czy brakująca część jest wykrywana dzięki parts_count w .crc32."""
+    dest_dir = tmp_path / "parts_missing"
+    dest_dir.mkdir()
+    
+    # Tworzymy plik .crc32 sugerujący 3 części
+    crc_content = (
+        "filename=data.bin\n"
+        "parts_count=3\n"
+        "crc32=00000000\n"
+    )
+    (dest_dir / "data.bin.crc32").write_text(crc_content, encoding='utf-8')
+    
+    # Tworzymy tylko część 1 i 3 (brak części 2)
+    (dest_dir / "data.bin.001").write_bytes(b"A")
+    (dest_dir / "data.bin.003").write_bytes(b"C")
+    
+    with pytest.raises(FileNotFoundError, match="Missing part 2"):
+        splitter_plugin.join_files(str(dest_dir / "data.bin.crc32"), str(dest_dir), {"output_filename": "out.bin"}, MagicMock(), MagicMock(), MagicMock())

@@ -66,6 +66,7 @@ def test_split_file_logic(tmp_path, splitter_plugin):
     assert f"filenameutf8={source_file.name}" in crc_content
     assert f"size={len(content)}" in crc_content
     assert f"crc32={expected_crc}" in crc_content
+    assert "parts_count=4" in crc_content
     
     # Sprawdzenie nazw plików
     assert part_files[0].name.endswith(".001")

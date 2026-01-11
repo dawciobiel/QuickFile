@@ -250,6 +250,7 @@ class FileSplitterPlugin(MenuActionPlugin):
                 f"filename={base_name}\n"
                 f"filenameutf8={base_name}\n"
                 f"size={file_size}\n"
+                f"parts_count={part_num - 1}\n"
                 f"crc32={crc32_hex}\n"
             )
             with open(os.path.join(dest_dir, base_name + ".crc32"), 'w', encoding='utf-8') as f:
@@ -266,6 +267,7 @@ class FileSplitterPlugin(MenuActionPlugin):
         parts = []
         expected_crc = None
         part_base = None
+        expected_parts_count = None
         
         # If .crc32 file is selected, try to read metadata
         if source_basename.endswith(".crc32"):
@@ -275,6 +277,8 @@ class FileSplitterPlugin(MenuActionPlugin):
                         line = line.rstrip('\n')
                         if line.startswith("crc32="):
                             expected_crc = int(line.split("=", 1)[1], 16)
+                        elif line.startswith("parts_count="):
+                            expected_parts_count = int(line.split("=", 1)[1])
                         elif line.startswith("filenameutf8="):
                             part_base = line.split("=", 1)[1]
                         elif line.startswith("filename=") and part_base is None:
@@ -311,16 +315,26 @@ class FileSplitterPlugin(MenuActionPlugin):
             # Try to guess
             part_base = source_basename
 
-        # Find all parts
-        part_num = 1
-        while True:
-            part_name = f"{part_base}.{part_num:03d}"
-            part_file = os.path.join(base_dir, part_name)
-            if os.path.exists(part_file):
+        # Find parts
+        if expected_parts_count is not None:
+            # We know exactly how many parts to expect
+            for i in range(1, expected_parts_count + 1):
+                part_name = f"{part_base}.{i:03d}"
+                part_file = os.path.join(base_dir, part_name)
+                if not os.path.exists(part_file):
+                    raise FileNotFoundError(f"Missing part {i}: {part_name}")
                 parts.append(part_file)
-                part_num += 1
-            else:
-                break
+        else:
+            # Auto-discover parts until a gap is found
+            part_num = 1
+            while True:
+                part_name = f"{part_base}.{part_num:03d}"
+                part_file = os.path.join(base_dir, part_name)
+                if os.path.exists(part_file):
+                    parts.append(part_file)
+                    part_num += 1
+                else:
+                    break
         
         if not parts:
             raise FileNotFoundError("No parts found to join.")
