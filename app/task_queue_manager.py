@@ -25,6 +25,7 @@ class TaskType(Enum):
     CREATE_ARCHIVE = auto()
     EXTRACT_ARCHIVE = auto()
     CALCULATE_SIZE = auto()
+    SPLIT_FILE = auto()
 
 class Task(QObject):
     status_changed = pyqtSignal(TaskStatus)
@@ -159,6 +160,10 @@ class TaskWorker(QRunnable):
             elif self.task.type == TaskType.CALCULATE_SIZE:
                 size = self.file_manager.calculate_directory_size(self.task.source_paths[0], task_context=task_context, task=self.task)
                 self.task.result = size
+            elif self.task.type == TaskType.SPLIT_FILE:
+                plugin = self.task.options.get("plugin")
+                if plugin:
+                    plugin.split_file(self.task.source_paths[0], self.task.destination_path, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
 
             if self.task.status != TaskStatus.CANCELLED:
                 self.task.set_status(TaskStatus.FINISHED)

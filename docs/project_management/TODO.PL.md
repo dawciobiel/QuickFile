@@ -2,15 +2,6 @@
 
 ## Główne funkcje do zaimplementowania
 
-- [ ] **Feature: Dzielenie plików (Plugin)**:
-    - Dokończenie implementacji pluginu `file_splitter`.
-    - Stworzenie UI (`split_dialog.ui`) z opcjami:
-        - Wybór katalogu docelowego.
-        - Wybór predefiniowanego rozmiaru części (1.44 MB, 650 MB, 700 MB, 4.5 GB).
-        - Możliwość podania własnego rozmiaru.
-        - Opcja generowania pliku z sumami kontrolnymi (CRC32).
-    - Implementacja logiki dzielenia plików w tle z obsługą postępu.
-
 - [ ] **UI/UX: Ulepszenie przycisków w oknach operacji**:
     - Przycisk "Pauza" powinien dynamicznie zmieniać swój tekst (lub ikonę) na "Wznów" po wciśnięciu.
     - Rozważyć zastąpienie tekstów na przyciskach ("Pauza", "Anuluj") uniwersalnymi ikonami, aby poprawić spójność interfejsu. Należy zadbać o odpowiedni rozmiar i czytelność przycisków.
@@ -158,3 +149,9 @@
 - [x] **Menu kontekstowe**: Dodano podstawowe menu kontekstowe (prawy przycisk myszy) dla plików i folderów.
 
 - [x] **Odświeżanie listy napędów**: Zaimplementowano dynamiczne odświeżanie listy napędów w pasku nawigacyjnym. Lista jest aktualizowana automatycznie w momencie rozwinięcia menu (kliknięcia), co pozwala na szybki dostęp do nowo zamontowanych urządzeń (np. pendrive).
+
+- [x] **Feature: Dzielenie plików (Plugin)**:
+    - Zaimplementowano plugin `file_splitter` umożliwiający dzielenie dużych plików na mniejsze części.
+    - Stworzono interfejs użytkownika (`split_dialog.ui`) z opcjami wyboru rozmiaru (predefiniowane i własne) oraz katalogu docelowego.
+    - Dodano opcję generowania sumy kontrolnej CRC32 dla podzielonych plików.
+    - Operacja jest wykonywana w tle z obsługą paska postępu, pauzy i anulowania.
