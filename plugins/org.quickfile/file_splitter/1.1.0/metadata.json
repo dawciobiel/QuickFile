@@ -1,0 +1,15 @@
+{
+  "id": "org.quickfile.file_splitter",
+  "version": "1.1.0",
+  "name": "File Splitter",
+  "author": "QuickFile Team",
+  "description": "A plugin to split large files into smaller parts and join them back.",
+  "type": "menu_action",
+  "entry_point": "plugin:FileSplitterPlugin",
+  "class_name": "FileSplitterPlugin",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ]
+}
