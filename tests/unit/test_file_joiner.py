@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 # Dodajemy główny katalog projektu do ścieżki
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 # Dodajemy ścieżkę do pluginu
-plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../plugins/org.quickfile/file_splitter/1.1.0'))
+plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../plugins/org.quickfile/file_splitter/1.1.1'))
 sys.path.insert(0, plugin_path)
 
 try:
