@@ -5,11 +5,12 @@
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QColor, QPixmap, QIcon, QStandardItemModel, QStandardItem
-from PyQt6.QtWidgets import QDialog, QPushButton, QColorDialog, QDialogButtonBox
+from PyQt6.QtWidgets import QDialog, QPushButton, QColorDialog, QDialogButtonBox, QCheckBox, QFrame, QLabel
 
 from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
+from app.task_queue_manager import TaskType
 from utils.resource_path import get_resource_path
 
 
@@ -23,10 +24,11 @@ class SettingsDialog(QDialog):
 
         self.pages = {}
         self.items = {}
+        self.notification_checkboxes = {}
 
         self._setup_tree_model()
-        self._load_current_settings()
         self._init_ui()
+        self._load_current_settings()
         self._connect_signals()
 
     def _setup_tree_model(self):
@@ -48,6 +50,11 @@ class SettingsDialog(QDialog):
         self.items[appearance_item.text()] = appearance_item
         self.pages[appearance_item.text()] = self.appearance_page
         self.tree_model.appendRow(appearance_item)
+        
+        notifications_item = QStandardItem(translation_manager.translate("SettingsDialog", "Notifications"))
+        self.items[notifications_item.text()] = notifications_item
+        self.pages[notifications_item.text()] = self.notifications_page
+        self.tree_model.appendRow(notifications_item)
 
     def _load_current_settings(self):
         self.current_show_dot_files = self.settings_manager.get_setting("showDotFiles")
@@ -71,14 +78,18 @@ class SettingsDialog(QDialog):
         self.current_insert_selection_font_italic = self.settings_manager.get_setting("insert_selection_font_italic")
         self.current_dynamic_refresh_interval = self.settings_manager.get_setting("dynamic_refresh_interval", 2000)
         self.current_sound_notifications = self.settings_manager.get_setting("sound_notifications_enabled", True)
+        
         self.selected_insert_selection_text_color = self.current_insert_selection_text_color
-
-    def _init_ui(self):
-        self.language_group.setTitle(translation_manager.translate("SettingsDialog", "Language Settings"))
-        self.auto_language_radio.setText(translation_manager.translate("SettingsDialog", "Auto-detect language"))
-        self.manual_language_radio.setText(translation_manager.translate("SettingsDialog", "Manual language selection"))
-        self.language_combo.addItem("English (en_US)", "en_US")
-        self.language_combo.addItem("Polski (pl_PL)", "pl_PL")
+        
+        # Load settings into UI elements
+        self.show_dot_files_checkbox.setChecked(self.current_show_dot_files)
+        if self.current_file_permissions_display_mode == "symbolic":
+            self.symbolic_permissions_radio.setChecked(True)
+        else:
+            self.numeric_permissions_radio.setChecked(True)
+        self.show_uid_checkbox.setChecked(self.current_show_uid_column)
+        self.show_gid_checkbox.setChecked(self.current_show_gid_column)
+        
         index = self.language_combo.findData(self.current_manual_language)
         if index != -1:
             self.language_combo.setCurrentIndex(index)
@@ -86,79 +97,112 @@ class SettingsDialog(QDialog):
             self.auto_language_radio.setChecked(True)
         else:
             self.manual_language_radio.setChecked(True)
-        
-        self.theme_group.setTitle(translation_manager.translate("SettingsDialog", "Theme"))
-        available_themes = self.theme_manager.get_themes()
-        for theme_name in available_themes:
-            self.theme_combo.addItem(theme_name.capitalize(), theme_name)
+            
         index = self.theme_combo.findData(self.current_theme)
         if index != -1:
             self.theme_combo.setCurrentIndex(index)
-
-        self.external_editors_group.setTitle(translation_manager.translate("SettingsDialog", "External Editors"))
-        self.use_internal_viewer_checkbox.setText(translation_manager.translate("SettingsDialog", "Use built-in viewer (F3)"))
-        self.use_internal_editor_checkbox.setText(translation_manager.translate("SettingsDialog", "Use built-in editor (F4)"))
-        self.viewer_label.setText(translation_manager.translate("SettingsDialog", "External Viewer (F3):"))
-        self.editor_label.setText(translation_manager.translate("SettingsDialog", "Editor (F4):"))
+            
         self.use_internal_viewer_checkbox.setChecked(self.current_use_internal_viewer)
         self.use_internal_editor_checkbox.setChecked(self.current_use_internal_editor)
         self.viewer_command_edit.setText(self.current_viewer_command)
         self.editor_command_edit.setText(self.current_editor_command)
         self.viewer_command_edit.setEnabled(not self.current_use_internal_viewer)
         self.editor_command_edit.setEnabled(not self.current_use_internal_editor)
+        
+        self.use_default_terminal_checkbox.setChecked(self.current_use_default_terminal)
+        self.custom_terminal_command_edit.setText(self.current_custom_terminal_command)
+        self.custom_terminal_command_edit.setEnabled(not self.current_use_default_terminal)
+        
+        self.use_default_admin_terminal_checkbox.setChecked(self.current_use_default_admin_terminal)
+        self.custom_admin_terminal_command_edit.setText(self.current_custom_admin_terminal_command)
+        self.custom_admin_terminal_command_edit.setEnabled(not self.current_use_default_admin_terminal)
+        
+        self.bring_to_front_checkbox.setChecked(self.current_bring_to_front)
+        
+        self._update_color_button_icon(self.insert_text_color_button, self.selected_insert_selection_text_color)
+        self.insert_font_bold_checkbox.setChecked(self.current_insert_selection_font_bold)
+        self.insert_font_italic_checkbox.setChecked(self.current_insert_selection_font_italic)
+        
+        self.refresh_interval_spinbox.setValue(self.current_dynamic_refresh_interval)
+        
+        # Load notification settings
+        self.sound_notifications_checkbox.setChecked(self.current_sound_notifications)
+        for task_type, checkbox in self.notification_checkboxes.items():
+            setting_key = f"notify_on_{task_type.name.lower()}"
+            checkbox.setChecked(self.settings_manager.get_setting(setting_key, True))
+
+    def _init_ui(self):
+        self.language_group.setTitle(translation_manager.translate("SettingsDialog", "Language Settings"))
+        self.auto_language_radio.setText(translation_manager.translate("SettingsDialog", "Auto-detect language"))
+        self.manual_language_radio.setText(translation_manager.translate("SettingsDialog", "Manual language selection"))
+        self.language_combo.addItem("English (en_US)", "en_US")
+        self.language_combo.addItem("Polski (pl_PL)", "pl_PL")
+        
+        self.theme_group.setTitle(translation_manager.translate("SettingsDialog", "Theme"))
+        available_themes = self.theme_manager.get_themes()
+        for theme_name in available_themes:
+            self.theme_combo.addItem(theme_name.capitalize(), theme_name)
+
+        self.external_editors_group.setTitle(translation_manager.translate("SettingsDialog", "External Editors"))
+        self.use_internal_viewer_checkbox.setText(translation_manager.translate("SettingsDialog", "Use built-in viewer (F3)"))
+        self.use_internal_editor_checkbox.setText(translation_manager.translate("SettingsDialog", "Use built-in editor (F4)"))
+        self.viewer_label.setText(translation_manager.translate("SettingsDialog", "External Viewer (F3):"))
+        self.editor_label.setText(translation_manager.translate("SettingsDialog", "Editor (F4):"))
 
         self.terminal_group.setTitle(translation_manager.translate("SettingsDialog", "Terminal"))
         self.use_default_terminal_checkbox.setText(translation_manager.translate("SettingsDialog", "Use system default terminal"))
         self.custom_terminal_label.setText(translation_manager.translate("SettingsDialog", "Custom command:"))
-        self.use_default_terminal_checkbox.setChecked(self.current_use_default_terminal)
-        self.custom_terminal_command_edit.setText(self.current_custom_terminal_command)
-        self.custom_terminal_command_edit.setEnabled(not self.current_use_default_terminal)
 
         self.admin_terminal_group.setTitle(translation_manager.translate("SettingsDialog", "Admin Terminal"))
         self.use_default_admin_terminal_checkbox.setText(translation_manager.translate("SettingsDialog", "Use system default admin terminal"))
         self.custom_admin_terminal_label.setText(translation_manager.translate("SettingsDialog", "Custom command:"))
-        self.use_default_admin_terminal_checkbox.setChecked(self.current_use_default_admin_terminal)
-        self.custom_admin_terminal_command_edit.setText(self.current_custom_admin_terminal_command)
-        self.custom_admin_terminal_command_edit.setEnabled(not self.current_use_default_admin_terminal)
 
         self.startup_group.setTitle(translation_manager.translate("SettingsDialog", "Startup"))
         self.bring_to_front_checkbox.setText(translation_manager.translate("SettingsDialog", "Bring window to front on startup"))
-        self.bring_to_front_checkbox.setChecked(self.current_bring_to_front)
 
         self.dot_files_group.setTitle(translation_manager.translate("SettingsDialog", "Hidden Files (Dot Files)"))
         self.show_dot_files_checkbox.setText(translation_manager.translate("SettingsDialog", "Show files and folders starting with '.'"))
-        self.show_dot_files_checkbox.setChecked(self.current_show_dot_files)
         
         self.permissions_group.setTitle(translation_manager.translate("SettingsDialog", "File Permissions Display"))
         self.symbolic_permissions_radio.setText(translation_manager.translate("SettingsDialog", "Symbolic (rwx)"))
         self.numeric_permissions_radio.setText(translation_manager.translate("SettingsDialog", "Numeric (755)"))
-        if self.current_file_permissions_display_mode == "symbolic":
-            self.symbolic_permissions_radio.setChecked(True)
-        else:
-            self.numeric_permissions_radio.setChecked(True)
 
         self.columns_group.setTitle(translation_manager.translate("SettingsDialog", "Column Visibility"))
         self.show_uid_checkbox.setText(translation_manager.translate("SettingsDialog", "Show UID Column"))
         self.show_gid_checkbox.setText(translation_manager.translate("SettingsDialog", "Show GID Column"))
-        self.show_uid_checkbox.setChecked(self.current_show_uid_column)
-        self.show_gid_checkbox.setChecked(self.current_show_gid_column)
 
         self.dynamic_refresh_group.setTitle(translation_manager.translate("SettingsDialog", "Dynamic Refresh"))
         self.refresh_interval_label.setText(translation_manager.translate("SettingsDialog", "Refresh interval (ms):"))
-        self.refresh_interval_spinbox.setValue(self.current_dynamic_refresh_interval)
 
         self.insert_selection_group.setTitle(translation_manager.translate("SettingsDialog", "Insert Selection Style"))
         self.label.setText(translation_manager.translate("SettingsDialog", "Text Color:"))
         self.insert_font_bold_checkbox.setText(translation_manager.translate("SettingsDialog", "Bold"))
         self.insert_font_italic_checkbox.setText(translation_manager.translate("SettingsDialog", "Italic"))
         self.insert_text_color_button.setFixedSize(QSize(30, 20))
-        self._update_color_button_icon(self.insert_text_color_button, self.selected_insert_selection_text_color)
-        self.insert_font_bold_checkbox.setChecked(self.current_insert_selection_font_bold)
-        self.insert_font_italic_checkbox.setChecked(self.current_insert_selection_font_italic)
 
         self.notifications_group.setTitle(translation_manager.translate("SettingsDialog", "Notifications"))
-        self.sound_notifications_checkbox.setText(translation_manager.translate("SettingsDialog", "Enable sound notifications"))
-        self.sound_notifications_checkbox.setChecked(self.current_sound_notifications)
+        
+        # Create sound notification checkbox
+        self.sound_notifications_checkbox = QCheckBox(translation_manager.translate("SettingsDialog", "Enable sound notifications"))
+        self.notifications_group.layout().addWidget(self.sound_notifications_checkbox)
+        
+        # Add separator
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        self.notifications_group.layout().addWidget(line)
+
+        # Add description label
+        description_label = QLabel(translation_manager.translate("SettingsDialog", "The following settings control both sound and popup notifications:"))
+        description_label.setWordWrap(True)
+        self.notifications_group.layout().addWidget(description_label)
+        
+        # Dynamically create checkboxes for each task type
+        for task_type in TaskType:
+            task_name = task_type.name.replace('_', ' ').title()
+            checkbox = QCheckBox(translation_manager.translate("SettingsDialog", f"Notify on '{task_name}' completion"))
+            self.notifications_group.layout().addWidget(checkbox)
+            self.notification_checkboxes[task_type] = checkbox
 
         self.buttonBox.button(QDialogButtonBox.StandardButton.Save).setText(translation_manager.translate("SettingsDialog", "Save"))
         self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText(translation_manager.translate("SettingsDialog", "Cancel"))
@@ -196,7 +240,7 @@ class SettingsDialog(QDialog):
             self._update_color_button_icon(self.insert_text_color_button, self.selected_insert_selection_text_color)
 
     def get_settings(self):
-        return {
+        settings = {
             "showDotFiles": self.show_dot_files_checkbox.isChecked(),
             "file_permissions_display_mode": "symbolic" if self.symbolic_permissions_radio.isChecked() else "numeric",
             "show_uid_column": self.show_uid_checkbox.isChecked(),
@@ -219,3 +263,10 @@ class SettingsDialog(QDialog):
             "dynamic_refresh_interval": self.refresh_interval_spinbox.value(),
             "sound_notifications_enabled": self.sound_notifications_checkbox.isChecked(),
         }
+        
+        # Add dynamic notification settings
+        for task_type, checkbox in self.notification_checkboxes.items():
+            setting_key = f"notify_on_{task_type.name.lower()}"
+            settings[setting_key] = checkbox.isChecked()
+            
+        return settings

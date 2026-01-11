@@ -190,7 +190,11 @@ class MainWindow(QMainWindow):
     def on_task_finished(self, task: Task):
         """This slot is called when a task finishes, regardless of status (success, error, cancelled)."""
         if task.status == TaskStatus.FINISHED:
-            self.notification_manager.show_success(f"Task '{task.type.name}' completed.")
+            setting_key = f"notify_on_{task.type.name.lower()}"
+            should_notify = self.settings_manager.get_setting(setting_key, True)
+            
+            if should_notify:
+                self.notification_manager.show_success(f"Task '{task.type.name}' completed.")
         elif task.status == TaskStatus.ERROR:
             self.notification_manager.show_error(f"Task '{task.type.name}' failed: {task.details}")
             task_name = task.type.name.replace('_', ' ').capitalize()
