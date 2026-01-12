@@ -49,7 +49,7 @@ class UIManager:
         self.main_window.centralWidget().layout().addWidget(self.bottom_panel)
 
         # Connect signals
-        self.folder_browser.file_selected.connect(app_logic_handler._handle_f3_key)
+        self.folder_browser.file_selected.connect(app_logic_handler.open_file)
         self.folder_browser.current_directory_changed.connect(app_logic_handler.update_status_bar_path)
 
     def load_panel_settings(self):

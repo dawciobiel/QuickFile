@@ -22,6 +22,7 @@ from panels.task_queue_panel import TaskQueuePanel
 from ui.ui_manager import UIManager
 from utils.checksum_result_dialog import ChecksumResultDialog
 from utils.resource_path import get_resource_path
+from app.file_association_manager import FileAssociationManager
 
 
 class MainWindow(QMainWindow):
@@ -54,6 +55,7 @@ class MainWindow(QMainWindow):
         
         self.file_comparator = FileComparator()
         self.favorites_manager = FavoritesManager()
+        self.file_association_manager = FileAssociationManager()
 
         self.settings_handler = SettingsHandler(
             main_window=self,
@@ -84,7 +86,8 @@ class MainWindow(QMainWindow):
             dialog_handler=None,
             settings_handler=self.settings_handler,
             background_task_manager=self.background_task_manager,
-            task_queue_manager=self.task_queue_manager
+            task_queue_manager=self.task_queue_manager,
+            file_association_manager=self.file_association_manager
         )
 
         self.ui_manager.init_ui(self.application_logic_handler, self.shortcuts_manager)
