@@ -51,6 +51,16 @@ class SettingsDialog(QDialog):
         self.pages[appearance_item.text()] = self.appearance_page
         self.tree_model.appendRow(appearance_item)
         
+        editors_viewers_item = QStandardItem(translation_manager.translate("SettingsDialog", "Editors and Viewers"))
+        self.items[editors_viewers_item.text()] = editors_viewers_item
+        self.pages[editors_viewers_item.text()] = self.editors_viewers_page
+        self.tree_model.appendRow(editors_viewers_item)
+        
+        terminal_item = QStandardItem(translation_manager.translate("SettingsDialog", "Terminal"))
+        self.items[terminal_item.text()] = terminal_item
+        self.pages[terminal_item.text()] = self.terminal_page
+        self.tree_model.appendRow(terminal_item)
+        
         notifications_item = QStandardItem(translation_manager.translate("SettingsDialog", "Notifications"))
         self.items[notifications_item.text()] = notifications_item
         self.pages[notifications_item.text()] = self.notifications_page
