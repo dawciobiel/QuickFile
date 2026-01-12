@@ -5,6 +5,7 @@
 pytest
 pytest-qt        # Qt-specific test helpers
 pytest-mock      # Mocking utilities for pytest
+packaging        # Version parsing and comparison
 
 # Code quality and static analysis
 ruff             # Linter and formatter
@@ -13,4 +14,3 @@ ruff             # Linter and formatter
 pipreqs          # Auto-generate requirements from imports
 send2trash       # Safe file deletion used in development
 pyinstaller      # Build standalone executables for distribution
-

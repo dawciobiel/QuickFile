@@ -2,8 +2,6 @@
 
 ## Główne funkcje do zaimplementowania
 
-- [ ] **Plugin version hardcoded in tests**: W kodzie testów wpisana jest na sztywno wersja plugina (chodzi o nazwę katalogu, w którym plugin się znajduje 1.0.0 -> 1.0.1). Jeżeli plugin zostanie zaktualizowany i będzie podniesiony jego numer wersji, wtedy test przestaje działać. Trzeba to jakoś rozwiązać.
-
 - [ ] **Script to check plugin version with proper dir name**: Skrypt do sprawdzania, czy wersja pluginu zadeklarowana w jego `metadata.json` zgadza się z nazwą katalogu, w którym on się znajduje. Wersja `1.0.1` powinna być w katalogu `1.0.1`.
   - Wydaje mi się również, że stare wersje pluginów należy zachować i trzymać w ich starych wersjach katalogów. W ten sposób na pewno będą zawsze działać testy, jeżeli wersja pluginu, który jest testowany, znajduje się w starej nazwie katalogu. System kontroli wersji jest właśnie od tego, aby przechowywać również stare wersje plików.
 
@@ -31,6 +29,8 @@
 - [ ] **Plugin: Advanced Archive Support**: Rozszerzenie obsługi archiwów o nowe formaty, np. 7z, lub dodanie możliwości pakowania do formatu RAR (jeśli licencja na to pozwala).
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Refactor: Dynamic plugin paths in tests**: Zrefaktoryzowano testy, aby dynamicznie znajdowały ścieżkę do najnowszej wersji pluginu, eliminując problem "sztywno" zakodowanych wersji.
 
 - [x] **Feature: Open Terminal**:
     - Zaimplementowano akcje "Otwórz terminal" i "Otwórz terminal administratora" w bieżącej ścieżce.

@@ -5,18 +5,6 @@
 - **Translation**: Some parts of the UI are not yet translated.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 
-## TODO
-
-- Open terminal in the current path.
-- Open terminal in the current path with admin rights.
-- Relaunch QuickFile with admin rights.
-- Create unit tests.
-- Create integration tests.
-- Plugin management from the UI level: A window to enable/disable installed plugins.
-- Plugin for handling other archive formats (e.g., 7z, RAR for packing).
-- FTP/SFTP client plugin.
-- Plugin for integration with a cloud API (e.g., Dropbox, Google Drive).
-
 ## Fixed
 
 ### Viewer (`standard_viewer`)
