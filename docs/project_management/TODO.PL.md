@@ -2,9 +2,6 @@
 
 ## Główne funkcje do zaimplementowania
 
-- [ ] **Script to check plugin version with proper dir name**: Skrypt do sprawdzania, czy wersja pluginu zadeklarowana w jego `metadata.json` zgadza się z nazwą katalogu, w którym on się znajduje. Wersja `1.0.1` powinna być w katalogu `1.0.1`.
-  - Wydaje mi się również, że stare wersje pluginów należy zachować i trzymać w ich starych wersjach katalogów. W ten sposób na pewno będą zawsze działać testy, jeżeli wersja pluginu, który jest testowany, znajduje się w starej nazwie katalogu. System kontroli wersji jest właśnie od tego, aby przechowywać również stare wersje plików.
-
 - [ ] **Feature: System aktualizacji**:
     - Zaprojektowanie odpowiedniego systemu pobierania i instalowania aktualizacji dla aplikacji, motywów, zasobów, tłumaczeń i pluginów.
     - System aktualizacji powinien wspierać wersję oficjalną aplikacji.
@@ -29,6 +26,8 @@
 - [ ] **Plugin: Advanced Archive Support**: Rozszerzenie obsługi archiwów o nowe formaty, np. 7z, lub dodanie możliwości pakowania do formatu RAR (jeśli licencja na to pozwala).
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Test: Spójność wersji pluginów**: Dodano test, który automatycznie weryfikuje, czy wersja w `metadata.json` zgadza się z nazwą katalogu wersji pluginu.
 
 - [x] **Refactor: Dynamic plugin paths in tests**: Zrefaktoryzowano testy, aby dynamicznie znajdowały ścieżkę do najnowszej wersji pluginu, eliminując problem "sztywno" zakodowanych wersji.
 
