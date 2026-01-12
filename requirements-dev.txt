@@ -5,6 +5,7 @@
 pytest
 pytest-qt        # Qt-specific test helpers
 pytest-mock      # Mocking utilities for pytest
+pytest-order     # Control the order of test execution
 packaging        # Version parsing and comparison
 
 # Code quality and static analysis

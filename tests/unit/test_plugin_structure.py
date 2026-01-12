@@ -29,6 +29,7 @@ def get_all_plugin_version_paths():
                 if os.path.isfile(metadata_file):
                     yield (plugin_name, version_dir_name, metadata_file)
 
+@pytest.mark.order(1)
 @pytest.mark.parametrize(
     "plugin_name, version_dir, metadata_path",
     get_all_plugin_version_paths(),
