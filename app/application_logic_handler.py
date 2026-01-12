@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import QMessageBox
 
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
+from app.file_association_manager import FileAction
 from utils.dialogs import show_error_message
 from utils.select_dialog import SelectDialog
 
@@ -32,7 +33,7 @@ def handle_error(func):
 
 
 class ApplicationLogicHandler(QObject):
-    def __init__(self, main_window, file_manager, file_comparator, favorites_manager, directory_synchronizer, theme_manager, ui_state_provider, dialog_handler, settings_handler, background_task_manager, task_queue_manager):
+    def __init__(self, main_window, file_manager, file_comparator, favorites_manager, directory_synchronizer, theme_manager, ui_state_provider, dialog_handler, settings_handler, background_task_manager, task_queue_manager, file_association_manager=None):
         super().__init__()
         self.main_window = main_window
         self.file_manager = file_manager
@@ -45,6 +46,7 @@ class ApplicationLogicHandler(QObject):
         self.settings_handler = settings_handler
         self.background_task_manager = background_task_manager
         self.task_queue_manager = task_queue_manager
+        self.file_association_manager = file_association_manager
         
         self.task_queue_manager.task_completed.connect(self._on_task_completed)
 
@@ -99,6 +101,49 @@ class ApplicationLogicHandler(QObject):
         except Exception as e:
             logging.error(f"Failed to execute command '{command_template}' for file {file_path}: {e}")
             show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), f"Failed to execute command: {e}")
+
+    @handle_error
+    def open_file(self, file_path):
+        """
+        Opens a file based on file associations.
+        """
+        if not file_path or not os.path.exists(file_path):
+            return
+
+        if os.path.isdir(file_path):
+            return
+
+        if not self.file_association_manager:
+            logging.warning("FileAssociationManager not initialized. Falling back to internal viewer.")
+            self.dialog_handler.show_file_viewer_dialog()
+            return
+
+        action, command = self.file_association_manager.get_action_for_file(file_path)
+        
+        logging.info(f"Opening file: {file_path} with action: {action}, command: {command}")
+
+        if action == FileAction.INTERNAL_VIEWER:
+            self.dialog_handler.show_file_viewer_dialog()
+        elif action == FileAction.INTERNAL_EDITOR:
+            self.dialog_handler.show_file_editor_dialog()
+        elif action == FileAction.SYSTEM_DEFAULT:
+            try:
+                if platform.system() == 'Windows':
+                    os.startfile(file_path)
+                elif platform.system() == 'Darwin':
+                    subprocess.call(('open', file_path))
+                else:
+                    subprocess.call(('xdg-open', file_path))
+            except Exception as e:
+                logging.error(f"Failed to open file with system default: {e}")
+                show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), f"Failed to open file: {e}")
+                
+        elif action == FileAction.CUSTOM_COMMAND:
+            if command:
+                self._execute_external_command(command, file_path)
+            else:
+                logging.warning(f"No command defined for custom action on {file_path}")
+                show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), "No command defined for this file type.")
 
     @handle_error
     def open_terminal_in_path(self, path):
