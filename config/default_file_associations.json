@@ -1,0 +1,15 @@
+{
+    "associations": [
+        {
+            "name": "Text Files",
+            "extensions": ["txt", "md", "py", "json", "xml", "log", "ini", "conf", "sh", "bat", "yml", "yaml"],
+            "action": "internal_viewer"
+        },
+        {
+            "name": "Images",
+            "extensions": ["jpg", "jpeg", "png", "gif", "bmp", "svg", "ico", "webp"],
+            "action": "internal_viewer"
+        }
+    ],
+    "default_action": "system_default"
+}
