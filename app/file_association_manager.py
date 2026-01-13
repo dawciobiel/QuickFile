@@ -6,6 +6,7 @@ import json
 import os
 import logging
 from enum import Enum
+from utils.resource_path import get_resource_path
 
 class FileAction(Enum):
     INTERNAL_VIEWER = "internal_viewer"
@@ -24,21 +25,23 @@ class FileAssociationManager:
         self._load_config()
 
     def _get_default_config(self):
-        return {
-            "associations": [
-                {
-                    "name": "Text Files",
-                    "extensions": ["txt", "md", "py", "json", "xml", "log", "ini", "conf", "sh", "bat", "yml", "yaml"],
-                    "action": "internal_viewer"
-                },
-                {
-                    "name": "Images",
-                    "extensions": ["jpg", "jpeg", "png", "gif", "bmp", "svg", "ico", "webp"],
-                    "action": "internal_viewer"
-                }
-            ],
-            "default_action": "system_default"
-        }
+        default_config_path = get_resource_path("config/default_file_associations.json")
+        try:
+            with open(default_config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logging.error(f"Failed to load default file associations from {default_config_path}: {e}")
+            # Fallback hardcoded config just in case
+            return {
+                "associations": [
+                    {
+                        "name": "Text Files",
+                        "extensions": ["txt", "md", "py", "json", "xml", "log", "ini", "conf", "sh", "bat", "yml", "yaml"],
+                        "action": "internal_viewer"
+                    }
+                ],
+                "default_action": "system_default"
+            }
 
     def _load_config(self):
         if not os.path.exists(self.config_dir):
