@@ -2,6 +2,27 @@
 
 ## Główne funkcje do zaimplementowania
 
+- [ ] **Architecture**:
+    - Każdy plugin powinien mieć w `metadata.json` sekcję np.:
+    ```json
+        [dependencies]
+        python = ["send2trash==1.8.3"]
+    ```
+    która niezależnie dla konkretnego pakietu określa bibliotekę i jej konkretną wersje. Pluginy nie mogą używać wspólnego środowiska `.venv` czy `devShell`.
+    Eliminuje się też w ten sposób problem kiedy różne pakiety używają tej samej biblioteki ale innej jej wersji.
+
+- [ ] **Feature: Ikony katalogów i plików**:
+    - Można dodać implementacje aby ikona pliku na liście była zależna od grupy do której należy typ tego pliku. Np.:
+        - pliki testowe
+        - dokumenty
+        - pliki kodu źródłowego
+        - pliki binarne
+        - multimedia: grafika
+        - multimedia: video
+        - multimedia: audio
+        - inne.
+    - Grupy typów plików są już zdefiniowane w `config/default_file_associations.json` i są wykorzystywane przez wewnętrzny podgląd (viewer) do wyboru odpowiedniego trybu wyświetlania. Można by rozszerzyć tę konfigurację o definicje ikon dla każdej grupy.
+    
 - [ ] **Feature: System aktualizacji**:
     - Zaprojektowanie odpowiedniego systemu pobierania i instalowania aktualizacji dla aplikacji, motywów, zasobów, tłumaczeń i pluginów.
     - System aktualizacji powinien wspierać wersję oficjalną aplikacji.
@@ -11,7 +32,7 @@
     - Zabezpieczenie kodu źródłowego aplikacji przed kradzieżą.
     - Dodanie licencji, ukrycie kodu źródłowego co najmniej w wersji beta.
 
-- [ ] **Feature**: Możliwość ustalania maksymalnej prędkości podczas procesu kopiowaniu plików. To powinien być jakiś suwak lub spinner w oknie dialogowym aktualnie wykonywanego procesu kopiowania. A swoją drogą nie wiem, jak zaimplementować ogranicznik prędkości kopiowanych plików. 
+- [ ] **Feature Pręskość kopiowania**: Możliwość ustalania maksymalnej prędkości podczas procesu kopiowaniu plików. To powinien być jakiś suwak lub spinner w oknie dialogowym aktualnie wykonywanego procesu kopiowania. A swoją drogą nie wiem, jak zaimplementować ogranicznik prędkości kopiowanych plików. 
 
 - [ ] **Feature**: Pod Windows (i jego systemem plików) czasami może być problem ze zbyt długimi nazwami plików lub zbyt długą ścieżką. Przyjrzeć się temu problemowi i dodać odpowiednią funkcjonalność dla "zachowania nazwy pliku".
 
@@ -26,6 +47,11 @@
 - [ ] **Plugin: Advanced Archive Support**: Rozszerzenie obsługi archiwów o nowe formaty, np. 7z, lub dodanie możliwości pakowania do formatu RAR (jeśli licencja na to pozwala).
 
 ## Zrobione / Zaimplementowane częściowo
+
+- [x] **Feature: Błędne ścieżki na zakładkach**: Jeżeli zapamiętana w ustawieniach użytkownika któraś ze ścieżek nie jest poprawna to aplikacja wyświetla błąd (popup) podczas uruchamiania aplikacji. Problemem jest, że wiele takich niewłaściwych ścieżek powoduje wielokrotne wyświetlanie popupów. Więc:
+  - Taki popup powinien mieć informacje, że jest to błąd pochodzący z zakładki.
+  - Być może popup powinno wyświetlać się w momencie aktywacji błędnej zakładki, a nie w momencie uruchamianiaaplikacji.
+  - Pytanie jak powinna zachować się zakładka w przypadku nieistniejącej ścieżki? a) Rekurencyjnie przechodzić do wyższego katalogu? b) Przechodzić do głównego katalogu napędu? c) Wyszarzyć listing plików i podświetlić pole od edycji ścieżki na kolor czerwony?
 
 - [x] **Test: Spójność wersji pluginów**: Dodano test, który automatycznie weryfikuje, czy wersja w `metadata.json` zgadza się z nazwą katalogu wersji pluginu.
 

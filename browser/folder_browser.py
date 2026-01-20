@@ -219,6 +219,7 @@ class PanelWidget(QWidget):
             self.file_view.view.setFocus()
 
     def _on_path_changed(self, new_path):
+        self.clear_error_state()
         self.path_edit.setText(new_path)
         self.completer_model.setRootPath(new_path)
         self.update_free_space_display(new_path)
@@ -240,13 +241,33 @@ class PanelWidget(QWidget):
             self.drive_combo.setCurrentIndex(best_match_index)
         self.drive_combo.blockSignals(False)
 
+    def set_error_state(self, invalid_path):
+        """Sets the panel to an error state for an invalid path."""
+        self.path_edit.setText(invalid_path)
+        # Set red border and background to indicate error
+        self.path_edit.setStyleSheet("QLineEdit { border: 2px solid red; background-color: #ffe6e6; color: black; }")
+        self.path_edit.setToolTip(translation_manager.translate("PanelWidget", "Path does not exist"))
+        
+        # Disable the file view to indicate it's not active for this path
+        if isinstance(self.file_view, AbstractFileView):
+             self.file_view.setEnabled(False)
+
+    def clear_error_state(self):
+        """Clears the error state and restores normal styling."""
+        self.path_edit.setStyleSheet("")
+        self.path_edit.setToolTip("")
+        if isinstance(self.file_view, AbstractFileView):
+            self.file_view.setEnabled(True)
+
     def on_path_edited(self):
         path = os.path.expanduser(self.path_edit.text().strip())
-        if os.path.isdir(path) and isinstance(self.file_view, AbstractFileView):
-            self.file_view.set_path(path)
-            self.file_view.view.setFocus()
-        elif isinstance(self.file_view, AbstractFileView):
-            self.path_edit.setText(self.file_view.get_current_path())
+        if os.path.isdir(path):
+            self.clear_error_state()
+            if isinstance(self.file_view, AbstractFileView):
+                self.file_view.set_path(path)
+                self.file_view.view.setFocus()
+        else:
+            self.set_error_state(path)
 
     def update_free_space_display(self, path):
         if not path or not os.path.exists(path):
@@ -386,8 +407,14 @@ class FolderBrowser(QWidget):
 
     def _create_panel_widget(self, path):
         panel = PanelWidget(self.settings_manager, self, self.theme_manager, self.plugin_manager, self.notification_manager, self)
+        
+        if os.path.exists(path):
+            if isinstance(panel.file_view, AbstractFileView):
+                panel.file_view.set_path(path)
+        else:
+            panel.set_error_state(path)
+
         if isinstance(panel.file_view, AbstractFileView):
-            panel.file_view.set_path(path)
             panel.file_view.path_changed.connect(lambda new_path, p=panel: self._update_tab_title(p, new_path))
             panel.file_view.file_selected.connect(self.file_selected.emit)
             panel.file_view.path_changed.connect(self.current_directory_changed.emit)
