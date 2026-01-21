@@ -2,6 +2,7 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
+import importlib
 import importlib.util
 import json
 import logging
@@ -10,10 +11,10 @@ import platform
 import re
 import shutil
 import sys
-from functools import cmp_to_key
-import importlib
 
-from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, ArchivePlugin, \
+from app.plugin_dependency_manager import PluginDependencyManager
+from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, \
+    ArchivePlugin, \
     ChecksumPlugin, SearchPlugin, UiExtensionPlugin, DiskUtilsPlugin, EditorPlugin, MenuActionPlugin
 
 
@@ -39,6 +40,7 @@ class PluginManager:
             "menu_action": [],
         }
         self.version_regex = re.compile(r"^\d+(\.\d+)*$")
+        self.dependency_manager = PluginDependencyManager()
 
         self._ensure_bundled_plugins()
         self.load_plugins()
@@ -73,7 +75,7 @@ class PluginManager:
 
     def _ensure_bundled_plugins(self):
         if getattr(sys, 'frozen', False):
-            base_dir = sys._MEIPASS
+            base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -153,10 +155,15 @@ class PluginManager:
     def _load_plugin_from_path(self, base_path, metadata_path):
         original_sys_path = sys.path[:]
         try:
-            sys.path.insert(0, base_path)
-
             with open(metadata_path, 'r') as f:
                 metadata = json.load(f)
+
+            # Ensure dependencies are installed before loading
+            libs_path = self.dependency_manager.ensure_dependencies(base_path, metadata)
+            if libs_path:
+                sys.path.insert(0, libs_path)
+
+            sys.path.insert(0, base_path)
 
             # Check platform compatibility
             if "platforms" in metadata:
