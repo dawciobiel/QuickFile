@@ -13,6 +13,7 @@ import shutil
 import sys
 
 from app.plugin_dependency_manager import PluginDependencyManager
+from app.plugin_sandbox import SandboxedPluginWrapper  # Import the new wrapper
 from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, \
     ArchivePlugin, \
     ChecksumPlugin, SearchPlugin, UiExtensionPlugin, DiskUtilsPlugin, EditorPlugin, MenuActionPlugin
@@ -154,6 +155,7 @@ class PluginManager:
 
     def _load_plugin_from_path(self, base_path, metadata_path):
         original_sys_path = sys.path[:]
+        plugin_instance = None  # Initialize plugin_instance
         try:
             with open(metadata_path, 'r') as f:
                 metadata = json.load(f)
@@ -182,19 +184,24 @@ class PluginManager:
             if plugin_type in self.plugins:
                 entry_point = metadata["entry_point"]
                 module_name, class_name = entry_point.split(":")
-                
-                module_file_path = os.path.join(base_path, module_name.replace('.', os.sep) + '.py')
 
-                spec = importlib.util.spec_from_file_location(metadata["id"], module_file_path)
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
+                if metadata.get("sandboxed", False):
+                    logging.info(f"Loading plugin {metadata['id']} in sandbox mode.")
+                    plugin_instance = SandboxedPluginWrapper(base_path, metadata)
+                    plugin_instance.start()
+                else:
+                    module_file_path = os.path.join(base_path, module_name.replace('.', os.sep) + '.py')
 
-                plugin_class = getattr(module, class_name)
-                plugin_instance = plugin_class()
-                
-                # Store module for potential reloading
-                plugin_instance.__module_name__ = module.__name__
-                plugin_instance.metadata = metadata
+                    spec = importlib.util.spec_from_file_location(metadata["id"], module_file_path)
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+
+                    plugin_class = getattr(module, class_name)
+                    plugin_instance = plugin_class()
+
+                    # Store metadata and module name for direct plugins
+                    plugin_instance.__module_name__ = module.__name__
+                    plugin_instance.metadata = metadata
 
                 self.plugins[plugin_type].append(plugin_instance)
                 logging.info(f"Successfully loaded plugin: {metadata['id']} v{metadata.get('version', 'N/A')} (type: {plugin_type})")
@@ -203,8 +210,31 @@ class PluginManager:
 
         except Exception as e:
             logging.error(f"Failed to load plugin from {base_path}: {e}", exc_info=True)
+            if isinstance(plugin_instance, SandboxedPluginWrapper):
+                plugin_instance.stop()  # Ensure sandbox process is stopped on error
         finally:
             sys.path[:] = original_sys_path
+
+    def shutdown(self):
+        """
+        Shuts down all sandboxed plugin processes.
+        """
+        logging.info("Shutting down plugin processes...")
+        for plugin_type_list in self.plugins.values():
+            for plugin_instance in plugin_type_list:
+                if isinstance(plugin_instance, SandboxedPluginWrapper):
+                    plugin_instance.stop()
+                    logging.info(f"Stopped sandboxed plugin: {plugin_instance.metadata.get('id')}")
+
+    def get_plugin_by_id(self, plugin_id: str):
+        """
+        Finds a loaded plugin instance by its ID.
+        """
+        for plugin_type_list in self.plugins.values():
+            for plugin_instance in plugin_type_list:
+                if hasattr(plugin_instance, 'metadata') and plugin_instance.metadata.get('id') == plugin_id:
+                    return plugin_instance
+        return None
 
     def get_standard_operations_plugin(self) -> StandardOperationsPlugin | None:
         if platform.system() == "Windows":
