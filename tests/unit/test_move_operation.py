@@ -3,7 +3,12 @@
 # See LICENSE file for details.
 
 import pytest
+import os
 from PyQt6.QtWidgets import QDialog
+
+# Dodajemy importy dla nowych testów
+from app.task_queue_manager import Task, TaskType
+from tests.conftest import async_plugin_test_env
 
 def test_move_single_item_with_dialog(create_app_handler, mocker):
     MockMoveDialog = mocker.patch('app.dialog_handler.MoveDialog')
@@ -58,3 +63,43 @@ def test_move_no_source_selected(create_app_handler, mocker):
     app_handler.move_selected_item()
     
     mock_show_error.assert_called_once()
+
+def test_move_operation_logic(tmp_path, async_plugin_test_env):
+    """
+    Testuje logikę przenoszenia pliku z wykorzystaniem asynchronicznej architektury pluginów.
+    """
+    plugin_manager, background_task_manager, async_test_helper_factory = async_plugin_test_env
+    async_helper = async_test_helper_factory("org.quickfile.standard_operations")
+
+    # 1. Przygotowanie pliku źródłowego i katalogu docelowego
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    source_file = source_dir / "file_to_move.txt"
+    source_file.write_text("This is a test file.")
+    
+    dest_dir = tmp_path / "destination"
+    dest_dir.mkdir()
+
+    # 2. Opcje
+    options = {
+        "overwrite": False,
+        "plugin_id": "org.quickfile.standard_operations"
+    }
+    
+    # 3. Tworzenie obiektu Task
+    task = Task(TaskType.MOVE, source_paths=[str(source_file)], destination_path=str(dest_dir), options=options)
+    
+    # 4. Uruchomienie przenoszenia asynchronicznie i czekanie na zakończenie
+    async_helper.run_plugin_method_async(
+        task,
+        "move_items",
+        source_paths=[str(source_file)],
+        destination_path=str(dest_dir),
+        options=options
+    )
+    
+    # 5. Weryfikacja wyników
+    dest_file = dest_dir / "file_to_move.txt"
+    assert dest_file.exists()
+    assert dest_file.read_text() == "This is a test file."
+    assert not source_file.exists() # Plik źródłowy powinien zniknąć
