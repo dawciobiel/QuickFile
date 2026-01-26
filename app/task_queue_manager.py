@@ -5,7 +5,11 @@
 import logging
 import uuid
 from enum import Enum, auto
-from PyQt6.QtCore import QObject, pyqtSignal, QRunnable, QThreadPool
+
+from PyQt6.QtCore import QObject, pyqtSignal, QRunnable
+
+from app.plugin_sandbox import SandboxedPluginWrapper
+
 
 class TaskStatus(Enum):
     PENDING = auto()
@@ -69,10 +73,15 @@ class Task(QObject):
 
     def set_progress(self, progress):
         # If progress is a tuple (read, write, speed), extract speed
-        if isinstance(progress, tuple) and len(progress) == 3:
-            self._progress = (progress[0], progress[1])
-            self.set_speed(progress[2])
-            self.progress_changed.emit(self._progress)
+        if isinstance(progress, tuple):
+            if len(progress) == 3:
+                self._progress = (progress[0], progress[1])
+                self.set_speed(progress[2])
+                self.progress_changed.emit(self._progress)
+            else:
+                # Handle cases where progress is a tuple but not (read, write, speed)
+                self._progress = progress
+                self.progress_changed.emit(progress)
         else:
             self._progress = progress
             self.progress_changed.emit(progress)
@@ -135,7 +144,9 @@ class TaskWorker(QRunnable):
                 elif self.task.type == TaskType.MOVE:
                     plugin.move_items(self.task.source_paths, self.task.destination_path, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
                 elif self.task.type == TaskType.DELETE:
-                    plugin.delete_items(self.task.source_paths, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
+                    plugin.delete_items(self.task.source_paths, self.task.options,
+                                        progress_callback=self.signals.progress, task_context=task_context,
+                                        task=self.task)
 
             elif self.task.type == TaskType.SYNC:
                 self.directory_synchronizer.synchronize(self.task.source_paths[0], self.task.destination_path, self.task.options, task_context=task_context, task=self.task)
@@ -162,13 +173,28 @@ class TaskWorker(QRunnable):
                 size = self.file_manager.calculate_directory_size(self.task.source_paths[0], task_context=task_context, task=self.task)
                 self.task.result = size
             elif self.task.type == TaskType.SPLIT_FILE:
-                plugin = self.task.options.get("plugin")
+                plugin_id = self.task.options.get("plugin_id")
+                plugin = self.plugin_manager.get_plugin_by_id(plugin_id)
                 if plugin:
-                    plugin.split_file(self.task.source_paths[0], self.task.destination_path, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
+                    if isinstance(plugin, SandboxedPluginWrapper):
+                        plugin.progress_updated.connect(self.task.set_progress)
+                        plugin.split_file(self.task.source_paths[0], self.task.destination_path, self.task.options,
+                                          progress_callback=True)
+                    else:
+                        plugin.split_file(self.task.source_paths[0], self.task.destination_path, self.task.options,
+                                          progress_callback=self.signals.progress)
             elif self.task.type == TaskType.JOIN_FILES:
-                plugin = self.task.options.get("plugin")
+                plugin_id = self.task.options.get("plugin_id")
+                plugin = self.plugin_manager.get_plugin_by_id(plugin_id)
                 if plugin:
-                    plugin.join_files(self.task.source_paths[0], self.task.destination_path, self.task.options, progress_callback=self.signals.progress, task_context=task_context, task=self.task)
+                    if isinstance(plugin, SandboxedPluginWrapper):
+                        plugin.progress_updated.connect(self.task.set_progress)
+                        plugin.join_files(self.task.source_paths[0], self.task.destination_path, self.task.options,
+                                          progress_callback=True)
+                    else:
+                        plugin.join_files(self.task.source_paths[0], self.task.destination_path, self.task.options,
+                                          progress_callback=self.signals.progress, task_context=task_context,
+                                          task=self.task)
 
             if self.task.status != TaskStatus.CANCELLED:
                 self.task.set_status(TaskStatus.FINISHED)

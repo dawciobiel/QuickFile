@@ -55,6 +55,9 @@ def main():
         directory_synchronizer = DirectorySynchronizer()
         plugin_manager = PluginManager()
 
+        # Connect shutdown signals
+        app.aboutToQuit.connect(plugin_manager.shutdown)
+
         task_queue_manager = TaskQueueManager(
             file_manager=file_manager,
             directory_synchronizer=directory_synchronizer,
