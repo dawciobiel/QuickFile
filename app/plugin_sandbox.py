@@ -74,12 +74,10 @@ def run_plugin_process(pipe: Connection, plugin_path: str, metadata: dict):
                 args = msg.get('args', [])
                 kwargs = msg.get('kwargs', {})
                 
-                # Get task_id from different sources
                 current_task_id = msg.get('task_id')
 
                 send_trace(f"Received CALL for method: {method_name} with task_id: {current_task_id}")
 
-                # Prepare arguments only if they are expected by the plugin method
                 if 'progress_callback' in kwargs:
                     kwargs['progress_callback'] = progress_forwarder
                 if 'task_context' in kwargs:
@@ -90,6 +88,7 @@ def run_plugin_process(pipe: Connection, plugin_path: str, metadata: dict):
                     kwargs['send_trace'] = send_trace
 
                 try:
+                    send_trace(f"Calling method {method_name} with kwargs: {kwargs}") # Added debug trace
                     method = getattr(plugin_instance, method_name)
                     send_trace(f"Executing method: {method_name}")
                     result = method(*args, **kwargs)
@@ -197,14 +196,21 @@ class SandboxedPluginWrapper(QObject):
                     else:
                         self.parent_pipe.send({'is_cancelled': False, 'is_paused': False})
 
-                elif msg_type in ('SET_TASK_DETAILS', 'SET_TASK_OVERALL_PROGRESS'):
+                elif msg_type in ('SET_TASK_DETAILS', 'SET_TASK_OVERALL_PROGRESS', 'SET_TASK_PROGRESS'):
                     task = self.task_map.get(task_id)
                     if task:
                         if msg_type == 'SET_TASK_DETAILS':
                             task.set_details(response['details'])
-                        else:
+                        elif msg_type == 'SET_TASK_OVERALL_PROGRESS':
                             task.set_overall_progress(response['progress'])
+                        elif msg_type == 'SET_TASK_PROGRESS':
+                            task.set_progress(response['progress'])
                 
+                elif msg_type == 'EMIT_DIRECTORY_CHANGED':
+                    task = self.task_map.get(task_id)
+                    if task:
+                        task.directory_changed.emit(response['path'])
+
                 elif msg_type == 'CRITICAL_ERROR':
                     error_message = f"Plugin process crashed: {response.get('error')}\n{response.get('traceback')}"
                     self.logger.error(error_message)
@@ -256,7 +262,7 @@ class SandboxedPluginWrapper(QObject):
                 # For sync calls, generate a temporary ID
                 task_id = f"sync_{name}_{time.time()}"
                 message['task_id'] = task_id
-                message['kwargs'] = kwargs # Pass kwargs as is
+                message['kwargs'] = kwargs
 
             self.logger.debug(f"Sending CALL for method: {name} (async: {is_async})")
             self.parent_pipe.send(message)
