@@ -74,12 +74,10 @@ class FileSplitterPlugin(MenuActionPlugin):
             with open(source_path, 'rb') as f_in:
                 while True:
                     send_trace(f"Outer loop, part {part_num}")
-                    # Check status periodically (e.g., every 0.5s)
-                    if time.time() - last_status_check > 0.5:
-                        if task_context.is_cancelled: 
-                            raise InterruptedError("Split operation cancelled by user.")
-                        # task_context.wait_if_paused()
-                        last_status_check = time.time()
+                    # Check status more frequently
+                    if task_context.is_cancelled: 
+                        raise InterruptedError("Split operation cancelled by user.")
+                    # task_context.wait_if_paused() # Still commented out
                     
                     part_ext = f".{part_num:03d}"
                     # noinspection PyTypeChecker
@@ -88,13 +86,10 @@ class FileSplitterPlugin(MenuActionPlugin):
                     with open(part_path, 'wb') as f_out:
                         chunk_written = 0
                         while chunk_written < chunk_size:
-                            send_trace(f"Inner loop, chunk_written {chunk_written}/{chunk_size}")
-                            # Check status periodically in inner loop too
-                            if time.time() - last_status_check > 0.5:
-                                if task_context.is_cancelled: 
-                                    raise InterruptedError("Split operation cancelled by user.")
-                                # task_context.wait_if_paused()
-                                last_status_check = time.time()
+                            # Check status more frequently
+                            if task_context.is_cancelled: 
+                                raise InterruptedError("Split operation cancelled by user.")
+                            # task_context.wait_if_paused() # Still commented out
                             
                             read_size = min(64 * 1024, chunk_size - chunk_written)
                             data = f_in.read(read_size)
@@ -124,6 +119,17 @@ class FileSplitterPlugin(MenuActionPlugin):
                     if bytes_read >= file_size:
                         send_trace("All bytes read, breaking outer loop.")
                         break
+            
+            if generate_checksum:
+                crc_path = os.path.join(dest_dir, base_name + ".crc32")
+                with open(crc_path, 'w', encoding='utf-8') as f_crc:
+                    f_crc.write(f"filename={base_name}\n")
+                    f_crc.write(f"filenameutf8={base_name}\n")
+                    f_crc.write(f"size={file_size}\n")
+                    f_crc.write(f"crc32={crc32 & 0xFFFFFFFF:08X}\n")
+                    f_crc.write(f"parts_count={part_num - 1}\n")
+                send_trace(f"Checksum file created at {crc_path}")
+
             send_trace("Split finished.")
         except InterruptedError:
             send_trace("Split operation cancelled.")
@@ -230,19 +236,15 @@ class FileSplitterPlugin(MenuActionPlugin):
         
         with open(output_path, 'wb') as f_out:
             for part in parts:
-                if time.time() - last_status_check > 0.5:
-                    if task_context.is_cancelled:
-                        raise InterruptedError("Join operation cancelled by user.")
-                    # task_context.wait_if_paused()
-                    last_status_check = time.time()
+                if task_context.is_cancelled: # Check cancellation more frequently
+                    raise InterruptedError("Join operation cancelled by user.")
+                # task_context.wait_if_paused() # Still commented out
                 
                 with open(part, 'rb') as f_in:
                     while True:
-                        if time.time() - last_status_check > 0.5:
-                            if task_context.is_cancelled:
-                                raise InterruptedError("Join operation cancelled by user.")
-                            # task_context.wait_if_paused()
-                            last_status_check = time.time()
+                        if task_context.is_cancelled: # Check cancellation more frequently
+                            raise InterruptedError("Join operation cancelled by user.")
+                        # task_context.wait_if_paused() # Still commented out
                         
                         chunk = f_in.read(64 * 1024)
                         if not chunk: break
