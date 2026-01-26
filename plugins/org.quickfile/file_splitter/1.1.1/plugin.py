@@ -4,9 +4,13 @@
 
 import logging
 import os
+import time
 import zlib
+import sys
+import traceback
+# noinspection PyPackageRequirements
+from typing import LiteralString
 
-from app.translation_manager import translation_manager
 from plugins.base import MenuActionPlugin
 
 
@@ -25,18 +29,25 @@ class FileSplitterPlugin(MenuActionPlugin):
     def get_menu_actions(self):
         return [
             {
-                "text": translation_manager.translate("FileSplitter", "Split File..."),
+                "text": "Split File...",
                 "menu": "file",
-                "action_id": "split_file"
+                "action_id": "split_file",
+                "dialog_module": "ui.split_join_dialogs",
+                "dialog_class": "SplitDialog",
+                "task_type": "SPLIT_FILE"
             },
             {
-                "text": translation_manager.translate("FileSplitter", "Join Files..."),
+                "text": "Join Files...",
                 "menu": "file",
-                "action_id": "join_files"
+                "action_id": "join_files",
+                "dialog_module": "ui.split_join_dialogs",
+                "dialog_class": "JoinDialog",
+                "task_type": "JOIN_FILES"
             }
         ]
 
-    def split_file(self, source_path, dest_dir, options, progress_callback):  # Removed task_context, task
+    def split_file(self, source_path, dest_dir, options, progress_callback, task_context, task, send_trace):
+        send_trace(f"Starting split_file: {source_path} -> {dest_dir}")
         chunk_size = options.get("chunk_size")
         generate_checksum = options.get("generate_checksum", False)
         
@@ -45,53 +56,86 @@ class FileSplitterPlugin(MenuActionPlugin):
             
         file_size = os.path.getsize(source_path)
         base_name = os.path.basename(source_path)
+        
+        send_trace(f"File size: {file_size}, Chunk size: {chunk_size}")
 
-        # task.set_details(f"Splitting {base_name}...") # Removed task reference
+        task.set_details(f"Splitting {base_name}...")
         
         bytes_read = 0
         part_num = 1
         crc32 = 0
         
-        with open(source_path, 'rb') as f_in:
-            while True:
-                # if task_context.is_cancelled: return # Removed task_context reference
-                # task_context.wait_if_paused() # Removed task_context reference
-                
-                part_ext = f".{part_num:03d}"
-                # noinspection PyTypeChecker
-                part_path = os.path.join(dest_dir, base_name + part_ext)
-                
-                with open(part_path, 'wb') as f_out:
-                    chunk_written = 0
-                    while chunk_written < chunk_size:
-                        # if task_context.is_cancelled: return # Removed task_context reference
-                        # task_context.wait_if_paused() # Removed task_context reference
-                        
-                        read_size = min(64 * 1024, chunk_size - chunk_written)
-                        data = f_in.read(read_size)
-                        if not data: break
-                        
-                        f_out.write(data)
-                        if generate_checksum: crc32 = zlib.crc32(data, crc32)
-                        chunk_written += len(data)
-                        bytes_read += len(data)
-                        if file_size > 0: progress_callback(int(bytes_read * 100 / file_size))  # Direct call
-                    if chunk_written == 0: os.remove(part_path); break
-                part_num += 1
-                if bytes_read >= file_size: break
-        if generate_checksum:
-            crc32_hex = f"{crc32 & 0xFFFFFFFF:08X}"
-            content = (
-                f"filename={base_name}\n"
-                f"filenameutf8={base_name}\n"
-                f"size={file_size}\n"
-                f"parts_count={part_num - 1}\n"
-                f"crc32={crc32_hex}\n"
-            )
-            with open(os.path.join(dest_dir, base_name + ".crc32"), 'w', encoding='utf-8') as f:
-                f.write(content)
+        last_progress_update = 0
+        last_status_check = 0
+        last_pct = -1
+        
+        f_in = None
+        try:
+            with open(source_path, 'rb') as f_in:
+                while True:
+                    send_trace(f"Outer loop, part {part_num}")
+                    # Check status periodically (e.g., every 0.5s)
+                    if time.time() - last_status_check > 0.5:
+                        if task_context.is_cancelled: 
+                            raise InterruptedError("Split operation cancelled by user.")
+                        # task_context.wait_if_paused()
+                        last_status_check = time.time()
+                    
+                    part_ext = f".{part_num:03d}"
+                    # noinspection PyTypeChecker
+                    part_path = os.path.join(dest_dir, base_name + part_ext)
+                    
+                    with open(part_path, 'wb') as f_out:
+                        chunk_written = 0
+                        while chunk_written < chunk_size:
+                            send_trace(f"Inner loop, chunk_written {chunk_written}/{chunk_size}")
+                            # Check status periodically in inner loop too
+                            if time.time() - last_status_check > 0.5:
+                                if task_context.is_cancelled: 
+                                    raise InterruptedError("Split operation cancelled by user.")
+                                # task_context.wait_if_paused()
+                                last_status_check = time.time()
+                            
+                            read_size = min(64 * 1024, chunk_size - chunk_written)
+                            data = f_in.read(read_size)
+                            if not data:
+                                send_trace("No more data from source file.")
+                                break
+                            
+                            f_out.write(data)
+                            if generate_checksum: crc32 = zlib.crc32(data, crc32)
+                            chunk_written += len(data)
+                            bytes_read += len(data)
+                            
+                            if file_size > 0: 
+                                pct = int(bytes_read * 100 / file_size)
+                                # Update progress only if changed and at least 0.1s passed
+                                if pct != last_pct and (time.time() - last_progress_update > 0.1):
+                                    send_trace(f"Progress: {pct}%")
+                                    progress_callback(pct)
+                                    last_pct = pct
+                                    last_progress_update = time.time()
+                            
+                        if chunk_written == 0:
+                            send_trace("No data written to part, removing empty file.")
+                            os.remove(part_path)
+                            break
+                    part_num += 1
+                    if bytes_read >= file_size:
+                        send_trace("All bytes read, breaking outer loop.")
+                        break
+            send_trace("Split finished.")
+        except InterruptedError:
+            send_trace("Split operation cancelled.")
+            raise
+        except Exception as e:
+            send_trace(f"Exception in split_file: {e}\n{traceback.format_exc()}")
+            raise
+        finally:
+            if f_in:
+                f_in.close()
 
-    def join_files(self, source_path, dest_dir, options, progress_callback):  # Removed task_context, task
+    def join_files(self, source_path, dest_dir, options, progress_callback, task_context, task, send_trace):
         output_filename = options.get("output_filename")
         output_path = os.path.join(dest_dir, output_filename)
         
@@ -120,7 +164,7 @@ class FileSplitterPlugin(MenuActionPlugin):
                             # Try to find parts based on filename in crc
                             part_base = line.split("=", 1)[1]
             except Exception as e:
-                logging.warning(f"Failed to parse .crc32 file: {e}")
+                send_trace(f"Failed to parse .crc32 file: {e}")
                 
             # If we couldn't determine base name from crc, assume it's the crc filename without extension
             if part_base is None:
@@ -145,7 +189,7 @@ class FileSplitterPlugin(MenuActionPlugin):
                             if line.startswith("crc32="):
                                 expected_crc = int(line.split("=", 1)[1], 16)
                 except Exception as e:
-                    logging.warning(f"Failed to parse auto-detected .crc32 file: {e}")
+                    send_trace(f"Failed to parse auto-detected .crc32 file: {e}")
         else:
             # Try to guess
             part_base = source_basename
@@ -174,21 +218,31 @@ class FileSplitterPlugin(MenuActionPlugin):
         if not parts:
             raise FileNotFoundError("No parts found to join.")
 
-        # task.set_details(f"Joining {len(parts)} parts into {output_filename}...") # Removed task reference
+        task.set_details(f"Joining {len(parts)} parts into {output_filename}...")
         
         crc32 = 0
         total_size = sum(os.path.getsize(p) for p in parts)
         bytes_written = 0
         
+        last_progress_update = 0
+        last_status_check = 0
+        last_pct = -1
+        
         with open(output_path, 'wb') as f_out:
             for part in parts:
-                # if task_context.is_cancelled: return # Removed task_context reference
-                # task_context.wait_if_paused() # Removed task_context reference
+                if time.time() - last_status_check > 0.5:
+                    if task_context.is_cancelled:
+                        raise InterruptedError("Join operation cancelled by user.")
+                    # task_context.wait_if_paused()
+                    last_status_check = time.time()
                 
                 with open(part, 'rb') as f_in:
                     while True:
-                        # if task_context.is_cancelled: return # Removed task_context reference
-                        # task_context.wait_if_paused() # Removed task_context reference
+                        if time.time() - last_status_check > 0.5:
+                            if task_context.is_cancelled:
+                                raise InterruptedError("Join operation cancelled by user.")
+                            # task_context.wait_if_paused()
+                            last_status_check = time.time()
                         
                         chunk = f_in.read(64 * 1024)
                         if not chunk: break
@@ -198,15 +252,17 @@ class FileSplitterPlugin(MenuActionPlugin):
                         bytes_written += len(chunk)
                         
                         if total_size > 0:
-                            progress_callback(int(bytes_written * 100 / total_size))  # Direct call
+                            pct = int(bytes_written * 100 / total_size)
+                            if pct != last_pct and (time.time() - last_progress_update > 0.1):
+                                progress_callback(pct)  # Direct call
+                                last_pct = pct
+                                last_progress_update = time.time()
                             
         if expected_crc is not None:
             calculated_crc = crc32 & 0xFFFFFFFF
             if calculated_crc != expected_crc:
                 raise ValueError(f"CRC32 mismatch! Expected: {expected_crc:08X}, Calculated: {calculated_crc:08X}")
             else:
-                # task.set_details("Join complete. Checksum verified OK.") # Removed task reference
-                pass
+                task.set_details("Join complete. Checksum verified OK.")
         else:
-            # task.set_details("Join complete. No checksum to verify.") # Removed task reference
-            pass
+            task.set_details("Join complete. No checksum to verify.")
