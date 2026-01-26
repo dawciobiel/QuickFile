@@ -6,8 +6,8 @@ import os
 import shutil
 import sys
 import pytest
-import time # Dodano import time
-from PyQt6.QtCore import QTimer, QEventLoop, QObject, pyqtSignal # Dodano importy dla AsyncTestHelper
+import time
+from PyQt6.QtCore import QTimer, QEventLoop, QObject, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from unittest.mock import MagicMock
 
@@ -16,14 +16,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from app.background_task_manager import BackgroundTaskManager
 from app.plugin_manager import PluginManager
-from app.task_queue_manager import TaskQueueManager, Task, TaskType # Dodano import Task, TaskType
+from app.task_queue_manager import TaskQueueManager, Task, TaskType
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_manager import FileManager
 from ui.main_window import MainWindow
-from app.plugin_sandbox import SandboxedPluginWrapper # Dodano import SandboxedPluginWrapper
-
-# Importujemy get_latest_plugin_path
-from tests.plugin_helpers import get_latest_plugin_path
+from app.plugin_sandbox import SandboxedPluginWrapper
 
 
 # --- Nowe fixtury dla testowania asynchronicznych pluginów ---
@@ -92,10 +89,13 @@ class AsyncTestHelper(QObject):
             pytest.fail(f"Timeout waiting for plugin method '{method_name}' to finish for task {task.id}")
         elif exit_code == 1:
             task_id, error, traceback_str = self.failed_error
-            pytest.fail(f"Plugin method '{method_name}' failed for task {task_id}: {error}\n{traceback_str}")
+            # Re-raise the actual exception from the plugin
+            # We need to parse the error string to get the exception type if possible
+            # For now, we'll just raise a generic Exception with the error message
+            raise Exception(f"Plugin method '{method_name}' failed for task {task_id}: {error}\n{traceback_str}")
         elif exit_code == 2:
             task_id, error, traceback_str = self.failed_error
-            pytest.fail(f"Plugin process critical error for task {task_id}: {error}\n{traceback_str}")
+            raise RuntimeError(f"Plugin process critical error for task {task_id}: {error}\n{traceback_str}")
         
         return self.finished_result[1] if self.finished_result else None
 
@@ -289,6 +289,7 @@ def create_app_handler(qtbot, mocker):
         mock_left_panel = mocker.Mock()
         mock_file_view = mocker.Mock()
         mock_left_panel.file_view = mock_file_view
+        mock_folder_browser.left_panel_widget = mock_left_panel
         mock_folder_browser.get_left_panel_widget.return_value = mock_left_panel
         mock_ui_state_provider.folder_browser = mock_folder_browser
         
