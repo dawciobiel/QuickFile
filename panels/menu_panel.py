@@ -4,10 +4,15 @@
 
 import json
 import os
+from functools import partial
 
-from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtGui import QAction
+from PyQt6.QtWidgets import QDialog, QMessageBox
 
+from app.plugin_sandbox import SandboxedPluginWrapper
+from app.task_queue_manager import Task, TaskType
 from app.translation_manager import translation_manager
+from ui.split_join_dialogs import SplitDialog, JoinDialog
 from utils.icon_manager import get_colorized_icon
 from utils.resource_path import get_resource_path
 
@@ -251,7 +256,14 @@ class MenuPanel:
                     target_menu_name = action_info.get("menu", "").lower()
                     if target_menu_name in plugin_actions_by_menu:
                         action = QAction(action_info["text"], self.main_window)
-                        action.triggered.connect(action_info["callback"])
+
+                        if isinstance(plugin, SandboxedPluginWrapper):
+                            action_id = action_info.get("action_id")
+                            if action_id:
+                                action.triggered.connect(partial(self._handle_sandboxed_action, plugin, action_id))
+                        else:
+                            action.triggered.connect(action_info["callback"])
+                            
                         if "icon_path" in action_info:
                             action.setIcon(get_colorized_icon(action_info["icon_path"], self.icon_color))
                         plugin_actions_by_menu[target_menu_name].append(action)
@@ -277,3 +289,61 @@ class MenuPanel:
                 menu_widget.addSeparator()
                 for action in plugin_actions_by_menu[menu_name]:
                     menu_widget.addAction(action)
+
+    def _handle_sandboxed_action(self, plugin_wrapper, action_id):
+        plugin_id = plugin_wrapper.metadata.get("id")
+
+        if plugin_id == "org.quickfile.file_splitter":
+            if action_id == "split_file":
+                selected_path = self.app_logic_handler.ui_state_provider.get_current_selected_path()
+                if not selected_path or not os.path.isfile(selected_path):
+                    QMessageBox.warning(self.main_window, "Split File", "Please select a file to split.")
+                    return
+
+                dialog = SplitDialog(self.main_window, selected_path)
+                if dialog.exec() == QDialog.DialogCode.Accepted:
+                    data = dialog.get_data()
+                    dest_path = data["destination_path"]
+                    chunk_size = data["chunk_size"]
+
+                    if chunk_size <= 0:
+                        QMessageBox.warning(self.main_window, "Error", "Invalid chunk size.")
+                        return
+
+                    options = {
+                        "chunk_size": chunk_size,
+                        "generate_checksum": data["generate_checksum"],
+                        "plugin_id": plugin_id
+                    }
+
+                    task = Task(TaskType.SPLIT_FILE, source_paths=[selected_path], destination_path=dest_path,
+                                options=options)
+                    self.app_logic_handler.task_queue_manager.add_task(task)
+                    self.main_window.statusBar().showMessage("Added split task to queue.")
+
+            elif action_id == "join_files":
+                selected_path = self.app_logic_handler.ui_state_provider.get_current_selected_path()
+                if not selected_path or not os.path.isfile(selected_path):
+                    QMessageBox.warning(self.main_window, "Join Files",
+                                        "Please select the first part (.001) or the checksum file (.crc32).")
+                    return
+
+                dialog = JoinDialog(self.main_window, selected_path)
+                if dialog.exec() == QDialog.DialogCode.Accepted:
+                    data = dialog.get_data()
+                    dest_path = data["destination_path"]
+                    output_filename = data["output_filename"]
+
+                    if not output_filename:
+                        QMessageBox.warning(self.main_window, "Error", "Output filename cannot be empty.")
+                        return
+
+                    options = {
+                        "output_filename": output_filename,
+                        "plugin_id": plugin_id
+                    }
+
+                    task = Task(TaskType.JOIN_FILES, source_paths=[selected_path], destination_path=dest_path,
+                                options=options)
+                    self.app_logic_handler.task_queue_manager.add_task(task)
+                    self.main_window.statusBar().showMessage("Added join task to queue.")
