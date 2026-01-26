@@ -60,7 +60,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                 logging.info(f"Removed existing item at {destination_full_path} for overwrite.")
 
     def _copy_file_with_progress(self, src, dst, progress_callback=None, total_size=0, copied_so_far=0, task_context=None, task=None,
-                                 global_total_size=0, global_copied_so_far=0):
+                                 global_total_size=0, global_copied_so_far=0, send_trace=None):
         try:
             buffer_size = 4 * 1024 * 1024  # 4MB
             bytes_read = copied_so_far
@@ -130,7 +130,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             raise OSError(f"Error copying file {src} to {dst}: {e}")
 
     def _copy_item_with_options(self, source_path, destination_path, options, progress_callback=None, task_context=None, task=None,
-                                global_total_size=0, global_copied_so_far=0):
+                                global_total_size=0, global_copied_so_far=0, send_trace=None):
         destination_full_path = None
         bytes_copied_in_this_call = 0
         try:
@@ -191,7 +191,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                 bytes_copied_in_this_call += file_size
 
             if task:
-                task.directory_changed.emit(destination_path)
+                task.emit_directory_changed(destination_path)
 
             return bytes_copied_in_this_call
 
@@ -203,7 +203,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             raise Exception(translation_manager.translate("FileManager", f"Error copying item: {e}"))
 
     def copy_items(self, source_paths: list[str], destination_path: str, options: dict, progress_callback=None, task_context=None,
-                   task=None):
+                   task=None, send_trace=None):
         
         # Calculate total size first for smooth overall progress
         global_total_size = 0
@@ -243,7 +243,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
         return f"Batch copy completed."
 
     def _move_item_with_options(self, source_path, destination_path, options, progress_callback=None, task_context=None, task=None,
-                                global_total_size=0, global_copied_so_far=0):
+                                global_total_size=0, global_copied_so_far=0, send_trace=None):
         destination_full_path = None
         bytes_moved_in_this_call = 0
         try:
@@ -320,8 +320,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                     bytes_moved_in_this_call = 0
 
             if task:
-                task.directory_changed.emit(source_dir)
-                task.directory_changed.emit(destination_path)
+                task.emit_directory_changed(source_dir)
+                task.emit_directory_changed(destination_path)
 
             return bytes_moved_in_this_call
 
@@ -333,7 +333,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             raise Exception(translation_manager.translate("FileManager", f"Error moving item: {e}"))
 
     def move_items(self, source_paths: list[str], destination_path: str, options: dict, progress_callback=None, task_context=None,
-                   task=None):
+                   task=None, send_trace=None):
         
         # Calculate total size first
         global_total_size = 0
@@ -414,7 +414,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
 
         return all_files, all_dirs, total_size
 
-    def delete_items(self, item_paths: list[str], options: dict, progress_callback=None, task_context=None, task=None):
+    def delete_items(self, item_paths: list[str], options: dict, progress_callback=None, task_context=None, task=None, send_trace=None):
         move_to_trash = options.get("move_to_trash", True)
 
         affected_dirs = set()
@@ -438,7 +438,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
 
             if task:
                 for dir_path in affected_dirs:
-                    task.directory_changed.emit(dir_path)
+                    task.emit_directory_changed(dir_path)
 
             return "Items moved to trash."
 
@@ -471,7 +471,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
 
             if task:
                 for dir_path in affected_dirs:
-                    task.directory_changed.emit(dir_path)
+                    task.emit_directory_changed(dir_path)
 
             return "Items permanently deleted."
 
