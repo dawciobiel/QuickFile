@@ -6,6 +6,16 @@ QuickFile wykorzystuje system wtyczek oparty na interfejsach, aby umożliwić ł
 modyfikowania jej rdzenia. Głównym celem jest obsługa różnych formatów archiwów (ZIP, RAR, 7z), ale architektura jest zaprojektowana tak,
 aby wspierać również inne typy operacji w przyszłości (np. sumy kontrolne, szyfrowanie, operacje dyskowe, rozszerzenia UI, podgląd plików).
 
+## Izolacja Procesów (Piaskownica)
+
+Aby zapewnić maksymalną stabilność, bezpieczeństwo i responsywność interfejsu użytkownika, wtyczki wykonujące długotrwałe lub potencjalnie niestabilne operacje (np. operacje na plikach, archiwizacja, wyszukiwanie) są uruchamiane w **izolowanych procesach (piaskownicach)**.
+
+**Korzyści:**
+*   **Stabilność:** Awaria wtyczki nie powoduje zawieszenia ani zamknięcia całej aplikacji.
+*   **Bezpieczeństwo:** Wtyczki mają ograniczony dostęp do zasobów systemu i aplikacji.
+*   **Izolacja Zależności:** Każda wtyczka może używać własnych wersji bibliotek, bez konfliktu z innymi wtyczkami lub główną aplikacją.
+*   **Responsywność UI:** Operacje w tle nie blokują głównego wątku interfejsu użytkownika, zapewniając płynne działanie aplikacji.
+
 ## Struktura Katalogów
 
 Wtyczki są przechowywane w katalogu konfiguracyjnym użytkownika, co pozwala na łatwą instalację i aktualizację bez uprawnień administratora.
@@ -40,20 +50,39 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
   "name": "Standard ZIP Archiver",
   "type": "archive",
   "description": "Provides support for creating and extracting ZIP archives.",
-  "entry_point": "plugin.py",
-  "class_name": "ZipPlugin"
+  "entry_point": "plugin:ZipPlugin",
+  "class_name": "ZipPlugin",
+  "sandboxed": true,
+  "platforms": ["windows", "linux", "macos"]
 }
 ```
 
 *   **name**: Wyświetlana nazwa wtyczki.
-* **type**: Typ wtyczki (np. `archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`). Używany przez `PluginManager` do kategoryzacji.
+*   **type**: Typ wtyczki (np. `archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`, `menu_action`). Używany przez `PluginManager` do kategoryzacji.
 *   **description**: Krótki opis.
-*   **entry_point**: Nazwa pliku `.py` zawierającego klasę wtyczki.
+*   **entry_point**: Nazwa modułu Pythona i klasy (np. `plugin:ZipPlugin`) zawierającej klasę wtyczki.
 *   **class_name**: Nazwa klasy implementującej interfejs wtyczki.
+*   **sandboxed**: (Opcjonalnie, `boolean`) Jeśli `true`, wtyczka zostanie uruchomiona w izolowanym procesie (piaskownicy). **Zalecane dla wtyczek wykonujących operacje w tle.**
+*   **platforms**: (Opcjonalnie, `array of strings`) Lista platform, na których wtyczka jest wspierana (np. `"windows"`, `"linux"`, `"macos"`).
 
 ## Interfejsy (Kontrakty)
 
 Wszystkie wtyczki muszą dziedziczyć po klasach bazowych zdefiniowanych w `plugins/base.py`.
+
+### Dodatkowe Argumenty dla Metod Zadań w Tle
+
+Metody wtyczek, które wykonują długotrwałe operacje w tle (np. `create_archive`, `extract_archive`, `copy_items`, `move_items`, `delete_items`, `split_file`, `join_files`, `calculate_checksum`, `search`), otrzymują dodatkowe argumenty, które umożliwiają komunikację z główną aplikacją:
+
+*   `progress_callback`: Funkcja (lub proxy funkcji), którą wtyczka wywołuje, aby zgłosić postęp operacji (np. `progress_callback(percentage)`).
+*   `task_context`: Obiekt proxy (`SandboxedTaskContext`), który pozwala wtyczce sprawdzać stan zadania (np. `task_context.is_cancelled` do anulowania, `task_context.wait_if_paused()` do pauzowania).
+*   `task`: Obiekt proxy (`SandboxedTask`), który pozwala wtyczce aktualizować szczegóły zadania widoczne w UI. Dostępne metody to m.in.:
+    *   `task.set_details(message: str)`: Ustawia szczegółowy opis bieżącej operacji.
+    *   `task.set_progress(percentage: int)`: Ustawia postęp dla bieżącego pliku/etapu (0-100%).
+    *   `task.set_overall_progress(percentage: int)`: Ustawia ogólny postęp dla całego zadania (0-100%).
+    *   `task.emit_directory_changed(path: str)`: Emituje sygnał informujący główną aplikację o zmianie w danym katalogu, co może wywołać odświeżenie widoku.
+*   `send_trace`: Funkcja do wysyłania komunikatów debugowania z wnętrza procesu wtyczki do głównego systemu logowania aplikacji.
+
+**Ważne:** Obiekty `task_context` i `task` dostępne w kodzie wtyczki są **obiektami proxy**. Oznacza to, że wywołania ich metod są przekazywane przez potok do głównego procesu, który następnie wykonuje odpowiednie akcje lub emituje sygnały.
 
 ### `FileOperationPlugin` (Bazowy)
 Wspólny interfejs dla wszystkich wtyczek.
@@ -63,8 +92,8 @@ Wspólny interfejs dla wszystkich wtyczek.
 ### `ArchivePlugin` (Typ: `archive`)
 Interfejs dla wtyczek obsługujących archiwizację.
 *   `get_supported_extensions()`: Zwraca listę obsługiwanych rozszerzeń (np. `['.zip']`).
-*   `create_archive(source_paths, destination_path, options, ...)`: Tworzy archiwum.
-*   `extract_archive(archive_path, destination_path, options, ...)`: Wypakowuje archiwum.
+*   `create_archive(source_paths, destination_path, options, progress_callback, task_context, task, send_trace)`: Tworzy archiwum.
+*   `extract_archive(archive_path, destination_path, options, progress_callback, task_context, task, send_trace)`: Wypakowuje archiwum.
 
 ### `DiskUtilsPlugin` (Typ: `disk_utils`)
 Interfejs dla wtyczek dostarczających informacje o systemie plików i dyskach. Służy do oddzielenia warstwy prezentacji (UI) od warstwy dostępu do danych systemowych.
@@ -97,15 +126,15 @@ Wbudowana przeglądarka plików, która obsługuje:
 
 Klasa `PluginManager` (`app/plugin_manager.py`) odpowiada za:
 1.  **Skanowanie**: Przeszukuje katalog `plugins/` w poszukiwaniu poprawnych struktur wtyczek.
-2.  **Ładowanie**: Dynamicznie ładuje moduły Pythona i tworzy instancje klas wtyczek.
-3. **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`) i udostępnia je reszcie
+2.  **Ładowanie**: Dynamicznie ładuje moduły Pythona i tworzy instancje klas wtyczek. Dla wtyczek oznaczonych jako `sandboxed`, tworzy instancję `SandboxedPluginWrapper`, która uruchamia wtyczkę w osobnym procesie.
+3. **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`, `menu_action`) i udostępnia je reszcie
    aplikacji.
 4.  **Instalację i Aktualizację**: Przy starcie porównuje wersje wtyczek wbudowanych w aplikację z tymi zainstalowanymi u użytkownika. Jeśli wbudowana wersja jest nowsza, automatycznie aktualizuje wtyczkę w katalogu użytkownika.
 
 ## Integracja z Kolejką Zadań
 
-`TaskQueueManager` wykorzystuje `PluginManager` do delegowania zadań archiwizacji.
-1.  Gdy użytkownik zleca operację (np. "Wypakuj"), `DialogHandler` tworzy zadanie `TaskType.EXTRACT`.
-2.  `TaskQueueManager` pobiera rozszerzenie pliku.
-3.  Pyta `PluginManager` o wtyczkę obsługującą to rozszerzenie (`get_archiver_for_extension`).
-4.  Uruchamia metodę wtyczki w tle.
+`TaskQueueManager` wykorzystuje `PluginManager` do delegowania zadań.
+1.  Gdy użytkownik zleca operację (np. "Wypakuj", "Kopiuj", "Dziel Plik"), `DialogHandler` tworzy zadanie `Task` z odpowiednim `TaskType` i `plugin_id`.
+2.  `TaskQueueManager` przekazuje zadanie do `BackgroundTaskManager`.
+3.  `BackgroundTaskManager` identyfikuje wtyczkę po `plugin_id` i wywołuje jej metodę (np. `extract_archive`, `copy_items`, `split_file`) asynchronicznie, poprzez `SandboxedPluginWrapper`.
+4.  `BackgroundTaskManager` nasłuchuje na sygnały z `SandboxedPluginWrapper` (postęp, zakończenie, błędy) i aktualizuje stan zadania w `TaskQueueManager`, który z kolei odświeża interfejs użytkownika.
