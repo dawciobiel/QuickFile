@@ -5,6 +5,8 @@
 import json
 import os
 from functools import partial
+import importlib
+import logging
 
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QDialog, QMessageBox
@@ -12,7 +14,6 @@ from PyQt6.QtWidgets import QDialog, QMessageBox
 from app.plugin_sandbox import SandboxedPluginWrapper
 from app.task_queue_manager import Task, TaskType
 from app.translation_manager import translation_manager
-from ui.split_join_dialogs import SplitDialog, JoinDialog
 from utils.icon_manager import get_colorized_icon
 from utils.resource_path import get_resource_path
 
@@ -260,7 +261,7 @@ class MenuPanel:
                         if isinstance(plugin, SandboxedPluginWrapper):
                             action_id = action_info.get("action_id")
                             if action_id:
-                                action.triggered.connect(partial(self._handle_sandboxed_action, plugin, action_id))
+                                action.triggered.connect(partial(self._handle_sandboxed_action, plugin, action_info))
                         else:
                             action.triggered.connect(action_info["callback"])
                             
@@ -290,60 +291,46 @@ class MenuPanel:
                 for action in plugin_actions_by_menu[menu_name]:
                     menu_widget.addAction(action)
 
-    def _handle_sandboxed_action(self, plugin_wrapper, action_id):
+    def _handle_sandboxed_action(self, plugin_wrapper, action_info):
         plugin_id = plugin_wrapper.metadata.get("id")
+        
+        dialog_module_name = action_info.get("dialog_module")
+        dialog_class_name = action_info.get("dialog_class")
+        
+        if not (dialog_module_name and dialog_class_name):
+            logging.error(f"Plugin {plugin_id} action is missing dialog information.")
+            return
 
-        if plugin_id == "org.quickfile.file_splitter":
-            if action_id == "split_file":
-                selected_path = self.app_logic_handler.ui_state_provider.get_current_selected_path()
-                if not selected_path or not os.path.isfile(selected_path):
-                    QMessageBox.warning(self.main_window, "Split File", "Please select a file to split.")
+        try:
+            selected_path = self.app_logic_handler.ui_state_provider.get_current_selected_path()
+            if not selected_path:
+                 QMessageBox.warning(self.main_window, "Action", "Please select an item first.")
+                 return
+
+            dialog_module = importlib.import_module(dialog_module_name)
+            DialogClass = getattr(dialog_module, dialog_class_name)
+            
+            dialog = DialogClass(self.main_window, selected_path)
+            
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                data = dialog.get_data()
+                task_type_str = action_info.get("task_type")
+                
+                if not task_type_str:
+                    logging.error(f"Plugin {plugin_id} action is missing task_type.")
                     return
+                
+                task_type = TaskType[task_type_str]
+                
+                options = {**data, "plugin_id": plugin_id}
+                
+                task = Task(task_type, source_paths=[selected_path], destination_path=data.get("destination_path"), options=options)
+                self.app_logic_handler.task_queue_manager.add_task(task)
+                self.main_window.statusBar().showMessage(f"Added {task_type.name.replace('_', ' ').lower()} task to queue.")
 
-                dialog = SplitDialog(self.main_window, selected_path)
-                if dialog.exec() == QDialog.DialogCode.Accepted:
-                    data = dialog.get_data()
-                    dest_path = data["destination_path"]
-                    chunk_size = data["chunk_size"]
-
-                    if chunk_size <= 0:
-                        QMessageBox.warning(self.main_window, "Error", "Invalid chunk size.")
-                        return
-
-                    options = {
-                        "chunk_size": chunk_size,
-                        "generate_checksum": data["generate_checksum"],
-                        "plugin_id": plugin_id
-                    }
-
-                    task = Task(TaskType.SPLIT_FILE, source_paths=[selected_path], destination_path=dest_path,
-                                options=options)
-                    self.app_logic_handler.task_queue_manager.add_task(task)
-                    self.main_window.statusBar().showMessage("Added split task to queue.")
-
-            elif action_id == "join_files":
-                selected_path = self.app_logic_handler.ui_state_provider.get_current_selected_path()
-                if not selected_path or not os.path.isfile(selected_path):
-                    QMessageBox.warning(self.main_window, "Join Files",
-                                        "Please select the first part (.001) or the checksum file (.crc32).")
-                    return
-
-                dialog = JoinDialog(self.main_window, selected_path)
-                if dialog.exec() == QDialog.DialogCode.Accepted:
-                    data = dialog.get_data()
-                    dest_path = data["destination_path"]
-                    output_filename = data["output_filename"]
-
-                    if not output_filename:
-                        QMessageBox.warning(self.main_window, "Error", "Output filename cannot be empty.")
-                        return
-
-                    options = {
-                        "output_filename": output_filename,
-                        "plugin_id": plugin_id
-                    }
-
-                    task = Task(TaskType.JOIN_FILES, source_paths=[selected_path], destination_path=dest_path,
-                                options=options)
-                    self.app_logic_handler.task_queue_manager.add_task(task)
-                    self.main_window.statusBar().showMessage("Added join task to queue.")
+        except (ImportError, AttributeError) as e:
+            logging.error(f"Could not load or create dialog for plugin {plugin_id}: {e}")
+            QMessageBox.critical(self.main_window, "Error", f"Failed to open dialog for plugin: {plugin_id}")
+        except Exception as e:
+            logging.error(f"An error occurred while handling sandboxed action for {plugin_id}: {e}", exc_info=True)
+            QMessageBox.critical(self.main_window, "Error", f"An unexpected error occurred: {e}")

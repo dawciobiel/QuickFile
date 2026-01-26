@@ -12,5 +12,6 @@
     "windows",
     "linux",
     "macos"
-  ]
+  ],
+  "sandboxed": true
 }

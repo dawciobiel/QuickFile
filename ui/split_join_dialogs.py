@@ -34,6 +34,12 @@ class SplitDialog(QDialog):
             logging.error(f"Failed to load UI for SplitDialog: {e}")
             raise
 
+        # Manually set user data for predefined sizes as a fallback for uic.loadUi issues
+        self.predefinedCombo.setItemData(0, 1457664)      # 1.44 MB
+        self.predefinedCombo.setItemData(1, 681574400)    # 650 MB
+        self.predefinedCombo.setItemData(2, 734003200)    # 700 MB
+        self.predefinedCombo.setItemData(3, 4613734400)   # 4.3 GB
+
         self.source_file = source_file
         self.sourceFileLabel.setText(os.path.basename(source_file) if source_file else "None")
 
@@ -51,6 +57,9 @@ class SplitDialog(QDialog):
         chunk_size = 0
         if self.predefinedRadio.isChecked():
             chunk_size = self.predefinedCombo.currentData()
+            if chunk_size is None:
+                logging.warning("Predefined chunk size is None even after manual set, defaulting to 1.44MB.")
+                chunk_size = 1457664 # Default to floppy size if all else fails
         else:
             val = self.customSizeSpinBox.value()
             unit = self.unitCombo.currentText()
