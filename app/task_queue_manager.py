@@ -141,7 +141,6 @@ class TaskQueueManager(QObject):
         
         plugin_id = task.options.get("plugin_id")
         if not plugin_id:
-            # This can be extended for non-plugin tasks in the future
             task.set_status(TaskStatus.ERROR)
             task.set_details(f"Task type '{task.type.name}' requires a 'plugin_id' in options.")
             logging.error(f"Task {task.id} failed: Missing plugin_id.")
@@ -168,24 +167,23 @@ class TaskQueueManager(QObject):
         
         # Prepare arguments for the plugin method
         kwargs = {
-            "source_paths": task.source_paths,
-            "dest_dir": task.destination_path,
             "options": task.options,
             "plugin_wrapper": plugin
         }
         
-        # Special handling for single-source path methods
-        if task.type in [TaskType.EXTRACT_ARCHIVE, TaskType.CHECKSUM, TaskType.SEARCH, TaskType.CALCULATE_SIZE, TaskType.SPLIT_FILE, TaskType.JOIN_FILES]:
+        # Adjust arguments based on task type
+        if task.type in [TaskType.COPY, TaskType.MOVE]:
+            kwargs["source_paths"] = task.source_paths
+            kwargs["destination_path"] = task.destination_path
+        elif task.type == TaskType.DELETE:
+            kwargs["item_paths"] = task.source_paths
+        elif task.type in [TaskType.EXTRACT_ARCHIVE, TaskType.CHECKSUM, TaskType.SEARCH, TaskType.CALCULATE_SIZE, TaskType.SPLIT_FILE, TaskType.JOIN_FILES]:
             kwargs["source_path"] = task.source_paths[0]
-            del kwargs["source_paths"]
-
-        # For join, dest_dir is where the output file goes, not where parts are
-        if task.type == TaskType.JOIN_FILES:
-            kwargs["dest_dir"] = task.destination_path
-        
-        # For split, dest_dir is where parts are created
-        if task.type == TaskType.SPLIT_FILE:
-            kwargs["dest_dir"] = task.destination_path
+            if task.destination_path:
+                kwargs["dest_dir"] = task.destination_path
+        elif task.type == TaskType.CREATE_ARCHIVE:
+            kwargs["source_paths"] = task.source_paths
+            kwargs["destination_path"] = task.destination_path
 
         self.background_task_manager.run_task(
             task,
@@ -211,7 +209,6 @@ class TaskQueueManager(QObject):
     def _on_task_failed(self, task_id, error_message):
         if task_id in self.active_tasks:
             task = self.active_tasks[task_id]
-            # Check if the task was cancelled
             if task.context and task.context.is_cancelled:
                 task.set_status(TaskStatus.CANCELLED)
                 task.set_details("Operation cancelled by user.")
@@ -224,7 +221,6 @@ class TaskQueueManager(QObject):
             task = self.active_tasks[task_id]
             task.finished.emit()
             self.task_finished.emit(task)
-            # The task is no longer "active", but remains in all_tasks for the UI
             del self.active_tasks[task_id]
 
     def cancel_task(self, task_id):

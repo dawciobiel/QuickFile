@@ -53,6 +53,8 @@ class SandboxedTask:
     def set_overall_progress(self, progress: int):
         self._pipe.send({'type': 'SET_TASK_OVERALL_PROGRESS', 'task_id': self._task_id, 'progress': progress})
 
-    # Add other necessary methods from Task that plugins might call
-    # For example, set_progress if it's different from set_overall_progress
-    # For now, we'll assume set_overall_progress is sufficient for sandboxed plugins.
+    def set_progress(self, progress: int):
+        self._pipe.send({'type': 'SET_TASK_PROGRESS', 'task_id': self._task_id, 'progress': progress})
+
+    def emit_directory_changed(self, path: str):
+        self._pipe.send({'type': 'EMIT_DIRECTORY_CHANGED', 'task_id': self._task_id, 'path': path})

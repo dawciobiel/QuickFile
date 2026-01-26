@@ -66,7 +66,8 @@ class DeleteDialog(QDialog):
 
     def get_options(self):
         return {
-            "move_to_trash": self.move_to_trash_checkbox.isChecked()
+            "move_to_trash": self.move_to_trash_checkbox.isChecked(),
+            "plugin_id": "org.quickfile.standard_operations" # Added plugin_id
         }
 
     def start_operation(self):
