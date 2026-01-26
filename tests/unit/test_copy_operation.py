@@ -3,7 +3,12 @@
 # See LICENSE file for details.
 
 import pytest
+import os
 from PyQt6.QtWidgets import QDialog
+
+# Dodajemy importy dla nowych testów
+from app.task_queue_manager import Task, TaskType
+from tests.conftest import async_plugin_test_env
 
 def test_copy_single_item_with_dialog(create_app_handler, mocker):
     # Patch CopyDialog BEFORE creating the handler
@@ -63,3 +68,42 @@ def test_copy_no_source_selected(create_app_handler, mocker):
     app_handler.copy_selected_item()
     
     mock_show_error.assert_called_once()
+
+def test_copy_operation_logic(tmp_path, async_plugin_test_env):
+    """
+    Testuje logikę kopiowania pliku z wykorzystaniem asynchronicznej architektury pluginów.
+    """
+    plugin_manager, background_task_manager, async_test_helper_factory = async_plugin_test_env
+    async_helper = async_test_helper_factory("org.quickfile.standard_operations")
+
+    # 1. Przygotowanie pliku źródłowego i katalogu docelowego
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    source_file = source_dir / "file_to_copy.txt"
+    source_file.write_text("This is a test file.")
+    
+    dest_dir = tmp_path / "destination"
+    dest_dir.mkdir()
+
+    # 2. Opcje
+    options = {
+        "overwrite": False,
+        "plugin_id": "org.quickfile.standard_operations"
+    }
+    
+    # 3. Tworzenie obiektu Task
+    task = Task(TaskType.COPY, source_paths=[str(source_file)], destination_path=str(dest_dir), options=options)
+    
+    # 4. Uruchomienie kopiowania asynchronicznie i czekanie na zakończenie
+    async_helper.run_plugin_method_async(
+        task,
+        "copy_items",
+        source_paths=[str(source_file)],
+        destination_path=str(dest_dir),
+        options=options
+    )
+    
+    # 5. Weryfikacja wyników
+    dest_file = dest_dir / "file_to_copy.txt"
+    assert dest_file.exists()
+    assert dest_file.read_text() == "This is a test file."

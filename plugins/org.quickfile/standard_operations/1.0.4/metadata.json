@@ -1,0 +1,17 @@
+{
+  "id": "org.quickfile.standard_operations",
+  "group_id": "org.quickfile",
+  "artifact_id": "standard_operations",
+  "version": "1.0.4",
+  "type": "standard_operations",
+  "name": "Standard File Operations",
+  "description": "Provides standard file operations like copy, move, and delete.",
+  "entry_point": "plugin:StandardOperationsPluginImpl",
+  "class_name": "StandardOperationsPluginImpl",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ],
+  "sandboxed": true
+}
