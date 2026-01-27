@@ -4,7 +4,9 @@
 
 import pytest
 from unittest.mock import MagicMock, patch
+from PyQt6.QtWidgets import QDialog
 from app.dialog_handler import DialogHandler
+from app.task_queue_manager import Task, TaskType # Import Task and TaskType
 
 @pytest.fixture
 def mock_dependencies(mocker):
@@ -134,3 +136,71 @@ def test_show_properties_dialog_no_selection(dialog_handler):
     # Act & Assert
     with pytest.raises(ValueError, match="No file or folder selected"):
         dialog_handler.show_properties_dialog()
+
+def test_copy_selected_item_dialog_accepted(dialog_handler, mocker):
+    """Test that copy_selected_item correctly opens the CopyDialog."""
+    # Arrange
+    mock_copy_dialog = mocker.patch('app.dialog_handler.CopyDialog')
+    mock_dialog_instance = mock_copy_dialog.return_value
+    mock_dialog_instance.exec.return_value = QDialog.DialogCode.Accepted
+    
+    dialog_handler.ui_state_provider.get_selected_paths.return_value = ["/fake/source1", "/fake/source2"]
+    dialog_handler.ui_state_provider.get_inactive_panel_path.return_value = "/fake/dest"
+    
+    # Act
+    dialog_handler.copy_selected_item()
+    
+    # Assert
+    mock_copy_dialog.assert_called_once_with(
+        dialog_handler.main_window,
+        ["/fake/source1", "/fake/source2"],
+        "/fake/dest",
+        dialog_handler.task_queue_manager,
+        dialog_handler.background_task_manager,
+        dialog_handler.theme_manager
+    )
+    # We don't check add_task here because it's handled inside CopyDialog, which is mocked.
+
+def test_move_selected_item_dialog_accepted(dialog_handler, mocker):
+    """Test that move_selected_item correctly opens the MoveDialog."""
+    # Arrange
+    mock_move_dialog = mocker.patch('app.dialog_handler.MoveDialog')
+    mock_dialog_instance = mock_move_dialog.return_value
+    mock_dialog_instance.exec.return_value = QDialog.DialogCode.Accepted
+    
+    dialog_handler.ui_state_provider.get_selected_paths.return_value = ["/fake/source1"]
+    dialog_handler.ui_state_provider.get_inactive_panel_path.return_value = "/fake/dest"
+    
+    # Act
+    dialog_handler.move_selected_item()
+    
+    # Assert
+    mock_move_dialog.assert_called_once_with(
+        dialog_handler.main_window,
+        ["/fake/source1"],
+        "/fake/dest",
+        dialog_handler.task_queue_manager,
+        dialog_handler.background_task_manager,
+        dialog_handler.theme_manager
+    )
+
+def test_delete_selected_item_dialog_accepted(dialog_handler, mocker):
+    """Test that delete_selected_item correctly opens the DeleteDialog."""
+    # Arrange
+    mock_delete_dialog = mocker.patch('app.dialog_handler.DeleteDialog')
+    mock_dialog_instance = mock_delete_dialog.return_value
+    
+    dialog_handler.ui_state_provider.get_selected_paths.return_value = ["/fake/source1"]
+    
+    # Act
+    dialog_handler.delete_selected_item()
+    
+    # Assert
+    mock_delete_dialog.assert_called_once_with(
+        dialog_handler.main_window,
+        ["/fake/source1"],
+        dialog_handler.task_queue_manager,
+        dialog_handler.background_task_manager,
+        dialog_handler.theme_manager
+    )
+    mock_dialog_instance.exec.assert_called_once()

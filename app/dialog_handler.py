@@ -235,6 +235,7 @@ class DialogHandler:
         dialog = SearchDialog(self.main_window, current_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            logging.debug(f"DialogHandler: Options from SearchDialog: {options}")
             query = options.get("file_name")
             start_path = options.get("start_path", current_path)
             
@@ -245,9 +246,8 @@ class DialogHandler:
             search_plugin = search_plugins[0]
 
             if query:
-                options_with_plugin = {"plugin": search_plugin, "query": query, **options}
                 action_logger.log_action("search", path=start_path, query=query, options=options)
-                task = Task(TaskType.SEARCH, source_paths=[start_path], options=options_with_plugin)
+                task = Task(TaskType.SEARCH, source_paths=[start_path], options=options)
                 self.task_queue_manager.add_task(task)
                 self.main_window.statusBar().showMessage("Added search task to queue.")
 
@@ -260,6 +260,7 @@ class DialogHandler:
         dialog = SyncDialog(self.main_window, left_path, right_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.standard_operations'
             action_logger.log_action("sync_dirs", source=left_path, destination=right_path, options=options)
             task = Task(TaskType.SYNC, source_paths=[left_path], destination_path=right_path, options=options)
             self.task_queue_manager.add_task(task)

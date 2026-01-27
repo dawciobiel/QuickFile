@@ -7,6 +7,7 @@ import json
 import os
 from app.plugin_manager import PluginManager
 from plugins.base import ViewerPlugin
+from app.plugin_sandbox import SandboxedPluginWrapper # Import SandboxedPluginWrapper
 
 # Fixture to create a fake plugin structure
 @pytest.fixture
@@ -37,7 +38,8 @@ class MyViewerV1(ViewerPlugin):
     viewer_v2_path.mkdir()
     (viewer_v2_path / "metadata.json").write_text(json.dumps({
         "id": "org.example.viewer", "version": "1.1.0", "type": "viewer",
-        "entry_point": "plugin:MyViewerV2"
+        "entry_point": "plugin:MyViewerV2",
+        "sandboxed": True # Oznaczamy jako sandboxed
     }))
     (viewer_v2_path / "plugin.py").write_text("""
 from plugins.base import ViewerPlugin
@@ -67,21 +69,29 @@ def plugin_manager(mocker, mock_plugin_dir):
     # Instantiate the manager, but tell it to use our mock directory
     pm = PluginManager(plugin_dirs=[str(mock_plugin_dir)])
     
-    return pm
+    yield pm # Używamy yield, aby zapewnić, że shutdown zostanie wywołany
+    pm.shutdown() # Zamykamy procesy piaskownicy po teście
 
 def test_load_latest_plugin_version(plugin_manager):
-    """Test that only the latest version of a plugin is loaded."""
+    """Test that only the latest version of a plugin is loaded and it's sandboxed."""
     assert len(plugin_manager.plugins["viewer"]) == 1
     
-    # Check that the loaded plugin is indeed version 1.1.0
     loaded_plugin = plugin_manager.plugins["viewer"][0]
+    
+    # Sprawdzamy, czy załadowany plugin jest wrapperem piaskownicy
+    assert isinstance(loaded_plugin, SandboxedPluginWrapper)
+    
+    # Sprawdzamy, czy nazwa pluginu jest poprawnie delegowana
     assert loaded_plugin.name == "MyViewerV2"
 
 def test_get_viewer_for_file(plugin_manager):
-    """Test that get_viewer_for_file returns the correct plugin."""
+    """Test that get_viewer_for_file returns the correct sandboxed plugin."""
     viewer = plugin_manager.get_viewer_for_file("test.v2")
-    assert isinstance(viewer, ViewerPlugin)
+    
+    assert isinstance(viewer, SandboxedPluginWrapper)
     assert viewer.name == "MyViewerV2"
+    assert viewer.can_view("test.v2") is True # can_view powinno być delegowane
+    assert viewer.can_view("test.txt") is False # can_view powinno być delegowane
     
     # Version 1.0.0 should not be loaded, so it won't find a viewer for .txt
     assert plugin_manager.get_viewer_for_file("test.txt") is None

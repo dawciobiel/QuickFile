@@ -4,6 +4,9 @@
 # Logs
 #logs/
 
+# Plugins library enviroment
+plugins/**/libs/
+
 # Resources
 resources/Rolling@1x-1.0s-20px-20px.gif
 

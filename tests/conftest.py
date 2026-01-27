@@ -2,6 +2,7 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
+import logging
 import os
 import shutil
 import sys
@@ -10,6 +11,9 @@ import time
 from PyQt6.QtCore import QTimer, QEventLoop, QObject, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from unittest.mock import MagicMock
+
+# Suppress PyQt6.uic debug logs
+logging.getLogger("PyQt6.uic").setLevel(logging.WARNING)
 
 # Add the project root directory to sys.path so imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -21,6 +25,9 @@ from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_manager import FileManager
 from ui.main_window import MainWindow
 from app.plugin_sandbox import SandboxedPluginWrapper
+
+# Importujemy get_latest_plugin_path
+from tests.plugin_helpers import get_latest_plugin_path
 
 
 # --- Nowe fixtury dla testowania asynchronicznych pluginów ---
@@ -141,8 +148,6 @@ def async_plugin_test_env(qapp, qtbot):
 
 # --- Fixtures for E2E tests ---
 
-# (Pozostałe fixtury E2E pozostają bez zmian, ale upewniamy się, że używają nowej fixtury qapp)
-
 @pytest.fixture
 def isolated_env(tmp_path_factory):
     """Creates an isolated environment with temporary directories for all E2E tests."""
@@ -243,7 +248,10 @@ def main_window(qapp, qtbot, isolated_env, monkeypatch):
 
     yield window, isolated_env
 
+    # Teardown
     window.close()
+    plugin_manager.shutdown()
+    background_task_manager.thread_pool.waitForDone()
 
 @pytest.fixture
 def handle_modal_dialog():

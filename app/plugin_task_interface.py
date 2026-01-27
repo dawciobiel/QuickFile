@@ -15,19 +15,19 @@ class SandboxedTaskContext:
 
     @property
     def is_cancelled(self) -> bool:
-        # Request status from main process
-        self._pipe.send({'type': 'GET_CONTEXT_STATUS', 'task_id': self._task_id})
-        response = self._pipe.recv()
-        self._is_cancelled = response.get('is_cancelled', False)
+        # No longer requesting status from main process
         return self._is_cancelled
 
     @property
     def is_paused(self) -> bool:
-        # Request status from main process
-        self._pipe.send({'type': 'GET_CONTEXT_STATUS', 'task_id': self._task_id})
-        response = self._pipe.recv()
-        self._is_paused = response.get('is_paused', False)
+        # No longer requesting status from main process
         return self._is_paused
+
+    def set_cancelled(self, cancelled: bool):
+        self._is_cancelled = cancelled
+
+    def set_paused(self, paused: bool):
+        self._is_paused = paused
 
     def wait_if_paused(self):
         while self.is_paused:

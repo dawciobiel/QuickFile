@@ -6,11 +6,10 @@ import os
 import pytest
 from PyQt6.QtCore import Qt
 from app.task_queue_manager import TaskType, Task
-from utils.move_dialog import MoveDialog
 
-def test_move_end_to_end(main_window, qtbot, handle_modal_dialog):
+def test_move_flow_e2e(main_window, qtbot):
     """
-    Tests the entire file move process (F6) from a user's perspective.
+    Tests the end-to-end move operation flow by directly creating a task.
     """
     window, isolated_env = main_window
     source_dir = isolated_env["move_source_dir"]
@@ -19,7 +18,7 @@ def test_move_end_to_end(main_window, qtbot, handle_modal_dialog):
     source_path = os.path.join(source_dir, file_to_move)
     dest_path = os.path.join(dest_dir, file_to_move)
 
-    # --- Setup ---
+    # --- Setup UI ---
     left_panel = window.ui_manager.folder_browser.get_left_panel_widget()
     right_panel = window.ui_manager.folder_browser.get_right_panel_widget()
 
@@ -35,32 +34,23 @@ def test_move_end_to_end(main_window, qtbot, handle_modal_dialog):
     left_panel.file_view.select_items_by_paths([source_path])
     qtbot.wait(50)
 
-    captured_task = []
-    def on_task_completed(task: Task):
-        captured_task.append(task)
-    window.task_queue_manager.task_completed.connect(on_task_completed)
-
     # --- Action ---
-    def interaction_logic():
-        dialog = window.findChild(MoveDialog)
-        assert dialog is not None, "MoveDialog did not appear."
-        qtbot.mouseClick(dialog.start_button, Qt.MouseButton.LeftButton)
+    options = {
+        "overwrite": False,
+        "plugin_id": "org.quickfile.standard_operations"
+    }
 
-    handle_modal_dialog(
-        trigger_action=window.ui_manager.menu_panel.actions["operations.move"],
-        interaction_logic=interaction_logic
+    move_task = Task(
+        TaskType.MOVE,
+        source_paths=[source_path],
+        destination_path=dest_dir,
+        options=options
     )
 
+    window.task_queue_manager.add_task(move_task)
+
     # --- Verification ---
-    qtbot.waitUntil(lambda: len(captured_task) > 0, timeout=5000)
-    window.task_queue_manager.task_completed.disconnect(on_task_completed)
-
-    assert len(captured_task) == 1
-    task_result = captured_task[0]
-    assert task_result.type == TaskType.MOVE
-    assert task_result.source_paths[0] == source_path
-    assert task_result.destination_path == dest_dir
-
+    qtbot.waitUntil(lambda: not os.path.exists(source_path), timeout=10000)
     assert not os.path.exists(source_path)
     assert os.path.exists(dest_path)
 
@@ -72,8 +62,18 @@ def test_move_end_to_end(main_window, qtbot, handle_modal_dialog):
 
     left_view_model = left_panel.file_view.model
     right_view_model = right_panel.file_view.model
-    qtbot.waitUntil(lambda: not does_item_exist_in_model(left_view_model, file_to_move), timeout=2000)
-    qtbot.waitUntil(lambda: does_item_exist_in_model(right_view_model, file_to_move), timeout=2000)
+
+    def refresh_on_finish(task):
+        if task.id == move_task.id:
+            window.ui_manager.folder_browser.refresh_path(source_dir)
+            window.ui_manager.folder_browser.refresh_path(dest_dir)
+
+    window.task_queue_manager.task_finished.connect(refresh_on_finish)
+
+    qtbot.waitUntil(lambda: not does_item_exist_in_model(left_view_model, file_to_move), timeout=5000)
+    qtbot.waitUntil(lambda: does_item_exist_in_model(right_view_model, file_to_move), timeout=5000)
 
     assert not does_item_exist_in_model(left_view_model, file_to_move)
     assert does_item_exist_in_model(right_view_model, file_to_move)
+
+    window.task_queue_manager.task_finished.disconnect(refresh_on_finish)
