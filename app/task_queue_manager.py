@@ -7,7 +7,7 @@ import uuid
 from enum import Enum, auto
 from typing import Callable
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal, Qt # Dodano import Qt
 
 from app.plugin_sandbox import SandboxedPluginWrapper
 
@@ -138,7 +138,17 @@ class TaskQueueManager(QObject):
 
     def process_task(self, task: Task):
         task.set_status(TaskStatus.IN_PROGRESS)
-        
+
+        if task.type == TaskType.SYNC:
+            self.background_task_manager.run_task(
+                task,
+                target=self.directory_synchronizer.synchronize,
+                dir1=task.source_paths[0],
+                dir2=task.destination_path,
+                options=task.options
+            )
+            return
+
         plugin_id = task.options.get("plugin_id")
         if not plugin_id:
             task.set_status(TaskStatus.ERROR)
@@ -163,33 +173,42 @@ class TaskQueueManager(QObject):
             self._on_task_finished_cleanup(task.id)
             return
 
-        target_method = getattr(plugin, method_name)
-        
-        # Prepare arguments for the plugin method
-        kwargs = {
-            "options": task.options,
-            "plugin_wrapper": plugin
-        }
-        
-        # Adjust arguments based on task type
-        if task.type in [TaskType.COPY, TaskType.MOVE]:
-            kwargs["source_paths"] = task.source_paths
-            kwargs["destination_path"] = task.destination_path
-        elif task.type == TaskType.DELETE:
-            kwargs["item_paths"] = task.source_paths
-        elif task.type in [TaskType.EXTRACT_ARCHIVE, TaskType.CHECKSUM, TaskType.SEARCH, TaskType.CALCULATE_SIZE, TaskType.SPLIT_FILE, TaskType.JOIN_FILES]:
-            kwargs["source_path"] = task.source_paths[0]
-            if task.destination_path:
-                kwargs["dest_dir"] = task.destination_path
-        elif task.type == TaskType.CREATE_ARCHIVE:
-            kwargs["source_paths"] = task.source_paths
-            kwargs["destination_path"] = task.destination_path
+        # Connect signals if this is the first time we see this wrapper
+        if plugin not in self.background_task_manager.plugin_wrappers:
+            plugin.progress_updated.connect(self.background_task_manager._on_plugin_progress, Qt.ConnectionType.QueuedConnection)
+            plugin.method_finished.connect(self.background_task_manager._on_plugin_success, Qt.ConnectionType.QueuedConnection)
+            plugin.method_failed.connect(self.background_task_manager._on_plugin_failure, Qt.ConnectionType.QueuedConnection)
+            self.background_task_manager.plugin_wrappers[plugin] = True
+            logging.debug(f"Connected signals for plugin wrapper: {plugin.metadata['id']}")
 
-        self.background_task_manager.run_task(
-            task,
-            target=target_method,
-            is_plugin_task=True,
-            **kwargs
+        # Register the task with BackgroundTaskManager to track its context
+        self.background_task_manager.register_plugin_task(task)
+
+        plugin_args = []
+        plugin_kwargs = {"options": task.options}
+
+        if task.type == TaskType.SEARCH:
+            plugin_args.append(task.options.get("start_path", task.source_paths[0]))
+            plugin_args.append(task.options.get("file_name"))
+        elif task.type in [TaskType.COPY, TaskType.MOVE]:
+            plugin_kwargs["source_paths"] = task.source_paths
+            plugin_kwargs["destination_path"] = task.destination_path
+        elif task.type == TaskType.DELETE:
+            plugin_kwargs["item_paths"] = task.source_paths
+        elif task.type in [TaskType.EXTRACT_ARCHIVE, TaskType.CHECKSUM, TaskType.CALCULATE_SIZE, TaskType.SPLIT_FILE, TaskType.JOIN_FILES]:
+            plugin_kwargs["source_path"] = task.source_paths[0]
+            if task.destination_path:
+                plugin_kwargs["dest_dir"] = task.destination_path
+        elif task.type == TaskType.CREATE_ARCHIVE:
+            plugin_kwargs["source_paths"] = task.source_paths
+            plugin_kwargs["destination_path"] = task.destination_path
+
+        actual_plugin_method = getattr(plugin, method_name)
+        actual_plugin_method(
+            *plugin_args,
+            task=task,
+            task_context=task.context,
+            **plugin_kwargs
         )
 
     def _on_task_progress(self, task_id, percentage):

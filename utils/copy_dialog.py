@@ -2,6 +2,7 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
+import logging
 from PyQt6 import uic
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QLabel, QHBoxLayout, QSizePolicy, QWidget
@@ -64,6 +65,8 @@ class CopyDialog(QDialog):
         layout.insertWidget(index, wrapper)
         
         # Insert speed label right after the file progress bar wrapper
+        self.speed_label = QLabel("") # Initialize speed_label here
+        self.speed_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         layout.insertWidget(index + 1, self.speed_label)
 
     def _init_ui(self):
@@ -81,10 +84,6 @@ class CopyDialog(QDialog):
 
         self.preserve_timestamp_checkbox.setChecked(True)
         self.preserve_timestamp_checkbox.setVisible(True)
-        
-        # Create speed label
-        self.speed_label = QLabel("")
-        self.speed_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         
         self.adjustSize()
 
@@ -108,6 +107,7 @@ class CopyDialog(QDialog):
         return {
             "overwrite": self.overwrite_checkbox.isChecked(),
             "preserve_timestamp": self.preserve_timestamp_checkbox.isChecked(),
+            "plugin_id": "org.quickfile.standard_operations" # Dodano plugin_id
         }
 
     def start_operation(self):
@@ -167,5 +167,6 @@ class CopyDialog(QDialog):
         self.reject()
 
     def on_task_status_changed(self, status):
+        # logging.debug(f"CopyDialog: on_task_status_changed received status: {status}") # Usunięto logowanie
         if status in [TaskStatus.FINISHED, TaskStatus.CANCELLED, TaskStatus.ERROR]:
             self.accept()

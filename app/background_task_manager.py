@@ -96,39 +96,25 @@ class BackgroundTaskManager(QObject):
         self.plugin_wrappers = {} # To keep track of connected wrappers
         logging.info(f"Multithreading with maximum {self.thread_pool.maxThreadCount()} threads.")
 
-    def run_task(self, task, target: Callable, is_plugin_task: bool = False, **kwargs):
+    def register_plugin_task(self, task):
+        """Registers a plugin task context without starting a worker."""
+        context = TaskContext()
+        self.contexts[task.id] = context
+        task.context = context
+        logging.debug(f"Registered plugin task {task.id}")
+
+    def run_task(self, task, target: Callable, **kwargs):
         context = TaskContext()
         self.contexts[task.id] = context
         task.context = context
 
-        if is_plugin_task:
-            plugin_wrapper = kwargs.get('plugin_wrapper')
-            if not isinstance(plugin_wrapper, SandboxedPluginWrapper):
-                raise TypeError("Plugin tasks require a SandboxedPluginWrapper instance.")
-            
-            # Connect signals if this is the first time we see this wrapper
-            if plugin_wrapper not in self.plugin_wrappers:
-                plugin_wrapper.progress_updated.connect(self._on_plugin_progress)
-                plugin_wrapper.method_finished.connect(self._on_plugin_success)
-                plugin_wrapper.method_failed.connect(self._on_plugin_failure)
-                self.plugin_wrappers[plugin_wrapper] = True
-                logging.debug(f"Connected signals for plugin wrapper: {plugin_wrapper.metadata['id']}")
-
-            # The 'target' is the plugin method itself, e.g., plugin_wrapper.split_file
-            # The arguments are passed directly to it.
-            kwargs.pop('plugin_wrapper', None)
-            target(task=task, **kwargs)
-            return # The rest is handled by signals
-
-        else:
-            # Legacy path for non-plugin QRunnables
-            worker = Worker(target, task=task, **kwargs)
-            worker.signals.progress.connect(lambda p: self.task_progress_updated.emit(task.id, p))
-            worker.signals.result.connect(lambda r: self._on_worker_success(task.id, r))
-            worker.signals.error.connect(lambda e: self._on_worker_error(task.id, e))
-            worker.signals.finished.connect(lambda: self._on_task_finished(task.id))
-            
-            self.thread_pool.start(worker)
+        worker = Worker(target, task=task, **kwargs)
+        worker.signals.progress.connect(lambda p: self.task_progress_updated.emit(task.id, p))
+        worker.signals.result.connect(lambda r: self._on_worker_success(task.id, r))
+        worker.signals.error.connect(lambda e: self._on_worker_error(task.id, e))
+        worker.signals.finished.connect(lambda: self._on_task_finished(task.id))
+        
+        self.thread_pool.start(worker)
 
     def _on_worker_success(self, task_id, result):
         self.task_succeeded.emit(task_id, result)
@@ -147,12 +133,16 @@ class BackgroundTaskManager(QObject):
             logging.info(f"Plugin task {task_id} succeeded.")
             self.task_succeeded.emit(task_id, result)
             self._on_task_finished(task_id)
+        else:
+            logging.warning(f"Received success for unknown task {task_id}")
 
     def _on_plugin_failure(self, task_id, error, traceback_str):
         if task_id in self.contexts:
             logging.error(f"Plugin task {task_id} failed: {error}\n{traceback_str}")
             self.task_failed.emit(task_id, error)
             self._on_task_finished(task_id)
+        else:
+            logging.warning(f"Received failure for unknown task {task_id}")
 
     def _on_task_finished(self, task_id):
         if task_id in self.contexts:
@@ -173,6 +163,7 @@ class BackgroundTaskManager(QObject):
             self.contexts[task_id].pause()
 
     def resume_task(self, task_id):
-        if task_id in self.contexts:
-            logging.info(f"Resuming task {task_id}...")
-            self.contexts[task_id].resume()
+        if task_id in self.active_tasks:
+            task = self.active_tasks[task_id]
+            self.background_task_manager.resume_task(task_id)
+            task.set_status(TaskStatus.IN_PROGRESS)

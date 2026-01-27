@@ -60,7 +60,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                 logging.info(f"Removed existing item at {destination_full_path} for overwrite.")
 
     def _copy_file_with_progress(self, src, dst, progress_callback=None, total_size=0, copied_so_far=0, task_context=None, task=None,
-                                 global_total_size=0, global_copied_so_far=0, send_trace=None): # Dodano send_trace
+                                 global_total_size=0, global_copied_so_far=0, send_trace=None):
+        if send_trace: send_trace(f"Copying file: {src} to {dst}")
         try:
             buffer_size = 4 * 1024 * 1024  # 4MB
             bytes_read = copied_so_far
@@ -79,8 +80,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                         if task_context:
                             if task_context.is_cancelled:
                                 raise OperationCancelledError("Operation cancelled by user.")
-                            task_context.wait_if_paused()
-
+                            # task_context.wait_if_paused() # Tymczasowo zakomentowane
+                        
                         buf = fsrc.read(buffer_size)
                         if not buf:
                             break
@@ -101,7 +102,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                         if progress_callback and total_size > 0:
                             read_pct = int((bytes_read / total_size) * 100)
                             write_pct = int((bytes_written / total_size) * 100)
-                            progress_callback(read_pct) # Zmieniono na bezpośrednie wywołanie
+                            progress_callback(read_pct)
                         
                         if task and global_total_size > 0:
                             current_global_copied = global_copied_so_far + local_bytes_processed
@@ -115,11 +116,13 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                         if progress_callback and total_size > 0:
                             read_pct = int((bytes_read / total_size) * 100)
                             write_pct = int((bytes_written / total_size) * 100)
-                            progress_callback(read_pct) # Zmieniono na bezpośrednie wywołanie
+                            progress_callback(read_pct)
 
             shutil.copystat(src, dst)
+            if send_trace: send_trace(f"Finished copying file: {src}")
             return bytes_written
         except OperationCancelledError:
+            if send_trace: send_trace(f"Copy operation cancelled for: {src}")
             if os.path.exists(dst):
                 try:
                     os.remove(dst)
@@ -127,10 +130,12 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                     pass
             raise
         except Exception as e:
+            if send_trace: send_trace(f"Error copying file {src} to {dst}: {e}")
             raise OSError(f"Error copying file {src} to {dst}: {e}")
 
     def _copy_item_with_options(self, source_path, destination_path, options, progress_callback=None, task_context=None, task=None,
                                 global_total_size=0, global_copied_so_far=0, send_trace=None):
+        if send_trace: send_trace(f"Copying item: {source_path} to {destination_path}")
         destination_full_path = None
         bytes_copied_in_this_call = 0
         try:
@@ -145,11 +150,6 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
 
             if source_is_dir:
                 total_size = 0
-                # We don't need to calculate total size here if we rely on global_total_size passed from copy_items
-                # But we need it for the file progress bar (if we want it to show progress for the whole folder being copied as one item)
-                # However, usually file progress bar shows progress for the current FILE.
-                # Let's stick to file progress bar = current file progress.
-                
                 os.makedirs(destination_full_path, exist_ok=True)
                 shutil.copystat(source_path, destination_full_path)
 
@@ -157,7 +157,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                     if task_context:
                         if task_context.is_cancelled:
                             raise OperationCancelledError("Operation cancelled by user.")
-                        task_context.wait_if_paused()
+                        # task_context.wait_if_paused() # Tymczasowo zakomentowane
 
                     rel_path = os.path.relpath(dirpath, source_path)
                     dest_dir = os.path.join(destination_full_path, rel_path)
@@ -168,7 +168,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                         if task_context:
                             if task_context.is_cancelled:
                                 raise OperationCancelledError("Operation cancelled by user.")
-                            task_context.wait_if_paused()
+                            # task_context.wait_if_paused() # Tymczasowo zakomentowane
 
                         if task:
                             task.set_details(filename)
@@ -204,14 +204,13 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
 
     def copy_items(self, source_paths: list[str], destination_path: str, options: dict, progress_callback=None, task_context=None,
                    task=None, send_trace=None):
+        if send_trace: send_trace(f"Starting copy_items: {source_paths} to {destination_path}")
         
-        # Calculate total size first for smooth overall progress
         global_total_size = 0
         if task:
             task.set_details("Calculating total size...")
         
         try:
-            # Re-use _get_paths_and_total_size logic but just for size
             _, _, global_total_size = self._get_paths_and_total_size(source_paths, task_context, None)
         except Exception as e:
             logging.warning(f"Could not calculate total size: {e}")
@@ -225,9 +224,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             if task_context:
                 if task_context.is_cancelled:
                     raise OperationCancelledError("Operation cancelled by user.")
-                task_context.wait_if_paused()
+                # task_context.wait_if_paused() # Tymczasowo zakomentowane
             try:
-                # Pass the progress_callback down
                 bytes_copied = self._copy_item_with_options(source_path, destination_path, options, progress_callback, task_context, task,
                                              global_total_size, global_copied_so_far, send_trace)
                 global_copied_so_far += bytes_copied
@@ -240,6 +238,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
         if task:
             task.set_overall_progress(100)
             
+        if send_trace: send_trace("Finished copy_items.")
         return f"Batch copy completed."
 
     def _move_item_with_options(self, source_path, destination_path, options, progress_callback=None, task_context=None, task=None,
@@ -260,9 +259,7 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             if task:
                 task.set_details(base_name)
 
-            # Check if on same device
             if os.stat(source_path).st_dev != os.stat(destination_path).st_dev:
-                # Pass the progress_callback down for cross-device move (which is copy+delete)
                 bytes_moved_in_this_call = self._copy_item_with_options(source_path, destination_path, options, progress_callback, task_context, task,
                                              global_total_size, global_copied_so_far, send_trace)
 
@@ -274,40 +271,12 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
                 else:
                     os.remove(source_path)
             else:
-                # Same device move is instant, but we should update progress
                 if task_context and task_context.is_cancelled:
                     raise OperationCancelledError("Operation cancelled by user.")
                 
-                # Calculate size for progress update if we are in a batch move
-                try:
-                    if source_is_dir:
-                        # This is slow, maybe skip size calc for same-device move?
-                        # Or just assume it's done instantly.
-                        # For smooth progress, we should add its size to copied_so_far
-                        # But we don't know its size unless we calculated it before.
-                        # Let's assume global_total_size includes it.
-                        pass
-                    else:
-                        pass
-                except:
-                    pass
-
                 shutil.move(source_path, destination_full_path)
                 
-                # For same device move, we can't track bytes progress easily inside shutil.move
-                # We just jump the progress.
-                # To do this correctly, we'd need to know the size of this item.
-                # Let's try to get size before move.
                 try:
-                    # This is a bit expensive for folders, but needed for accurate progress
-                    # If we already calculated global_total_size, we can use that.
-                    # But here we need size of THIS item.
-                    # Let's approximate or re-calculate.
-                    # Since move is fast, maybe we don't care about byte-level progress for same-device move?
-                    # But we need to update global_copied_so_far for the NEXT items.
-                    
-                    # Optimization: If we are here, we probably calculated size in move_items
-                    # We can re-calculate size of this item to add to global counter.
                     if source_is_dir:
                         size = 0
                         for dirpath, _, filenames in os.walk(source_path):
@@ -335,13 +304,11 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
     def move_items(self, source_paths: list[str], destination_path: str, options: dict, progress_callback=None, task_context=None,
                    task=None, send_trace=None):
         
-        # Calculate total size first
         global_total_size = 0
         if task:
             task.set_details("Calculating total size...")
         
         try:
-            # Re-use _get_paths_and_total_size logic but just for size
             _, _, global_total_size = self._get_paths_and_total_size(source_paths, task_context, None)
         except Exception as e:
             logging.warning(f"Could not calculate total size: {e}")
@@ -355,9 +322,8 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             if task_context:
                 if task_context.is_cancelled:
                     raise OperationCancelledError("Operation cancelled by user.")
-                task_context.wait_if_paused()
+                # task_context.wait_if_paused() # Tymczasowo zakomentowane
             try:
-                # Pass the progress_callback down
                 bytes_moved = self._move_item_with_options(source_path, destination_path, options, progress_callback, task_context, task,
                                              global_total_size, global_copied_so_far, send_trace)
                 global_copied_so_far += bytes_moved
@@ -480,4 +446,4 @@ class StandardOperationsPluginImpl(StandardOperationsPlugin):
             raise e
         except OSError as e:
             logging.exception(f"Error during permanent deletion: {e}")
-            raise Exception(translation_manager.translate("FileManager", f"Error during permanent deletion: {e}"))
+            raise Exception(f"Error during permanent deletion: {e}")

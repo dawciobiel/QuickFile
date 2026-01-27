@@ -64,6 +64,8 @@ class MoveDialog(QDialog):
         layout.insertWidget(index, wrapper)
         
         # Insert speed label right after the file progress bar wrapper
+        self.speed_label = QLabel("") # Initialize speed_label here
+        self.speed_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         layout.insertWidget(index + 1, self.speed_label)
 
     def _init_ui(self):
@@ -80,10 +82,6 @@ class MoveDialog(QDialog):
         self.destination_path_label.setWordWrap(True)
 
         self.preserve_timestamp_checkbox.setVisible(False)
-
-        # Create speed label
-        self.speed_label = QLabel("")
-        self.speed_label.setAlignment(Qt.AlignmentFlag.AlignRight)
 
         self.adjustSize()
 
@@ -105,6 +103,7 @@ class MoveDialog(QDialog):
     def get_options(self):
         return {
             "overwrite": self.overwrite_checkbox.isChecked(),
+            "plugin_id": "org.quickfile.standard_operations" # Dodano plugin_id
         }
 
     def start_operation(self):
