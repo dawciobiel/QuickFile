@@ -76,5 +76,6 @@ class SearchDialog(QDialog):
             "suid": self.suidCheckbox.isChecked(),
             "sgid": self.sgidCheckbox.isChecked(),
             "sticky": self.stickyCheckbox.isChecked(),
+            "plugin_id": "org.quickfile.search_standard" # Dodano plugin_id
             # Add other attributes here later
         }
