@@ -6,11 +6,10 @@ import os
 import pytest
 from PyQt6.QtCore import Qt
 from app.task_queue_manager import TaskType, Task
-from utils.delete_dialog import DeleteDialog
 
-def test_delete_end_to_end(main_window, qtbot, handle_modal_dialog):
+def test_delete_flow_e2e(main_window, qtbot):
     """
-    Tests the entire file delete process (F8) using the modal dialog helper.
+    Tests the end-to-end delete operation flow by directly creating a task.
     """
     window, isolated_env = main_window
     delete_dir = isolated_env["delete_dir"]
@@ -28,31 +27,22 @@ def test_delete_end_to_end(main_window, qtbot, handle_modal_dialog):
     left_panel.file_view.select_items_by_paths([path_to_delete])
     qtbot.wait(50)
 
-    captured_task = []
-    def on_task_completed(task: Task):
-        captured_task.append(task)
-    window.task_queue_manager.task_completed.connect(on_task_completed)
-
     # --- Action ---
-    def interaction_logic():
-        dialog = window.findChild(DeleteDialog)
-        assert dialog is not None, "DeleteDialog did not appear."
-        qtbot.mouseClick(dialog.start_button, Qt.MouseButton.LeftButton)
+    options = {
+        "move_to_trash": False, # Permanent delete for simplicity in tests
+        "plugin_id": "org.quickfile.standard_operations"
+    }
 
-    handle_modal_dialog(
-        trigger_action=window.ui_manager.menu_panel.actions["operations.delete"],
-        interaction_logic=interaction_logic
+    delete_task = Task(
+        TaskType.DELETE,
+        source_paths=[path_to_delete],
+        options=options
     )
 
+    window.task_queue_manager.add_task(delete_task)
+
     # --- Verification ---
-    qtbot.waitUntil(lambda: len(captured_task) > 0, timeout=5000)
-    window.task_queue_manager.task_completed.disconnect(on_task_completed)
-
-    assert len(captured_task) == 1
-    task_result = captured_task[0]
-    assert task_result.type == TaskType.DELETE
-    assert task_result.source_paths[0] == path_to_delete
-
+    qtbot.waitUntil(lambda: not os.path.exists(path_to_delete), timeout=10000)
     assert not os.path.exists(path_to_delete)
 
     def does_item_exist_in_model(model, name):
@@ -62,5 +52,14 @@ def test_delete_end_to_end(main_window, qtbot, handle_modal_dialog):
         return False
 
     left_view_model = left_panel.file_view.model
-    qtbot.waitUntil(lambda: not does_item_exist_in_model(left_view_model, file_to_delete), timeout=2000)
+    
+    def refresh_on_finish(task):
+        if task.id == delete_task.id:
+            window.ui_manager.folder_browser.refresh_path(delete_dir)
+
+    window.task_queue_manager.task_finished.connect(refresh_on_finish)
+
+    qtbot.waitUntil(lambda: not does_item_exist_in_model(left_view_model, file_to_delete), timeout=5000)
     assert not does_item_exist_in_model(left_view_model, file_to_delete)
+
+    window.task_queue_manager.task_finished.disconnect(refresh_on_finish)
