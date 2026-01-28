@@ -16,7 +16,7 @@ QTableView, QTreeView {
 /* Active panel selection */
 QTableView[activePanel="true"]::item:selected,
 QTreeView[activePanel="true"]::item:selected {
-    background-color: @@active_panel_border@@;
+    background-color: @@cursor_color@@;
     color: @@selection_foreground@@;
 }
 
