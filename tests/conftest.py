@@ -6,11 +6,11 @@ import logging
 import os
 import shutil
 import sys
-import pytest
 import time
-from PyQt6.QtCore import QTimer, QEventLoop, QObject, pyqtSignal
+
+import pytest
+from PyQt6.QtCore import QTimer, QEventLoop, QObject
 from PyQt6.QtWidgets import QApplication, QMainWindow
-from unittest.mock import MagicMock
 
 # Suppress PyQt6.uic debug logs
 logging.getLogger("PyQt6.uic").setLevel(logging.WARNING)
@@ -20,14 +20,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from app.background_task_manager import BackgroundTaskManager
 from app.plugin_manager import PluginManager
-from app.task_queue_manager import TaskQueueManager, Task, TaskType
+from app.task_queue_manager import TaskQueueManager, Task
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_manager import FileManager
 from ui.main_window import MainWindow
 from app.plugin_sandbox import SandboxedPluginWrapper
 
 # Importujemy get_latest_plugin_path
-from tests.plugin_helpers import get_latest_plugin_path
 
 
 # --- Nowe fixtury dla testowania asynchronicznych pluginów ---
@@ -107,13 +106,14 @@ class AsyncTestHelper(QObject):
         return self.finished_result[1] if self.finished_result else None
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def qapp():
-    """Provides a single QApplication instance for the entire test session."""
+    """Provides a single QApplication instance for each test function."""
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
-    return app
+    yield app
+    app.quit()
 
 
 @pytest.fixture(scope="function")
@@ -142,8 +142,8 @@ def async_plugin_test_env(qapp, qtbot):
     yield plugin_manager, background_task_manager, _async_test_helper_factory
 
     # Teardown: Stop all sandboxed plugins
+    background_task_manager.shutdown()
     plugin_manager.shutdown()
-    background_task_manager.thread_pool.waitForDone()
 
 
 # --- Fixtures for E2E tests ---
@@ -250,8 +250,8 @@ def main_window(qapp, qtbot, isolated_env, monkeypatch):
 
     # Teardown
     window.close()
+    background_task_manager.shutdown()
     plugin_manager.shutdown()
-    background_task_manager.thread_pool.waitForDone()
 
 @pytest.fixture
 def handle_modal_dialog():
