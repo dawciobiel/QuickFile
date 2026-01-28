@@ -12,7 +12,8 @@
     "selection_background": "#3498db",
     "selection_foreground": "#FFFFFF",
     "inactive_selection_background": "#D0D0D0",
-    "active_panel_border": "#3498db",
+  "active_panel_border": "#3498DB",
     "disabled_foreground": "#A0A0A0",
-    "icon_color": "#3498db"
+  "icon_color": "#3498db",
+  "cursor_color": "#85C1E9"
 }

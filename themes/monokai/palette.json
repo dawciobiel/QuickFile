@@ -10,9 +10,10 @@
   "border": "#272822",
   "selection_foreground": "#272822",
   "selection_background": "#AE81FF",
-  "active_panel_border": "#FD971F",
+  "active_panel_border": "#A9A9A9",
   "inactive_selection_background": "#49483E",
   "disabled_foreground": "#75715E",
+  "cursor_color": "#8B0000",
 
   "code_highlighting": {
     "background": "#272822",

@@ -8,9 +8,10 @@
     "border": "#2c3e50",
     "selection_foreground": "#ffffff",
     "selection_background": "#2980b9",
-    "active_panel_border": "#e67e22",
+  "active_panel_border": "#000080",
     "inactive_selection_background": "#4a6278",
     "disabled_foreground": "#95a5a6",
+  "cursor_color": "#0000FF",
 
     "code_highlighting": {
         "background": "#2c3e50",
