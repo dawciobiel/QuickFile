@@ -9,8 +9,6 @@ from typing import Callable
 
 from PyQt6.QtCore import QObject, QRunnable, pyqtSignal, QThreadPool, QMutex, QWaitCondition, QThread
 
-from app.plugin_sandbox import SandboxedPluginWrapper
-
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
@@ -95,6 +93,11 @@ class BackgroundTaskManager(QObject):
         self.contexts = {}
         self.plugin_wrappers = {} # To keep track of connected wrappers
         logging.info(f"Multithreading with maximum {self.thread_pool.maxThreadCount()} threads.")
+
+    def shutdown(self):
+        logging.info("Shutting down BackgroundTaskManager thread pool.")
+        self.thread_pool.clear()
+        self.thread_pool.waitForDone()
 
     def register_plugin_task(self, task):
         """Registers a plugin task context without starting a worker."""

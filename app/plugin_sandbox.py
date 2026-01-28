@@ -3,11 +3,11 @@ import logging
 import multiprocessing
 import os
 import sys
+import time
 import traceback
 from multiprocessing.connection import Connection
-from threading import Thread, Event
 from queue import Queue, Empty
-import time
+from threading import Thread, Event
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -62,8 +62,7 @@ def run_plugin_process(pipe: Connection, plugin_path: str, metadata: dict):
                     pass
 
         while True:
-            if not pipe.poll(1):
-                time.sleep(0.01)
+            if not pipe.poll(0.01):
                 continue
 
             msg = pipe.recv()
@@ -161,6 +160,7 @@ class SandboxedPluginWrapper(QObject):
 
     def start(self):
         self.process = multiprocessing.Process(target=run_plugin_process, args=(self.child_pipe, self.plugin_path, self.metadata))
+        self.process.daemon = True  # Make the process a daemon
         self.process.start()
         self.logger.info("Sandbox process started.")
         

@@ -138,3 +138,14 @@ Klasa `PluginManager` (`app/plugin_manager.py`) odpowiada za:
 2.  `TaskQueueManager` przekazuje zadanie do `BackgroundTaskManager`.
 3.  `BackgroundTaskManager` identyfikuje wtyczkę po `plugin_id` i wywołuje jej metodę (np. `extract_archive`, `copy_items`, `split_file`) asynchronicznie, poprzez `SandboxedPluginWrapper`.
 4.  `BackgroundTaskManager` nasłuchuje na sygnały z `SandboxedPluginWrapper` (postęp, zakończenie, błędy) i aktualizuje stan zadania w `TaskQueueManager`, który z kolei odświeża interfejs użytkownika.
+
+## Lista Zadań (TODO)
+
+* **Zaprojektowanie w pełni kompletnej architektury pluginów:**
+    * Opracować architekturę opartą na minimum dwóch wątkach wewnątrz procesu pluginu: jeden wątek do nasłuchiwania
+      komunikatów (IPC), a drugi (lub więcej) do wykonywania zadań.
+    * Stworzyć klasy abstrakcyjne, które ułatwią implementację tej architektury, zapewniając spójność i poprawność
+      działania (np. automatyczna obsługa pętli zdarzeń, komunikacji).
+    * Celem jest uproszczenie tworzenia nowych, responsywnych pluginów i wyeliminowanie problemów z blokowaniem pętli
+      zdarzeń.
+    * Zadanie do zrealizowania przed wypuszczeniem oficjalnej wersji "beta" aplikacji.
