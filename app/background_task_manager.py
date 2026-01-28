@@ -166,7 +166,6 @@ class BackgroundTaskManager(QObject):
             self.contexts[task_id].pause()
 
     def resume_task(self, task_id):
-        if task_id in self.active_tasks:
-            task = self.active_tasks[task_id]
-            self.background_task_manager.resume_task(task_id)
-            task.set_status(TaskStatus.IN_PROGRESS)
+        if task_id in self.contexts:
+            logging.info(f"Resuming task {task_id}...")
+            self.contexts[task_id].resume()
