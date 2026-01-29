@@ -323,6 +323,7 @@ class DialogHandler:
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.move_operation' # Używamy nowego pluginu
             action_logger.log_action("move", sources=paths_to_move, destination=destination_path, options=options)
             task = Task(TaskType.MOVE, paths_to_move, destination_path, options)
             self.task_queue_manager.add_task(task)
@@ -352,6 +353,7 @@ class DialogHandler:
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.delete_operation' # Używamy nowego pluginu
             action_logger.log_action("delete", paths=selected_paths, options=options)
             task = Task(TaskType.DELETE, selected_paths, options=options)
             self.task_queue_manager.add_task(task)
