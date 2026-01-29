@@ -4,35 +4,12 @@
 
 import logging
 import uuid
-from enum import Enum, auto
 from typing import Callable
 
-from PyQt6.QtCore import QObject, pyqtSignal, Qt # Dodano import Qt
+from PyQt6.QtCore import QObject, pyqtSignal, Qt
 
+from app.enums import TaskStatus, TaskType
 from app.plugin_sandbox import SandboxedPluginWrapper
-
-
-class TaskStatus(Enum):
-    PENDING = auto()
-    IN_PROGRESS = auto()
-    PAUSED = auto()
-    FINISHED = auto()
-    CANCELLED = auto()
-    ERROR = auto()
-
-
-class TaskType(Enum):
-    COPY = "copy_items"
-    MOVE = "move_items"
-    DELETE = "delete_items"
-    SYNC = "synchronize"
-    CREATE_ARCHIVE = "create_archive"
-    EXTRACT_ARCHIVE = "extract_archive"
-    CHECKSUM = "calculate_checksum"
-    SEARCH = "search"
-    CALCULATE_SIZE = "calculate_directory_size"
-    SPLIT_FILE = "split_file"
-    JOIN_FILES = "join_files"
 
 
 class Task(QObject):
@@ -42,7 +19,7 @@ class Task(QObject):
     details_changed = pyqtSignal(str)
     speed_changed = pyqtSignal(float)
     directory_changed = pyqtSignal(str)  # Restored signal
-    finished = pyqtSignal() # Restored signal
+    finished = pyqtSignal()
 
     def __init__(self, task_type: TaskType, source_paths, destination_path=None, options=None):
         super().__init__()
@@ -182,7 +159,7 @@ class TaskQueueManager(QObject):
             logging.debug(f"Connected signals for plugin wrapper: {plugin.metadata['id']}")
 
         # Register the task with BackgroundTaskManager to track its context
-        self.background_task_manager.register_plugin_task(task)
+        self.background_task_manager.register_plugin_task(task, plugin) # Pass plugin_wrapper here
 
         plugin_args = []
         plugin_kwargs = {"options": task.options}
