@@ -299,6 +299,7 @@ class DialogHandler:
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.copy_operation' # Używamy nowego pluginu
             action_logger.log_action("copy", sources=source_paths, destination=destination_path, options=options)
             task = Task(TaskType.COPY, source_paths, destination_path, options)
             self.task_queue_manager.add_task(task)
