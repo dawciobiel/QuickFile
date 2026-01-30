@@ -6,8 +6,8 @@
   "name": "Standard ZIP Archiver",
   "type": "archive",
   "description": "Provides support for creating and extracting ZIP archives.",
-  "entry_point": "plugin:ZipPlugin",
-  "class_name": "ZipPlugin",
+  "entry_point": "plugin:ZipArchiverPlugin",
+  "class_name": "ZipArchiverPlugin",
   "platforms": [
     "windows",
     "linux",

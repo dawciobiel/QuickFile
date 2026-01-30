@@ -118,6 +118,7 @@ class CreateArchiveDialog(QDialog):
             full_path = os.path.join(path, name)
 
         options = self.plugin_options.get(plugin.name, {})
+        options['plugin_id'] = plugin.id  # Dodajemy ID pluginu do opcji
 
         return {
             "source_paths": [],  # To be filled by caller
