@@ -6,8 +6,8 @@
   "name": "Standard File Search",
   "type": "search",
   "description": "Provides standard file search functionality using recursive directory scanning.",
-  "entry_point": "plugin:StandardSearchPlugin",
-  "class_name": "StandardSearchPlugin",
+  "entry_point": "plugin:SearchPlugin",
+  "class_name": "SearchPlugin",
   "platforms": [
     "windows",
     "linux",

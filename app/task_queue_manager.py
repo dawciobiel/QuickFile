@@ -4,35 +4,12 @@
 
 import logging
 import uuid
-from enum import Enum, auto
 from typing import Callable
 
-from PyQt6.QtCore import QObject, pyqtSignal, Qt # Dodano import Qt
+from PyQt6.QtCore import QObject, pyqtSignal, Qt
 
+from app.enums import TaskStatus, TaskType
 from app.plugin_sandbox import SandboxedPluginWrapper
-
-
-class TaskStatus(Enum):
-    PENDING = auto()
-    IN_PROGRESS = auto()
-    PAUSED = auto()
-    FINISHED = auto()
-    CANCELLED = auto()
-    ERROR = auto()
-
-
-class TaskType(Enum):
-    COPY = "copy_items"
-    MOVE = "move_items"
-    DELETE = "delete_items"
-    SYNC = "synchronize"
-    CREATE_ARCHIVE = "create_archive"
-    EXTRACT_ARCHIVE = "extract_archive"
-    CHECKSUM = "calculate_checksum"
-    SEARCH = "search"
-    CALCULATE_SIZE = "calculate_directory_size"
-    SPLIT_FILE = "split_file"
-    JOIN_FILES = "join_files"
 
 
 class Task(QObject):
@@ -42,7 +19,7 @@ class Task(QObject):
     details_changed = pyqtSignal(str)
     speed_changed = pyqtSignal(float)
     directory_changed = pyqtSignal(str)  # Restored signal
-    finished = pyqtSignal() # Restored signal
+    finished = pyqtSignal()
 
     def __init__(self, task_type: TaskType, source_paths, destination_path=None, options=None):
         super().__init__()
@@ -165,14 +142,6 @@ class TaskQueueManager(QObject):
             self._on_task_finished_cleanup(task.id)
             return
 
-        method_name = task.type.value
-        if not hasattr(plugin, method_name):
-            task.set_status(TaskStatus.ERROR)
-            task.set_details(f"Plugin '{plugin_id}' does not have method '{method_name}'.")
-            logging.error(f"Task {task.id} failed: Method not found in plugin.")
-            self._on_task_finished_cleanup(task.id)
-            return
-
         # Connect signals if this is the first time we see this wrapper
         if plugin not in self.background_task_manager.plugin_wrappers:
             plugin.progress_updated.connect(self.background_task_manager._on_plugin_progress, Qt.ConnectionType.QueuedConnection)
@@ -182,32 +151,28 @@ class TaskQueueManager(QObject):
             logging.debug(f"Connected signals for plugin wrapper: {plugin.metadata['id']}")
 
         # Register the task with BackgroundTaskManager to track its context
-        self.background_task_manager.register_plugin_task(task)
+        self.background_task_manager.register_plugin_task(task, plugin)
 
-        plugin_args = []
+        # Prepare serializable kwargs for the plugin
         plugin_kwargs = {"options": task.options}
-
-        if task.type == TaskType.SEARCH:
-            plugin_args.append(task.options.get("start_path", task.source_paths[0]))
-            plugin_args.append(task.options.get("file_name"))
-        elif task.type in [TaskType.COPY, TaskType.MOVE]:
+        if task.source_paths:
             plugin_kwargs["source_paths"] = task.source_paths
+        if task.destination_path:
             plugin_kwargs["destination_path"] = task.destination_path
-        elif task.type == TaskType.DELETE:
+        
+        # Specific keys for certain tasks
+        if task.type == TaskType.DELETE:
             plugin_kwargs["item_paths"] = task.source_paths
-        elif task.type in [TaskType.EXTRACT_ARCHIVE, TaskType.CHECKSUM, TaskType.CALCULATE_SIZE, TaskType.SPLIT_FILE, TaskType.JOIN_FILES]:
-            plugin_kwargs["source_path"] = task.source_paths[0]
-            if task.destination_path:
-                plugin_kwargs["dest_dir"] = task.destination_path
-        elif task.type == TaskType.CREATE_ARCHIVE:
-            plugin_kwargs["source_paths"] = task.source_paths
-            plugin_kwargs["destination_path"] = task.destination_path
+        elif task.type == TaskType.SEARCH:
+            plugin_kwargs["start_path"] = task.source_paths[0]
+        elif task.type == TaskType.CHECKSUM:
+            plugin_kwargs["file_path"] = task.source_paths[0]
+            plugin_kwargs["algorithms"] = task.options.get("algorithms", [])
 
-        actual_plugin_method = getattr(plugin, method_name)
-        actual_plugin_method(
-            *plugin_args,
-            task=task,
-            task_context=task.context,
+        # Execute task using the new architecture
+        plugin.execute_task(
+            task_id=task.id,
+            action_id=task.type.value,
             **plugin_kwargs
         )
 

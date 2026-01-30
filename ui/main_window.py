@@ -1,105 +1,110 @@
-from PyQt6 import uic, sip
-from PyQt6.QtWidgets import QMainWindow, QApplication, QWidget, QTabWidget, QToolBar, QMessageBox
+# Copyright (C) 2025 Dawid Bielecki
+# This file is part of QuickFile and is licensed under the GPLv3.
+# See LICENSE file for details.
+
+import logging
+
+from PyQt6 import uic
+from PyQt6.QtCore import Qt, QEvent, QPoint
+from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtWidgets import QMainWindow, QWidget, QMenu, QVBoxLayout
 
 from __version__ import __version__
+from app.action_logger import action_logger
 from app.application_logic_handler import ApplicationLogicHandler
-from app.dialog_handler import DialogHandler
-from app.keyboard_event_handler import KeyboardEventManager
-from app.notification_manager import NotificationManager
-from app.settings_handler import SettingsHandler
+from app.enums import TaskType, TaskStatus
 from app.settings_manager import SettingsManager
 from app.shortcuts_manager import ShortcutsManager
-from app.task_queue_manager import TaskQueueManager, Task, TaskType, TaskStatus
+from app.task_queue_manager import TaskQueueManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
+from browser.folder_browser import FolderBrowser
 from favorites.favorites_manager import FavoritesManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_comparator import FileComparator
 from file_operations.file_manager import FileManager
+from panels.function_key_panel import FunctionKeyPanel
 from panels.search_results_panel import SearchResultsPanel
 from panels.task_queue_panel import TaskQueuePanel
-from ui.ui_manager import UIManager
-from utils.checksum_result_dialog import ChecksumResultDialog
+from panels.menu_panel import MenuPanel
+from utils.dialogs import show_error_message
 from utils.resource_path import get_resource_path
-from app.file_association_manager import FileAssociationManager
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, background_task_manager, task_queue_manager: TaskQueueManager, file_manager: FileManager, directory_synchronizer: DirectorySynchronizer):
+    def __init__(self, background_task_manager, task_queue_manager: TaskQueueManager, file_manager: FileManager, directory_synchronizer: DirectorySynchronizer, notification_manager, file_association_manager):
         super().__init__()
-
-        # --- Declare UI attributes for linter ---
-        self.mainTabWidget: QTabWidget | None = None
-        self.browser_tab: QWidget | None = None
-        self.queue_tab: QWidget | None = None
-        self.search_tab: QWidget | None = None
-        self.mainToolbar: QToolBar | None = None
-        # -----------------------------------------
-        
-        uic.loadUi(get_resource_path("ui/main_window.ui"), self)
-        self.setWindowTitle(f"QuickFile v{__version__}")
+        logging.info("MainWindow initializing...")
         self.background_task_manager = background_task_manager
         self.task_queue_manager = task_queue_manager
         self.file_manager = file_manager
         self.directory_synchronizer = directory_synchronizer
-
-        self.shortcuts_manager = ShortcutsManager(self)
+        self.notification_manager = notification_manager
+        self.file_association_manager = file_association_manager
         self.settings_manager = SettingsManager()
         self.theme_manager = ThemeManager(self.settings_manager)
-        self.notification_manager = NotificationManager(self, self.settings_manager)
-        
-        # Apply theme BEFORE initializing UI components that might need theme data
-        initial_theme = self.settings_manager.get_setting("theme", "dark")
-        self.theme_manager.apply_theme(initial_theme)
-        
-        self.file_comparator = FileComparator()
         self.favorites_manager = FavoritesManager()
-        self.file_association_manager = FileAssociationManager()
+        self.shortcuts_manager = ShortcutsManager(self)
+        self.ui_state_provider = None # Initialized later
+        self.dialog_handler = None
+        self.app_handler = None
+        self.menu_panel = None
+        self.search_results_panel = None
+        # self.search_tab is loaded from UI, no need to declare here
 
-        self.settings_handler = SettingsHandler(
-            main_window=self,
-            settings_manager=self.settings_manager,
-            shortcuts_manager=self.shortcuts_manager,
-            theme_manager=self.theme_manager
-        )
+        self._init_ui()
+        self._post_init_ui()
+        self._connect_signals()
+        self._apply_initial_settings()
+        self._install_event_filters()
+        logging.info("MainWindow initialization complete.")
 
-        self.ui_manager = UIManager(
-            main_window=self,
-            settings_manager=self.settings_manager,
-            file_manager=self.file_manager,
-            file_comparator=self.file_comparator,
-            directory_synchronizer=self.directory_synchronizer,
-            favorites_manager=self.favorites_manager,
-            theme_manager=self.theme_manager,
-            plugin_manager=self.task_queue_manager.plugin_manager
-        )
+    def _init_ui(self):
+        logging.info("MainWindow _init_ui started.")
+        uic.loadUi(get_resource_path("ui/main_window.ui"), self)
+        self.setWindowTitle(f"QuickFile v{__version__}")
+        self.setWindowIcon(QIcon(get_resource_path("resources/icons/app_icon.png")))
+
+        # --- Browser Tab ---
+        self.folder_browser = FolderBrowser(self.settings_manager, self.theme_manager, self.task_queue_manager.plugin_manager, self.notification_manager, self)
+        self.browser_layout.addWidget(self.folder_browser)
+        self.ui_state_provider = UIStateProvider(self.folder_browser)
+
+        # --- Queue Tab ---
+        self.task_queue_panel = TaskQueuePanel(self.task_queue_manager, self.theme_manager, self)
+        self.queue_layout.addWidget(self.task_queue_panel)
         
-        self.application_logic_handler = ApplicationLogicHandler(
-            main_window=self,
-            file_manager=self.file_manager,
-            file_comparator=self.file_comparator,
-            favorites_manager=self.favorites_manager,
-            directory_synchronizer=self.directory_synchronizer,
-            theme_manager=self.theme_manager,
-            ui_state_provider=None,
-            dialog_handler=None,
-            settings_handler=self.settings_handler,
-            background_task_manager=self.background_task_manager,
-            task_queue_manager=self.task_queue_manager,
-            file_association_manager=self.file_association_manager
-        )
-
-        self.ui_manager.init_ui(self.application_logic_handler, self.shortcuts_manager)
+        # --- Search Tab ---
+        # self.search_tab and self.search_layout are already loaded from the UI file
+        self.search_results_panel = SearchResultsPanel(self)
+        self.search_layout.addWidget(self.search_results_panel)
         
-        # Initialize UI plugins AFTER the main UI is built
-        self.application_logic_handler.initialize_ui_plugins()
+        # Hide search tab initially
+        self.mainTabWidget.setTabVisible(self.mainTabWidget.indexOf(self.search_tab), False)
+        
+        logging.info("MainWindow _init_ui finished.")
 
-        self.ui_state_provider = UIStateProvider(self.ui_manager.folder_browser)
-        self.dialog_handler = DialogHandler(
+    def _post_init_ui(self):
+        logging.info("MainWindow _post_init_ui started.")
+        self.dialog_handler = self.create_dialog_handler()
+        self.app_handler = self.create_app_handler()
+        self.menu_panel = MenuPanel(self, self.mainToolbar, self.app_handler, self.shortcuts_manager, self.theme_manager)
+        self.menu_panel.initialize_ui()
+        
+        # Replace placeholder with the actual FunctionKeyPanel
+        self.function_keys_panel = FunctionKeyPanel(self, self.menu_panel.actions)
+        self.verticalLayout.replaceWidget(self.function_key_panel_placeholder, self.function_keys_panel)
+        self.function_key_panel_placeholder.deleteLater()
+
+        logging.info("MainWindow _post_init_ui finished.")
+
+    def create_dialog_handler(self):
+        from app.dialog_handler import DialogHandler
+        return DialogHandler(
             main_window=self,
             file_manager=self.file_manager,
-            file_comparator=self.file_comparator,
+            file_comparator=FileComparator(),
             favorites_manager=self.favorites_manager,
             directory_synchronizer=self.directory_synchronizer,
             ui_state_provider=self.ui_state_provider,
@@ -109,149 +114,106 @@ class MainWindow(QMainWindow):
             theme_manager=self.theme_manager
         )
 
-        self.application_logic_handler.ui_state_provider = self.ui_state_provider
-        self.application_logic_handler.dialog_handler = self.dialog_handler
-
-        self.keyboard_event_manager = KeyboardEventManager(
-            self,
-            self.application_logic_handler,
-            self.ui_manager.folder_browser
+    def create_app_handler(self):
+        from app.settings_handler import SettingsHandler
+        settings_handler = SettingsHandler(
+            main_window=self,
+            settings_manager=self.settings_manager,
+            shortcuts_manager=self.shortcuts_manager,
+            theme_manager=self.theme_manager
         )
-        QApplication.instance().installEventFilter(self.keyboard_event_manager)
+        return ApplicationLogicHandler(
+            main_window=self,
+            file_manager=self.file_manager,
+            file_comparator=FileComparator(),
+            favorites_manager=self.favorites_manager,
+            directory_synchronizer=self.directory_synchronizer,
+            theme_manager=self.theme_manager,
+            ui_state_provider=self.ui_state_provider,
+            dialog_handler=self.dialog_handler,
+            settings_handler=settings_handler,
+            background_task_manager=self.background_task_manager,
+            task_queue_manager=self.task_queue_manager,
+            file_association_manager=self.file_association_manager
+        )
 
-        self.task_queue_panel = TaskQueuePanel(self.task_queue_manager, self.theme_manager)
-        self.queue_tab.layout().addWidget(self.task_queue_panel)
-        
-        self.search_results_panel = SearchResultsPanel()
-        self.search_tab.layout().addWidget(self.search_results_panel)
-        
-        self.mainTabWidget.tabBar().setTabsClosable(False)
-
-        self.active_task_panels = {}  # task.id -> list of panels
-        self.panel_busy_counters = {} # panel -> busy count
-
-        self.task_queue_manager.task_added.connect(self.on_task_added)
+    def _connect_signals(self):
+        self.folder_browser.file_selected.connect(self.app_handler.update_status_bar_path)
+        self.folder_browser.status_message_requested.connect(self.statusBar().showMessage)
         self.task_queue_manager.task_completed.connect(self.on_task_completed)
-        self.task_queue_manager.task_finished.connect(self.on_task_finished)
-        self.ui_manager.folder_browser.status_message_requested.connect(self.show_status_message)
+        self.task_queue_manager.task_finished.connect(self.folder_browser.handle_task_completion)
 
-        self.shortcuts_manager.apply_shortcuts()
-        self.load_settings()
-        
-        self.retranslate_ui()
+    def _apply_initial_settings(self):
+        self.app_handler.settings_handler.apply_all_settings()
 
-    def retranslate_ui(self):
-        self.mainTabWidget.setTabText(self.mainTabWidget.indexOf(self.browser_tab), translation_manager.translate("MainWindow", "Browser"))
-        self.mainTabWidget.setTabText(self.mainTabWidget.indexOf(self.queue_tab), translation_manager.translate("MainWindow", "Queue"))
-        self.mainTabWidget.setTabText(self.mainTabWidget.indexOf(self.search_tab), translation_manager.translate("MainWindow", "Search Results"))
+    def _install_event_filters(self):
+        self.installEventFilter(self)
+
+    def on_task_completed(self, task):
+        if task.status == TaskStatus.FINISHED:
+            if task.type == TaskType.SEARCH:
+                self.switchToSearchResultsTab()
+            elif task.type == TaskType.CHECKSUM:
+                self.dialog_handler.show_checksum_results(task.source_paths, task.result)
+        elif task.status == TaskStatus.ERROR:
+            show_error_message(self.notification_manager, "Task Error", f"Task '{task.type.name}' failed: {task.details}")
 
     def switchToSearchResultsTab(self):
-        self.mainTabWidget.setCurrentWidget(self.search_tab)
-
-    def on_task_added(self, task: Task):
-        task.directory_changed.connect(self.ui_manager.folder_browser.refresh_path)
-        
-        affected_paths = set(task.source_paths)
-        if task.destination_path:
-            affected_paths.add(task.destination_path)
-        
-        task_panels = []
-        for path in affected_paths:
-            panels = self.ui_manager.folder_browser.find_panels_by_path(path)
-            for panel in panels:
-                if panel not in task_panels:
-                    task_panels.append(panel)
-                    
-                    current_count = self.panel_busy_counters.get(panel, 0)
-                    if current_count == 0:
-                        self.ui_manager.folder_browser.set_tab_busy_indicator(panel, True)
-                    self.panel_busy_counters[panel] = current_count + 1
-        
-        if task_panels:
-            self.active_task_panels[task.id] = task_panels
-
-    def on_task_completed(self, task: Task):
-        """This slot is called only when a task completes successfully."""
-        if task.type == TaskType.CHECKSUM and task.result:
-            if task.options.get("show_in_dialog", True):
-                dialog = ChecksumResultDialog(self, "Checksum Result", str(task.result))
-                dialog.exec()
-        elif task.type == TaskType.SEARCH and task.result is not None:
-            self.search_results_panel.set_results(task.result)
-            self.mainTabWidget.setCurrentWidget(self.search_tab)
-        elif task.type == TaskType.SYNC:
-            self.ui_manager.folder_browser.refresh_all_views()
-        elif task.type == TaskType.SPLIT_FILE:
-            if task.destination_path:
-                self.ui_manager.folder_browser.refresh_path(task.destination_path)
-        elif task.type == TaskType.JOIN_FILES:
-            if task.destination_path:
-                self.ui_manager.folder_browser.refresh_path(task.destination_path)
-        
-        self.ui_manager.folder_browser.handle_task_completion(task)
-
-    def on_task_finished(self, task: Task):
-        """This slot is called when a task finishes, regardless of status (success, error, cancelled)."""
-        if task.status == TaskStatus.FINISHED:
-            setting_key = f"notify_on_{task.type.name.lower()}"
-            should_notify = self.settings_manager.get_setting(setting_key, True)
-            
-            if should_notify:
-                self.notification_manager.show_success(f"Task '{task.type.name}' completed.")
-        elif task.status == TaskStatus.ERROR:
-            self.notification_manager.show_error(f"Task '{task.type.name}' failed: {task.details}")
-            task_name = task.type.name.replace('_', ' ').capitalize()
-            QMessageBox.critical(self, translation_manager.translate("MainWindow", "Task Failed"), 
-                                 f"{task_name}: {task.details}")
-        elif task.status == TaskStatus.CANCELLED:
-            self.notification_manager.show_info(f"Task '{task.type.name}' cancelled.")
-
-        if task.id not in self.active_task_panels:
-            return
-
-        panels_for_this_task = self.active_task_panels.pop(task.id)
-
-        for panel in panels_for_this_task:
-            if sip.isdeleted(panel):
-                self.panel_busy_counters.pop(panel, None)
-                continue
-
-            if panel not in self.panel_busy_counters:
-                self.ui_manager.folder_browser.set_tab_busy_indicator(panel, False)
-                continue
-
-            self.panel_busy_counters[panel] -= 1
-
-            if self.panel_busy_counters[panel] <= 0:
-                self.ui_manager.folder_browser.set_tab_busy_indicator(panel, False)
-                del self.panel_busy_counters[panel]
-
-    def show_status_message(self, message):
-        self.statusBar().showMessage(message, 5000)
-
-    def load_settings(self):
-        self.settings_manager.load_window_settings(self)
-        self.ui_manager.load_panel_settings()
-
-        toolbar_visible = self.settings_manager.get_setting("toolbar_visible", True)
-        self.mainToolbar.setVisible(toolbar_visible)
-        show_toolbar_action = self.ui_manager.menu_panel.actions.get("view.show_toolbar")
-        if show_toolbar_action:
-            show_toolbar_action.setChecked(toolbar_visible)
-
-        last_active_panel = self.settings_manager.get_setting("lastActivePanel", "left")
-        if last_active_panel == "right":
-            self.ui_manager.folder_browser.set_active_panel(self.ui_manager.folder_browser.get_right_panel_widget())
-        else:
-            self.ui_manager.folder_browser.set_active_panel(self.ui_manager.folder_browser.get_left_panel_widget())
-
-    def save_settings(self):
-        self.settings_manager.save_window_settings(self)
-        self.ui_manager.save_panel_settings()
+        if self.search_tab:
+            index = self.mainTabWidget.indexOf(self.search_tab)
+            if index != -1:
+                self.mainTabWidget.setTabVisible(index, True)
+                self.mainTabWidget.setCurrentIndex(index)
 
     def closeEvent(self, event):
-        if hasattr(self, 'keyboard_event_manager'):
-            QApplication.instance().removeEventFilter(self.keyboard_event_manager)
-        self.background_task_manager.thread_pool.waitForDone()
-        self.save_settings()
+        action_logger.log_action("close_app")
+        self.app_handler.settings_handler.save_window_state()
+        self.folder_browser.save_panel_settings()
+        self.background_task_manager.shutdown()
+        self.task_queue_manager.plugin_manager.shutdown()
         super().closeEvent(event)
+
+    def eventFilter(self, source, event):
+        # TEMPORARILY DISABLED to prevent crashes until keyboard handling is refactored
+        # if event.type() == QEvent.Type.KeyPress:
+        #     action = self.shortcuts_manager.get_action_for_key_event(event)
+        #     if action:
+        #         action_logger.log_action("shortcut", key=event.key(), action=action.__name__)
+        #         action()
+        #         return True
+        return super().eventFilter(source, event)
+
+    def contextMenuEvent(self, event: QEvent):
+        active_panel = self.ui_state_provider.get_active_panel_view()
+        if not active_panel:
+            return
+
+        menu = QMenu(self)
+        
+        # Standard actions
+        copy_action = QAction(translation_manager.translate("ContextMenu", "Copy"), self)
+        copy_action.triggered.connect(self.app_handler.copy_selected_item)
+        menu.addAction(copy_action)
+
+        move_action = QAction(translation_manager.translate("ContextMenu", "Move"), self)
+        move_action.triggered.connect(self.app_handler.move_selected_item)
+        menu.addAction(move_action)
+
+        delete_action = QAction(translation_manager.translate("ContextMenu", "Delete"), self)
+        delete_action.triggered.connect(self.app_handler.delete_selected_item)
+        menu.addAction(delete_action)
+        
+        menu.addSeparator()
+
+        # Plugin actions
+        selected_paths = self.ui_state_provider.get_selected_paths()
+        if selected_paths:
+            context_menu_plugins = self.task_queue_manager.plugin_manager.get_context_menu_plugins_for_paths(selected_paths)
+            for plugin, actions in context_menu_plugins.items():
+                plugin_menu = menu.addMenu(plugin.name)
+                for action_info in actions:
+                    action = QAction(action_info['text'], self)
+                    action.triggered.connect(lambda checked=False, p=plugin, a=action_info: self.app_handler.execute_plugin_action(p, a))
+                    plugin_menu.addAction(action)
+
+        menu.exec(self.mapToGlobal(event.pos()))

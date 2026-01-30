@@ -9,6 +9,8 @@ from typing import Callable
 
 from PyQt6.QtCore import QObject, QRunnable, pyqtSignal, QThreadPool, QMutex, QWaitCondition, QThread
 
+from app.plugin_sandbox import SandboxedPluginWrapper
+
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
@@ -26,6 +28,8 @@ class TaskContext:
         self._is_paused = False
         self._mutex = QMutex()
         self._pause_condition = QWaitCondition()
+        self.plugin_wrapper = None # Add a reference to the plugin wrapper
+        self.task_id = None # Add task_id
 
     @property
     def is_cancelled(self):
@@ -33,17 +37,26 @@ class TaskContext:
 
     def cancel(self):
         self._is_cancelled = True
+        if self.plugin_wrapper:
+            # Nowa architektura: używamy cancel_task z task_id
+            self.plugin_wrapper.cancel_task(self.task_id)
         self.resume()
 
     def pause(self):
         self._mutex.lock()
         self._is_paused = True
+        if self.plugin_wrapper:
+            # Nowa architektura: używamy pause_task z task_id
+            self.plugin_wrapper.pause_task(self.task_id)
         self._mutex.unlock()
 
     def resume(self):
         self._mutex.lock()
         if self._is_paused:
             self._is_paused = False
+            if self.plugin_wrapper:
+                # Nowa architektura: używamy resume_task z task_id
+                self.plugin_wrapper.resume_task(self.task_id)
             self._pause_condition.wakeAll()
         self._mutex.unlock()
 
@@ -99,9 +112,11 @@ class BackgroundTaskManager(QObject):
         self.thread_pool.clear()
         self.thread_pool.waitForDone()
 
-    def register_plugin_task(self, task):
+    def register_plugin_task(self, task, plugin_wrapper):
         """Registers a plugin task context without starting a worker."""
         context = TaskContext()
+        context.plugin_wrapper = plugin_wrapper
+        context.task_id = task.id
         self.contexts[task.id] = context
         task.context = context
         logging.debug(f"Registered plugin task {task.id}")
@@ -157,8 +172,6 @@ class BackgroundTaskManager(QObject):
         if task_id in self.contexts:
             logging.info(f"Cancelling task {task_id}...")
             self.contexts[task_id].cancel()
-            # For plugin tasks, cancellation is checked inside the plugin process.
-            # For worker tasks, the worker needs to check task.context.is_cancelled.
 
     def pause_task(self, task_id):
         if task_id in self.contexts:
@@ -166,6 +179,7 @@ class BackgroundTaskManager(QObject):
             self.contexts[task_id].pause()
 
     def resume_task(self, task_id):
-        if task_id in self.contexts:
-            logging.info(f"Resuming task {task_id}...")
-            self.contexts[task_id].resume()
+        if task_id in self.active_tasks:
+            task = self.active_tasks[task_id]
+            self.background_task_manager.resume_task(task_id)
+            task.set_status(TaskStatus.IN_PROGRESS)

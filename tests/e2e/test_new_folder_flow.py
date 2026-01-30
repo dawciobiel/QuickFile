@@ -18,13 +18,13 @@ def test_new_folder_end_to_end(main_window, qtbot, mocker):
     # --- Setup ---
     mocker.patch.object(QInputDialog, 'getText', return_value=(new_folder_name, True))
 
-    left_panel = window.ui_manager.folder_browser.get_left_panel_widget()
-    window.ui_manager.folder_browser.set_active_panel(left_panel)
-    window.ui_manager.folder_browser.navigate_to_path(creation_dir)
+    left_panel = window.folder_browser.get_left_panel_widget()
+    window.folder_browser.set_active_panel(left_panel)
+    window.folder_browser.navigate_to_path(creation_dir)
     qtbot.waitUntil(lambda: left_panel.path_edit.text() == creation_dir)
 
     # --- Action ---
-    new_folder_action = window.ui_manager.menu_panel.actions["operations.new_folder"]
+    new_folder_action = window.menu_panel.actions["operations.new_folder"]
     new_folder_action.trigger()
 
     # --- Verification ---

@@ -70,11 +70,6 @@ class ApplicationLogicHandler(QObject):
             path = task.source_paths[0]
             size = task.result
             self.ui_state_provider.folder_browser.update_directory_size(path, size)
-        elif task.type == TaskType.SEARCH:
-            if task.result:
-                self.dialog_handler.show_search_results(task.result)
-            else:
-                logging.info("Search finished with no results.")
 
     def _execute_external_command(self, command_template: str, file_path: str):
         try:
