@@ -15,9 +15,6 @@ from PyQt6.QtWidgets import QApplication, QMainWindow
 # Suppress PyQt6.uic debug logs
 logging.getLogger("PyQt6.uic").setLevel(logging.WARNING)
 
-# Add the project root directory to sys.path so imports work correctly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from app.background_task_manager import BackgroundTaskManager
 from app.plugin_manager import PluginManager
 from app.task_queue_manager import TaskQueueManager, Task
@@ -25,6 +22,9 @@ from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_manager import FileManager
 from ui.main_window import MainWindow
 from app.plugin_sandbox import SandboxedPluginWrapper
+from app.notification_manager import NotificationManager
+from app.file_association_manager import FileAssociationManager
+from app.settings_manager import SettingsManager
 
 # Importujemy get_latest_plugin_path
 
@@ -228,6 +228,27 @@ def main_window(qapp, qtbot, isolated_env, monkeypatch):
     plugin_manager = PluginManager(plugin_dirs=[isolated_env["plugin_dir"]])
     file_manager = FileManager()
     directory_synchronizer = DirectorySynchronizer()
+    settings_manager = SettingsManager()
+    # NotificationManager requires parent_window, but we don't have it yet.
+    # We can pass None initially and set it later if needed, or create a dummy parent.
+    # However, MainWindow will be the parent.
+    # Let's create a temporary QObject as parent or pass None if allowed.
+    # Looking at NotificationManager, it uses parent_window for QMessageBox and NotificationPopup.
+    # We can create the MainWindow first, then NotificationManager, but MainWindow needs NotificationManager.
+    # Circular dependency? No, MainWindow takes NotificationManager in __init__.
+    # So we need to create NotificationManager before MainWindow.
+    # But NotificationManager needs a parent window for popups.
+    # We can pass None to NotificationManager initially, and then set the parent after MainWindow is created.
+    # But NotificationManager stores parent_window in __init__.
+    
+    # Workaround: Create a dummy widget as parent for NotificationManager, 
+    # or modify NotificationManager to accept parent later.
+    # For now, let's try passing None and see if it works, or create a dummy QWidget.
+    
+    dummy_parent = QMainWindow() 
+    notification_manager = NotificationManager(dummy_parent, settings_manager)
+    
+    file_association_manager = FileAssociationManager()
     
     task_queue_manager = TaskQueueManager(
         file_manager=file_manager,
@@ -240,8 +261,13 @@ def main_window(qapp, qtbot, isolated_env, monkeypatch):
         background_task_manager=background_task_manager,
         task_queue_manager=task_queue_manager,
         file_manager=file_manager,
-        directory_synchronizer=directory_synchronizer
+        directory_synchronizer=directory_synchronizer,
+        notification_manager=notification_manager,
+        file_association_manager=file_association_manager
     )
+    
+    # Update parent of notification manager to the real window
+    notification_manager.parent_window = window
     
     qtbot.addWidget(window)
     window.show()

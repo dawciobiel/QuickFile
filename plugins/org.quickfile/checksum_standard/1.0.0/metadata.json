@@ -1,13 +1,12 @@
 {
   "id": "org.quickfile.checksum_standard",
-  "group_id": "org.quickfile",
-  "artifact_id": "checksum_standard",
+  "name": "Standard Checksum Calculator",
   "version": "1.0.0",
-  "name": "Standard Checksum Algorithms",
   "type": "checksum",
-  "description": "Provides support for calculating MD5, SHA1, SHA256, and SHA512 checksums.",
-  "entry_point": "plugin:StandardChecksumPlugin",
-  "class_name": "StandardChecksumPlugin",
-  "platforms": ["windows", "linux", "macos"],
-  "sandboxed": true
+  "description": "Provides standard checksum calculation (CRC32, MD5, SHA1, SHA256).",
+  "author": "Dawid Bielecki",
+  "entry_point": "plugin:ChecksumPlugin",
+  "class_name": "ChecksumPlugin",
+  "sandboxed": true,
+  "platforms": ["linux", "windows", "macos"]
 }

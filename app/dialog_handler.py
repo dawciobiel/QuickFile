@@ -124,14 +124,6 @@ class DialogHandler:
             action_logger.log_action("save_shortcuts", shortcuts=new_shortcuts)
             self.main_window.shortcuts_manager.apply_shortcuts_settings(new_shortcuts)
 
-    def show_search_results(self, results):
-        if self.main_window.search_results_panel:
-            self.main_window.search_results_panel.set_results(results)
-            # Assuming you have a method to switch to the search results tab
-            self.main_window.switchToSearchResultsTab()
-        else:
-            logging.error("Search results panel is not available.")
-
     def _compare_files(self, file1_path, file2_path):
         action_logger.log_action("compare_files", file1=file1_path, file2=file2_path)
         are_identical = self.file_comparator.compare_files(file1_path, file2_path)
@@ -191,11 +183,19 @@ class DialogHandler:
         selected_archive_path = self.ui_state_provider.get_current_selected_path()
         if not selected_archive_path:
             raise ValueError("No archive file selected.")
+        
+        # Find appropriate plugin for extraction based on file extension
+        extract_plugin = self.task_queue_manager.plugin_manager.get_archiver_for_file(selected_archive_path)
+        if not extract_plugin:
+            QMessageBox.warning(self.main_window, "Extraction Error", "No suitable plugin found to extract this archive type.")
+            return
+
         extract_path, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "Extract Archive"), translation_manager.translate("DialogHandler", "Destination path:"), text=os.path.dirname(selected_archive_path))
         if ok and extract_path:
             action_logger.log_action("extract_archive", source=selected_archive_path, destination=extract_path)
 
-            task = Task(TaskType.EXTRACT_ARCHIVE, source_paths=[selected_archive_path], destination_path=extract_path)
+            options = {'plugin_id': extract_plugin.metadata['id']} # Ustawiamy plugin_id
+            task = Task(TaskType.EXTRACT_ARCHIVE, source_paths=[selected_archive_path], destination_path=extract_path, options=options)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage("Added extract task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
@@ -220,6 +220,7 @@ class DialogHandler:
         dialog = ChecksumDialog(self.main_window, files_only, sorted(list(algorithms)))
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.checksum_standard' # Używamy nowego pluginu
             action_logger.log_action("calculate_checksum", paths=files_only, options=options)
             
             task = Task(TaskType.CHECKSUM, source_paths=files_only, options=options)
@@ -235,21 +236,36 @@ class DialogHandler:
         dialog = SearchDialog(self.main_window, current_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.search_standard' # Używamy nowego pluginu
             logging.debug(f"DialogHandler: Options from SearchDialog: {options}")
             query = options.get("file_name")
             start_path = options.get("start_path", current_path)
-            
-            search_plugins = self.task_queue_manager.plugin_manager.get_search_plugins()
-            if not search_plugins:
-                QMessageBox.critical(self.main_window, "Error", "No search plugin found.")
-                return
-            search_plugin = search_plugins[0]
 
             if query:
                 action_logger.log_action("search", path=start_path, query=query, options=options)
+                
+                # Clear previous results and switch to search tab
+                self.main_window.search_results_panel.clear_results()
+                self.main_window.switchToSearchResultsTab()
+
+                # Connect to the plugin's data event signal
+                search_plugin = self.task_queue_manager.plugin_manager.get_plugin_by_id("org.quickfile.search_standard")
+                if search_plugin:
+                    # Disconnect previous handlers to avoid duplicates
+                    try:
+                        search_plugin.data_event_received.disconnect()
+                    except TypeError: # Signal has no slots to disconnect
+                        pass
+                    
+                    search_plugin.data_event_received.connect(self._on_search_item_found)
+
                 task = Task(TaskType.SEARCH, source_paths=[start_path], options=options)
                 self.task_queue_manager.add_task(task)
                 self.main_window.statusBar().showMessage("Added search task to queue.")
+
+    def _on_search_item_found(self, task_id, event_name, payload):
+        if event_name == "item_found":
+            self.main_window.search_results_panel.add_search_result(payload['path'])
 
     def synchronize_directories(self, checked=False):
         left_path = self.ui_state_provider.folder_browser.get_left_panel_widget().file_view.get_current_path()
@@ -299,6 +315,7 @@ class DialogHandler:
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.copy_operation' # Używamy nowego pluginu
             action_logger.log_action("copy", sources=source_paths, destination=destination_path, options=options)
             task = Task(TaskType.COPY, source_paths, destination_path, options)
             self.task_queue_manager.add_task(task)
@@ -322,6 +339,7 @@ class DialogHandler:
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.move_operation' # Używamy nowego pluginu
             action_logger.log_action("move", sources=paths_to_move, destination=destination_path, options=options)
             task = Task(TaskType.MOVE, paths_to_move, destination_path, options)
             self.task_queue_manager.add_task(task)
@@ -351,6 +369,7 @@ class DialogHandler:
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.delete_operation' # Używamy nowego pluginu
             action_logger.log_action("delete", paths=selected_paths, options=options)
             task = Task(TaskType.DELETE, selected_paths, options=options)
             self.task_queue_manager.add_task(task)

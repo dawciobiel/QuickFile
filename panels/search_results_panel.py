@@ -11,10 +11,16 @@ class SearchResultsModel(QAbstractTableModel):
         self.results = []
         self.headers = ["File Path"]
 
-    def set_results(self, results):
+    def clear_results(self):
         self.beginResetModel()
-        self.results = results
+        self.results = []
         self.endResetModel()
+
+    def add_result(self, path: str):
+        row_count = len(self.results)
+        self.beginInsertRows(QModelIndex(), row_count, row_count)
+        self.results.append(path)
+        self.endInsertRows()
 
     def rowCount(self, parent=QModelIndex()):
         return len(self.results)
@@ -55,5 +61,8 @@ class SearchResultsPanel(QWidget):
         
         self.layout.addWidget(self.table_view)
 
-    def set_results(self, results):
-        self.model.set_results(results)
+    def clear_results(self):
+        self.model.clear_results()
+
+    def add_search_result(self, path: str):
+        self.model.add_result(path)

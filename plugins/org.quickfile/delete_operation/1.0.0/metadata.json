@@ -1,0 +1,12 @@
+{
+  "id": "org.quickfile.delete_operation",
+  "name": "Standard Delete Operation",
+  "version": "1.0.0",
+  "type": "standard_operations",
+  "description": "Provides standard file delete functionality.",
+  "author": "Dawid Bielecki",
+  "entry_point": "plugin:DeleteOperationPlugin",
+  "class_name": "DeleteOperationPlugin",
+  "sandboxed": true,
+  "platforms": ["linux", "windows", "macos"]
+}

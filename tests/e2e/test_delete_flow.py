@@ -19,9 +19,9 @@ def test_delete_flow_e2e(main_window, qtbot):
     assert os.path.exists(path_to_delete)
 
     # --- Setup ---
-    left_panel = window.ui_manager.folder_browser.get_left_panel_widget()
-    window.ui_manager.folder_browser.set_active_panel(left_panel)
-    window.ui_manager.folder_browser.navigate_to_path(delete_dir)
+    left_panel = window.folder_browser.get_left_panel_widget()
+    window.folder_browser.set_active_panel(left_panel)
+    window.folder_browser.navigate_to_path(delete_dir)
     qtbot.waitUntil(lambda: left_panel.path_edit.text() == delete_dir)
 
     left_panel.file_view.select_items_by_paths([path_to_delete])
@@ -30,7 +30,7 @@ def test_delete_flow_e2e(main_window, qtbot):
     # --- Action ---
     options = {
         "move_to_trash": False, # Permanent delete for simplicity in tests
-        "plugin_id": "org.quickfile.standard_operations"
+        "plugin_id": "org.quickfile.delete_operation" # Używamy nowego pluginu
     }
 
     delete_task = Task(
@@ -38,6 +38,12 @@ def test_delete_flow_e2e(main_window, qtbot):
         source_paths=[path_to_delete],
         options=options
     )
+
+    def refresh_on_finish(task):
+        if task.id == delete_task.id:
+            window.folder_browser.refresh_path(delete_dir)
+
+    window.task_queue_manager.task_finished.connect(refresh_on_finish)
 
     window.task_queue_manager.add_task(delete_task)
 
@@ -53,12 +59,6 @@ def test_delete_flow_e2e(main_window, qtbot):
 
     left_view_model = left_panel.file_view.model
     
-    def refresh_on_finish(task):
-        if task.id == delete_task.id:
-            window.ui_manager.folder_browser.refresh_path(delete_dir)
-
-    window.task_queue_manager.task_finished.connect(refresh_on_finish)
-
     qtbot.waitUntil(lambda: not does_item_exist_in_model(left_view_model, file_to_delete), timeout=5000)
     assert not does_item_exist_in_model(left_view_model, file_to_delete)
 
