@@ -124,14 +124,6 @@ class DialogHandler:
             action_logger.log_action("save_shortcuts", shortcuts=new_shortcuts)
             self.main_window.shortcuts_manager.apply_shortcuts_settings(new_shortcuts)
 
-    def show_search_results(self, results):
-        if self.main_window.search_results_panel:
-            self.main_window.search_results_panel.set_results(results)
-            # Assuming you have a method to switch to the search results tab
-            self.main_window.switchToSearchResultsTab()
-        else:
-            logging.error("Search results panel is not available.")
-
     def _compare_files(self, file1_path, file2_path):
         action_logger.log_action("compare_files", file1=file1_path, file2=file2_path)
         are_identical = self.file_comparator.compare_files(file1_path, file2_path)
@@ -251,9 +243,29 @@ class DialogHandler:
 
             if query:
                 action_logger.log_action("search", path=start_path, query=query, options=options)
+                
+                # Clear previous results and switch to search tab
+                self.main_window.search_results_panel.clear_results()
+                self.main_window.switchToSearchResultsTab()
+
+                # Connect to the plugin's data event signal
+                search_plugin = self.task_queue_manager.plugin_manager.get_plugin_by_id("org.quickfile.search_standard")
+                if search_plugin:
+                    # Disconnect previous handlers to avoid duplicates
+                    try:
+                        search_plugin.data_event_received.disconnect()
+                    except TypeError: # Signal has no slots to disconnect
+                        pass
+                    
+                    search_plugin.data_event_received.connect(self._on_search_item_found)
+
                 task = Task(TaskType.SEARCH, source_paths=[start_path], options=options)
                 self.task_queue_manager.add_task(task)
                 self.main_window.statusBar().showMessage("Added search task to queue.")
+
+    def _on_search_item_found(self, task_id, event_name, payload):
+        if event_name == "item_found":
+            self.main_window.search_results_panel.add_search_result(payload['path'])
 
     def synchronize_directories(self, checked=False):
         left_path = self.ui_state_provider.folder_browser.get_left_panel_widget().file_view.get_current_path()
