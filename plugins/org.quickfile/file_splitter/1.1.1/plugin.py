@@ -36,8 +36,8 @@ class FileSplitterPlugin(PluginBase):
 
     def create_task(self, action_id: str, **kwargs) -> AbstractTask:
         if action_id == "split_file":
-            return SplitFileTask(kwargs['source_path'], kwargs['dest_dir'], kwargs['options'])
+            return SplitFileTask(kwargs['source_paths'][0], kwargs['destination_path'], kwargs['options'])
         elif action_id == "join_files":
-            return JoinFilesTask(kwargs['source_path'], kwargs['dest_dir'], kwargs['options'])
+            return JoinFilesTask(kwargs['source_paths'][0], kwargs['destination_path'], kwargs['options'])
         else:
             raise ValueError(f"Unknown action_id: {action_id}")

@@ -20,9 +20,9 @@ def test_rename_end_to_end(main_window, qtbot, mocker):
     # --- Setup ---
     mocker.patch.object(QInputDialog, 'getText', return_value=(new_name, True))
 
-    left_panel = window.ui_manager.folder_browser.get_left_panel_widget()
-    window.ui_manager.folder_browser.set_active_panel(left_panel)
-    window.ui_manager.folder_browser.navigate_to_path(rename_dir)
+    left_panel = window.folder_browser.get_left_panel_widget()
+    window.folder_browser.set_active_panel(left_panel)
+    window.folder_browser.navigate_to_path(rename_dir)
     qtbot.waitUntil(lambda: left_panel.path_edit.text() == rename_dir)
 
     # Correctly select the item by setting the current index in the view,
@@ -39,7 +39,7 @@ def test_rename_end_to_end(main_window, qtbot, mocker):
     qtbot.wait(50)
 
     # --- Action ---
-    rename_action = window.ui_manager.menu_panel.actions["operations.rename"]
+    rename_action = window.menu_panel.actions["operations.rename"]
     rename_action.trigger()
 
     # --- Verification ---

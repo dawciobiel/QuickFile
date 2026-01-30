@@ -18,6 +18,30 @@ class SettingsHandler:
         self.shortcuts_manager = shortcuts_manager
         self.theme_manager = theme_manager
 
+    def apply_all_settings(self):
+        """Applies all settings at startup."""
+        # Apply theme
+        theme_name = self.settings_manager.get_setting("theme", "dark")
+        self.theme_manager.apply_theme(theme_name)
+
+        # Apply window geometry
+        self.settings_manager.load_window_settings(self.main_window)
+
+        # Apply toolbar visibility
+        toolbar_visible = self.settings_manager.get_setting("toolbar_visible", True)
+        self.main_window.mainToolbar.setVisible(toolbar_visible)
+        if self.main_window.menu_panel:
+            show_toolbar_action = self.main_window.menu_panel.actions.get("view.show_toolbar")
+            if show_toolbar_action:
+                show_toolbar_action.setChecked(toolbar_visible)
+
+        # Apply other settings that affect the UI
+        self.main_window.folder_browser.refresh_all_views()
+
+    def save_window_state(self):
+        """Saves window geometry and state."""
+        self.settings_manager.save_window_settings(self.main_window)
+
     def apply_general_settings(self, new_settings: dict):
         """Applies the general settings received from the settings dialog."""
         # Update settings in SettingsManager
@@ -28,19 +52,19 @@ class SettingsHandler:
         if "showDotFiles" in new_settings:
             # The FolderBrowser's create_file_view method uses settings_manager.get_setting("showDotFiles")
             # So, refreshing the views should pick up the new setting.
-            self.main_window.ui_manager.folder_browser.refresh_all_views()
+            self.main_window.folder_browser.refresh_all_views()
 
         if "file_permissions_display_mode" in new_settings or \
                 "show_uid_column" in new_settings or \
                 "show_gid_column" in new_settings:
             # These settings affect how file details are displayed.
             # Calling update_view_settings on file_view will refresh the model and delegate.
-            left_panel = self.main_window.ui_manager.folder_browser.get_left_panel_widget()
-            right_panel = self.main_window.ui_manager.folder_browser.get_right_panel_widget()
+            left_panel = self.main_window.folder_browser.get_left_panel_widget()
+            right_panel = self.main_window.folder_browser.get_right_panel_widget()
             
-            if left_panel:
+            if left_panel and hasattr(left_panel.file_view, 'update_view_settings'):
                 left_panel.file_view.update_view_settings()
-            if right_panel:
+            if right_panel and hasattr(right_panel.file_view, 'update_view_settings'):
                 right_panel.file_view.update_view_settings()
 
         if "language_mode" in new_settings or "manual_language" in new_settings:
@@ -60,5 +84,5 @@ class SettingsHandler:
 
     def apply_shortcuts_settings(self, new_shortcuts: dict):
         """Applies the new shortcuts from the shortcuts dialog."""
-        # This logic will be moved from ApplicationLogicHandler
-        pass
+        self.shortcuts_manager.save_shortcuts(new_shortcuts)
+        self.shortcuts_manager.apply_shortcuts()

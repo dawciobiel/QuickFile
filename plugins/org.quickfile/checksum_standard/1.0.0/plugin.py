@@ -21,6 +21,6 @@ class ChecksumPlugin(PluginBase):
 
     def create_task(self, action_id: str, **kwargs) -> AbstractTask:
         if action_id == "calculate_checksum":
-            return ChecksumTask(kwargs['file_path'], kwargs['algorithms'])
+            return ChecksumTask(kwargs['source_paths'][0], kwargs['algorithms'])
         else:
             raise ValueError(f"Unknown action_id: {action_id}")

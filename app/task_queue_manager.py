@@ -156,10 +156,7 @@ class TaskQueueManager(QObject):
         # Prepare serializable kwargs for the plugin
         plugin_kwargs = {"options": task.options}
         if task.source_paths:
-            if len(task.source_paths) == 1:
-                plugin_kwargs["source_path"] = task.source_paths[0]
-            else:
-                plugin_kwargs["source_paths"] = task.source_paths
+            plugin_kwargs["source_paths"] = task.source_paths
         if task.destination_path:
             plugin_kwargs["destination_path"] = task.destination_path
         
