@@ -5,9 +5,9 @@
   "version": "1.0.0",
   "name": "RAR Archiver",
   "type": "archive",
-  "description": "Provides support for extracting RAR archives using system 'unrar' utility.",
-  "entry_point": "plugin:RarPlugin",
-  "class_name": "RarPlugin",
+  "description": "Provides support for extracting RAR archives.",
+  "entry_point": "plugin:RarArchiverPlugin",
+  "class_name": "RarArchiverPlugin",
   "platforms": [
     "windows",
     "linux",

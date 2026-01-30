@@ -191,11 +191,19 @@ class DialogHandler:
         selected_archive_path = self.ui_state_provider.get_current_selected_path()
         if not selected_archive_path:
             raise ValueError("No archive file selected.")
+        
+        # Find appropriate plugin for extraction based on file extension
+        extract_plugin = self.task_queue_manager.plugin_manager.get_archiver_for_file(selected_archive_path)
+        if not extract_plugin:
+            QMessageBox.warning(self.main_window, "Extraction Error", "No suitable plugin found to extract this archive type.")
+            return
+
         extract_path, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "Extract Archive"), translation_manager.translate("DialogHandler", "Destination path:"), text=os.path.dirname(selected_archive_path))
         if ok and extract_path:
             action_logger.log_action("extract_archive", source=selected_archive_path, destination=extract_path)
 
-            task = Task(TaskType.EXTRACT_ARCHIVE, source_paths=[selected_archive_path], destination_path=extract_path)
+            options = {'plugin_id': extract_plugin.metadata['id']} # Ustawiamy plugin_id
+            task = Task(TaskType.EXTRACT_ARCHIVE, source_paths=[selected_archive_path], destination_path=extract_path, options=options)
             self.task_queue_manager.add_task(task)
             self.main_window.statusBar().showMessage("Added extract task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
