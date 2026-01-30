@@ -9,7 +9,7 @@ from threading import Thread, Event, Lock
 from queue import Queue, Empty
 import time
 import inspect
-import threading # Dodano brakujący import
+import threading
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -88,8 +88,11 @@ class PluginWorker:
         if msg_type == 'TERMINATE':
             self.running = False
             
-        elif msg_type == 'EXECUTE_TASK':
-            self._start_task(msg)
+        elif msg_type == 'EXECUTE_ASYNC_TASK':
+            self._start_async_task(msg)
+            
+        elif msg_type == 'EXECUTE_SYNC_METHOD':
+            self._execute_sync_method(msg)
             
         elif msg_type == 'CANCEL_TASK':
             task_id = msg.get('task_id')
@@ -107,36 +110,27 @@ class PluginWorker:
             if task_id in self.active_tasks:
                 self.active_tasks[task_id].set_paused(False)
 
-    def _start_task(self, msg: dict):
+    def _start_async_task(self, msg: dict):
         task_id = msg.get('task_id')
         action_id = msg.get('action_id')
         kwargs = msg.get('kwargs', {})
 
-        self._send_trace(f"Starting task {task_id} (action: {action_id})")
+        self._send_trace(f"Starting async task {task_id} (action: {action_id})")
 
         try:
-            # Create task instance using the plugin factory
             task = self.plugin.create_task(action_id, **kwargs)
-            
-            # Create context
             context = WorkerTaskContext()
             self.active_tasks[task_id] = context
 
-            # Prepare callbacks
             def progress_callback(value):
                 self._send_message('TASK_PROGRESS', task_id=task_id, value=value)
-
             def event_callback(name, payload):
                 self._send_message('DATA_EVENT', task_id=task_id, event_name=name, payload=payload)
-
             def input_request_callback(name, payload):
-                # TODO: Implement synchronous input request (blocking wait for response)
                 return {}
 
-            # Initialize task
             task._initialize(context, progress_callback, event_callback, input_request_callback)
 
-            # Start task in a new thread
             thread = threading.Thread(target=self._task_runner, args=(task_id, task))
             thread.daemon = True
             thread.start()
@@ -144,15 +138,27 @@ class PluginWorker:
         except Exception as e:
             self._send_message('TASK_FAILED', task_id=task_id, error=str(e), traceback=traceback.format_exc())
 
+    def _execute_sync_method(self, msg: dict):
+        task_id = msg.get('task_id')
+        method_name = msg.get('method_name')
+        kwargs = msg.get('kwargs', {})
+
+        self._send_trace(f"Executing sync method {method_name}")
+
+        try:
+            method = getattr(self.plugin, method_name)
+            result = method(**kwargs)
+            self._send_message('SYNC_RESPONSE', task_id=task_id, status='success', result=result)
+        except Exception as e:
+            self._send_message('SYNC_RESPONSE', task_id=task_id, status='error', error=str(e), traceback=traceback.format_exc())
+
     def _task_runner(self, task_id: str, task: AbstractTask):
         """Wrapper to run the task and handle results/errors."""
         try:
             result = task.run()
             self._send_message('TASK_FINISHED', task_id=task_id, result=result)
         except Exception as e:
-            # Check if it was a cancellation exception (some tasks might raise it)
-            # Or if the context is marked as cancelled
-            if self.active_tasks[task_id].is_cancelled():
+            if task_id in self.active_tasks and self.active_tasks[task_id].is_cancelled():
                  self._send_message('TASK_CANCELLED', task_id=task_id)
             else:
                 self._send_message('TASK_FAILED', task_id=task_id, error=str(e), traceback=traceback.format_exc())
@@ -193,7 +199,6 @@ def run_plugin_process(pipe: Connection, plugin_path: str, metadata: dict):
         send_trace('Plugin process started. Setting up environment.')
         importlib.invalidate_caches()
 
-        # Add project root to sys.path to resolve app.plugin_system
         project_root = os.path.abspath(os.path.join(plugin_path, '..', '..', '..'))
         sys.path.insert(0, project_root)
         
@@ -208,7 +213,6 @@ def run_plugin_process(pipe: Connection, plugin_path: str, metadata: dict):
         module_file_path = os.path.join(plugin_path, module_name.replace('.', os.sep) + '.py')
         send_trace(f"Loading plugin from: {module_file_path}")
 
-        # Use a simple name instead of metadata["id"] to avoid package hierarchy issues
         spec = importlib.util.spec_from_file_location("plugin_main", module_file_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -246,18 +250,13 @@ class SandboxedPluginWrapper(QObject):
         self.metadata = metadata
         self.process = None
         self.parent_pipe, self.child_pipe = multiprocessing.Pipe()
-        self.task_map = {}
         self.logger = logging.getLogger(f"SandboxedPluginWrapper-{metadata['id']}")
         self._pipe_thread = None
         self._stop_event = Event()
         self._sync_response_queue = Queue()
         self._property_response_queue = Queue()
-        self.active_async_tasks = set()
+        self.active_tasks = set()
         self._pipe_lock = Lock()
-        
-        # We don't need to track active tasks here for routing anymore, 
-        # but it might be useful for cleanup or status checks.
-        self.active_tasks = set() 
 
     def start(self):
         self.process = multiprocessing.Process(target=run_plugin_process, args=(self.child_pipe, self.plugin_path, self.metadata))
@@ -302,33 +301,27 @@ class SandboxedPluginWrapper(QObject):
                 
                 if msg_type == 'TRACE':
                     self.logger.debug(f"[Plugin Trace] {msg.get('msg', '').strip()}")
-                    
+                elif msg_type == 'SYNC_RESPONSE':
+                    self._sync_response_queue.put(msg)
                 elif msg_type == 'TASK_PROGRESS':
                     self.progress_updated.emit(msg['task_id'], msg['value'])
-                    
                 elif msg_type == 'TASK_FINISHED':
                     self.method_finished.emit(msg['task_id'], msg.get('result'))
                     self.active_tasks.discard(msg['task_id'])
-                    
                 elif msg_type == 'TASK_FAILED':
                     self.method_failed.emit(msg['task_id'], msg.get('error', 'Unknown error'), msg.get('traceback', ''))
                     self.active_tasks.discard(msg['task_id'])
-                    
                 elif msg_type == 'TASK_CANCELLED':
                     self.method_failed.emit(msg['task_id'], 'Task cancelled', '')
                     self.active_tasks.discard(msg['task_id'])
-                    
                 elif msg_type == 'DATA_EVENT':
                     self.data_event_received.emit(msg['task_id'], msg['event_name'], msg['payload'])
-                    
                 elif msg_type == 'PROPERTY_RESPONSE':
                     self._property_response_queue.put(msg)
-                    
                 elif msg_type == 'CRITICAL_ERROR':
                     error_message = f"Plugin process crashed: {msg.get('error')}\n{msg.get('traceback')}"
                     self.logger.error(error_message)
                     self.critical_error.emit(error_message)
-                    # Fail all active tasks
                     for tid in list(self.active_tasks):
                         self.method_failed.emit(tid, "Plugin process crashed", "")
                     self.active_tasks.clear()
@@ -348,10 +341,9 @@ class SandboxedPluginWrapper(QObject):
     # --- Public API for Main Process ---
 
     def execute_task(self, task_id, action_id, **kwargs):
-        """Sends a request to execute a task."""
         self.active_tasks.add(task_id)
         msg = {
-            'type': 'EXECUTE_TASK',
+            'type': 'EXECUTE_ASYNC_TASK',
             'task_id': task_id,
             'action_id': action_id,
             'kwargs': kwargs
@@ -360,7 +352,6 @@ class SandboxedPluginWrapper(QObject):
             self.parent_pipe.send(msg)
 
     def cancel_task(self, task_id):
-        """Sends a cancellation request."""
         msg = {'type': 'CANCEL_TASK', 'task_id': task_id}
         with self._pipe_lock:
             self.parent_pipe.send(msg)
@@ -376,10 +367,8 @@ class SandboxedPluginWrapper(QObject):
             self.parent_pipe.send(msg)
 
     def get_property(self, name):
-        """Synchronously gets a property from the plugin instance."""
         with self._pipe_lock:
             self.parent_pipe.send({'type': 'GET_PROPERTY', 'property': name})
-        
         try:
             response = self._property_response_queue.get(timeout=5)
             if response.get('type') == 'PROPERTY_RESPONSE':
@@ -393,7 +382,35 @@ class SandboxedPluginWrapper(QObject):
             raise TimeoutError(f"Timeout waiting for property '{name}'")
 
     def __getattr__(self, name):
-        # Proxy for properties like 'name', 'description'
         if name in ['name', 'description']:
             return self.get_property(name)
-        return super().__getattr__(name)
+        
+        def sync_method_wrapper(*args, **kwargs):
+            task_id = f"sync_{name}_{time.time()}"
+            
+            serializable_kwargs = {}
+            for k, v in kwargs.items():
+                if isinstance(v, (str, int, float, bool, list, dict, tuple, type(None))):
+                    serializable_kwargs[k] = v
+
+            msg = {
+                'type': 'EXECUTE_SYNC_METHOD',
+                'task_id': task_id,
+                'method_name': name,
+                'kwargs': serializable_kwargs
+            }
+            with self._pipe_lock:
+                self.parent_pipe.send(msg)
+            
+            try:
+                response = self._sync_response_queue.get(timeout=10)
+                if response.get('task_id') != task_id:
+                    raise RuntimeError("Mismatched sync response.")
+                if response['status'] == 'success':
+                    return response['result']
+                else:
+                    raise Exception(f"Plugin error: {response.get('error')}")
+            except Empty:
+                raise TimeoutError(f"Timeout waiting for sync method '{name}'")
+
+        return sync_method_wrapper

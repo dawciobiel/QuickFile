@@ -220,6 +220,7 @@ class DialogHandler:
         dialog = ChecksumDialog(self.main_window, files_only, sorted(list(algorithms)))
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.checksum_standard' # Używamy nowego pluginu
             action_logger.log_action("calculate_checksum", paths=files_only, options=options)
             
             task = Task(TaskType.CHECKSUM, source_paths=files_only, options=options)
@@ -235,15 +236,10 @@ class DialogHandler:
         dialog = SearchDialog(self.main_window, current_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
+            options['plugin_id'] = 'org.quickfile.search_standard' # Używamy nowego pluginu
             logging.debug(f"DialogHandler: Options from SearchDialog: {options}")
             query = options.get("file_name")
             start_path = options.get("start_path", current_path)
-            
-            search_plugins = self.task_queue_manager.plugin_manager.get_search_plugins()
-            if not search_plugins:
-                QMessageBox.critical(self.main_window, "Error", "No search plugin found.")
-                return
-            search_plugin = search_plugins[0]
 
             if query:
                 action_logger.log_action("search", path=start_path, query=query, options=options)
