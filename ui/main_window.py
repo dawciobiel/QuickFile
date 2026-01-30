@@ -35,6 +35,7 @@ from utils.resource_path import get_resource_path
 class MainWindow(QMainWindow):
     def __init__(self, background_task_manager, task_queue_manager: TaskQueueManager, file_manager: FileManager, directory_synchronizer: DirectorySynchronizer, notification_manager, file_association_manager):
         super().__init__()
+        logging.info("MainWindow initializing...")
         self.background_task_manager = background_task_manager
         self.task_queue_manager = task_queue_manager
         self.file_manager = file_manager
@@ -50,45 +51,53 @@ class MainWindow(QMainWindow):
         self.app_handler = None
         self.menu_panel = None
         self.search_results_panel = None
-        self.search_tab = None
+        # self.search_tab is loaded from UI, no need to declare here
 
         self._init_ui()
         self._post_init_ui()
         self._connect_signals()
         self._apply_initial_settings()
         self._install_event_filters()
+        logging.info("MainWindow initialization complete.")
 
     def _init_ui(self):
+        logging.info("MainWindow _init_ui started.")
         uic.loadUi(get_resource_path("ui/main_window.ui"), self)
         self.setWindowTitle(f"QuickFile v{__version__}")
         self.setWindowIcon(QIcon(get_resource_path("resources/icons/app_icon.png")))
 
+        # --- Browser Tab ---
         self.folder_browser = FolderBrowser(self.settings_manager, self.theme_manager, self.task_queue_manager.plugin_manager, self.notification_manager, self)
-        self.centralWidget().layout().insertWidget(0, self.folder_browser)
+        self.browser_layout.addWidget(self.folder_browser)
         self.ui_state_provider = UIStateProvider(self.folder_browser)
 
-        # We need to initialize FunctionKeyPanel later because it needs menu actions
-        # self.function_keys_panel = FunctionKeyPanel(self, {})
-        # self.centralWidget().layout().addWidget(self.function_keys_panel)
-        
+        # --- Queue Tab ---
         self.task_queue_panel = TaskQueuePanel(self.task_queue_manager, self.theme_manager, self)
-        self.centralWidget().layout().addWidget(self.task_queue_panel)
+        self.queue_layout.addWidget(self.task_queue_panel)
         
+        # --- Search Tab ---
+        # self.search_tab and self.search_layout are already loaded from the UI file
         self.search_results_panel = SearchResultsPanel(self)
-        self.search_tab = QWidget()
-        self.search_tab.setLayout(QVBoxLayout())
-        self.search_tab.layout().addWidget(self.search_results_panel)
-        self.mainTabWidget.addTab(self.search_tab, "Search Results")
+        self.search_layout.addWidget(self.search_results_panel)
+        
+        # Hide search tab initially
         self.mainTabWidget.setTabVisible(self.mainTabWidget.indexOf(self.search_tab), False)
+        
+        logging.info("MainWindow _init_ui finished.")
 
     def _post_init_ui(self):
+        logging.info("MainWindow _post_init_ui started.")
         self.dialog_handler = self.create_dialog_handler()
         self.app_handler = self.create_app_handler()
         self.menu_panel = MenuPanel(self, self.mainToolbar, self.app_handler, self.shortcuts_manager, self.theme_manager)
         self.menu_panel.initialize_ui()
         
+        # Replace placeholder with the actual FunctionKeyPanel
         self.function_keys_panel = FunctionKeyPanel(self, self.menu_panel.actions)
-        self.centralWidget().layout().insertWidget(1, self.function_keys_panel)
+        self.verticalLayout.replaceWidget(self.function_key_panel_placeholder, self.function_keys_panel)
+        self.function_key_panel_placeholder.deleteLater()
+
+        logging.info("MainWindow _post_init_ui finished.")
 
     def create_dialog_handler(self):
         from app.dialog_handler import DialogHandler
@@ -143,8 +152,6 @@ class MainWindow(QMainWindow):
     def on_task_completed(self, task):
         if task.status == TaskStatus.FINISHED:
             if task.type == TaskType.SEARCH:
-                # Results are now streamed, so we don't need to set them here.
-                # We just ensure the tab is visible.
                 self.switchToSearchResultsTab()
             elif task.type == TaskType.CHECKSUM:
                 self.dialog_handler.show_checksum_results(task.source_paths, task.result)
@@ -167,12 +174,13 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def eventFilter(self, source, event):
-        if event.type() == QEvent.Type.KeyPress:
-            action = self.shortcuts_manager.get_action_for_key_event(event)
-            if action:
-                action_logger.log_action("shortcut", key=event.key(), action=action.__name__)
-                action()
-                return True
+        # TEMPORARILY DISABLED to prevent crashes until keyboard handling is refactored
+        # if event.type() == QEvent.Type.KeyPress:
+        #     action = self.shortcuts_manager.get_action_for_key_event(event)
+        #     if action:
+        #         action_logger.log_action("shortcut", key=event.key(), action=action.__name__)
+        #         action()
+        #         return True
         return super().eventFilter(source, event)
 
     def contextMenuEvent(self, event: QEvent):
@@ -205,7 +213,6 @@ class MainWindow(QMainWindow):
                 plugin_menu = menu.addMenu(plugin.name)
                 for action_info in actions:
                     action = QAction(action_info['text'], self)
-                    # Use a lambda to capture the correct plugin and action_info
                     action.triggered.connect(lambda checked=False, p=plugin, a=action_info: self.app_handler.execute_plugin_action(p, a))
                     plugin_menu.addAction(action)
 
