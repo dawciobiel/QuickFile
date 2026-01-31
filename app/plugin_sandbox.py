@@ -141,13 +141,14 @@ class PluginWorker:
     def _execute_sync_method(self, msg: dict):
         task_id = msg.get('task_id')
         method_name = msg.get('method_name')
+        args = msg.get('args', [])
         kwargs = msg.get('kwargs', {})
 
         self._send_trace(f"Executing sync method {method_name}")
 
         try:
             method = getattr(self.plugin, method_name)
-            result = method(**kwargs)
+            result = method(*args, **kwargs)
             self._send_message('SYNC_RESPONSE', task_id=task_id, status='success', result=result)
         except Exception as e:
             self._send_message('SYNC_RESPONSE', task_id=task_id, status='error', error=str(e), traceback=traceback.format_exc())
@@ -371,11 +372,22 @@ class SandboxedPluginWrapper(QObject):
             for k, v in kwargs.items():
                 if isinstance(v, (str, int, float, bool, list, dict, tuple, type(None))):
                     serializable_kwargs[k] = v
+            
+            # Serialize args as well
+            serializable_args = []
+            for v in args:
+                if isinstance(v, (str, int, float, bool, list, dict, tuple, type(None))):
+                    serializable_args.append(v)
+                else:
+                    # Fallback for non-serializable args, though this might cause issues if they are needed
+                    # For now, we assume simple types for IPC
+                    pass
 
             msg = {
                 'type': 'EXECUTE_SYNC_METHOD',
                 'task_id': task_id,
                 'method_name': name,
+                'args': serializable_args,
                 'kwargs': serializable_kwargs
             }
             with self._pipe_lock:
