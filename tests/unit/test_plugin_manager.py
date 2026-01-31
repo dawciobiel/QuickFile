@@ -26,10 +26,8 @@ def mock_plugin_dir(tmp_path):
     (viewer_v1_path / "plugin.py").write_text("""
 from plugins.base import ViewerPlugin
 class MyViewerV1(ViewerPlugin):
-    @property
-    def name(self): return "MyViewerV1"
-    @property
-    def description(self): return "A mock viewer plugin v1"
+    def get_name(self): return "MyViewerV1"
+    def get_description(self): return "A mock viewer plugin v1"
     def can_view(self, path): return path.endswith('.txt')
     def view_file(self, file_path: str, theme_manager=None, parent=None): pass
 """)
@@ -44,10 +42,8 @@ class MyViewerV1(ViewerPlugin):
     (viewer_v2_path / "plugin.py").write_text("""
 from plugins.base import ViewerPlugin
 class MyViewerV2(ViewerPlugin):
-    @property
-    def name(self): return "MyViewerV2"
-    @property
-    def description(self): return "A mock viewer plugin v2"
+    def get_name(self): return "MyViewerV2"
+    def get_description(self): return "A mock viewer plugin v2"
     def can_view(self, path): return path.endswith('.v2')
     def view_file(self, file_path: str, theme_manager=None, parent=None): pass
 """)
@@ -82,14 +78,14 @@ def test_load_latest_plugin_version(plugin_manager):
     assert isinstance(loaded_plugin, SandboxedPluginWrapper)
     
     # Sprawdzamy, czy nazwa pluginu jest poprawnie delegowana
-    assert loaded_plugin.name == "MyViewerV2"
+    assert loaded_plugin.get_name() == "MyViewerV2"
 
 def test_get_viewer_for_file(plugin_manager):
     """Test that get_viewer_for_file returns the correct sandboxed plugin."""
     viewer = plugin_manager.get_viewer_for_file("test.v2")
     
     assert isinstance(viewer, SandboxedPluginWrapper)
-    assert viewer.name == "MyViewerV2"
+    assert viewer.get_name() == "MyViewerV2"
     assert viewer.can_view("test.v2") is True # can_view powinno być delegowane
     assert viewer.can_view("test.txt") is False # can_view powinno być delegowane
     

@@ -29,7 +29,7 @@ def test_checksum_success(tmp_path, async_plugin_test_env):
     async_helper.plugin_wrapper.execute_task(
         task_id=task.id,
         action_id="calculate_checksum",
-        file_path=str(source_file),
+        source_paths=[str(source_file)], # Changed from file_path to source_paths
         algorithms=["md5", "sha256"]
     )
 
@@ -74,7 +74,7 @@ def test_checksum_cancellation(tmp_path, async_plugin_test_env):
     async_helper.plugin_wrapper.execute_task(
         task_id=task.id,
         action_id="calculate_checksum",
-        file_path=str(source_file),
+        source_paths=[str(source_file)], # Changed from file_path to source_paths
         algorithms=["sha256"]
     )
 

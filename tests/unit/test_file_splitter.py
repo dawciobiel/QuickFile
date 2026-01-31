@@ -51,8 +51,8 @@ def test_split_file_logic(tmp_path, async_plugin_test_env):
     async_helper.plugin_wrapper.execute_task(
         task_id=task.id,
         action_id="split_file",
-        source_path=str(source_file),
-        dest_dir=str(dest_dir),
+        source_paths=[str(source_file)], # Changed from source_path to source_paths
+        destination_path=str(dest_dir), # Changed from dest_dir to destination_path
         options=options
     )
     
@@ -129,8 +129,8 @@ def test_split_file_cancellation(tmp_path, async_plugin_test_env):
     async_helper.plugin_wrapper.execute_task(
         task_id=task.id,
         action_id="split_file",
-        source_path=str(source_file),
-        dest_dir=str(dest_dir),
+        source_paths=[str(source_file)], # Changed from source_path to source_paths
+        destination_path=str(dest_dir), # Changed from dest_dir to destination_path
         options=options
     )
 
