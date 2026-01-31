@@ -22,12 +22,10 @@ class StandardViewerPlugin(ViewerPlugin):
         # Keep track of open viewers to avoid creating duplicates for the same file
         self.open_viewers = {}
 
-    @property
-    def name(self) -> str:
+    def get_name(self) -> str:
         return "Standard File Viewer"
 
-    @property
-    def description(self) -> str:
+    def get_description(self) -> str:
         return "A built-in viewer for text files and simple images."
 
     def can_view(self, file_path: str) -> bool:

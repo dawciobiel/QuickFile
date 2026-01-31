@@ -18,12 +18,10 @@ from change_owner_dialog import ChangeOwnerDialog
 
 class LinuxAttributeEditorPlugin(AttributeEditorPlugin):
 
-    @property
-    def name(self) -> str:
+    def get_name(self) -> str:
         return "Linux Attribute Editor"
 
-    @property
-    def description(self) -> str:
+    def get_description(self) -> str:
         return "A plugin to edit file/directory owner and permissions on Linux."
 
     def is_supported(self) -> bool:
