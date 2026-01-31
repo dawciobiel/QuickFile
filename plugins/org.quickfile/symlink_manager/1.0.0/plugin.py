@@ -25,12 +25,10 @@ class SymlinkManagerPlugin(SymlinkPlugin):
         # This plugin will manage its own file operations for links
         self.file_manager = FileManager()
 
-    @property
-    def name(self) -> str:
+    def get_name(self) -> str:
         return "Symlink Manager"
 
-    @property
-    def description(self) -> str:
+    def get_description(self) -> str:
         return "Provides functionality to create and modify symbolic and hard links."
 
     def is_supported(self) -> bool:

@@ -8,22 +8,16 @@ from PyQt6.QtCore import pyqtSignal, Qt, QAbstractTableModel, QModelIndex
 from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import QWidget, QDialog, QAbstractItemView, QVBoxLayout, QStyledItemDelegate, QStyle
 
+from app.plugin_system.api import PluginBase
 
-class FileOperationPlugin(ABC):
-    """
-    Base interface for all file operation plugins.
-    """
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """User-friendly name of the plugin, e.g., 'Standard ZIP Archiver'."""
-        pass
 
-    @property
-    @abstractmethod
-    def description(self) -> str:
-        """A brief description of what the plugin does."""
-        pass
+class FileOperationPlugin(PluginBase, ABC):
+    """
+    Base interface for all file operation plugins that are not sandboxed.
+    It inherits the basic name and description from the sandboxed PluginBase.
+    """
+    pass
+
 
 class MenuActionPlugin(FileOperationPlugin):
     """
@@ -194,9 +188,8 @@ class ViewModePlugin(FileOperationPlugin):
     """
     Interface for plugins that provide a file system view mode (e.g., Flat, Tree).
     """
-    @property
     @abstractmethod
-    def view_mode_name(self) -> str:
+    def get_view_mode_name(self) -> str:
         """The name of the view mode, e.g., 'flat' or 'tree'."""
         pass
 

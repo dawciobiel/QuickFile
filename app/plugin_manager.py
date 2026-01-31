@@ -239,12 +239,12 @@ class PluginManager:
     def get_standard_operations_plugin(self) -> StandardOperationsPlugin | None:
         if platform.system() == "Windows":
             for plugin in self.plugins["standard_operations"]:
-                if "windows" in plugin.name.lower():
+                if "windows" in plugin.get_name().lower(): # Użyj get_name()
                     return plugin
         
         # On non-Windows systems, prefer plugins that don't have "windows" in the name
         for plugin in self.plugins["standard_operations"]:
-            if "windows" not in plugin.name.lower():
+            if "windows" not in plugin.get_name().lower(): # Użyj get_name()
                 return plugin
 
         if self.plugins["standard_operations"]:
@@ -252,9 +252,18 @@ class PluginManager:
         return None
 
     def get_view_mode_plugin(self, view_id: str) -> ViewModePlugin | None:
+        logging.debug(f"Searching for view mode plugin with id: {view_id}")
+        logging.debug(f"Available view_mode plugins: {self.plugins['view_mode']}")
         for plugin in self.plugins["view_mode"]:
-            if plugin.view_mode_name == view_id:
-                return plugin
+            try:
+                plugin_view_id = plugin.get_view_mode_name()
+                logging.debug(f"Checking plugin: {plugin.get_name()}, view_id: {plugin_view_id}")
+                if plugin_view_id == view_id:
+                    logging.debug(f"Found matching plugin: {plugin.get_name()}")
+                    return plugin
+            except Exception as e:
+                logging.error(f"Error getting view_mode_name from plugin {plugin}: {e}")
+        logging.warning(f"View mode plugin with id '{view_id}' not found.")
         return None
 
     def get_attribute_editor_plugin(self, editor_id=None) -> AttributeEditorPlugin | None:

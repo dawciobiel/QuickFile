@@ -10,16 +10,13 @@ from plugins.base import ViewModePlugin
 
 class FlatViewPlugin(ViewModePlugin):
     
-    @property
-    def name(self) -> str:
+    def get_name(self) -> str:
         return "Flat View"
 
-    @property
-    def description(self) -> str:
+    def get_description(self) -> str:
         return "A classic flat, two-column file system view."
 
-    @property
-    def view_mode_name(self) -> str:
+    def get_view_mode_name(self) -> str:
         return "flat"
 
     def create_view_widget(self, parent: QWidget) -> QWidget:

@@ -254,7 +254,6 @@ class SandboxedPluginWrapper(QObject):
         self._pipe_thread = None
         self._stop_event = Event()
         self._sync_response_queue = Queue()
-        self._property_response_queue = Queue()
         self.active_tasks = set()
         self._pipe_lock = Lock()
 
@@ -316,8 +315,6 @@ class SandboxedPluginWrapper(QObject):
                     self.active_tasks.discard(msg['task_id'])
                 elif msg_type == 'DATA_EVENT':
                     self.data_event_received.emit(msg['task_id'], msg['event_name'], msg['payload'])
-                elif msg_type == 'PROPERTY_RESPONSE':
-                    self._property_response_queue.put(msg)
                 elif msg_type == 'CRITICAL_ERROR':
                     error_message = f"Plugin process crashed: {msg.get('error')}\n{msg.get('traceback')}"
                     self.logger.error(error_message)
@@ -366,25 +363,7 @@ class SandboxedPluginWrapper(QObject):
         with self._pipe_lock:
             self.parent_pipe.send(msg)
 
-    def get_property(self, name):
-        with self._pipe_lock:
-            self.parent_pipe.send({'type': 'GET_PROPERTY', 'property': name})
-        try:
-            response = self._property_response_queue.get(timeout=5)
-            if response.get('type') == 'PROPERTY_RESPONSE':
-                if response['status'] == 'success':
-                    return response['result']
-                else:
-                    raise AttributeError(f"Failed to get property '{name}': {response.get('error')}")
-            else:
-                raise RuntimeError(f"Unexpected response type: {response.get('type')}")
-        except Empty:
-            raise TimeoutError(f"Timeout waiting for property '{name}'")
-
     def __getattr__(self, name):
-        if name in ['name', 'description']:
-            return self.get_property(name)
-        
         def sync_method_wrapper(*args, **kwargs):
             task_id = f"sync_{name}_{time.time()}"
             

@@ -11,12 +11,10 @@ class StandardEditorPlugin(EditorPlugin):
     def __init__(self):
         super().__init__()
 
-    @property
-    def name(self) -> str:
+    def get_name(self) -> str:
         return "Standard Editor"
 
-    @property
-    def description(self) -> str:
+    def get_description(self) -> str:
         return "A built-in code editor with syntax highlighting."
 
     def can_handle(self, file_path: str) -> bool:
