@@ -40,10 +40,10 @@ class DriveComboBox(QComboBox):
 
 
 class PanelWidget(QWidget):
-    def __init__(self, settings_manager, folder_browser_event_filter, theme_manager, plugin_manager: PluginManager, notification_manager, parent=None):
+    def __init__(self, settings_manager, keyboard_event_manager, theme_manager, plugin_manager: PluginManager, notification_manager, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
-        self._folder_browser_event_filter = folder_browser_event_filter
+        self.keyboard_event_manager = keyboard_event_manager
         self.theme_manager = theme_manager
         self.plugin_manager = plugin_manager
         self.notification_manager = notification_manager
@@ -139,8 +139,8 @@ class PanelWidget(QWidget):
             self.file_view.view.selectionModel().currentChanged.connect(self.update_summary_panel)
             self.file_view.insert_selection_changed.connect(self.update_summary_panel)
 
-            if self._folder_browser_event_filter:
-                self.file_view.view.installEventFilter(self._folder_browser_event_filter)
+            if self.keyboard_event_manager:
+                self.file_view.view.installEventFilter(self.keyboard_event_manager)
 
         self._populate_drive_combo()
 
@@ -361,7 +361,7 @@ class FolderBrowser(QWidget):
     current_directory_changed = pyqtSignal(str)
     status_message_requested = pyqtSignal(str)
 
-    def __init__(self, settings_manager: SettingsManager, theme_manager: ThemeManager, plugin_manager: PluginManager, notification_manager, parent=None):
+    def __init__(self, settings_manager: SettingsManager, theme_manager: ThemeManager, plugin_manager: PluginManager, notification_manager, keyboard_event_manager, parent=None):
         super().__init__(parent)
 
         # --- Declare UI attributes for linter ---
@@ -379,6 +379,7 @@ class FolderBrowser(QWidget):
         self.theme_manager = theme_manager
         self.plugin_manager = plugin_manager
         self.notification_manager = notification_manager
+        self.keyboard_event_manager = keyboard_event_manager
         self.active_panel_widget = None
         self.current_paths = {}
         self._init_tab_widget(self.leftTabWidget)
@@ -406,7 +407,7 @@ class FolderBrowser(QWidget):
         tab_widget.currentChanged.connect(lambda index, tw=tab_widget: self._on_tab_changed(tw, index))
 
     def _create_panel_widget(self, path):
-        panel = PanelWidget(self.settings_manager, self, self.theme_manager, self.plugin_manager, self.notification_manager, self)
+        panel = PanelWidget(self.settings_manager, self.keyboard_event_manager, self.theme_manager, self.plugin_manager, self.notification_manager, self)
         
         if os.path.exists(path):
             if isinstance(panel.file_view, AbstractFileView):

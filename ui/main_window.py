@@ -13,6 +13,7 @@ from __version__ import __version__
 from app.action_logger import action_logger
 from app.application_logic_handler import ApplicationLogicHandler
 from app.enums import TaskType, TaskStatus
+from app.keyboard_event_handler import KeyboardEventManager
 from app.settings_manager import SettingsManager
 from app.shortcuts_manager import ShortcutsManager
 from app.task_queue_manager import TaskQueueManager
@@ -51,13 +52,13 @@ class MainWindow(QMainWindow):
         self.app_handler = None
         self.menu_panel = None
         self.search_results_panel = None
-        # self.search_tab is loaded from UI, no need to declare here
+        self.keyboard_event_manager = None
 
         self._init_ui()
         self._post_init_ui()
         self._connect_signals()
         self._apply_initial_settings()
-        self._install_event_filters()
+        # Event filters are now installed by FolderBrowser on its sub-widgets
         logging.info("MainWindow initialization complete.")
 
     def _init_ui(self):
@@ -66,10 +67,17 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"QuickFile v{__version__}")
         self.setWindowIcon(QIcon(get_resource_path("resources/icons/app_icon.png")))
 
+        # Initialize KeyboardEventManager early, as FolderBrowser needs it.
+        # The dependent objects (app_handler, folder_browser) will be set later.
+        self.keyboard_event_manager = KeyboardEventManager(self, None, None) 
+        
         # --- Browser Tab ---
-        self.folder_browser = FolderBrowser(self.settings_manager, self.theme_manager, self.task_queue_manager.plugin_manager, self.notification_manager, self)
+        self.folder_browser = FolderBrowser(self.settings_manager, self.theme_manager, self.task_queue_manager.plugin_manager, self.notification_manager, self.keyboard_event_manager, self)
         self.browser_layout.addWidget(self.folder_browser)
         self.ui_state_provider = UIStateProvider(self.folder_browser)
+        
+        # Now that folder_browser is created, set it in keyboard_event_manager
+        self.keyboard_event_manager.folder_browser = self.folder_browser
 
         # --- Queue Tab ---
         self.task_queue_panel = TaskQueuePanel(self.task_queue_manager, self.theme_manager, self)
@@ -97,6 +105,9 @@ class MainWindow(QMainWindow):
         self.verticalLayout.replaceWidget(self.function_key_panel_placeholder, self.function_keys_panel)
         self.function_key_panel_placeholder.deleteLater()
 
+        # Now that app_handler is created, set it in keyboard_event_manager
+        self.keyboard_event_manager.application_logic_handler = self.app_handler
+        
         logging.info("MainWindow _post_init_ui finished.")
 
     def create_dialog_handler(self):
@@ -144,10 +155,14 @@ class MainWindow(QMainWindow):
         self.task_queue_manager.task_finished.connect(self.folder_browser.handle_task_completion)
 
     def _apply_initial_settings(self):
-        self.app_handler.settings_handler.apply_all_settings()
+        # Temporarily disable loading window settings to check if it fixes visibility
+        # self.app_handler.settings_handler.apply_all_settings()
+        pass
 
     def _install_event_filters(self):
-        self.installEventFilter(self)
+        # KeyboardEventManager is now installed by FolderBrowser on its file views
+        # No global event filter on MainWindow needed for keyboard events
+        pass
 
     def on_task_completed(self, task):
         if task.status == TaskStatus.FINISHED:
@@ -174,13 +189,9 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def eventFilter(self, source, event):
-        # TEMPORARILY DISABLED to prevent crashes until keyboard handling is refactored
-        # if event.type() == QEvent.Type.KeyPress:
-        #     action = self.shortcuts_manager.get_action_for_key_event(event)
-        #     if action:
-        #         action_logger.log_action("shortcut", key=event.key(), action=action.__name__)
-        #         action()
-        #         return True
+        # This eventFilter is no longer used for keyboard events,
+        # as KeyboardEventManager is installed directly on file views.
+        # It can be removed or left to call super() for other event types.
         return super().eventFilter(source, event)
 
     def contextMenuEvent(self, event: QEvent):

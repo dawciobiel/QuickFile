@@ -7,13 +7,15 @@ from tasks import CreateZipTask
 
 
 class ZipArchiverPlugin(PluginBase):
-    @property
-    def name(self):
+    def get_name(self):
         return "ZIP Archiver"
 
-    @property
-    def description(self):
+    def get_description(self):
         return "Creates ZIP archives."
+
+    def get_supported_extensions(self):
+        """Returns a list of supported archive extensions."""
+        return ["zip"]
 
     def create_task(self, action_id: str, **kwargs) -> AbstractTask:
         if action_id == "create_archive":

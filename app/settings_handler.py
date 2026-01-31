@@ -20,9 +20,7 @@ class SettingsHandler:
 
     def apply_all_settings(self):
         """Applies all settings at startup."""
-        # Apply theme
-        theme_name = self.settings_manager.get_setting("theme", "dark")
-        self.theme_manager.apply_theme(theme_name)
+        # Theme is now applied in main.py after window.show()
 
         # Apply window geometry
         self.settings_manager.load_window_settings(self.main_window)

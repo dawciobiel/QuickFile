@@ -8,12 +8,10 @@ from tasks import ChecksumTask
 class ChecksumPlugin(PluginBase):
     SUPPORTED_ALGORITHMS = ["crc32", "md5", "sha1", "sha256"]
 
-    @property
-    def name(self):
+    def get_name(self):
         return "Standard Checksum Calculator"
 
-    @property
-    def description(self):
+    def get_description(self):
         return "Calculates CRC32, MD5, SHA1, and SHA256 checksums for files."
 
     def get_supported_algorithms(self):

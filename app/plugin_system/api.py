@@ -87,15 +87,13 @@ class PluginBase(ABC):
     Defines metadata and factory methods for tasks.
     """
     
-    @property
     @abstractmethod
-    def name(self) -> str:
+    def get_name(self) -> str:
         """Display name of the plugin."""
         pass
 
-    @property
     @abstractmethod
-    def description(self) -> str:
+    def get_description(self) -> str:
         """Short description of the plugin."""
         pass
 
@@ -111,7 +109,7 @@ class PluginBase(ABC):
         Factory method to create a task instance based on action_id.
         Must be implemented if the plugin provides background tasks.
         """
-        raise NotImplementedError(f"Plugin {self.name} does not support task creation for {action_id}")
+        raise NotImplementedError(f"Plugin {self.get_name()} does not support task creation for {action_id}")
 
     def handle_event(self, event_name: str, payload: Dict[str, Any], task_id: str):
         """

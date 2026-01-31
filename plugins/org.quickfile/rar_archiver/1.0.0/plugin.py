@@ -6,12 +6,10 @@ from app.plugin_system.api import PluginBase, AbstractTask
 from tasks import ExtractRarTask
 
 class RarArchiverPlugin(PluginBase):
-    @property
-    def name(self):
+    def get_name(self):
         return "RAR Archiver"
 
-    @property
-    def description(self):
+    def get_description(self):
         return "Extracts RAR archives."
 
     def get_supported_extensions(self):
