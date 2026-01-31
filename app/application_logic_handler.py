@@ -268,10 +268,6 @@ class ApplicationLogicHandler(QObject):
         self.dialog_handler.rename_selected_item()
 
     @handle_error
-    def paste_item_to_current_dir(self, checked=False):
-        self.dialog_handler.paste_item_to_current_dir()
-
-    @handle_error
     def open_general_settings_dialog(self, checked=False):
         new_settings = self.dialog_handler.open_general_settings_dialog()
         if new_settings:

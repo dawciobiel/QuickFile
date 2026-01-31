@@ -155,9 +155,7 @@ class MainWindow(QMainWindow):
         self.task_queue_manager.task_finished.connect(self.folder_browser.handle_task_completion)
 
     def _apply_initial_settings(self):
-        # Temporarily disable loading window settings to check if it fixes visibility
-        # self.app_handler.settings_handler.apply_all_settings()
-        pass
+        self.app_handler.settings_handler.apply_all_settings()
 
     def _install_event_filters(self):
         # KeyboardEventManager is now installed by FolderBrowser on its file views

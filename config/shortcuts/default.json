@@ -16,7 +16,7 @@
   "operations.rename": "F2",
   "operations.new_file": "Shift+F4",
   "operations.change_owner": "",
-  "operations.paste": "Ctrl+V",
+  "operations.paste": "",
   "view.refresh": "Ctrl+R",
   "view.search": "Ctrl+F",
   "view.synchronize": "",
