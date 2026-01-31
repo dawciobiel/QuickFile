@@ -6,12 +6,10 @@ from app.plugin_system.api import PluginBase, AbstractTask
 from tasks import SplitFileTask, JoinFilesTask
 
 class FileSplitterPlugin(PluginBase):
-    @property
-    def name(self):
+    def get_name(self):
         return "File Splitter"
 
-    @property
-    def description(self):
+    def get_description(self):
         return "Splits large files into smaller parts and joins them back."
 
     def get_menu_actions(self):

@@ -6,12 +6,10 @@ from app.plugin_system.api import PluginBase, AbstractTask
 from tasks import SearchTask
 
 class SearchPlugin(PluginBase):
-    @property
-    def name(self):
+    def get_name(self):
         return "Standard Search"
 
-    @property
-    def description(self):
+    def get_description(self):
         return "Provides file search functionality."
 
     def create_task(self, action_id: str, **kwargs) -> AbstractTask:

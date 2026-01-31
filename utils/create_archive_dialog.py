@@ -3,7 +3,6 @@
 # See LICENSE file for details.
 
 import os
-
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QFileDialog, QDialogButtonBox, QMessageBox, QLineEdit, QComboBox, QPushButton
 
@@ -60,12 +59,13 @@ class CreateArchiveDialog(QDialog):
         for plugin in self.plugins:
             # Use the first supported extension as the label, or plugin name
             exts = plugin.get_supported_extensions()
-            label = f"{plugin.name} ({', '.join(exts)})"
+            plugin_name = plugin.get_name()
+            label = f"{plugin_name} ({', '.join(exts)})"
             # noinspection PyTypeChecker
             self.type_combo.addItem(label, plugin)
 
             # Initialize default options for this plugin if needed
-            self.plugin_options[plugin.name] = {}
+            self.plugin_options[plugin_name] = {}
 
     def browse_path(self):
         path = QFileDialog.getExistingDirectory(self, translation_manager.translate("CreateArchiveDialog", "Select Destination Directory"))
@@ -79,7 +79,8 @@ class CreateArchiveDialog(QDialog):
         if not plugin:
             return
 
-        current_options = self.plugin_options.get(plugin.name, {})
+        plugin_name = plugin.get_name()
+        current_options = self.plugin_options.get(plugin_name, {})
 
         # Check if the plugin supports configuration
         dialog = plugin.get_configuration_dialog(self, current_options)
@@ -89,7 +90,7 @@ class CreateArchiveDialog(QDialog):
                 # Or it modifies the passed dictionary in place (less safe but possible)
                 # Let's assume it returns new options via a method, e.g., get_options()
                 if hasattr(dialog, 'get_options'):
-                    self.plugin_options[plugin.name] = dialog.get_options()
+                    self.plugin_options[plugin_name] = dialog.get_options()
         else:
             QMessageBox.information(self, "Info", translation_manager.translate("CreateArchiveDialog",
                                                                                 "No configuration options available for this plugin."))
@@ -117,7 +118,8 @@ class CreateArchiveDialog(QDialog):
         else:
             full_path = os.path.join(path, name)
 
-        options = self.plugin_options.get(plugin.name, {})
+        plugin_name = plugin.get_name()
+        options = self.plugin_options.get(plugin_name, {})
         options['plugin_id'] = plugin.id  # Dodajemy ID pluginu do opcji
 
         return {

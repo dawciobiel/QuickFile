@@ -6,12 +6,10 @@ from app.plugin_system.api import PluginBase, AbstractTask
 from tasks import CopyTask # Zmieniono import na bezpośredni
 
 class CopyOperationPlugin(PluginBase):
-    @property
-    def name(self):
+    def get_name(self):
         return "Standard Copy Operation"
 
-    @property
-    def description(self):
+    def get_description(self):
         return "Provides standard file copy functionality."
 
     def create_task(self, action_id: str, **kwargs) -> AbstractTask:

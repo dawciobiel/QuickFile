@@ -26,12 +26,10 @@ class OperationCancelledError(Exception):
 
 class WindowsOperationsPlugin(StandardOperationsPlugin):
 
-    @property
-    def name(self) -> str:
+    def get_name(self) -> str:
         return "Windows File Operations"
 
-    @property
-    def description(self) -> str:
+    def get_description(self) -> str:
         return "Provides standard file operations with support for long paths on Windows."
 
     def _ensure_long_path(self, path):

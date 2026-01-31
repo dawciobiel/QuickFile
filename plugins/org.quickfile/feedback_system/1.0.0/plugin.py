@@ -17,12 +17,10 @@ from feedback_dialog import FeedbackDialog
 class FeedbackPlugin(UiExtensionPlugin):
     GITHUB_REPO_URL = "https://github.com/dawciobiel/QuickFile/issues/new"
 
-    @property
-    def name(self) -> str:
+    def get_name(self) -> str:
         return "Feedback System"
 
-    @property
-    def description(self) -> str:
+    def get_description(self) -> str:
         return "A plugin to collect feedback and bug reports from users via GitHub issues."
 
     def initialize(self, main_window):

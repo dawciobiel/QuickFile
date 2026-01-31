@@ -3,8 +3,9 @@
 # See LICENSE file for details.
 
 import os
+import logging
 from PyQt6.QtCore import QObject, QUrl
-from PyQt6.QtMultimedia import QSoundEffect
+# from PyQt6.QtMultimedia import QSoundEffect # Temporarily disabled
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from ui.notification_popup import NotificationPopup
 from utils.resource_path import get_resource_path
@@ -22,19 +23,25 @@ class NotificationManager(QObject):
         self.icon_error = get_resource_path(os.path.join(icon_base_path, "close_tab.svg"))
         self.icon_info = get_resource_path(os.path.join(icon_base_path, "share.svg"))
 
-        sound_base_path = os.path.join("resources", "sounds")
-        self.sound_success = self._create_sound_effect(os.path.join(sound_base_path, "success.wav"))
-        self.sound_error = self._create_sound_effect(os.path.join(sound_base_path, "error.wav"))
-        self.sound_info = self._create_sound_effect(os.path.join(sound_base_path, "info.wav"))
+        # Temporarily disable sound to avoid blocking issues
+        self.sound_success = None
+        self.sound_error = None
+        self.sound_info = None
+        logging.warning("Sound notifications are temporarily disabled due to initialization issues.")
 
     def _create_sound_effect(self, path):
-        sound_effect = QSoundEffect()
-        sound_effect.setSource(QUrl.fromLocalFile(get_resource_path(path)))
-        return sound_effect
+        # sound_effect = QSoundEffect()
+        # sound_effect.setSource(QUrl.fromLocalFile(get_resource_path(path)))
+        # return sound_effect
+        return None
 
     def show_notification(self, message, icon_path, sound_effect):
-        if self.settings_manager.get_setting("sound_notifications_enabled", True):
-            sound_effect.play()
+        # if self.settings_manager.get_setting("sound_notifications_enabled", True) and sound_effect:
+        #     sound_effect.play()
+        
+        if not self.parent_window:
+            logging.warning("NotificationManager: parent_window is None, cannot show notification.")
+            return
 
         popup = NotificationPopup(message, icon_path, self.parent_window)
         popup.finished.connect(lambda p=popup: self._remove_notification(p))
@@ -54,9 +61,12 @@ class NotificationManager(QObject):
         self.show_notification(message, self.icon_info, self.sound_info)
 
     def show_blocking_error(self, title, message):
-        if self.settings_manager.get_setting("sound_notifications_enabled", True):
-            self.sound_error.play()
-        QMessageBox.critical(self.parent_window, title, message)
+        # if self.settings_manager.get_setting("sound_notifications_enabled", True) and self.sound_error:
+        #     self.sound_error.play()
+        if self.parent_window:
+            QMessageBox.critical(self.parent_window, title, message)
+        else:
+            logging.critical(f"{title}: {message}")
 
     def _remove_notification(self, popup):
         try:
@@ -67,6 +77,9 @@ class NotificationManager(QObject):
         self._reposition_notifications()
 
     def _reposition_notifications(self):
+        if not self.parent_window:
+            return
+
         parent_rect = self.parent_window.geometry()
         screen_rect = QApplication.primaryScreen().availableGeometry()
 

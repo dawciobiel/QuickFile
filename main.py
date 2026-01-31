@@ -11,6 +11,9 @@ from PyQt6.QtWidgets import QApplication
 from app.background_task_manager import BackgroundTaskManager
 from app.plugin_manager import PluginManager
 from app.task_queue_manager import TaskQueueManager
+from app.notification_manager import NotificationManager
+from app.file_association_manager import FileAssociationManager
+from app.settings_manager import SettingsManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_manager import FileManager
 from ui.main_window import MainWindow
@@ -54,6 +57,14 @@ def main():
         file_manager = FileManager()
         directory_synchronizer = DirectorySynchronizer()
         plugin_manager = PluginManager()
+        settings_manager = SettingsManager()
+        
+        # We need to create a dummy parent for NotificationManager first,
+        # because MainWindow needs it, but it needs MainWindow as a parent.
+        # We'll assign the real parent after MainWindow is created.
+        notification_manager = NotificationManager(None, settings_manager)
+        
+        file_association_manager = FileAssociationManager()
 
         # Connect shutdown signals
         app.aboutToQuit.connect(plugin_manager.shutdown)
@@ -69,12 +80,21 @@ def main():
             background_task_manager=background_task_manager,
             task_queue_manager=task_queue_manager,
             file_manager=file_manager,
-            directory_synchronizer=directory_synchronizer
+            directory_synchronizer=directory_synchronizer,
+            notification_manager=notification_manager,
+            file_association_manager=file_association_manager
         )
+        
+        # Now set the real parent for the notification manager
+        notification_manager.parent_window = window
 
         window.show()
         window.raise_()
         window.activateWindow()
+        
+        # Apply theme after the window is shown and the event loop is running
+        theme_name = window.settings_manager.get_setting("theme", "dark")
+        window.theme_manager.apply_theme(theme_name)
 
         sys.exit(app.exec())
 
