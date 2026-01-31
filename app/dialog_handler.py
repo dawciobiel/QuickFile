@@ -350,15 +350,6 @@ class DialogHandler:
             self.ui_state_provider.folder_browser.refresh_all_views()
             self.ui_state_provider.folder_browser.clear_selection()
 
-    def paste_item_to_current_dir(self, checked=False):
-        current_dir = self.ui_state_provider.get_active_panel_path()
-        if not current_dir:
-            raise ValueError("Could not determine current directory for active panel.")
-        action_logger.log_action("paste", destination=current_dir)
-        message = self.file_manager.paste_item(current_dir)
-        self.main_window.statusBar().showMessage(message)
-        self.ui_state_provider.folder_browser.refresh_all_views()
-
     def delete_selected_item(self, checked=False):
         selected_paths = self.ui_state_provider.get_selected_paths()
         if not selected_paths:

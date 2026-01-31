@@ -72,7 +72,6 @@ class KeyboardEventManager(QObject):
             "operations.new_folder": self._application_logic_handler.create_new_directory,
             "view.search": self._application_logic_handler.start_file_search,
             "operations.copy": self._application_logic_handler.copy_selected_item,
-            "operations.paste": self._application_logic_handler.paste_item_to_current_dir,
             "operations.move": self._application_logic_handler.move_selected_item,
             "operations.rename": self._application_logic_handler.rename_selected_item,
             "operations.delete": self._application_logic_handler.delete_selected_item,
