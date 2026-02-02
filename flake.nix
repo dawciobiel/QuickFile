@@ -1,5 +1,5 @@
 {
-  description = "QuickFile dev environment (PyQt6 + Qt6 + NVIDIA + tests)";
+  description = "QuickFile development environment (Python + Qt6 + tools)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -10,34 +10,26 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-
-        python = pkgs.python312;
-
-        pythonEnv = python.withPackages (ps: [
-          # z requirements.txt (bez PyQt6 / PyQt6-Qt6 / PyQt6_sip)
-          ps.docopt
-          ps.psutil
-          ps.requests
-          ps.urllib3
-          ps.idna
-          ps.charset-normalizer
-          ps.certifi
-          ps.packaging
-          ps.pluggy
-          ps.typing-extensions
-          # ps.pipreqs # Package not existing in nixos-24.11.
-          # rarfile, Send2Trash, yarg są w pip, nie w nixpkgs – zostawimy je dla pip w razie potrzeby
-        ]);
-
       in {
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            pythonEnv
+            # Python (bez pipowych zależności!)
+            pkgs.python312
+            # Wersja 3.12 jest stabilina na wszystkich systemach [ Windows, linux, MacOS ]
+            # Nie ma problemów z zależnościami:
+            # PyQt6
+            # pluggy
+            # pluggy
+            # psutil
+            # requests
+            # rarfile
+            # Send2Trash
+            # PyInstaller
+            # pytest
+            # ruff
 
-            # PyQt6 z Nix (stabilne na NixOS)
+            # PyQt6 + Qt6 runtime
             pkgs.python312Packages.pyqt6
-
-            # Qt runtime
             pkgs.qt6.qtbase
             pkgs.qt6.qtsvg
             pkgs.qt6.qtwayland
@@ -57,18 +49,22 @@
             pkgs.zstd
             pkgs.dbus
             pkgs.stdenv.cc.cc.lib
+
+            # Narzędzia developerskie
+            pkgs.ruff
+            pkgs.pyright
+            pkgs.git
+            pkgs.which
           ];
 
-          # tu możesz dodać narzędzia dev: pytest, mypy, black, itp.
           shellHook = ''
             echo "QuickFile devShell activated"
             echo "Python: $(which python)"
-            echo "PyQt6 from Nix, Qt6 runtime, GL, X11 – ready."
+            echo "Qt6 + PyQt6 ready"
 
-            # upewniamy się, że lokalny katalog jest na PYTHONPATH (importy typu `from app...`)
-            export PYTHONPATH=$PWD:$PYTHONPATH
+            # NIE ustawiamy PYTHONPATH
+            # pip + .venv zrobią to poprawnie
           '';
         };
       });
 }
-

@@ -1,0 +1,12 @@
+{
+  "id": "org.quickfile.copy_operation",
+  "name": "Standard Copy Operation",
+  "version": "1.0.4",
+  "type": "standard_operations",
+  "description": "Provides standard file copy functionality.",
+  "author": "Dawid Bielecki",
+  "entry_point": "plugin:CopyOperationPlugin",
+  "class_name": "CopyOperationPlugin",
+  "sandboxed": true,
+  "platforms": ["linux", "windows", "macos"]
+}

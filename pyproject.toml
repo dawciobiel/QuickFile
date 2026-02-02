@@ -1,10 +1,107 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "QuickFile"
 version = "0.18.0"
+description = "Modular file manager with plugin support"
+readme = "README.md"
+requires-python = ">=3.10"
 
-[tool.setuptools.packages.find]
-where = ["."]
+authors = [
+    { name = "Dawid Bielecki" }
+]
+
+license = { file = "LICENSE" }
+
+keywords = [
+    "file-manager",
+    "qt",
+    "plugins",
+    "sandbox",
+    "desktop-app",
+    "modular"
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Environment :: X11 Applications :: Qt",
+    "Topic :: Desktop Environment :: File Managers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks"
+]
+
+dependencies = [
+    "docopt==0.6.2",
+    "psutil==7.1.3",
+    "rarfile==4.2",
+    "Send2Trash==1.8.3",
+
+    # GUI stack (Qt6)
+    "PyQt6==6.10.1",
+    "PyQt6-Qt6==6.10.1",
+    "PyQt6_sip==13.10.3",
+
+    # Syntax highlighting
+    "Pygments==2.19.2",
+
+    # Networking / HTTP
+    "requests==2.32.5",
+    "urllib3==2.6.2",
+    "idna==3.11",
+    "charset-normalizer==3.4.4",
+    "certifi==2025.11.12",
+
+    # Packaging / plugin infra
+    "packaging==25.0",
+    "pluggy==1.6.0",
+    "typing_extensions==4.15.0",
+
+    # Requirements generation helper
+    "pipreqs==0.4.13",
+    "yarg==0.1.10"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-qt",
+    "pytest-mock",
+    "pytest-order",
+    "ruff",
+    "pipreqs",
+    "pyinstaller"
+]
+
+[project.scripts]
+quickfile = "quickfile.main:main"
+
+[project.urls]
+Homepage = "https://github.com/dawciobiel/QuickFile"
+Repository = "https://github.com/dawciobiel/QuickFile"
+Issues = "https://github.com/dawciobiel/QuickFile/issues"
+
+[tool.setuptools]
+packages = { find = { where = ["src"] } }
+
+[tool.setuptools.package-data]
+quickfile = [
+    "resources/**/*",
+    "themes/**/*",
+    "translations/**/*"
+]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.pyright]
+include = ["quickfile"]
+pythonVersion = "3.10"
