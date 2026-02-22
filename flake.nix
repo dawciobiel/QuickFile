@@ -49,6 +49,7 @@
             pkgs.zstd
             pkgs.dbus
             pkgs.stdenv.cc.cc.lib
+            pkgs.mesa   # <- biblioteki OpenGL, libGL.so.1
 
             # Narzędzia developerskie
             pkgs.ruff
