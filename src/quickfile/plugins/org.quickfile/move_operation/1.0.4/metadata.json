@@ -1,0 +1,12 @@
+{
+  "id": "org.quickfile.move_operation",
+  "name": "Standard Move Operation",
+  "version": "1.0.4",
+  "type": "standard_operations",
+  "description": "Provides standard file move functionality.",
+  "author": "Dawid Bielecki",
+  "entry_point": "plugin:MoveOperationPlugin",
+  "class_name": "MoveOperationPlugin",
+  "sandboxed": true,
+  "platforms": ["linux", "windows", "macos"]
+}
