@@ -4,6 +4,7 @@
 
 import importlib
 import importlib.util
+import hashlib
 import json
 import logging
 import os
@@ -11,6 +12,7 @@ import platform
 import re
 import shutil
 import sys
+import tempfile
 
 from app.plugin_dependency_manager import PluginDependencyManager
 from app.plugin_sandbox import SandboxedPluginWrapper  # Import the new wrapper
@@ -65,14 +67,55 @@ class PluginManager:
             logging.warning(f"Could not read version from plugin at {plugin_path}: {e}")
             return None
 
-    def _compare_versions(self, v1, v2):
-        """Compares two version strings (e.g., '1.0.1' > '1.0.0'). Returns True if v1 > v2."""
-        try:
-            p1 = tuple(map(int, v1.split('.')))
-            p2 = tuple(map(int, v2.split('.')))
-            return p1 > p2
-        except (ValueError, TypeError):
+    _TREE_IGNORED_DIRS = {"__pycache__", "libs"}
+
+    def _tree_fingerprint(self, root):
+        """Map every bundled file to a content hash, ignoring build/venv leftovers."""
+        fingerprint = {}
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in self._TREE_IGNORED_DIRS]
+            for filename in filenames:
+                if filename.endswith(".pyc"):
+                    continue
+                absolute = os.path.join(dirpath, filename)
+                relative = os.path.relpath(absolute, root)
+                with open(absolute, "rb") as handle:
+                    fingerprint[relative] = hashlib.sha256(handle.read()).hexdigest()
+        return fingerprint
+
+    def _tree_matches(self, source, target):
+        if not os.path.isdir(target):
             return False
+        return self._tree_fingerprint(source) == self._tree_fingerprint(target)
+
+    def _copy_preserving_libs(self, source, target):
+        """Replace ``target`` with ``source`` but keep any ``libs/`` directories.
+
+        ``libs/`` lives inside a version directory, so every occurrence in the
+        tree has to be preserved, not just one at the plugin root.
+        """
+        with tempfile.TemporaryDirectory() as staging:
+            preserved = []
+            if os.path.isdir(target):
+                for dirpath, dirnames, _ in os.walk(target):
+                    if os.path.basename(dirpath) == "libs":
+                        relative = os.path.relpath(dirpath, target)
+                        staged = os.path.join(staging, relative)
+                        os.makedirs(os.path.dirname(staged), exist_ok=True)
+                        shutil.copytree(dirpath, staged)
+                        preserved.append(relative)
+                        dirnames[:] = []  # do not descend into installed dependencies
+
+            if os.path.exists(target):
+                shutil.rmtree(target)
+            shutil.copytree(source, target)
+
+            for relative in preserved:
+                destination = os.path.join(target, relative)
+                if os.path.exists(destination):
+                    shutil.rmtree(destination)
+                os.makedirs(os.path.dirname(destination), exist_ok=True)
+                shutil.copytree(os.path.join(staging, relative), destination)
 
     def _ensure_bundled_plugins(self):
         if getattr(sys, 'frozen', False):
@@ -90,41 +133,50 @@ class PluginManager:
             logging.warning(f"Bundled plugin directory not found at: {bundled_plugin_dir}")
             return
 
+        self._sync_bundled_plugin_dirs(bundled_plugin_dir, user_plugin_dir)
+
+    def _sync_bundled_plugin_dirs(self, bundled_plugin_dir, user_plugin_dir):
+        """Make every bundled plugin in the user directory match the shipped one."""
         for org_name in os.listdir(bundled_plugin_dir):
             org_path = os.path.join(bundled_plugin_dir, org_name)
-            if os.path.isdir(org_path) and org_name != "__pycache__":
-                for plugin_name in os.listdir(org_path):
-                    bundled_path = os.path.join(org_path, plugin_name)
-                    if os.path.isdir(bundled_path):
-                        dest_org_path = os.path.join(user_plugin_dir, org_name)
-                        if not os.path.exists(dest_org_path):
-                            os.makedirs(dest_org_path)
-                        dest_path = os.path.join(dest_org_path, plugin_name)
+            if not os.path.isdir(org_path) or org_name == "__pycache__":
+                continue
+            for plugin_name in os.listdir(org_path):
+                bundled_path = os.path.join(org_path, plugin_name)
+                if not os.path.isdir(bundled_path):
+                    continue
 
-                        bundled_version = self._get_plugin_version(bundled_path)
-                        if not bundled_version:
-                            logging.warning(f"Skipping bundled plugin '{plugin_name}' due to missing version.")
-                            continue
+                dest_org_path = os.path.join(user_plugin_dir, org_name)
+                os.makedirs(dest_org_path, exist_ok=True)
+                dest_path = os.path.join(dest_org_path, plugin_name)
 
-                        if not os.path.exists(dest_path):
-                            try:
-                                shutil.copytree(bundled_path, dest_path)
-                                logging.info(f"Installed bundled plugin: {org_name}.{plugin_name} v{bundled_version}")
-                            except Exception as e:
-                                logging.error(f"Failed to install bundled plugin {plugin_name}: {e}")
-                        else:
-                            user_version = self._get_plugin_version(dest_path)
-                            if not user_version:
-                                logging.warning(f"Could not determine version of user-installed plugin '{plugin_name}'. Skipping update.")
-                                continue
+                bundled_version = self._get_plugin_version(bundled_path)
+                if not bundled_version:
+                    logging.warning(f"Skipping bundled plugin '{plugin_name}' due to missing version.")
+                    continue
 
-                            if self._compare_versions(bundled_version, user_version):
-                                try:
-                                    shutil.rmtree(dest_path)
-                                    shutil.copytree(bundled_path, dest_path)
-                                    logging.info(f"Updated bundled plugin: {org_name}.{plugin_name} from v{user_version} to v{bundled_version}")
-                                except Exception as e:
-                                    logging.error(f"Failed to update bundled plugin {plugin_name}: {e}")
+                # Content, not version numbers, decides whether the installed copy
+                # is up to date. Two releases can share a version number but
+                # differ in content (the architecture-v3 refactor did exactly
+                # that), and a "newer" user copy may be broken.
+                if self._tree_matches(bundled_path, dest_path):
+                    continue
+
+                try:
+                    was_installed = os.path.exists(dest_path)
+                    self._copy_preserving_libs(bundled_path, dest_path)
+                    if was_installed:
+                        logging.info(
+                            "Refreshed bundled plugin: %s.%s v%s",
+                            org_name, plugin_name, bundled_version,
+                        )
+                    else:
+                        logging.info(
+                            "Installed bundled plugin: %s.%s v%s",
+                            org_name, plugin_name, bundled_version,
+                        )
+                except OSError as e:
+                    logging.error(f"Failed to install bundled plugin {plugin_name}: {e}")
 
     def load_plugins(self):
         logging.info(f"Scanning for plugins in: {', '.join(self.plugin_dirs)}")
@@ -198,6 +250,15 @@ class PluginManager:
                     logging.info(f"Loading plugin {metadata['id']} in sandbox mode.")
                     plugin_instance = SandboxedPluginWrapper(base_path, metadata)
                     plugin_instance.start()
+                    if not plugin_instance.is_ready():
+                        # Do not register a dead plugin: every later call on the
+                        # wrapper would raise AttributeError and crash the UI.
+                        logging.error(
+                            "Plugin %s could not be started and will not be registered.",
+                            metadata["id"],
+                        )
+                        plugin_instance.stop()
+                        return
                 else:
                     module_file_path = os.path.join(base_path, module_name.replace('.', os.sep) + '.py')
 

@@ -261,6 +261,9 @@ class SandboxedPluginWrapper(QObject):
     critical_error = pyqtSignal(str)
     data_event_received = pyqtSignal(str, str, dict)
 
+    # How long a plugin process may take to load and advertise its API.
+    STARTUP_TIMEOUT = 5.0
+
     def __init__(self, plugin_path, metadata):
         super().__init__()
         self.plugin_path = plugin_path
@@ -290,17 +293,40 @@ class SandboxedPluginWrapper(QObject):
         self._pipe_thread.start()
 
         # Wait for the plugin to advertise its API. This is a one-off cost at
-        # load time; it makes attribute-style calls predictable.
-        if not self._ready_event.wait(timeout=5):
-            self.logger.warning(
-                "Plugin %s did not report its method list within 5s. "
-                "Attribute-style calls will raise AttributeError; use execute_task().",
-                self.metadata.get("id"),
-            )
-        else:
+        # load time; it makes attribute-style calls predictable. If the process
+        # dies during initialization, stop waiting immediately instead of
+        # burning the full timeout on every startup.
+        deadline = time.monotonic() + self.STARTUP_TIMEOUT
+        while time.monotonic() < deadline:
+            if self._ready_event.wait(0.05):
+                break
+            if self.process is not None and not self.process.is_alive():
+                break
+
+        if self._ready_event.is_set():
             self.logger.debug(
                 "Plugin %s API: %s", self.metadata.get("id"), sorted(self._plugin_methods)
             )
+        elif self.process is not None and not self.process.is_alive():
+            self.logger.error(
+                "Plugin %s failed to start: the process exited during initialization.",
+                self.metadata.get("id"),
+            )
+        else:
+            self.logger.warning(
+                "Plugin %s did not report its method list within %ss. "
+                "Attribute-style calls will raise AttributeError; use execute_task().",
+                self.metadata.get("id"),
+                self.STARTUP_TIMEOUT,
+            )
+
+    def is_ready(self) -> bool:
+        """True when the plugin process is alive and has advertised its API."""
+        return (
+            self._ready_event.is_set()
+            and self.process is not None
+            and self.process.is_alive()
+        )
 
     def stop(self):
         if self.process and self.process.is_alive():

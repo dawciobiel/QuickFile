@@ -39,7 +39,8 @@ __pycache__/
 *$py.class
 
 # direnv
-.envrc
+# .envrc is tracked on purpose: it is a thin wrapper over flake.nix.
+.direnv/
 
 # C extensions
 *.so
