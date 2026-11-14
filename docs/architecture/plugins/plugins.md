@@ -8,19 +8,30 @@ aby wspierać również inne typy operacji w przyszłości (np. sumy kontrolne, 
 
 ## Izolacja Procesów (Piaskownica)
 
-Aby zapewnić maksymalną stabilność, bezpieczeństwo i responsywność interfejsu użytkownika, wtyczki wykonujące długotrwałe lub potencjalnie niestabilne operacje (np. operacje na plikach, archiwizacja, wyszukiwanie) są uruchamiane w **izolowanych procesach (piaskownicach)**.
+Aby zapewnić stabilność i responsywność interfejsu użytkownika, wtyczki wykonujące długotrwałe lub potencjalnie niestabilne operacje (np. operacje na plikach, archiwizacja, wyszukiwanie) są uruchamiane w **osobnych procesach**.
 
-**Korzyści:**
-*   **Stabilność:** Awaria wtyczki nie powoduje zawieszenia ani zamknięcia całej aplikacji.
-*   **Bezpieczeństwo:** Wtyczki mają ograniczony dostęp do zasobów systemu i aplikacji.
-*   **Izolacja Zależności:** Każda wtyczka może używać własnych wersji bibliotek, bez konfliktu z innymi wtyczkami lub główną aplikacją.
-*   **Responsywność UI:** Operacje w tle nie blokują głównego wątku interfejsu użytkownika, zapewniając płynne działanie aplikacji.
+**Co to daje:**
+*   **Stabilność:** Awaria lub zawieszenie wtyczki nie powoduje zawieszenia ani zamknięcia całej aplikacji — proces można zakończyć.
+*   **Responsywność UI:** Operacje w tle nie blokują głównego wątku interfejsu użytkownika.
+*   **Izolacja awarii:** Wyciek pamięci lub nieskończona pętla we wtyczce nie psuje stanu aplikacji.
+
+**Czego to NIE daje — bezpieczeństwo:**
+
+Plugin działający w osobnym procesie **nie jest odizolowany bezpieczeństwem**. Działa z tymi samymi uprawnieniami co użytkownik: ma dostęp do całego jego systemu plików, sieci, `os.environ`, kluczy SSH itd. Złośliwy kod wtyczki zostanie wykonany i może zrobić wszystko, co może zrobić użytkownik.
+
+W związku z tym:
+*   **Zaufanie deklaruje użytkownik**, nie wtyczka. Pole `sandboxed` w metadanych wybiera jedynie tryb uruchomienia — nie jest deklaracją bezpieczeństwa.
+*   Wtyczki należy instalować wyłącznie z zaufanych źródeł, tak jak każdy inny kod wykonywalny.
+*   Realne ograniczenie uprawnień (Landlock/seccomp/bubblewrap lub WASM) to osobny, przyszły etap — opisany w `docs/project_management/plan-naprawy-2026-11-14.md`.
 
 ## Struktura Katalogów
 
 Wtyczki są przechowywane w katalogu konfiguracyjnym użytkownika, co pozwala na łatwą instalację i aktualizację bez uprawnień administratora.
 
-**Lokalizacja:** `~/.config/QuickFile/plugins/`
+**Lokalizacja produkcyjna:** `~/.config/QuickFile/plugins/`
+**Lokalizacja w repozytorium (dev):** `plugins/`
+
+Przy starcie `PluginManager` porównuje wersje wtyczek wbudowanych z tymi w katalogu użytkownika i w razie potrzeby kopiuje nowszą wersję. Wbudowane wtyczki są częścią pakietu (dane, nie kod importowalny — patrz „Kontrakt ładowania”).
 
 Struktura katalogów jest inspirowana konwencją Maven (`groupId/artifactId/version`), co zapewnia unikalność i wsparcie dla wielu wersji tej samej wtyczki.
 
@@ -41,13 +52,47 @@ plugins/
 ~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.0/
 ```
 
+## Kontrakt ładowania modułów
+
+Katalogi wtyczek zawierają kropkę w nazwie (`org.quickfile.copy_operation`), więc **nie są importowalnymi pakietami Pythona**. `PluginManager` ładuje `plugin.py` po ścieżce pliku (`importlib.util.spec_from_file_location`), a katalog wtyczki trafia na `sys.path`.
+
+Konsekwencje, których trzeba przestrzegać:
+
+1.  **Moduły na najwyższym poziomie katalogu wtyczki nie mogą używać importów relatywnych.**
+    `from .tasks import CopyTask` kończy się błędem `attempted relative import with no known parent package`.
+    Poprawnie: `from tasks import CopyTask`.
+2.  **Podkatalogi z `__init__.py` są pakietami** i wewnątrz nich importy relatywne są w porządku
+    (np. `widgets/editor_dialog.py` może robić `from .editor_widget import EditorWidget`).
+3.  Nazwa wersji w `metadata.json` **musi** być identyczna z nazwą katalogu wersji.
+
+Punkty 1 i 3 są pilnowane przez testy w `tests/unit/test_plugin_structure.py`.
+
+## Zależności wtyczek
+
+Wtyczka może zadeklarować zależności w `metadata.json`:
+
+```json
+"python_dependencies": ["some-library>=1.0"]
+```
+
+Zasady:
+
+*   **Ładowanie wtyczki nigdy nie instaluje zależności.** QuickFile nie uruchamia `pip` przy starcie —
+    wymagałoby to sieci, zmieniało środowisko aplikacji i uniemożliwiało reprodukcję błędów.
+*   Zależności, które host już posiada (np. `PyQt6`), są traktowane jako spełnione i nie wymagają deklaracji.
+*   Instalacja to jawna akcja (`PluginDependencyManager.install_dependencies`), wywoływana przez użytkownika
+    lub instalator wtyczki. Brakująca zależność jest logowana jako ostrzeżenie, a wtyczka i tak się ładuje.
+
 ## Metadane (`metadata.json`)
 
 Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik ten definiuje podstawowe informacje o wtyczce oraz punkt wejścia dla `PluginManager`.
 
 ```json
 {
+  "id": "org.quickfile.zip_archiver",
   "name": "Standard ZIP Archiver",
+  "version": "1.0.0",
+  "author": "QuickFile Team",
   "type": "archive",
   "description": "Provides support for creating and extracting ZIP archives.",
   "entry_point": "plugin:ZipPlugin",
@@ -57,13 +102,16 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 }
 ```
 
+*   **id**: Unikalny identyfikator wtyczki (odwrócona domena).
 *   **name**: Wyświetlana nazwa wtyczki.
+*   **version**: Wersja wtyczki; musi być równa nazwie katalogu wersji.
 *   **type**: Typ wtyczki (np. `archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`, `menu_action`). Używany przez `PluginManager` do kategoryzacji.
 *   **description**: Krótki opis.
 *   **entry_point**: Nazwa modułu Pythona i klasy (np. `plugin:ZipPlugin`) zawierającej klasę wtyczki.
 *   **class_name**: Nazwa klasy implementującej interfejs wtyczki.
-*   **sandboxed**: (Opcjonalnie, `boolean`) Jeśli `true`, wtyczka zostanie uruchomiona w izolowanym procesie (piaskownicy). **Zalecane dla wtyczek wykonujących operacje w tle.**
+*   **sandboxed**: (Opcjonalnie, `boolean`) Jeśli `true`, wtyczka zostanie uruchomiona w osobnym procesie. **Zalecane dla wtyczek wykonujących operacje w tle.** To wybór trybu uruchomienia, a nie deklaracja bezpieczeństwa — patrz „Izolacja Procesów”.
 *   **platforms**: (Opcjonalnie, `array of strings`) Lista platform, na których wtyczka jest wspierana (np. `"windows"`, `"linux"`, `"macos"`).
+*   **python_dependencies**: (Opcjonalnie, `array of strings`) Zależności Pythona — patrz „Zależności wtyczek”.
 
 ## Interfejsy (Kontrakty)
 
@@ -139,13 +187,21 @@ Klasa `PluginManager` (`app/plugin_manager.py`) odpowiada za:
 3.  `BackgroundTaskManager` identyfikuje wtyczkę po `plugin_id` i wywołuje jej metodę (np. `extract_archive`, `copy_items`, `split_file`) asynchronicznie, poprzez `SandboxedPluginWrapper`.
 4.  `BackgroundTaskManager` nasłuchuje na sygnały z `SandboxedPluginWrapper` (postęp, zakończenie, błędy) i aktualizuje stan zadania w `TaskQueueManager`, który z kolei odświeża interfejs użytkownika.
 
-## Lista Zadań (TODO)
+## Wywoływanie metod wtyczki sandboxowanej
 
-* **Zaprojektowanie w pełni kompletnej architektury pluginów:**
-    * Opracować architekturę opartą na minimum dwóch wątkach wewnątrz procesu pluginu: jeden wątek do nasłuchiwania
-      komunikatów (IPC), a drugi (lub więcej) do wykonywania zadań.
-    * Stworzyć klasy abstrakcyjne, które ułatwią implementację tej architektury, zapewniając spójność i poprawność
-      działania (np. automatyczna obsługa pętli zdarzeń, komunikacji).
-    * Celem jest uproszczenie tworzenia nowych, responsywnych pluginów i wyeliminowanie problemów z blokowaniem pętli
-      zdarzeń.
-    * Zadanie do zrealizowania przed wypuszczeniem oficjalnej wersji "beta" aplikacji.
+`sandboxed` wtyczka jest reprezentowana przez `SandboxedPluginWrapper`. Po starcie proces potomny wysyła komunikat `READY` z listą publicznych metod, a wrapper:
+
+*   udostępnia przez atrybuty **tylko** te metody (synchroniczne RPC),
+*   dla nieznanej lub prywatnej nazwy natychmiast rzuca `AttributeError` — nie ma już odpytywania z 10-sekundowym timeoutem,
+*   operacje długotrwałe uruchamia przez `execute_task()` (asynchronicznie, z postępem i anulowaniem).
+
+Zasada: do pracy w tle używaj `execute_task()`. Synchroniczne wywołania metod są przeznaczone wyłącznie dla szybkich zapytań (np. `get_supported_extensions()`).
+
+## Planowany kierunek rozwoju
+
+Docelowy runtime wtyczek (etap C w `docs/project_management/plan-naprawy-2026-11-14.md`):
+
+*   wątek IPC i wątek roboczy wewnątrz procesu wtyczki,
+*   wersjonowany, asynchroniczny protokół (`EXECUTE_TASK`, `CANCEL_TASK`, `PAUSE_TASK`, `PROGRESS`, `RESULT`, `ERROR`),
+*   jawne API zadań zamiast metod wywoływanych przez `__getattr__`,
+*   adapter dla wtyczek w obecnym stylu, aby nie przepisywać wszystkiego naraz.

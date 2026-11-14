@@ -19,6 +19,23 @@
 
 ## Fixed
 
+### Build, environment and plugins (2026-11-14)
+
+- **Plugin loading ran `pip install`**: `PluginDependencyManager` installed declared
+  dependencies into the plugin's `libs/` directory during startup. That required network
+  access, changed the runtime environment silently and made tests hang. Loading now only
+  checks dependencies; installation is an explicit action.
+- **Plugin attribute lookup froze the caller for 10s**: `SandboxedPluginWrapper.__getattr__`
+  answered every name with a synchronous RPC. The plugin process now reports its public
+  methods in a `READY` message and unknown names raise `AttributeError` immediately.
+- **Wheel was unusable**: it shipped no `.ui` files, icons, themes, translations or plugin
+  modules. Runtime data now lives in the `resources` package and is declared as
+  package-data; plugins are shipped as data because their directories are not importable
+  packages.
+- **Environment was unreproducible**: Nix, direnv, a virtualenv and pip were mixed, and
+  `requirements.txt` pinned the project to an old commit. The flake is now the single
+  source of truth on Linux; pip files remain as a documented secondary path.
+
 ### Viewer (`standard_viewer`)
 
 - **Focus Issues**: Fixed a bug where the viewer window would not get focus upon opening.

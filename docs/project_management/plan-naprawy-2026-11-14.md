@@ -113,8 +113,11 @@ Komunikat dla użytkownika: **„pluginy trzecich stron uruchamiasz na własne r
 
 ## 6. Etap A — recovery-first
 
-**Stan wykonania (2026-11-14):** A1 ✅, A2 ✅ (gałąź `recovery/plugin-runtime`, punkt startu
-`d4fb01d`). A3 — następny krok.
+**Stan wykonania (2026-11-14): A1 ✅, A2 ✅, A3 ✅, A4 ✅, A5 ✅.**
+
+Gałąź `recovery/plugin-runtime`, punkt startu `d4fb01d`. Testy po zakończeniu etapu:
+**123 passed, 3 skipped** (unit) i **7 passed** (e2e), bez przygotowywania `HOME`,
+bez sieci, bez `pip`.
 
 Zasada: **każdy krok = osobny commit, testy zielone po commicie**. Jeśli krok nie może
 przejść na zielono, jest za duży — dzielić.
@@ -182,48 +185,55 @@ Docelowo (osobny krok) można przepisać CI na `nix develop --command pytest`.
 Kryterium: `which python` → ścieżka z `/nix/store/`, `python -c "import PyQt6; print(PyQt6.__file__)"`,
 `pytest --version`, `direnv status` pokazuje załadowany `.envrc`. Zero `.venv` w repo.
 
-### A3. Higiena pluginów (drobne, niezależne commity)
+### A3. Higiena pluginów — WYKONANE
 
-1. **Usunąć runtime `pip install`** z `file_splitter` — plugin nie instaluje zależności.
-   Brakującą zależność deklaruje `metadata.json` (`dependencies`), a instaluje ją host
-   przy instalacji pluginu, nie przy starcie.
-2. **Naprawić wersjonowanie katalogów** — jedna wersja na plugin; stare wersje usuwać
-   świadomie, nie trzymać 6 wersji równolegle.
-3. **Loader pluginów**: import przez `importlib.util.spec_from_file_location` z poprawnym
-   `submodule_search_locations` albo — prościej i bezpieczniej — **zakazać importów
-   relatywnych w `plugin.py`** i wymagać `from tasks import ...` (tak jak w `d4fb01d`).
-   Wybrać jedno i zapisać w `docs/architecture/plugins/`.
-4. **`PluginManager`: minimalne API.** Każda metoda, której brakuje, to albo 2 linie kodu,
-   albo usunięcie wywołania z UI. Preferować usunięcie — mniejsze API = mniej długu.
-5. **Zakaz synchronicznego RPC w `__getattr__`.** Jawne `has_method()` / `call(method, *args)`
-   z timeoutem, wołane tylko tam, gdzie wynik jest naprawdę potrzebny w danej chwili.
+W `master` punkty 2 i 4 z pierwotnej listy nie występowały (była jedna wersja na plugin
+i kompletne API `PluginManager`). Zrealizowano:
 
-Kryterium po każdym punkcie: testy zielone, `get_plugin_for_action("copy_items")` < 1 s.
+1. **Runtime `pip install` usunięty.** `PluginDependencyManager` tylko sprawdza zależności;
+   instalacja jest jawną akcją (`install_dependencies`). Zależności dostępne w hoście
+   (`PyQt6`) są traktowane jako spełnione — wpis `python_dependencies: ["PyQt6"]`
+   usunięto z metadanych `file_splitter`.
+2. **Kontrakt importów zapisany i pilnowany testem.** Moduły na najwyższym poziomie
+   katalogu wtyczki nie mogą używać importów relatywnych; podkatalogi z `__init__.py` mogą.
+   Test `test_plugin_root_modules_use_flat_imports` sprawdzono negatywnie — po dodaniu
+   `from .tasks import CopyTask` do `copy_operation/plugin.py` faktycznie pada.
+3. **`__getattr__` bez ślepego RPC.** Proces wtyczki wysyła `READY` z listą publicznych
+   metod; wrapper udostępnia tylko je i natychmiast rzuca `AttributeError` dla reszty.
+   Prywatne/dunder nazwy nie są przechwytywane (wcześniej psuło to `copy`/`pickle`).
+4. Poprawione `ids` w `test_plugin_structure` (były zepsute — `-k` nie działał).
 
-### A4. Pakowanie
+### A4. Pakowanie — WYKONANE INACZEJ NIŻ PLANOWANO
 
-Decyzja do potwierdzenia w nowej sesji (rekomendacja poniżej):
+**Odstąpiono od przenoszenia kodu do `src/quickfile/`.** Powód: to właśnie ten ruch
+w `b84c30a` pociągnął za sobą zmianę wszystkich importów na `quickfile.*` i wymusił
+relatywne importy w pluginach, które potem przestały działać. Przy płaskim layoucie
+problem pakowania rozwiązuje się konfiguracją, a nie przepisywaniem całego drzewa.
 
-- **Kod rdzenia** → `src/quickfile/` (`app`, `ui`, `utils`, `panels`, `browser`,
-  `file_operations`, `favorites`, `config`) + mechaniczna zmiana importów `app.` → `quickfile.app.`.
-  Testy jako brama — to duży, ale czysto mechaniczny commit.
-- **Pluginy zostają POZA pakietem.** To nie przypadek, że `b84c30a` wsadził je do
-  `src/quickfile/plugins/` i natychmiast zrobił bałagan z wersjami. Plugin zewnętrzny
-  nie jest częścią aplikacji — w produkcji żyje w `~/.config/QuickFile/plugins`,
-  w dev wskazujemy `PluginManager`-em na repo `plugins/`.
-- **`translations/`, `resources/`, `themes/`** — jedno miejsce, jawnie zadeklarowane
-  w `pyproject.toml` jako `package-data` (lub `data_files`). Nie duplikować w `src/` i w root.
+Co zrobiono:
 
-Kryterium: `python -m build`, potem `unzip -l dist/*.whl` → są tłumaczenia, zasoby, brak
-`site-packages/quickfile/plugins/org.quickfile/...`; instalacja z wheel startuje aplikację.
+- **Dane runtime przeniesione do pakietu `resources/`** (który jest prawdziwym pakietem):
+  `translations/`, `themes/`, `config/`, `docs/about/` → `resources/...`.
+  `utils/resource_path.py` obsługuje oba układy (nowy `resources/<path>` i stary z roota).
+- **`package-data`** dla `resources`, `ui` i `plugins`. Katalogi pluginów zawierają kropkę
+  (`org.quickfile.*`), więc **nie są importowalnymi pakietami** — są ładowane po ścieżce
+  i pakowane jako dane, nie jako moduły.
+- **`py-modules = ["main", "__version__"]`** + entry point GUI `QuickFile = main:main`.
+- **`packages.find` ograniczony** do pakietów aplikacji — `tests`, `experiments`, `scripts`
+  nie trafiają już do wheel-a.
+- Zaktualizowane `scripts/package_builder/build_app.py`, `scripts/check_translations.py`,
+  `scripts/check_themes.py`.
 
-### A5. Dokumentacja
+Weryfikacja: wheel ma **260 plików** (było 125, bez danych i pluginów). Rozpakowany wheel
+uruchamia aplikację, która instaluje 16 wbudowanych pluginów w `~/.config/QuickFile/plugins`.
 
-- `docs/architecture/plugins/plugins.md` — zaktualizować: kontrakt pluginu, brak importów
-  relatywnych, `isolation: "process"`, model zaufania.
-- `docs/project_management/BUGS.md` — zamknąć punkty rozwiązane, dopisać nowe.
-- Krótki `docs/developer_guide/environment.md` — Nix-only, jak uruchomić testy, jak
-  przygotować `HOME` dla e2e.
+### A5. Dokumentacja — WYKONANE
+
+- `docs/architecture/plugins/plugins.md` — poprawiony model zaufania (proces ≠ bezpieczeństwo),
+  kontrakt ładowania modułów, zasady zależności, opis `__getattr__` i `READY`,
+  planowany kierunek (etap C).
+- `docs/developer_guide/environment.md` — nowy dokument: Nix-only, weryfikacja środowiska,
+  testy bez przygotowywania `HOME`, dodawanie zależności, pakowanie, typowe pułapki.
 
 **Koniec etapu A: aplikacja działa, testy zielone, jedno środowisko, wheel używalny.**
 
