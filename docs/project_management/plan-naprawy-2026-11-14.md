@@ -113,6 +113,9 @@ Komunikat dla użytkownika: **„pluginy trzecich stron uruchamiasz na własne r
 
 ## 6. Etap A — recovery-first
 
+**Stan wykonania (2026-11-14):** A1 ✅, A2 ✅ (gałąź `recovery/plugin-runtime`, punkt startu
+`d4fb01d`). A3 — następny krok.
+
 Zasada: **każdy krok = osobny commit, testy zielone po commicie**. Jeśli krok nie może
 przejść na zielono, jest za duży — dzielić.
 
@@ -168,11 +171,13 @@ export QUICKFILE_PLUGIN_PATH="$PWD/plugins"
 Usunąć z `.envrc`: tworzenie `.venv`, `source .venv/bin/activate`, `pip install -e .`,
 `pip install -r`, `pip freeze > requirements.txt`, cache hashów.
 
-`requirements.txt` — **usunąć z repo** (to artefakt `pip freeze`, a nie lock; dodatkowo
-przypina `d4fb01d`). Metadane projektu żyją w `pyproject.toml`.
+`requirements*.txt` — **zostają jako ścieżka drugorzędna** (Windows/macOS bez Nix oraz CI),
+ale z nagłówkiem „SECONDARY dependency path” i **wyrównaną wersją PyQt6 = 6.8.0** do flake’a.
+Nie są źródłem prawdy na Linuksie. W `master` `pyproject.toml` nie pinuje PyQt6 (pin
+`6.10.1` doszedł dopiero w `b84c30a`), więc nie ma tam czego poprawiać.
 
-`pyproject.toml` — usunąć `PyQt6==6.10.1`, zostawić zakres zgodny z flake (`>=6.8,<6.9`)
-albo w ogóle nie pinować w metadanych.
+CI (`.github/workflows/ci.yml`) — podniesione do Python 3.12, żeby odpowiadało devShellowi.
+Docelowo (osobny krok) można przepisać CI na `nix develop --command pytest`.
 
 Kryterium: `which python` → ścieżka z `/nix/store/`, `python -c "import PyQt6; print(PyQt6.__file__)"`,
 `pytest --version`, `direnv status` pokazuje załadowany `.envrc`. Zero `.venv` w repo.
