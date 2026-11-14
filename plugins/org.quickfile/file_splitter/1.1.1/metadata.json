@@ -12,6 +12,5 @@
     "linux",
     "macos"
   ],
-  "sandboxed": true,
-  "python_dependencies": ["PyQt6"]
+  "sandboxed": true
 }

@@ -160,10 +160,19 @@ class PluginManager:
             with open(metadata_path, 'r') as f:
                 metadata = json.load(f)
 
-            # Ensure dependencies are installed before loading
-            libs_path = self.dependency_manager.ensure_dependencies(base_path, metadata)
-            if libs_path:
-                sys.path.insert(0, libs_path)
+            # Verify dependencies without installing anything. A missing
+            # dependency is reported, but the plugin is still loaded: PyQt6 and
+            # other host-provided packages are always available anyway.
+            dependency_status = self.dependency_manager.check_dependencies(base_path, metadata)
+            if dependency_status.libs_dir:
+                sys.path.insert(0, dependency_status.libs_dir)
+            if not dependency_status.satisfied:
+                logging.warning(
+                    "Plugin %s is missing dependencies: %s. Install them explicitly, "
+                    "QuickFile will not run pip during startup.",
+                    metadata.get("id"),
+                    ", ".join(dependency_status.missing),
+                )
 
             sys.path.insert(0, base_path)
 
