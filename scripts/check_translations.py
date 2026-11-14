@@ -65,7 +65,7 @@ def main():
     
     for lang_file in ['en_US.json', 'pl_PL.json']:
         print(f"\nChecking {lang_file}...")
-        lang_path = os.path.join(project_root, 'translations', lang_file)
+        lang_path = os.path.join(project_root, 'resources', 'translations', lang_file)
         existing_keys = get_existing_keys(lang_path)
         
         missing_keys = all_code_keys - existing_keys

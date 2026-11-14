@@ -1,10 +1,52 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "QuickFile"
 version = "0.18.0"
+description = "Modular file manager with a plugin system"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+
+# Metadata for the pip path. The Nix devshell provides the same packages.
+dependencies = [
+    "PyQt6>=6.8,<6.9",
+    "psutil",
+    "rarfile",
+    "Send2Trash",
+    "Pygments",
+]
+
+[project.gui-scripts]
+QuickFile = "main:main"
+
+[tool.setuptools]
+# Launcher and version module live at the project root and are not part of
+# any package.
+py-modules = ["main", "__version__"]
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = [
+    "app*",
+    "browser*",
+    "favorites*",
+    "file_operations*",
+    "panels*",
+    "plugins*",
+    "resources*",
+    "ui*",
+    "utils*",
+]
+exclude = ["tests*", "experiments*", "scripts*", "build*", "dist*"]
+
+[tool.setuptools.package-data]
+# Resources (icons, themes, translations, config defaults) are shipped with
+# the package so that a pip-installed QuickFile behaves like a source checkout.
+resources = ["**/*"]
+ui = ["*.ui"]
+# Plugin directories contain a dot (org.quickfile.*) and are therefore not
+# importable packages: they are loaded by file path and shipped as data.
+plugins = ["**/*.py", "**/*.json", "**/*.ui", "**/*.svg"]

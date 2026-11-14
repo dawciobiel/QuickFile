@@ -32,7 +32,7 @@ def check_theme(theme_path):
     else:
         print("  OK: All placeholders found in palette.")
 
-base_dir = "/home/dawciobiel/PycharmProjects/QuickFile/themes"
+base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "resources", "themes")
 for theme in os.listdir(base_dir):
     theme_path = os.path.join(base_dir, theme)
     if os.path.isdir(theme_path):

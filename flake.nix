@@ -29,6 +29,7 @@
           pytest-qt
 
           # Packaging
+          build
           pyinstaller
         ]);
       in {

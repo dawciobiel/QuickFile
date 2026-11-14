@@ -46,9 +46,6 @@ def build():
         # Format: src:dest (separator depends on OS)
         f"--add-data={os.path.join(project_root, 'ui')}{os.pathsep}ui",
         f"--add-data={os.path.join(project_root, 'resources')}{os.pathsep}resources",
-        f"--add-data={os.path.join(project_root, 'themes')}{os.pathsep}themes",
-        f"--add-data={os.path.join(project_root, 'translations')}{os.pathsep}translations",
-        f"--add-data={os.path.join(project_root, 'config')}{os.pathsep}config",
         f"--add-data={os.path.join(project_root, 'plugins')}{os.pathsep}plugins",
         
         # Hidden imports (crucial for dynamic plugin loading)
