@@ -1,3 +1,8 @@
+# ---------------------------------------------------------------------------
+# SECONDARY dev dependency path, for systems without Nix (Windows, macOS, CI).
+# On Linux with Nix use `direnv allow` / `nix develop` instead.
+# ---------------------------------------------------------------------------
+
 # Base runtime dependencies
 -r requirements.txt
 

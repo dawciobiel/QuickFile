@@ -1,13 +1,21 @@
+# ---------------------------------------------------------------------------
+# SECONDARY dependency path, for systems without Nix (Windows, macOS, CI).
+#
+# On Linux with Nix the single source of truth is flake.nix and this file is
+# not used at all. Keep PyQt6 in sync with the version provided by the flake
+# (nixpkgs 24.11 ships 6.8.0) so both paths behave the same.
+# ---------------------------------------------------------------------------
+
 # Core dependencies
 docopt==0.6.2              # CLI argument parsing
 psutil==7.1.3              # System and process utilities
 rarfile==4.2               # RAR archive support
 Send2Trash==1.8.3          # Cross-platform safe delete
 
-# GUI stack (Qt6)
-PyQt6==6.10.1
-PyQt6-Qt6==6.10.1
-PyQt6_sip==13.10.3
+# GUI stack (Qt6) - must match the PyQt6 used by flake.nix
+PyQt6==6.8.0
+PyQt6-Qt6==6.8.3
+PyQt6_sip==13.8.0
 
 # Syntax highlighting (used in preview/editor components)
 Pygments==2.19.2

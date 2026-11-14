@@ -26,10 +26,11 @@ jobs:
       - uses: actions/checkout@v4
 
       # Sets up python
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          # Mirrors the interpreter provided by flake.nix
+          python-version: '3.12'
 
       # Installs dependencies
       - name: Install dependencies
