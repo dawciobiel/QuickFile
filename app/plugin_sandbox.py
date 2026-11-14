@@ -225,6 +225,22 @@ def run_plugin_process(pipe: Connection, plugin_path: str, metadata: dict):
         if not isinstance(plugin_instance, PluginBase):
              send_trace(f"WARNING: Plugin {metadata['id']} does not inherit from PluginBase. This is required for the new architecture.")
 
+        # Advertise the public API so the parent process does not have to probe
+        # blindly with a 10 second timeout. Only these names can be called
+        # through attribute access on the wrapper.
+        try:
+            public_methods = sorted(
+                name
+                for name in dir(type(plugin_instance))
+                if not name.startswith("_") and callable(getattr(type(plugin_instance), name, None))
+            )
+        except Exception:  # pragma: no cover - defensive, must not block startup
+            public_methods = []
+        try:
+            pipe.send({'type': 'READY', 'methods': public_methods})
+        except (BrokenPipeError, EOFError):
+            return
+
         worker = PluginWorker(pipe, plugin_instance)
         worker.run()
 
@@ -257,8 +273,12 @@ class SandboxedPluginWrapper(QObject):
         self._sync_response_queue = Queue()
         self.active_tasks = set()
         self._pipe_lock = Lock()
+        # Populated from the READY message sent by the plugin process.
+        self._plugin_methods = set()
+        self._ready_event = Event()
 
     def start(self):
+        self._ready_event.clear()
         self.process = multiprocessing.Process(target=run_plugin_process, args=(self.child_pipe, self.plugin_path, self.metadata))
         self.process.daemon = True
         self.process.start()
@@ -268,6 +288,19 @@ class SandboxedPluginWrapper(QObject):
         self._pipe_thread = Thread(target=self._listen_to_pipe)
         self._pipe_thread.daemon = True
         self._pipe_thread.start()
+
+        # Wait for the plugin to advertise its API. This is a one-off cost at
+        # load time; it makes attribute-style calls predictable.
+        if not self._ready_event.wait(timeout=5):
+            self.logger.warning(
+                "Plugin %s did not report its method list within 5s. "
+                "Attribute-style calls will raise AttributeError; use execute_task().",
+                self.metadata.get("id"),
+            )
+        else:
+            self.logger.debug(
+                "Plugin %s API: %s", self.metadata.get("id"), sorted(self._plugin_methods)
+            )
 
     def stop(self):
         if self.process and self.process.is_alive():
@@ -301,6 +334,9 @@ class SandboxedPluginWrapper(QObject):
                 
                 if msg_type == 'TRACE':
                     self.logger.debug(f"[Plugin Trace] {msg.get('msg', '').strip()}")
+                elif msg_type == 'READY':
+                    self._plugin_methods = set(msg.get('methods', []))
+                    self._ready_event.set()
                 elif msg_type == 'SYNC_RESPONSE':
                     self._sync_response_queue.put(msg)
                 elif msg_type == 'TASK_PROGRESS':
@@ -365,6 +401,20 @@ class SandboxedPluginWrapper(QObject):
             self.parent_pipe.send(msg)
 
     def __getattr__(self, name):
+        # Never intercept private or dunder attributes: libraries (copy, pickle,
+        # inspect) probe them and a callable returned here breaks them.
+        if name.startswith("_"):
+            raise AttributeError(name)
+
+        # Only names advertised by the plugin process are callable. Anything
+        # else raises immediately instead of blocking the caller for 10s.
+        known_methods = self.__dict__.get("_plugin_methods", set())
+        if name not in known_methods:
+            raise AttributeError(
+                f"{type(self).__name__} has no attribute {name!r}. "
+                f"Methods exposed by the plugin: {sorted(known_methods)}"
+            )
+
         def sync_method_wrapper(*args, **kwargs):
             task_id = f"sync_{name}_{time.time()}"
             
