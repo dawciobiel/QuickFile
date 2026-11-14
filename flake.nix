@@ -1,5 +1,5 @@
 {
-  description = "QuickFile dev environment (PyQt6 + Qt6 + NVIDIA + tests)";
+  description = "QuickFile development environment (Python + Qt6 + tools)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -11,39 +11,38 @@
       let
         pkgs = import nixpkgs { inherit system; };
 
-        python = pkgs.python312;
+        # Single source of truth for Python dependencies.
+        # No pip, no virtualenv: this interpreter already has everything.
+        python = pkgs.python312.withPackages (ps: with ps; [
+          # Runtime
+          pyqt6
+          pygments
+          psutil
+          rarfile
+          send2trash
+          pillow # used by scripts/slice_spritesheet.py
 
-        pythonEnv = python.withPackages (ps: [
-          # z requirements.txt (bez PyQt6 / PyQt6-Qt6 / PyQt6_sip)
-          ps.docopt
-          ps.psutil
-          ps.requests
-          ps.urllib3
-          ps.idna
-          ps.charset-normalizer
-          ps.certifi
-          ps.packaging
-          ps.pluggy
-          ps.typing-extensions
-          # ps.pipreqs # Package not existing in nixos-24.11.
-          # rarfile, Send2Trash, yarg są w pip, nie w nixpkgs – zostawimy je dla pip w razie potrzeby
+          # Tests
+          pytest
+          pytest-mock
+          pytest-order
+          pytest-qt
+
+          # Packaging
+          pyinstaller
         ]);
-
       in {
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            pythonEnv
+            python
 
-            # PyQt6 z Nix (stabilne na NixOS)
-            pkgs.python312Packages.pyqt6
-
-            # Qt runtime
+            # Qt6 runtime libraries (PyQt6 from nixpkgs links against these)
             pkgs.qt6.qtbase
             pkgs.qt6.qtsvg
             pkgs.qt6.qtwayland
             pkgs.qt6.qtdeclarative
 
-            # OpenGL + X11 + fonty + glib
+            # OpenGL + X11 + fonts + glib
             pkgs.libglvnd
             pkgs.xorg.libX11
             pkgs.xorg.libXext
@@ -57,18 +56,22 @@
             pkgs.zstd
             pkgs.dbus
             pkgs.stdenv.cc.cc.lib
+            pkgs.mesa # libGL.so.1
+
+            # Developer tools
+            pkgs.ruff
+            pkgs.pyright
+            pkgs.git
+            pkgs.which
           ];
 
-          # tu możesz dodać narzędzia dev: pytest, mypy, black, itp.
           shellHook = ''
             echo "QuickFile devShell activated"
-            echo "Python: $(which python)"
-            echo "PyQt6 from Nix, Qt6 runtime, GL, X11 – ready."
-
-            # upewniamy się, że lokalny katalog jest na PYTHONPATH (importy typu `from app...`)
-            export PYTHONPATH=$PWD:$PYTHONPATH
+            echo "Python: $(which python) ($(python -V 2>&1))"
+            echo "PyQt6 + Qt6 ready"
+            echo "Tests:  python -m pytest tests/unit"
+            # No PYTHONPATH and no pip: the interpreter above is complete.
           '';
         };
       });
 }
-
