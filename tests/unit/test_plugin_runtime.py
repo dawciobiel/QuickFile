@@ -31,8 +31,10 @@ from app.plugin_system.runtime import (
     EXIT_PROTOCOL_ERROR,
     LegacyPluginAdapter,
     PluginRuntime,
+    TaskPluginAdapter,
 )
 from tests.dummy_plugin import DummyPlugin
+from tests.dummy_task_plugin import DummyTaskPlugin
 
 PLUGIN_ID = "org.quickfile.dummy"
 PLUGIN_VERSION = "0.1.0"
@@ -99,11 +101,13 @@ class Host:
 
 
 class RuntimeHarness:
-    def __init__(self, input_timeout=0.2):
+    def __init__(self, input_timeout=0.2, adapter=None):
         self.host_connection, self.plugin_connection = multiprocessing.Pipe()
+        if adapter is None:
+            adapter = LegacyPluginAdapter(DummyPlugin())
         self.runtime = PluginRuntime(
             self.plugin_connection,
-            LegacyPluginAdapter(DummyPlugin()),
+            adapter,
             plugin_id=PLUGIN_ID,
             plugin_version=PLUGIN_VERSION,
             startup_timeout=1.0,
@@ -145,6 +149,20 @@ def harness():
 def ready(harness):
     harness.host.handshake()
     return harness
+
+
+@pytest.fixture
+def explicit_harness():
+    """The same runtime, serving a plugin written against the explicit API."""
+    instance = RuntimeHarness(adapter=TaskPluginAdapter(DummyTaskPlugin()))
+    yield instance
+    instance.close()
+
+
+@pytest.fixture
+def explicit_ready(explicit_harness):
+    explicit_harness.host.handshake()
+    return explicit_harness
 
 
 # --- Handshake --------------------------------------------------------------
@@ -490,3 +508,75 @@ def test_host_disappearing_stops_the_runtime(ready):
     ready.host.connection.close()
 
     assert ready.wait_exit(timeout=2.0) == EXIT_OK
+
+
+# --- The explicit task API over the same wire -------------------------------
+
+
+def test_explicit_api_task_returns_a_result(explicit_ready):
+    explicit_ready.host.send(
+        MessageType.EXECUTE_TASK,
+        task_id="t1",
+        action_id="echo",
+        kwargs={"payload": {"nested": [1, 2, 3]}},
+    )
+
+    result = explicit_ready.host.expect(MessageType.RESULT, ignore=NOISE)
+    assert result["value"] == {"echo": {"payload": {"nested": [1, 2, 3]}}}
+
+
+def test_explicit_api_task_reports_progress(explicit_ready):
+    host = explicit_ready.host
+    host.send(
+        MessageType.EXECUTE_TASK, task_id="t1", action_id="progress", kwargs={"steps": 3}
+    )
+
+    progress = []
+    while True:
+        message = host.recv(2.0)
+        if message.type is MessageType.PROGRESS:
+            progress.append(message["percent"])
+        elif message.type is MessageType.RESULT:
+            break
+
+    assert progress == [33, 67, 100]
+
+
+def test_explicit_api_task_emits_events(explicit_ready):
+    explicit_ready.host.send(MessageType.EXECUTE_TASK, task_id="t1", action_id="event")
+
+    event = explicit_ready.host.expect(MessageType.EVENT)
+    assert event["name"] == "item_found"
+    assert event["payload"] == {"path": "/tmp/found.txt"}
+
+
+def test_explicit_api_cancel_becomes_cancelled_not_error(explicit_ready):
+    explicit_ready.host.send(
+        MessageType.EXECUTE_TASK, task_id="t1", action_id="cancel_aware"
+    )
+    time.sleep(0.1)
+
+    started = time.monotonic()
+    explicit_ready.host.send(MessageType.CANCEL_TASK, task_id="t1")
+
+    cancelled = explicit_ready.host.expect(MessageType.CANCELLED, timeout=CANCEL_BUDGET)
+    assert cancelled["task_id"] == "t1"
+    assert time.monotonic() - started < CANCEL_BUDGET
+
+
+def test_explicit_api_exception_becomes_an_error_with_a_traceback(explicit_ready):
+    explicit_ready.host.send(MessageType.EXECUTE_TASK, task_id="t1", action_id="fail")
+
+    error = explicit_ready.host.expect(MessageType.ERROR)
+    assert error["task_id"] == "t1"
+    assert error["code"] == ErrorCode.INTERNAL
+    assert "dummy task failed on purpose" in error["message"]
+    assert "RuntimeError" in error["traceback"]
+
+
+def test_explicit_api_log_reaches_the_host(explicit_ready):
+    explicit_ready.host.send(MessageType.EXECUTE_TASK, task_id="t1", action_id="log")
+
+    log = explicit_ready.host.expect(MessageType.LOG, ignore=())
+    assert log["level"] == "warning"
+    assert log["message"] == "dummy task says hello"

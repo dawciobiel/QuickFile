@@ -51,8 +51,8 @@ from app.plugin_system.protocol import (
 )
 from app.plugin_system.runtime import (
     EXIT_INTERNAL_ERROR,
-    LegacyPluginAdapter,
     PluginRuntime,
+    adapter_for,
 )
 
 #: How long the plugin process may take to load and answer HELLO.
@@ -633,7 +633,7 @@ def run_plugin_process(pipe, plugin_path: str, metadata: Mapping[str, Any]):
 
         runtime = PluginRuntime(
             pipe,
-            LegacyPluginAdapter(plugin_instance),
+            adapter_for(plugin_instance),
             plugin_id=metadata["id"],
             plugin_version=metadata.get("version", "0.0.0"),
             logger=logger,

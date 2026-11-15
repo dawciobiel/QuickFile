@@ -211,19 +211,23 @@ jako błąd do ponowienia.
 
 ## 10. Zgodność ze starymi pluginami
 
-Pluginy w obecnym stylu (`PluginBase.create_task`, `AbstractTask.run`) nie
-znają protokołu. Runtime dostarcza adapter, który:
+Pluginami w obecnym stylu (`PluginBase.create_task` + `AbstractTask`) zajmuje się
+`LegacyPluginAdapter`. Adapter:
 
-* tłumaczy `EXECUTE_TASK` na `plugin.create_task(action_id, **kwargs)` i
-  `task._initialize(ctx, progress, event, input)`,
-* mapuje `emit_progress` → `PROGRESS`, `emit_event` → `EVENT`, powrót z `run()`
-  → `RESULT`, wyjątek → `ERROR` (`INTERNAL`) lub `CANCELLED`, gdy flaga jest
-  ustawiona,
-* implementuje `TaskContext` na `WorkerTaskContext` (jak dziś) i podłącza je do
-  `CANCEL_TASK`/`PAUSE_TASK`/`RESUME_TASK`.
+*   tłumaczy `EXECUTE_TASK` na `plugin.create_task(action_id, **kwargs)` i
+    `task._initialize(ctx, ctx.progress, ctx.event, ctx.request_input)`,
+*   mapuje `emit_progress` → `PROGRESS`, `emit_event` → `EVENT`, powrót z `run()`
+    → `RESULT`, wyjątek → `ERROR` (`INTERNAL`) lub `CANCELLED`, gdy flaga jest
+    ustawiona,
+*   podaje `TaskBridge` (implementację `TaskContext`) do `CANCEL_TASK`,
+    `PAUSE_TASK` i `RESUME_TASK`.
 
-Dzięki temu etap C nie wymaga przepisania wszystkich pluginów naraz. Nowe
-pluginy mogą używać jawnego API zadań bez zmian w protokole.
+Nowe pluginy mogą używać jawnego API zadań (`TaskPlugin` + `PluginTask`, patrz
+[`plugins.md`](plugins.md#kontrakt-zadań)) przez `TaskPluginAdapter`. Protokół
+jest w obu przypadkach ten sam — wybór adaptera (`adapter_for`) jest lokalny dla
+procesu pluginu, więc host nie rozróżnia stylów.
+
+Dzięki temu etap C nie wymaga przepisania wszystkich pluginów naraz.
 
 ## 11. Co testujemy
 
@@ -231,11 +235,10 @@ Testy protokołu nie wymagają Qt ani prawdziwego systemu plików:
 
 1. **Kodek** — koperta, wymagane pola, nieznane pola, nieznany typ, zła wersja.
 2. **Negocjacja** — wspólna wersja, brak wspólnej wersji.
-3. **Atrapa pluginu** (`tests/support/dummy_plugin.py`) — akcje: natychmiastowy
+3. **Atrapa pluginu** (`tests/dummy_plugin.py`) — akcje: natychmiastowy
    wynik, postęp, błąd, ignorowanie anulowania, długie zadanie.
-4. **Runtime** (po implementacji) — start/`READY`, wynik, błąd, anulowanie
-   < 200 ms, anulowanie zadania w kolejce, zerwanie kanału, zawieszenie
-   pluginu nie blokuje UI.
+4. **Runtime** — start/`READY`, wynik, błąd, anulowanie < 200 ms, anulowanie
+   zadania w kolejce, zerwanie kanału, zawieszenie pluginu nie blokuje UI.
 
 Testy runtime'u uruchamiają prawdziwy proces, ale z atrapą pluginu — bez
 zależności zewnętrznych i bez sieci.
@@ -248,9 +251,9 @@ zależności zewnętrznych i bez sieci.
 | Runtime w procesie pluginu | `app/plugin_system/runtime.py` | `tests/unit/test_plugin_runtime.py`, `test_plugin_runtime_process.py` |
 | Host (`SandboxedPluginWrapper`) | `app/plugin_system/host.py` | `tests/unit/test_plugin_host.py` |
 | Zgodność ze starym API | `LegacyPluginAdapter` + re-eksport w `app/plugin_sandbox.py` | testy hosta i e2e |
+| Jawne API zadań | `TaskPlugin`, `PluginTask`, `TaskPluginAdapter` | `tests/unit/test_plugin_task_api.py` |
 
 Zrobione: kroki 1–5 z sekcji „Planowany kierunek” w `plugins.md`.
-Pozostało: jawne API zadań dla nowych pluginów (osobny adapter, bez
-`AbstractTask._initialize`) oraz opcjonalna izolacja OS (Landlock/bubblewrap)
-jako osobny etap.
+Pozostało: test protokołu dla każdego pluginu oraz opcjonalna izolacja OS
+(Landlock/bubblewrap) jako osobny etap.
 

@@ -5,11 +5,27 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Callable
 
+
+class TaskCancelled(Exception):
+    """Raised by ``TaskContext.check_cancelled()`` when the user cancels.
+
+    The runtime turns it into a ``CANCELLED`` message, not an ``ERROR``; a task
+    that raises it is doing exactly what the host asked for.
+    """
+
+
 class TaskContext:
     """
-    Interface for the task context provided to the plugin task.
-    Allows checking for cancellation and pausing.
+    What a task may do with the task it is running.
+
+    The runtime supplies the implementation; plugins only read it. Legacy tasks
+    receive the same object through ``AbstractTask._initialize``, so every
+    method here works for both styles.
     """
+
+    #: Identifier assigned by the host; stable for the lifetime of the task.
+    task_id: str
+
     def is_cancelled(self) -> bool:
         """Checks if the task has been cancelled."""
         raise NotImplementedError
@@ -20,6 +36,33 @@ class TaskContext:
 
     def wait_if_paused(self):
         """Blocks execution if the task is paused until it is resumed."""
+        raise NotImplementedError
+
+    def check_cancelled(self):
+        """Raises ``TaskCancelled`` if the task has been cancelled.
+
+        Preferred over ``is_cancelled()`` in the explicit API: it cannot be
+        forgotten as a bare ``if`` without a ``raise``.
+        """
+        if self.is_cancelled():
+            raise TaskCancelled("Task was cancelled")
+
+    def progress(self, percentage: int):
+        """Reports progress (0-100) to the main application."""
+        raise NotImplementedError
+
+    def event(self, name: str, payload: Optional[Dict[str, Any]] = None):
+        """Sends a domain event to the main application."""
+        raise NotImplementedError
+
+    def request_input(
+        self, name: str, payload: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Asks the main application for input and waits for the answer."""
+        raise NotImplementedError
+
+    def log(self, level: str, message: str):
+        """Logs in the plugin process; warnings and errors reach the host too."""
         raise NotImplementedError
 
 
@@ -117,3 +160,43 @@ class PluginBase(ABC):
         This runs in the MAIN application process (UI thread).
         """
         pass
+
+
+class PluginTask(ABC):
+    """
+    One unit of background work in the explicit task API.
+
+    ``run`` receives its context as an argument: there is no ``self.context``,
+    no ``_initialize`` and no hidden state set by the runtime. The return value
+    becomes the task result and must be serializable (str, int, float, bool,
+    list, dict, tuple, None). Raise ``TaskCancelled`` to report a cancellation.
+
+    Not to be confused with ``app.task_queue_manager.Task``, which is the
+    queue entry on the UI side.
+    """
+
+    @abstractmethod
+    def run(self, context: TaskContext):
+        """Do the work and return a serializable result."""
+        pass
+
+
+class TaskPlugin(PluginBase):
+    """
+    Plugin whose tasks use the explicit task API (``PluginTask``).
+
+    The marker is what ``adapter_for`` looks at: a subclass gets
+    ``TaskPluginAdapter``, every other ``PluginBase`` keeps the legacy adapter.
+    Do not mix both styles in one class -- create two plugins instead.
+    """
+
+    def create_task(self, action_id: str, **kwargs) -> PluginTask:
+        """
+        Factory method returning a ``PluginTask`` for ``action_id``.
+
+        Arguments come from ``EXECUTE_TASK.kwargs`` and are passed through
+        unchanged, so the factory is the only place that validates them.
+        """
+        raise NotImplementedError(
+            f"Plugin {self.get_name()} does not support task creation for {action_id}"
+        )

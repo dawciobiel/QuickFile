@@ -15,7 +15,8 @@ One plugin process has exactly two long-lived threads plus transient task work:
 Plugin code never touches the connection. It sees a ``TaskContext`` whose
 callbacks turn into ``PROGRESS`` / ``EVENT`` / ``RESULT`` messages, exactly as
 before, so existing ``PluginBase`` implementations keep working through
-``LegacyPluginAdapter``.
+``LegacyPluginAdapter``; new plugins use ``TaskPluginAdapter``. ``adapter_for``
+picks one inside the plugin process, so the wire format is the same either way.
 """
 
 from __future__ import annotations
@@ -27,7 +28,14 @@ import traceback
 import uuid
 from typing import Any, Iterable, Mapping
 
-from .api import AbstractTask, PluginBase, TaskContext
+from .api import (
+    AbstractTask,
+    PluginBase,
+    PluginTask,
+    TaskCancelled,
+    TaskContext,
+    TaskPlugin,
+)
 from .protocol import (
     PROTOCOL_VERSION,
     SUPPORTED_VERSIONS,
@@ -130,21 +138,21 @@ class TaskBridge(TaskContext):
             if not value:
                 self._pause_condition.notify_all()
 
-    # --- Callbacks used by AbstractTask._initialize ---
+    # --- TaskContext methods used by both adapters ---
 
-    def report_progress(self, percent: Any):
+    def progress(self, percentage: Any):
         try:
-            value = int(percent)
+            value = int(percentage)
         except (TypeError, ValueError):
             self._runtime.log(
                 "warning",
-                f"Task {self.task_id} reported a non-numeric progress: {percent!r}",
+                f"Task {self.task_id} reported a non-numeric progress: {percentage!r}",
             )
             return
         value = max(0, min(100, value))
         self._runtime.send(MessageType.PROGRESS, task_id=self.task_id, percent=value)
 
-    def report_event(self, name: str, payload: Mapping[str, Any] | None = None):
+    def event(self, name: str, payload: Mapping[str, Any] | None = None):
         self._runtime.send(
             MessageType.EVENT,
             task_id=self.task_id,
@@ -154,6 +162,9 @@ class TaskBridge(TaskContext):
 
     def request_input(self, name: str, payload: Mapping[str, Any] | None = None) -> dict:
         return self._runtime.request_input(self.task_id, name, payload)
+
+    def log(self, level: str, message: str):
+        self._runtime.log(str(level), str(message))
 
 
 class PluginRuntime:
@@ -435,6 +446,8 @@ class PluginRuntime:
         try:
             task = self._adapter.create_task(job.action_id, job.kwargs, context)
             result = task.run()
+        except TaskCancelled:
+            self._finish_task(job.task_id, MessageType.CANCELLED)
         except Exception as exc:
             if context.is_cancelled():
                 self._finish_task(job.task_id, MessageType.CANCELLED)
@@ -604,11 +617,24 @@ class PluginAdapter:
 
     def create_task(
         self, action_id: str, kwargs: Mapping[str, Any], context: TaskContext
-    ) -> AbstractTask:
+    ) -> Any:
+        """Returns an object with a no-argument ``run()`` bound to ``context``."""
         raise NotImplementedError
 
     def invoke(self, method: str, args: list, kwargs: Mapping[str, Any]) -> Any:
         raise NotImplementedError
+
+
+def _public_methods(plugin: PluginBase) -> tuple[str, ...]:
+    """Names the host may call on the plugin, sorted and without underscores."""
+    return tuple(
+        sorted(
+            name
+            for name in dir(type(plugin))
+            if not name.startswith("_")
+            and callable(getattr(type(plugin), name, None))
+        )
+    )
 
 
 class LegacyPluginAdapter(PluginAdapter):
@@ -621,14 +647,7 @@ class LegacyPluginAdapter(PluginAdapter):
                 "only supports the current plugin contract"
             )
         self._plugin = plugin
-        self._public_methods = tuple(
-            sorted(
-                name
-                for name in dir(type(plugin))
-                if not name.startswith("_")
-                and callable(getattr(type(plugin), name, None))
-            )
-        )
+        self._public_methods = _public_methods(plugin)
 
     def public_methods(self) -> Iterable[str]:
         return self._public_methods
@@ -644,11 +663,72 @@ class LegacyPluginAdapter(PluginAdapter):
             )
         task._initialize(
             context,
-            context.report_progress,
-            context.report_event,
+            context.progress,
+            context.event,
             context.request_input,
         )
         return task
 
     def invoke(self, method: str, args: list, kwargs: Mapping[str, Any]) -> Any:
         return getattr(self._plugin, method)(*args, **kwargs)
+
+
+class _BoundPluginTask:
+    """``PluginTask`` plus its context, shaped like an ``AbstractTask``.
+
+    The runtime always calls ``run()`` without arguments; the explicit API gives
+    the context as a parameter instead of hiding it on the instance.
+    """
+
+    def __init__(self, task: PluginTask, context: TaskContext):
+        self._task = task
+        self._context = context
+
+    def run(self) -> Any:
+        return self._task.run(self._context)
+
+
+class TaskPluginAdapter(PluginAdapter):
+    """Adapter for plugins written against ``TaskPlugin`` / ``PluginTask``."""
+
+    def __init__(self, plugin: TaskPlugin):
+        if not isinstance(plugin, TaskPlugin):
+            raise TypeError(
+                f"{type(plugin).__name__} is not a TaskPlugin; the explicit adapter "
+                "only supports the explicit task API"
+            )
+        self._plugin = plugin
+        self._public_methods = _public_methods(plugin)
+
+    def public_methods(self) -> Iterable[str]:
+        return self._public_methods
+
+    def create_task(
+        self, action_id: str, kwargs: Mapping[str, Any], context: TaskContext
+    ) -> _BoundPluginTask:
+        task = self._plugin.create_task(action_id, **kwargs)
+        if not isinstance(task, PluginTask):
+            raise TypeError(
+                f"{type(self._plugin).__name__}.create_task({action_id!r}) returned "
+                f"{type(task).__name__}, expected a PluginTask"
+            )
+        return _BoundPluginTask(task, context)
+
+    def invoke(self, method: str, args: list, kwargs: Mapping[str, Any]) -> Any:
+        return getattr(self._plugin, method)(*args, **kwargs)
+
+
+def adapter_for(plugin: PluginBase) -> PluginAdapter:
+    """Picks the adapter for ``plugin`` from its class, not from its metadata.
+
+    The choice is local to the plugin process: both adapters speak the same
+    protocol, so the host never learns which style a plugin uses.
+    """
+    if isinstance(plugin, TaskPlugin):
+        return TaskPluginAdapter(plugin)
+    if isinstance(plugin, PluginBase):
+        return LegacyPluginAdapter(plugin)
+    raise TypeError(
+        f"{type(plugin).__name__} is not a PluginBase; plugins must inherit from "
+        "PluginBase (or TaskPlugin)"
+    )

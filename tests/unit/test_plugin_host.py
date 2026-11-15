@@ -25,14 +25,15 @@ from app.plugin_system.host import SandboxedPluginWrapper
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DUMMY_PLUGIN_SOURCE = os.path.join(PROJECT_ROOT, "tests", "dummy_plugin.py")
+DUMMY_TASK_PLUGIN_SOURCE = os.path.join(PROJECT_ROOT, "tests", "dummy_task_plugin.py")
 PLUGIN_ID = "org.quickfile.dummy"
 PLUGIN_VERSION = "0.1.0"
 
 
-def _write_plugin(directory):
+def _write_plugin(directory, source=DUMMY_PLUGIN_SOURCE, class_name="DummyPlugin"):
     version_dir = os.path.join(directory, "org.quickfile", "dummy", PLUGIN_VERSION)
     os.makedirs(version_dir)
-    shutil.copyfile(DUMMY_PLUGIN_SOURCE, os.path.join(version_dir, "plugin.py"))
+    shutil.copyfile(source, os.path.join(version_dir, "plugin.py"))
 
     metadata = {
         "id": PLUGIN_ID,
@@ -41,8 +42,8 @@ def _write_plugin(directory):
         "author": "QuickFile Team",
         "type": "checksum",
         "description": "Deterministic plugin used by the runtime tests.",
-        "entry_point": "plugin:DummyPlugin",
-        "class_name": "DummyPlugin",
+        "entry_point": f"plugin:{class_name}",
+        "class_name": class_name,
         "sandboxed": True,
         "platforms": ["linux", "windows", "macos"],
     }
@@ -233,3 +234,23 @@ def test_the_wrapper_can_be_started_again_after_stop(plugin, qapp):
         assert instance.get_name() == "Dummy Plugin"
     finally:
         instance.stop()
+
+
+def test_a_plugin_written_against_the_explicit_api_runs_end_to_end(tmp_path, qapp, qtbot):
+    """The host does not care which adapter the plugin process chose."""
+    path, metadata = _write_plugin(
+        str(tmp_path),
+        source=DUMMY_TASK_PLUGIN_SOURCE,
+        class_name="DummyTaskPlugin",
+    )
+    wrapper = SandboxedPluginWrapper(path, metadata)
+    wrapper.start()
+    try:
+        assert wrapper.is_ready()
+
+        with qtbot.waitSignal(wrapper.method_finished, timeout=5000) as blocker:
+            wrapper.execute_task(task_id="t1", action_id="echo", payload={"a": 1})
+    finally:
+        wrapper.stop()
+
+    assert blocker.args == ["t1", {"echo": {"payload": {"a": 1}}}]
