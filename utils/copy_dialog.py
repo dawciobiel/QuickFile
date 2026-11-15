@@ -8,6 +8,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QLabel, QHBoxLayout, QSizePolicy, QWidget
 
 from app.action_logger import action_logger
+from app.plugin_ids import COPY_PLUGIN_ID
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from ui.dual_progress_bar import DualProgressBar
@@ -107,7 +108,7 @@ class CopyDialog(QDialog):
         return {
             "overwrite": self.overwrite_checkbox.isChecked(),
             "preserve_timestamp": self.preserve_timestamp_checkbox.isChecked(),
-            "plugin_id": "org.quickfile.standard_operations" # Dodano plugin_id
+            "plugin_id": COPY_PLUGIN_ID,
         }
 
     def start_operation(self):

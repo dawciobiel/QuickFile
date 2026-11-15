@@ -9,6 +9,7 @@ from typing import Callable
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
 
 from app.enums import TaskStatus, TaskType
+from app.plugin_ids import plugin_id_for_action
 from app.plugin_sandbox import SandboxedPluginWrapper
 
 
@@ -127,18 +128,38 @@ class TaskQueueManager(QObject):
             return
 
         plugin_id = task.options.get("plugin_id")
-        if not plugin_id:
-            task.set_status(TaskStatus.ERROR)
-            task.set_details(f"Task type '{task.type.name}' requires a 'plugin_id' in options.")
-            logging.error(f"Task {task.id} failed: Missing plugin_id.")
-            self._on_task_finished_cleanup(task.id)
-            return
+        plugin = self.plugin_manager.get_plugin_by_id(plugin_id) if plugin_id else None
 
-        plugin = self.plugin_manager.get_plugin_by_id(plugin_id)
-        if not plugin:
+        # A plugin id is not the same as a plugin type. Older dialogs put the
+        # type ("org.quickfile.standard_operations") into the options, which
+        # never matches a loaded plugin. Fall back to the bundled plugin that
+        # implements this action instead of failing the task.
+        if plugin is None:
+            fallback_id = plugin_id_for_action(task.type.value)
+            if fallback_id and fallback_id != plugin_id:
+                if plugin_id:
+                    logging.warning(
+                        "Task %s references unknown plugin '%s'; using '%s' for action '%s'.",
+                        task.id,
+                        plugin_id,
+                        fallback_id,
+                        task.type.value,
+                    )
+                plugin_id = fallback_id
+                plugin = self.plugin_manager.get_plugin_by_id(plugin_id)
+
+        if plugin is None:
             task.set_status(TaskStatus.ERROR)
-            task.set_details(f"Plugin '{plugin_id}' not found.")
-            logging.error(f"Task {task.id} failed: Plugin not found.")
+            if plugin_id:
+                task.set_details(f"Plugin '{plugin_id}' not found.")
+                logging.error(
+                    "Task %s failed: plugin '%s' not found.", task.id, plugin_id
+                )
+            else:
+                task.set_details(
+                    f"Task type '{task.type.name}' requires a 'plugin_id' in options."
+                )
+                logging.error("Task %s failed: missing plugin_id.", task.id)
             self._on_task_finished_cleanup(task.id)
             return
 

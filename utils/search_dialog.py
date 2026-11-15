@@ -5,6 +5,7 @@
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QFileDialog
 from app.translation_manager import translation_manager
+from app.plugin_ids import SEARCH_PLUGIN_ID
 from utils.resource_path import get_resource_path
 
 class SearchDialog(QDialog):
@@ -76,6 +77,6 @@ class SearchDialog(QDialog):
             "suid": self.suidCheckbox.isChecked(),
             "sgid": self.sgidCheckbox.isChecked(),
             "sticky": self.stickyCheckbox.isChecked(),
-            "plugin_id": "org.quickfile.search_standard" # Dodano plugin_id
+            "plugin_id": SEARCH_PLUGIN_ID,
             # Add other attributes here later
         }

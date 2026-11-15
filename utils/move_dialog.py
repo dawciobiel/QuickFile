@@ -7,6 +7,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QLabel, QHBoxLayout, QSizePolicy, QWidget
 
 from app.action_logger import action_logger
+from app.plugin_ids import MOVE_PLUGIN_ID
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
 from ui.dual_progress_bar import DualProgressBar
@@ -103,7 +104,7 @@ class MoveDialog(QDialog):
     def get_options(self):
         return {
             "overwrite": self.overwrite_checkbox.isChecked(),
-            "plugin_id": "org.quickfile.standard_operations" # Dodano plugin_id
+            "plugin_id": MOVE_PLUGIN_ID,
         }
 
     def start_operation(self):

@@ -16,8 +16,20 @@
   - This happens because the user lacks write permissions to the root of the mount point where `send2trash` tries to create the `.Trash-1000` folder.
   - **Workaround**: Users should use permanent delete (Shift+Delete) for files on such partitions.
   - **Future Fix**: Implement a fallback mechanism in `StandardOperationsPlugin` to catch this error and prompt the user to permanently delete the file.
+- **Directory size calculation has no plugin**: `ApplicationLogicHandler.calculate_directory_size` creates
+  a `TaskType.CALCULATE_SIZE` task without `plugin_id`, and no bundled plugin implements that action.
+  The task fails with "requires a 'plugin_id'". The feature needs a real implementation (it can live in
+  `disk_utils_standard`) or the menu entry should be removed.
 
 ## Fixed
+
+### File operations (2026-11-15)
+
+- **Copy/move/delete failed with "Plugin not found"**: the dialogs stored the plugin *type*
+  (`org.quickfile.standard_operations`) in `options["plugin_id"]`, but a task needs the plugin
+  *id* (`org.quickfile.copy_operation`, `...move_operation`, `...delete_operation`). The queue
+  now falls back to the bundled plugin that implements the task's action and logs a warning,
+  and the dialogs use the new `app/plugin_ids.py` constants instead of string literals.
 
 ### Build, environment and plugins (2026-11-14)
 

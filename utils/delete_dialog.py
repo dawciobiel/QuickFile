@@ -6,6 +6,7 @@ import os
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog
 from app.action_logger import action_logger
+from app.plugin_ids import DELETE_PLUGIN_ID
 from app.translation_manager import translation_manager
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from panels.task_queue_panel import TaskActionsWidget
@@ -67,7 +68,7 @@ class DeleteDialog(QDialog):
     def get_options(self):
         return {
             "move_to_trash": self.move_to_trash_checkbox.isChecked(),
-            "plugin_id": "org.quickfile.standard_operations" # Added plugin_id
+            "plugin_id": DELETE_PLUGIN_ID,
         }
 
     def start_operation(self):

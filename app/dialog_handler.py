@@ -7,6 +7,13 @@ from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 
 from app.action_logger import action_logger
 from app.background_task_manager import BackgroundTaskManager
+from app.plugin_ids import (
+    CHECKSUM_PLUGIN_ID,
+    COPY_PLUGIN_ID,
+    DELETE_PLUGIN_ID,
+    MOVE_PLUGIN_ID,
+    SEARCH_PLUGIN_ID,
+)
 from app.settings_manager import SettingsManager
 from app.task_queue_manager import TaskQueueManager, Task, TaskType
 from app.translation_manager import translation_manager
@@ -220,7 +227,7 @@ class DialogHandler:
         dialog = ChecksumDialog(self.main_window, files_only, sorted(list(algorithms)))
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
-            options['plugin_id'] = 'org.quickfile.checksum_standard' # Używamy nowego pluginu
+            options['plugin_id'] = CHECKSUM_PLUGIN_ID
             action_logger.log_action("calculate_checksum", paths=files_only, options=options)
             
             task = Task(TaskType.CHECKSUM, source_paths=files_only, options=options)
@@ -236,7 +243,7 @@ class DialogHandler:
         dialog = SearchDialog(self.main_window, current_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
-            options['plugin_id'] = 'org.quickfile.search_standard' # Używamy nowego pluginu
+            options['plugin_id'] = SEARCH_PLUGIN_ID
             logging.debug(f"DialogHandler: Options from SearchDialog: {options}")
             query = options.get("file_name")
             start_path = options.get("start_path", current_path)
@@ -249,7 +256,7 @@ class DialogHandler:
                 self.main_window.switchToSearchResultsTab()
 
                 # Connect to the plugin's data event signal
-                search_plugin = self.task_queue_manager.plugin_manager.get_plugin_by_id("org.quickfile.search_standard")
+                search_plugin = self.task_queue_manager.plugin_manager.get_plugin_by_id(SEARCH_PLUGIN_ID)
                 if search_plugin:
                     # Disconnect previous handlers to avoid duplicates
                     try:
@@ -276,7 +283,8 @@ class DialogHandler:
         dialog = SyncDialog(self.main_window, left_path, right_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             options = dialog.get_options()
-            options['plugin_id'] = 'org.quickfile.standard_operations'
+            # Synchronisation runs in DirectorySynchronizer, not in a plugin,
+            # so it deliberately has no plugin_id.
             action_logger.log_action("sync_dirs", source=left_path, destination=right_path, options=options)
             task = Task(TaskType.SYNC, source_paths=[left_path], destination_path=right_path, options=options)
             self.task_queue_manager.add_task(task)
@@ -315,7 +323,7 @@ class DialogHandler:
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
-            options['plugin_id'] = 'org.quickfile.copy_operation' # Używamy nowego pluginu
+            options['plugin_id'] = COPY_PLUGIN_ID
             action_logger.log_action("copy", sources=source_paths, destination=destination_path, options=options)
             task = Task(TaskType.COPY, source_paths, destination_path, options)
             self.task_queue_manager.add_task(task)
@@ -339,7 +347,7 @@ class DialogHandler:
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
-            options['plugin_id'] = 'org.quickfile.move_operation' # Używamy nowego pluginu
+            options['plugin_id'] = MOVE_PLUGIN_ID
             action_logger.log_action("move", sources=paths_to_move, destination=destination_path, options=options)
             task = Task(TaskType.MOVE, paths_to_move, destination_path, options)
             self.task_queue_manager.add_task(task)
@@ -360,7 +368,7 @@ class DialogHandler:
 
         if dialog.result() == QDialog.DialogCode.Accepted and not dialog.task:
             options = dialog.get_options()
-            options['plugin_id'] = 'org.quickfile.delete_operation' # Używamy nowego pluginu
+            options['plugin_id'] = DELETE_PLUGIN_ID
             action_logger.log_action("delete", paths=selected_paths, options=options)
             task = Task(TaskType.DELETE, selected_paths, options=options)
             self.task_queue_manager.add_task(task)

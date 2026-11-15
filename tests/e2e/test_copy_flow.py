@@ -78,3 +78,44 @@ def test_copy_flow_e2e(main_window, qtbot):
     assert does_item_exist_in_model(right_view_model, file_to_copy)
 
     window.task_queue_manager.task_finished.disconnect(refresh_on_finish)
+
+
+def test_copy_flow_uses_options_from_the_dialog(main_window, qtbot):
+    """
+    Regression: the dialog put the plugin *type* into plugin_id, so the queue
+    answered "Plugin not found" and nothing was copied. Drive the real dialog
+    and use its options unchanged.
+    """
+    window, isolated_env = main_window
+    source_dir = isolated_env["source_dir"]
+    dest_dir = isolated_env["destination_dir"]
+    file_to_copy = "file_to_copy.txt"
+    source_path = os.path.join(source_dir, file_to_copy)
+    dest_path = os.path.join(dest_dir, file_to_copy)
+
+    from utils.copy_dialog import CopyDialog
+
+    dialog = CopyDialog(
+        window,
+        [source_path],
+        dest_dir,
+        window.task_queue_manager,
+        window.background_task_manager,
+        window.theme_manager,
+    )
+    options = dialog.get_options()
+    dialog.deleteLater()
+
+    copy_task = Task(
+        TaskType.COPY,
+        source_paths=[source_path],
+        destination_path=dest_dir,
+        options=options,
+    )
+    window.task_queue_manager.add_task(copy_task)
+
+    qtbot.waitUntil(lambda: os.path.exists(dest_path), timeout=10000)
+    assert os.path.exists(dest_path)
+    assert os.path.exists(source_path)
+    assert copy_task.status.name != "ERROR"
+
