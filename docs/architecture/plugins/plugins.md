@@ -205,3 +205,8 @@ Docelowy runtime wtyczek (etap C w `docs/project_management/plan-naprawy-2026-11
 *   wersjonowany, asynchroniczny protokół (`EXECUTE_TASK`, `CANCEL_TASK`, `PAUSE_TASK`, `PROGRESS`, `RESULT`, `ERROR`),
 *   jawne API zadań zamiast metod wywoływanych przez `__getattr__`,
 *   adapter dla wtyczek w obecnym stylu, aby nie przepisywać wszystkiego naraz.
+
+**Kontrakt protokołu jest zdefiniowany w [`runtime-protocol.md`](runtime-protocol.md).**
+Ten dokument jest normatywny: wiadomości, pola, kody błędów, kolejność i
+zachowanie przy zerwaniu kanału. Kodek (`app/plugin_system/protocol.py`) oraz
+testy (`tests/unit/test_runtime_protocol.py`) egzekwują tę specyfikację.
