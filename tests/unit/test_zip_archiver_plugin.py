@@ -2,7 +2,7 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-import time
+import os
 import zipfile
 
 import pytest
@@ -59,16 +59,18 @@ def test_create_zip_success(tmp_path, async_plugin_test_env):
         assert "source/subdir/file2.txt" in zipf.namelist()
 
 
-def test_create_zip_cancellation(tmp_path, async_plugin_test_env):
+def test_create_zip_cancellation(tmp_path, async_plugin_test_env, qtbot):
     """Tests cancellation of a ZIP archive creation."""
     plugin_manager, background_task_manager, async_test_helper_factory = async_plugin_test_env
     async_helper = async_test_helper_factory("org.quickfile.zip_archiver")
 
-    # Setup
+    # Setup: 32 MB of incompressible data. The archive has to stay in flight
+    # long enough for the cancel to arrive — 1000 tiny files finished in under
+    # 50 ms on CI and the task completed before the cancel was sent.
     source_dir = tmp_path / "source_large"
     source_dir.mkdir()
-    for i in range(1000):
-        (source_dir / f"file_{i}.txt").write_text("some content")
+    for i in range(32):
+        (source_dir / f"file_{i}.bin").write_bytes(os.urandom(1024 * 1024))
 
     dest_path = tmp_path / "archive_cancelled.zip"
 
@@ -86,7 +88,9 @@ def test_create_zip_cancellation(tmp_path, async_plugin_test_env):
         options=options
     )
 
-    time.sleep(0.05)
+    # Cancel only after the plugin has reported progress, i.e. while it is
+    # actually writing. Sleeping for a fixed time raced the completion.
+    qtbot.waitUntil(lambda: bool(async_helper.received_progress), timeout=5000)
     background_task_manager.cancel_task(task.id)
 
     timer = QTimer()
