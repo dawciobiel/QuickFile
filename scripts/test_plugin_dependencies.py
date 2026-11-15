@@ -31,20 +31,27 @@ def test_dependencies():
     plugin_dirs = [os.path.join(base_dir, "plugins")]
     manager = PluginManager(plugin_dirs=plugin_dirs)
 
-    # Verify results
-    print(f"🔍 Verifying installation in: {libs_dir}")
+    try:
+        # Verify results
+        print(f"🔍 Verifying installation in: {libs_dir}")
 
-    if not os.path.exists(libs_dir):
-        print("❌ FAILED: 'libs' directory was not created.")
-        return
+        if not os.path.exists(libs_dir):
+            print("❌ FAILED: 'libs' directory was not created.")
+            return
 
-    installed_files = os.listdir(libs_dir)
-    print(f"📂 Files in libs: {installed_files}")
+        installed_files = os.listdir(libs_dir)
+        print(f"📂 Files in libs: {installed_files}")
 
-    if "requests" in installed_files:
-        print("✅ SUCCESS: 'requests' package found in libs directory.")
-    else:
-        print("❌ FAILED: 'requests' package NOT found in libs directory.")
+        if "requests" in installed_files:
+            print("✅ SUCCESS: 'requests' package found in libs directory.")
+        else:
+            print("❌ FAILED: 'requests' package NOT found in libs directory.")
+    finally:
+        # Loading plugins starts one process per sandboxed plugin. Leaving them
+        # running makes the interpreter abort on exit (the IPC threads outlive
+        # the logging streams), and it makes pytest collect this manual script
+        # as a test that leaks eight processes into the rest of the session.
+        manager.shutdown()
 
 
 if __name__ == "__main__":
