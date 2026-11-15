@@ -81,6 +81,13 @@ class EventTask(AbstractTask):
         return {"events": 1}
 
 
+class InputTask(AbstractTask):
+    """Asks the host for input and returns the answer."""
+
+    def run(self):
+        return {"answer": self.request_user_input("ask", {"question": "value?"})}
+
+
 ACTIONS = {
     "echo": EchoTask,
     "progress": ProgressTask,
@@ -88,6 +95,7 @@ ACTIONS = {
     "cancel_aware": CancelAwareTask,
     "cancel_ignorant": CancelIgnorantTask,
     "event": EventTask,
+    "input": InputTask,
 }
 
 

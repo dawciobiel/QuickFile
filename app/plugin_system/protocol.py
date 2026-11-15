@@ -58,6 +58,22 @@ class Direction(StrEnum):
     PLUGIN_TO_HOST = "plugin->host"
 
 
+class ErrorCode(StrEnum):
+    """Stable error codes carried by ``ERROR`` messages.
+
+    The UI may map these; a host that does not recognise a code must treat it
+    as ``INTERNAL``.
+    """
+
+    PROTOCOL_ERROR = "PROTOCOL_ERROR"
+    PROTOCOL_MISMATCH = "PROTOCOL_MISMATCH"
+    MISSING_DEPENDENCY = "MISSING_DEPENDENCY"
+    PLUGIN_UNAVAILABLE = "PLUGIN_UNAVAILABLE"
+    CANCEL_TIMEOUT = "CANCEL_TIMEOUT"
+    TIMEOUT = "TIMEOUT"
+    INTERNAL = "INTERNAL"
+
+
 @dataclasses.dataclass(frozen=True)
 class MessageSpec:
     direction: Direction
