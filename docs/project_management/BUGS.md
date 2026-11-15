@@ -23,6 +23,18 @@
 
 ## Fixed
 
+### Task queue (2026-11-16)
+
+- **Resuming a paused task raised `AttributeError`**: `BackgroundTaskManager.resume_task`
+  read `self.active_tasks` (that mapping lives in `TaskQueueManager`) and an
+  unimported `TaskStatus`, so `TaskQueueManager.resume_task` — the path behind the
+  pause/resume button — crashed after a task had been paused. Pause worked because
+  it only touched the task context. `resume_task` now delegates to
+  `TaskContext.resume()` like `pause_task` delegates to `pause()`, which forwards
+  to `SandboxedPluginWrapper.resume_task` and wakes a worker blocked in
+  `wait_if_paused()`. Covered by `tests/unit/test_background_task_manager.py`,
+  including the queue path and the blocked-worker wake-up.
+
 ### Plugin runtime (2026-11-15)
 
 - **Sandboxed plugins aborted the interpreter on exit**: with plugin processes still
