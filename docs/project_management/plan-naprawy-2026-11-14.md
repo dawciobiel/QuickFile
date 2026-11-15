@@ -258,7 +258,9 @@ pluginu nie blokuje UI; każdy plugin ma test protokołu.
 
 **Status (2026-11-15):** kroki 1–3 i 5 zrobione (`app/plugin_system/protocol.py`,
 `runtime.py`, `host.py`; spec w `docs/architecture/plugins/runtime-protocol.md`).
-Krok 4 (jawne API zadań) i krok 6 (test protokołu dla każdego pluginu) pozostają.
+Krok 4 (jawne API zadań) — spec w `docs/architecture/plugins/plugins.md`
+(„Kontrakt zadań”), implementacja w toku. Krok 6 (test protokołu dla każdego
+pluginu) pozostaje.
 Testy: 27 runtime + 2 procesowe + 15 hosta; e2e kopiowania i wyszukiwania zielone.
 
 ---

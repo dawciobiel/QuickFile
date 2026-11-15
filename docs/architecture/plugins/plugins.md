@@ -115,22 +115,125 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 
 ## Interfejsy (Kontrakty)
 
-Wszystkie wtyczki muszą dziedziczyć po klasach bazowych zdefiniowanych w `plugins/base.py`.
+Wszystkie wtyczki dziedziczą po `PluginBase` z `app/plugin_system/api.py`.
+Klasy pomocnicze dla wtyczek działających w procesie głównym (UI, przeglądarki,
+edytory) są w `plugins/base.py` — one również wywodzą się z `PluginBase`.
 
-### Dodatkowe Argumenty dla Metod Zadań w Tle
+## Kontrakt zadań
 
-Metody wtyczek, które wykonują długotrwałe operacje w tle (np. `create_archive`, `extract_archive`, `copy_items`, `move_items`, `delete_items`, `split_file`, `join_files`, `calculate_checksum`, `search`), otrzymują dodatkowe argumenty, które umożliwiają komunikację z główną aplikacją:
+Zadanie w tle można zrealizować na dwa sposoby. Protokół host↔plugin jest w obu
+przypadkach **identyczny**: o wyborze adaptera decyduje klasa wtyczki wewnątrz
+procesu wtyczki, więc host nie wie i nie musi wiedzieć, który styl jest użyty.
 
-*   `progress_callback`: Funkcja (lub proxy funkcji), którą wtyczka wywołuje, aby zgłosić postęp operacji (np. `progress_callback(percentage)`).
-*   `task_context`: Obiekt proxy (`SandboxedTaskContext`), który pozwala wtyczce sprawdzać stan zadania (np. `task_context.is_cancelled` do anulowania, `task_context.wait_if_paused()` do pauzowania).
-*   `task`: Obiekt proxy (`SandboxedTask`), który pozwala wtyczce aktualizować szczegóły zadania widoczne w UI. Dostępne metody to m.in.:
-    *   `task.set_details(message: str)`: Ustawia szczegółowy opis bieżącej operacji.
-    *   `task.set_progress(percentage: int)`: Ustawia postęp dla bieżącego pliku/etapu (0-100%).
-    *   `task.set_overall_progress(percentage: int)`: Ustawia ogólny postęp dla całego zadania (0-100%).
-    *   `task.emit_directory_changed(path: str)`: Emituje sygnał informujący główną aplikację o zmianie w danym katalogu, co może wywołać odświeżenie widoku.
-*   `send_trace`: Funkcja do wysyłania komunikatów debugowania z wnętrza procesu wtyczki do głównego systemu logowania aplikacji.
+### Styl jawny (`TaskPlugin` + `PluginTask`) — dla nowych wtyczek
 
-**Ważne:** Obiekty `task_context` i `task` dostępne w kodzie wtyczki są **obiektami proxy**. Oznacza to, że wywołania ich metod są przekazywane przez potok do głównego procesu, który następnie wykonuje odpowiednie akcje lub emituje sygnały.
+```python
+from app.plugin_system.api import PluginTask, TaskContext, TaskPlugin
+
+
+class LineCounterPlugin(TaskPlugin):
+    def get_name(self) -> str:
+        return "Line Counter"
+
+    def get_description(self) -> str:
+        return "Counts lines in a text file."
+
+    def create_task(self, action_id: str, **kwargs) -> PluginTask:
+        if action_id != "count_lines":
+            raise ValueError(f"Unknown action_id: {action_id}")
+        return CountLinesTask(kwargs["path"])
+
+
+class CountLinesTask(PluginTask):
+    def __init__(self, path: str):
+        self.path = path
+
+    def run(self, ctx: TaskContext):
+        with open(self.path, encoding="utf-8", errors="replace") as handle:
+            total = sum(1 for _ in handle)
+        ctx.progress(100)
+        return {"lines": total}
+```
+
+`PluginTask` to jednostka pracy z `app/plugin_system/api.py`. Nie mylić z `Task`
+z `app/task_queue_manager.py` — tamten jest wpisem w kolejce po stronie UI.
+
+Kontrakt `PluginTask.run(self, ctx)`:
+
+*   `ctx` jest **argumentem** metody. Nie ma `self.context`, nie ma
+    `_initialize`, nie ma ukrytego stanu ustawianego przez runtime.
+*   wartość zwrócona przez `run` trafia do `RESULT.value` i musi być
+    serializowalna: `str`, `int`, `float`, `bool`, `list`, `dict`, `tuple`,
+    `None`.
+*   wyjątek `TaskCancelled` kończy zadanie komunikatem `CANCELLED`,
+*   każdy inny wyjątek kończy zadanie komunikatem `ERROR` (`INTERNAL`)
+    z tracebackiem,
+*   anulowanie jest **kooperatywne**: runtime nie przerwie `run`. Wtyczka sama
+    woła `ctx.check_cancelled()` w pętli; im rzadziej, tym dłużej trwa reakcja
+    na anulowanie.
+
+Metody kontekstu (`TaskContext`):
+
+| Metoda | Znaczenie |
+|---|---|
+| `ctx.task_id` | identyfikator zadania nadany przez host |
+| `ctx.progress(percent)` | postęp 0–100; wartości poza zakresem są przycinane |
+| `ctx.event(name, payload)` | zdarzenie domenowe do UI (`handle_event` w procesie głównym) |
+| `ctx.request_input(name, payload) -> dict` | pytanie do użytkownika; host v1 odpowiada `None`, czyli `{}` |
+| `ctx.is_cancelled()` / `ctx.is_paused()` | bieżący stan zadania |
+| `ctx.wait_if_paused()` | blokuje, dopóki zadanie nie zostanie wznowione |
+| `ctx.check_cancelled()` | podnosi `TaskCancelled`, jeśli zadanie anulowano |
+| `ctx.log(level, message)` | log w procesie wtyczki; `warning`/`error` trafiają też do hosta |
+
+Przykład pętli odpornej na anulowanie i pauzę:
+
+```python
+def run(self, ctx: TaskContext):
+    for index, path in enumerate(self.paths):
+        ctx.check_cancelled()      # TaskCancelled -> CANCELLED
+        ctx.wait_if_paused()       # śpi, dopóki użytkownik nie wznowi
+        self.process(path)
+        ctx.progress(int((index + 1) * 100 / len(self.paths)))
+    return {"processed": len(self.paths)}
+```
+
+Zasady, które wynikają z protokołu:
+
+*   **jedno zadanie naraz** na proces wtyczki (kolejka FIFO) — nie zakładaj
+    współbieżności zadań ani nie uruchamiaj własnych wątków, które ją omijają,
+*   w trakcie zadania nie wołaj metod wtyczki przez atrybuty (`wrapper.foo()`) —
+    to synchroniczne `CALL`, które czeka w tej samej kolejce,
+*   zadanie nie powinno trwać wiecznie bez `check_cancelled()`; host nie może
+    przerwać `run`.
+
+### Styl stary (`PluginBase` + `AbstractTask`) — zgodność
+
+Wtyczki już istniejące (`create_task` zwracające `AbstractTask`) działają bez
+zmian przez `LegacyPluginAdapter`, który przed `run()` woła prywatne
+`AbstractTask._initialize(...)` i podłącza:
+
+*   `emit_progress` → `PROGRESS`,
+*   `emit_event` → `EVENT`,
+*   `request_user_input` → `INPUT_REQUEST`,
+*   `self.context` → `TaskContext` (anulowanie, pauza).
+
+Ten styl jest **zamrożony**: przyjmujemy poprawki błędów, ale nowe wtyczki
+piszemy w stylu jawnym. Mieszanie stylów w jednej klasie nie jest wspierane —
+wtyczka musi jawnie dziedziczyć po `TaskPlugin` (styl jawny) albo po `PluginBase`
+(styl stary).
+
+### Wybór adaptera
+
+```python
+from app.plugin_system.runtime import adapter_for
+
+adapter = adapter_for(plugin_instance)
+```
+
+`TaskPlugin` → `TaskPluginAdapter`, pozostałe `PluginBase` → `LegacyPluginAdapter`,
+cokolwiek innego → `TypeError`. Wyboru dokonuje `run_plugin_process` przy starcie
+procesu wtyczki; host widzi tylko `READY`.
+
 
 ### `FileOperationPlugin` (Bazowy)
 Wspólny interfejs dla wszystkich wtyczek.
@@ -215,7 +318,8 @@ zrealizowany:
 *   ✅ wątek IPC i wątek roboczy wewnątrz procesu wtyczki (`runtime.py`),
 *   ✅ wersjonowany, asynchroniczny protokół (`HELLO`/`READY`, `EXECUTE_TASK`, `CANCEL_TASK`, `PAUSE_TASK`, `PROGRESS`, `RESULT`, `ERROR`),
 *   ✅ adapter dla wtyczek w obecnym stylu (`LegacyPluginAdapter`) — bez przepisywania pluginów,
-*   ⬜ jawne API zadań dla nowych pluginów (drugi adapter, bez `AbstractTask._initialize`),
+*   ⬜ jawne API zadań dla nowych pluginów (`TaskPlugin` + `PluginTask` + `TaskPluginAdapter`, bez `AbstractTask._initialize`) — spec gotowa, implementacja w toku,
+*   ⬜ test protokołu dla każdego pluginu zamiast jednego na styl,
 *   ⬜ opcjonalna izolacja OS (Landlock/bubblewrap) jako osobny etap.
 
 **Kontrakt protokołu jest zdefiniowany w [`runtime-protocol.md`](runtime-protocol.md).**
