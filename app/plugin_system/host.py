@@ -346,6 +346,20 @@ class SandboxedPluginWrapper(QObject):
     # --- IPC listener -------------------------------------------------------
 
     def _listen_to_pipe(self):
+        # A dying thread must never take the process with it: at interpreter
+        # shutdown this runs alongside a half-closed logging module.
+        try:
+            self._listen_loop()
+        except (EOFError, BrokenPipeError, OSError):
+            self._on_channel_lost()
+        except Exception:  # noqa: BLE001 - see above
+            self._safe_log(
+                "exception",
+                "Plugin %s listener crashed.",
+                self.metadata.get("id"),
+            )
+
+    def _listen_loop(self):
         while not self._stop_event.is_set():
             try:
                 pipe = self.__dict__.get("parent_pipe")
@@ -363,22 +377,28 @@ class SandboxedPluginWrapper(QObject):
             try:
                 message = decode(raw)
             except UnknownMessageType as exc:
-                self.logger.warning(
+                self._safe_log(
+                    "warning",
                     "Ignoring unknown message type %r from plugin %s.",
                     exc.message_type,
                     self.metadata.get("id"),
                 )
                 continue
             except UnsupportedVersion as exc:
-                self.logger.error("Plugin %s: %s", self.metadata.get("id"), exc)
-                self.critical_error.emit(f"Protocol error: {exc}")
+                self._safe_log("error", "Plugin %s: %s", self.metadata.get("id"), exc)
+                self._emit(self.critical_error, f"Protocol error: {exc}")
                 continue
             except InvalidMessage as exc:
-                self.logger.error("Invalid message from plugin %s: %s", self.metadata.get("id"), exc)
+                self._safe_log(
+                    "error",
+                    "Invalid message from plugin %s: %s",
+                    self.metadata.get("id"),
+                    exc,
+                )
                 continue
 
             if direction_of(message.type) is not Direction.PLUGIN_TO_HOST:
-                self.logger.warning("Ignoring %s sent by the plugin.", message.type)
+                self._safe_log("warning", "Ignoring %s sent by the plugin.", message.type)
                 continue
 
             self._handle(message)
@@ -387,12 +407,51 @@ class SandboxedPluginWrapper(QObject):
         if self._dead:
             self._on_channel_lost()
 
+    # --- Output from the IPC thread ----------------------------------------
+
+    def _safe_log(self, level: str, message: str, *args):
+        """Log without depending on the logging module being usable.
+
+        During interpreter shutdown the streams are closed; a write from a
+        daemon thread aborts the process with
+        ``Fatal Python error: _enter_buffered_busy``. Losing a log line is
+        better than losing the exit code.
+        """
+        if sys.is_finalizing():
+            return
+
+        log = getattr(self.logger, level, self.logger.info)
+        try:
+            log(message, *args)
+        except (ValueError, OSError):
+            pass
+
+    def _emit(self, signal, *args):
+        """Emit a Qt signal from the IPC thread, tolerating a deleted wrapper.
+
+        The thread outlives the Python object when a wrapper is garbage
+        collected without ``stop()``; emitting then raises ``RuntimeError``
+        and, before Python 3.13, used to abort at shutdown.
+        """
+        if sys.is_finalizing():
+            return
+
+        try:
+            signal.emit(*args)
+        except RuntimeError:
+            self._safe_log(
+                "debug",
+                "Dropped a signal for plugin %s: the wrapper is gone.",
+                self.metadata.get("id"),
+            )
+
     def _handle(self, message: Message):
         message_type = message.type
 
         if message_type is MessageType.READY:
             self._plugin_methods = set(message["methods"])
-            self.logger.debug(
+            self._safe_log(
+                "debug",
                 "Plugin %s ready (protocol v%s).",
                 self.metadata.get("id"),
                 message["protocol_version"],
@@ -400,24 +459,27 @@ class SandboxedPluginWrapper(QObject):
             self._ready_event.set()
 
         elif message_type is MessageType.PROGRESS:
-            self.progress_updated.emit(message["task_id"], message["percent"])
+            self._emit(self.progress_updated, message["task_id"], message["percent"])
 
         elif message_type is MessageType.EVENT:
-            self.data_event_received.emit(
-                message["task_id"], message["name"], message.get("payload") or {}
+            self._emit(
+                self.data_event_received,
+                message["task_id"],
+                message["name"],
+                message.get("payload") or {},
             )
 
         elif message_type is MessageType.RESULT:
             task_id = message["task_id"]
             self.active_tasks.discard(task_id)
-            self.method_finished.emit(task_id, message.get("value"))
+            self._emit(self.method_finished, task_id, message.get("value"))
 
         elif message_type is MessageType.CANCELLED:
             task_id = message["task_id"]
             self.active_tasks.discard(task_id)
             # The queue decides whether this is a user cancellation or a real
             # failure; it already treats a cancelled context as CANCELLED.
-            self.method_failed.emit(task_id, "Task cancelled", "")
+            self._emit(self.method_failed, task_id, "Task cancelled", "")
 
         elif message_type is MessageType.ERROR:
             self._handle_error(message)
@@ -435,11 +497,14 @@ class SandboxedPluginWrapper(QObject):
 
         elif message_type is MessageType.LOG:
             level = message["level"]
-            log = getattr(self.logger, level, self.logger.info)
-            log("[Plugin] %s", message["message"])
+            if level not in ("debug", "info", "warning", "error", "critical"):
+                level = "info"
+            self._safe_log(level, "[Plugin] %s", message["message"])
 
         elif message_type is MessageType.BYE:
-            self.logger.debug("Plugin %s said goodbye.", self.metadata.get("id"))
+            self._safe_log(
+                "debug", "Plugin %s said goodbye.", self.metadata.get("id")
+            )
 
     def _handle_error(self, message: Message):
         task_id = message.get("task_id")
@@ -447,19 +512,23 @@ class SandboxedPluginWrapper(QObject):
         traceback_text = message.get("traceback") or ""
 
         if task_id is None:
-            self.logger.error(
+            self._safe_log(
+                "error",
                 "Plugin %s failed [%s]: %s\n%s",
                 self.metadata.get("id"),
                 message["code"],
                 error,
                 traceback_text,
             )
-            self.critical_error.emit(f"Plugin process error: {error}\n{traceback_text}")
+            self._emit(
+                self.critical_error, f"Plugin process error: {error}\n{traceback_text}"
+            )
             self._fail_all_active(f"Plugin process failed: {error}")
             return
 
         if task_id not in self.active_tasks:
-            self.logger.warning(
+            self._safe_log(
+                "warning",
                 "Received an error for unknown task %s from plugin %s.",
                 task_id,
                 self.metadata.get("id"),
@@ -467,7 +536,7 @@ class SandboxedPluginWrapper(QObject):
             return
 
         self.active_tasks.discard(task_id)
-        self.method_failed.emit(task_id, error, traceback_text)
+        self._emit(self.method_failed, task_id, error, traceback_text)
 
     def _handle_return(self, message: Message):
         call_id = message["call_id"]
@@ -475,7 +544,7 @@ class SandboxedPluginWrapper(QObject):
             pending = self._pending_calls.get(call_id)
 
         if pending is None:
-            self.logger.warning("RETURN for unknown call %s.", call_id)
+            self._safe_log("warning", "RETURN for unknown call %s.", call_id)
             return
 
         if message["ok"]:
@@ -487,13 +556,13 @@ class SandboxedPluginWrapper(QObject):
         self._dead = True
         if self._stop_event.is_set():
             return
-        self.logger.warning("Pipe closed unexpectedly.")
-        self.critical_error.emit("Plugin process pipe closed unexpectedly.")
+        self._safe_log("warning", "Pipe closed unexpectedly.")
+        self._emit(self.critical_error, "Plugin process pipe closed unexpectedly.")
         self._fail_all_active("Plugin process crashed")
 
     def _fail_all_active(self, reason: str):
         for task_id in list(self.active_tasks):
-            self.method_failed.emit(task_id, reason, "")
+            self._emit(self.method_failed, task_id, reason, "")
         self.active_tasks.clear()
 
     def _abort_pending_calls(self, reason: str):
