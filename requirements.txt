@@ -14,7 +14,7 @@ Send2Trash==1.8.3          # Cross-platform safe delete
 
 # GUI stack (Qt6) - must match the PyQt6 used by flake.nix
 PyQt6==6.8.0
-PyQt6-Qt6==6.8.3
+PyQt6-Qt6==6.8.2
 PyQt6_sip==13.8.0
 
 # Syntax highlighting (used in preview/editor components)
