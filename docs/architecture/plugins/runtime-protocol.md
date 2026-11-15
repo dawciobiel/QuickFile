@@ -193,7 +193,9 @@ drugiego zadania.
    na UI. W przeciwnym razie pełny bufor `Pipe` zablokuje plugin.
 6. `CALL` wykonuje się w kolejce wątku roboczego, więc może czekać za
    zadaniem. Host nie powinien wołać `CALL`, gdy plugin jest `BUSY`; timeout
-   `CALL` (domyślnie 5 s) chroni przed zawieszeniem UI.
+   `CALL` (domyślnie 5 s) chroni przed zawieszeniem UI. Host QuickFile używa
+   10 s, bo wywołania synchroniczne trafiają na zimny proces przy starcie
+   (listy akcji menu) — protokół pozwala ten limit skonfigurować.
 
 ## 9. Zerwanie kanału
 
@@ -237,3 +239,18 @@ Testy protokołu nie wymagają Qt ani prawdziwego systemu plików:
 
 Testy runtime'u uruchamiają prawdziwy proces, ale z atrapą pluginu — bez
 zależności zewnętrznych i bez sieci.
+
+## 12. Status implementacji
+
+| Część | Moduł | Testy |
+|---|---|---|
+| Kodek i negocjacja wersji | `app/plugin_system/protocol.py` | `tests/unit/test_runtime_protocol.py` |
+| Runtime w procesie pluginu | `app/plugin_system/runtime.py` | `tests/unit/test_plugin_runtime.py`, `test_plugin_runtime_process.py` |
+| Host (`SandboxedPluginWrapper`) | `app/plugin_system/host.py` | `tests/unit/test_plugin_host.py` |
+| Zgodność ze starym API | `LegacyPluginAdapter` + re-eksport w `app/plugin_sandbox.py` | testy hosta i e2e |
+
+Zrobione: kroki 1–5 z sekcji „Planowany kierunek” w `plugins.md`.
+Pozostało: jawne API zadań dla nowych pluginów (osobny adapter, bez
+`AbstractTask._initialize`) oraz opcjonalna izolacja OS (Landlock/bubblewrap)
+jako osobny etap.
+

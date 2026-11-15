@@ -256,6 +256,11 @@ Dopiero po zielonym etapie A. Wg `docs/architecture/plugins/redesign_plan.md`:
 Kryterium: anulowanie działa w < 200 ms podczas kopiowania dużego pliku; zawieszenie
 pluginu nie blokuje UI; każdy plugin ma test protokołu.
 
+**Status (2026-11-15):** kroki 1–3 i 5 zrobione (`app/plugin_system/protocol.py`,
+`runtime.py`, `host.py`; spec w `docs/architecture/plugins/runtime-protocol.md`).
+Krok 4 (jawne API zadań) i krok 6 (test protokołu dla każdego pluginu) pozostają.
+Testy: 27 runtime + 2 procesowe + 15 hosta; e2e kopiowania i wyszukiwania zielone.
+
 ---
 
 ## 8. Pułapki, które już raz zabolały

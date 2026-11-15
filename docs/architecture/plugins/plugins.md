@@ -189,22 +189,34 @@ Klasa `PluginManager` (`app/plugin_manager.py`) odpowiada za:
 
 ## Wywoływanie metod wtyczki sandboxowanej
 
-`sandboxed` wtyczka jest reprezentowana przez `SandboxedPluginWrapper`. Po starcie proces potomny wysyła komunikat `READY` z listą publicznych metod, a wrapper:
+`sandboxed` wtyczka jest reprezentowana przez `SandboxedPluginWrapper`
+(`app/plugin_system/host.py`). Host wysyła `HELLO`, a proces potomny odpowiada
+`READY` z listą publicznych metod. Wrapper:
 
-*   udostępnia przez atrybuty **tylko** te metody (synchroniczne RPC),
-*   dla nieznanej lub prywatnej nazwy natychmiast rzuca `AttributeError` — nie ma już odpytywania z 10-sekundowym timeoutem,
-*   operacje długotrwałe uruchamia przez `execute_task()` (asynchronicznie, z postępem i anulowaniem).
+*   udostępnia przez atrybuty **tylko** te metody — każde wywołanie to para
+    `CALL`/`RETURN` z korelacją po `call_id`,
+*   dla nieznanej lub prywatnej nazwy natychmiast rzuca `AttributeError` — bez
+    odpytywania i bez blokowania UI,
+*   operacje długotrwałe uruchamia przez `execute_task()` (asynchronicznie,
+    z postępem i kooperatywnym anulowaniem).
 
-Zasada: do pracy w tle używaj `execute_task()`. Synchroniczne wywołania metod są przeznaczone wyłącznie dla szybkich zapytań (np. `get_supported_extensions()`).
+Zasada: do pracy w tle używaj `execute_task()`. Synchroniczne wywołania metod są
+przeznaczone wyłącznie dla szybkich zapytań (np. `get_supported_extensions()`)
+i mają limit czasu (10 s w hoście; domyślnie 5 s w protokole).
+
+Anulowanie zadania czekającego w kolejce jest natychmiastowe — nie czeka za
+zadaniem, które akurat trwa. To była główna wada poprzedniego runtime'u.
 
 ## Planowany kierunek rozwoju
 
-Docelowy runtime wtyczek (etap C w `docs/project_management/plan-naprawy-2026-11-14.md`):
+Etap C w `docs/project_management/plan-naprawy-2026-11-14.md` jest w większości
+zrealizowany:
 
-*   wątek IPC i wątek roboczy wewnątrz procesu wtyczki,
-*   wersjonowany, asynchroniczny protokół (`EXECUTE_TASK`, `CANCEL_TASK`, `PAUSE_TASK`, `PROGRESS`, `RESULT`, `ERROR`),
-*   jawne API zadań zamiast metod wywoływanych przez `__getattr__`,
-*   adapter dla wtyczek w obecnym stylu, aby nie przepisywać wszystkiego naraz.
+*   ✅ wątek IPC i wątek roboczy wewnątrz procesu wtyczki (`runtime.py`),
+*   ✅ wersjonowany, asynchroniczny protokół (`HELLO`/`READY`, `EXECUTE_TASK`, `CANCEL_TASK`, `PAUSE_TASK`, `PROGRESS`, `RESULT`, `ERROR`),
+*   ✅ adapter dla wtyczek w obecnym stylu (`LegacyPluginAdapter`) — bez przepisywania pluginów,
+*   ⬜ jawne API zadań dla nowych pluginów (drugi adapter, bez `AbstractTask._initialize`),
+*   ⬜ opcjonalna izolacja OS (Landlock/bubblewrap) jako osobny etap.
 
 **Kontrakt protokołu jest zdefiniowany w [`runtime-protocol.md`](runtime-protocol.md).**
 Ten dokument jest normatywny: wiadomości, pola, kody błędów, kolejność i
