@@ -23,6 +23,32 @@
 
 ## Fixed
 
+### Plugin runtime (2026-11-15)
+
+- **Sandboxed plugins aborted the interpreter on exit**: with plugin processes still
+  running, the IPC listener thread logged and emitted Qt signals while Python was
+  finalizing. Writing to an already closed stream raised
+  `Fatal Python error: _enter_buffered_busy` and the process died with `SIGABRT`
+  (exit 134), so the real exit code — and, in CI, the whole test report — was lost.
+  A destroyed wrapper produced `RuntimeError: wrapped C/C++ object ... has been
+  deleted` in the same thread. The host now logs through `_safe_log()` (skips
+  `sys.is_finalizing()`, swallows closed-stream errors), emits through `_emit()`
+  (tolerates a deleted QObject) and contains unexpected listener exceptions.
+  The application itself was already ordering shutdown from
+  `QApplication.aboutToQuit`; the fix covers exits that bypass it.
+- **`pytest` collected a manual script and leaked eight plugin processes**: with
+  `pytest.ini` pointing at the project root, `scripts/test_plugin_dependencies.py`
+  was collected as a test. It asserts nothing and never called
+  `manager.shutdown()`, so eight plugin processes and their IPC threads survived
+  into the rest of the session — the trigger for the abort above. `testpaths = tests`
+  now scopes plain `pytest` to the real suite, and the script shuts the manager
+  down in a `finally` block so running it by hand exits cleanly too.
+- **ZIP cancellation test raced the archive**: it created 1000 tiny files and slept
+  50 ms before cancelling. On a fast runner the archive finished first and the test
+  failed with "Task finished successfully instead of being cancelled" while the
+  runtime was correct. It now builds 32 MB of incompressible data and cancels only
+  after the plugin reports progress, so the task is provably still writing.
+
 ### File operations (2026-11-15)
 
 - **Copy/move/delete failed with "Plugin not found"**: the dialogs stored the plugin *type*
