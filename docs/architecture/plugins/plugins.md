@@ -318,14 +318,14 @@ zadaniem, które akurat trwa. To była główna wada poprzedniego runtime'u.
 
 ## Planowany kierunek rozwoju
 
-Etap C w `docs/project_management/plan-naprawy-2026-11-14.md` jest w większości
-zrealizowany:
+Etap C w `docs/project_management/plan-naprawy-2026-11-14.md` jest zrealizowany
+poza opcjonalną izolacją OS:
 
 *   ✅ wątek IPC i wątek roboczy wewnątrz procesu wtyczki (`runtime.py`),
 *   ✅ wersjonowany, asynchroniczny protokół (`HELLO`/`READY`, `EXECUTE_TASK`, `CANCEL_TASK`, `PAUSE_TASK`, `PROGRESS`, `RESULT`, `ERROR`),
 *   ✅ adapter dla wtyczek w obecnym stylu (`LegacyPluginAdapter`) — bez przepisywania pluginów,
 *   ✅ jawne API zadań dla nowych pluginów (`TaskPlugin` + `PluginTask` + `TaskPluginAdapter`, bez `AbstractTask._initialize`),
-*   ⬜ test protokołu dla każdego pluginu zamiast jednego na styl,
+*   ✅ test protokołu dla każdego sandboxowanego pluginu — smoke `tests/unit/test_bundled_plugins_protocol.py` (handshake + `get_name` + `get_menu_actions` dla wszystkich ośmiu) oraz test e2e zadania per plugin; wtyczki in-process nie mówią protokołem,
 *   ⬜ opcjonalna izolacja OS (Landlock/bubblewrap) jako osobny etap.
 
 **Kontrakt protokołu jest zdefiniowany w [`runtime-protocol.md`](runtime-protocol.md).**

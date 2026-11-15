@@ -239,6 +239,11 @@ Testy protokołu nie wymagają Qt ani prawdziwego systemu plików:
    wynik, postęp, błąd, ignorowanie anulowania, długie zadanie.
 4. **Runtime** — start/`READY`, wynik, błąd, anulowanie < 200 ms, anulowanie
    zadania w kolejce, zerwanie kanału, zawieszenie pluginu nie blokuje UI.
+5. **Bundlowane pluginy** — `tests/unit/test_bundled_plugins_protocol.py`
+   startuje każdy sandboxowany plugin z jego własnego katalogu i woła API
+   potrzebne UI przy budowie menu; testy e2e per plugin (`test_checksum_plugin.py`,
+   `test_copy_operation_plugin.py`, …) wykonują przez ten sam protokół prawdziwe
+   zadanie. Wtyczki in-process nie mówią protokołem i nie mają tu odpowiednika.
 
 Testy runtime'u uruchamiają prawdziwy proces, ale z atrapą pluginu — bez
 zależności zewnętrznych i bez sieci.
@@ -252,8 +257,8 @@ zależności zewnętrznych i bez sieci.
 | Host (`SandboxedPluginWrapper`) | `app/plugin_system/host.py` | `tests/unit/test_plugin_host.py` |
 | Zgodność ze starym API | `LegacyPluginAdapter` + re-eksport w `app/plugin_sandbox.py` | testy hosta i e2e |
 | Jawne API zadań | `TaskPlugin`, `PluginTask`, `TaskPluginAdapter` | `tests/unit/test_plugin_task_api.py` |
+| Bundlowane pluginy | `plugins/org.quickfile/*/*/plugin.py` | `tests/unit/test_bundled_plugins_protocol.py` (smoke) + e2e zadania per plugin |
 
-Zrobione: kroki 1–5 z sekcji „Planowany kierunek” w `plugins.md`.
-Pozostało: test protokołu dla każdego pluginu oraz opcjonalna izolacja OS
-(Landlock/bubblewrap) jako osobny etap.
+Zrobione: kroki 1–6 z sekcji „Planowany kierunek” w `plugins.md`.
+Pozostało: opcjonalna izolacja OS (Landlock/bubblewrap) jako osobny etap.
 

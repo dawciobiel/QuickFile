@@ -256,18 +256,23 @@ Dopiero po zielonym etapie A. Wg `docs/architecture/plugins/redesign_plan.md`:
 Kryterium: anulowanie działa w < 200 ms podczas kopiowania dużego pliku; zawieszenie
 pluginu nie blokuje UI; każdy plugin ma test protokołu.
 
-**Status (2026-11-15):** kroki 1–5 zrobione (`app/plugin_system/protocol.py`,
+**Status (2026-11-15):** kroki 1–6 zrobione (`app/plugin_system/protocol.py`,
 `runtime.py`, `host.py`; spec w `docs/architecture/plugins/runtime-protocol.md`).
 Krok 4 (jawne API zadań) — spec w `docs/architecture/plugins/plugins.md`
 („Kontrakt zadań”), implementacja w `api.py` + `runtime.py` (`TaskPlugin`,
 `PluginTask`, `TaskPluginAdapter`, `adapter_for`). Krok 6 (test protokołu dla
-każdego pluginu) pozostaje.
+każdego pluginu) — smoke `tests/unit/test_bundled_plugins_protocol.py` dla
+wszystkich sandboxowanych wtyczek plus testy e2e zadania per plugin; wtyczki
+in-process nie mówią protokołem.
 Testy: 33 runtime + 3 procesowe + 17 hosta + 17 API zadań; e2e kopiowania
 i wyszukiwania zielone.
 
 Pierwszy bundlowany plugin w nowym stylu: `checksum_standard` (0.20.0) —
 `tests/unit/test_checksum_task_api.py` + istniejący test e2e. Pozostałe
 sandboxowane pluginy zostają na starym adapterze do czasu osobnych zmian.
+
+Pozostaje wyłącznie opcjonalna izolacja OS (Landlock/bubblewrap) jako osobny
+etap — poza zakresem etapu C.
 
 ---
 
