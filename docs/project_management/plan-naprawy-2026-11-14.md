@@ -265,6 +265,10 @@ każdego pluginu) pozostaje.
 Testy: 33 runtime + 3 procesowe + 17 hosta + 17 API zadań; e2e kopiowania
 i wyszukiwania zielone.
 
+Pierwszy bundlowany plugin w nowym stylu: `checksum_standard` (0.20.0) —
+`tests/unit/test_checksum_task_api.py` + istniejący test e2e. Pozostałe
+sandboxowane pluginy zostają na starym adapterze do czasu osobnych zmian.
+
 ---
 
 ## 8. Pułapki, które już raz zabolały
