@@ -2,10 +2,11 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-from app.plugin_system.api import PluginBase, AbstractTask
+from app.plugin_system.api import PluginTask, TaskPlugin
 from tasks import ChecksumTask
 
-class ChecksumPlugin(PluginBase):
+
+class ChecksumPlugin(TaskPlugin):
     SUPPORTED_ALGORITHMS = ["crc32", "md5", "sha1", "sha256"]
 
     def get_name(self):
@@ -17,7 +18,7 @@ class ChecksumPlugin(PluginBase):
     def get_supported_algorithms(self):
         return self.SUPPORTED_ALGORITHMS
 
-    def create_task(self, action_id: str, **kwargs) -> AbstractTask:
+    def create_task(self, action_id: str, **kwargs) -> PluginTask:
         if action_id == "calculate_checksum":
             return ChecksumTask(kwargs['source_paths'][0], kwargs['algorithms'])
         else:

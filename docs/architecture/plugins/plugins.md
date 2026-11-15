@@ -234,6 +234,12 @@ adapter = adapter_for(plugin_instance)
 cokolwiek innego → `TypeError`. Wyboru dokonuje `run_plugin_process` przy starcie
 procesu wtyczki; host widzi tylko `READY`.
 
+Wzorcową migracją jest `checksum_standard`
+(`plugins/org.quickfile/checksum_standard/1.0.0/`): pętla czyta plik, woła
+`ctx.check_cancelled()` i `ctx.wait_if_paused()`, raportuje `ctx.progress()`.
+Pozostałe bundlowane wtyczki przechodzą na nowy styl w osobnych zmianach —
+stary kontrakt nadal działa i nie ma potrzeby migrować ich hurtem.
+
 
 ### `FileOperationPlugin` (Bazowy)
 Wspólny interfejs dla wszystkich wtyczek.
