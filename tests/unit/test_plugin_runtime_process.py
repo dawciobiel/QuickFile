@@ -17,8 +17,13 @@ import time
 import pytest
 
 from app.plugin_system.protocol import MessageType, decode, encode
-from app.plugin_system.runtime import LegacyPluginAdapter, PluginRuntime
+from app.plugin_system.runtime import (
+    LegacyPluginAdapter,
+    PluginRuntime,
+    TaskPluginAdapter,
+)
 from tests.dummy_plugin import DummyPlugin
+from tests.dummy_task_plugin import DummyTaskPlugin
 
 PLUGIN_ID = "org.quickfile.dummy"
 PLUGIN_VERSION = "0.1.0"
@@ -30,10 +35,14 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _run_child(connection):
+def _run_child(connection, explicit_api=False):
+    if explicit_api:
+        adapter = TaskPluginAdapter(DummyTaskPlugin())
+    else:
+        adapter = LegacyPluginAdapter(DummyPlugin())
     runtime = PluginRuntime(
         connection,
-        LegacyPluginAdapter(DummyPlugin()),
+        adapter,
         plugin_id=PLUGIN_ID,
         plugin_version=PLUGIN_VERSION,
         startup_timeout=2.0,
@@ -43,10 +52,12 @@ def _run_child(connection):
 
 
 class Child:
-    def __init__(self):
+    def __init__(self, explicit_api=False):
         context = multiprocessing.get_context("fork")
         self.parent_connection, child_connection = context.Pipe()
-        self.process = context.Process(target=_run_child, args=(child_connection,))
+        self.process = context.Process(
+            target=_run_child, args=(child_connection, explicit_api)
+        )
         self.process.daemon = True
         self.process.start()
         child_connection.close()
@@ -130,3 +141,34 @@ def test_real_process_cancels_a_running_task_and_stays_usable(child):
         MessageType.RESULT, timeout=3.0, ignore=(MessageType.LOG, MessageType.PROGRESS)
     )
     assert result["task_id"] == "t2"
+
+
+def test_real_process_runs_a_task_from_the_explicit_api_and_cancels():
+    child = Child(explicit_api=True)
+    try:
+        child.handshake()
+
+        child.send(
+            MessageType.EXECUTE_TASK,
+            task_id="t1",
+            action_id="echo",
+            kwargs={"payload": {"nested": [1, 2, 3]}},
+        )
+        result = child.expect(
+            MessageType.RESULT, ignore=(MessageType.LOG, MessageType.PROGRESS)
+        )
+        assert result["value"] == {"echo": {"payload": {"nested": [1, 2, 3]}}}
+
+        child.send(MessageType.EXECUTE_TASK, task_id="t2", action_id="cancel_aware")
+        time.sleep(0.2)
+        child.send(MessageType.CANCEL_TASK, task_id="t2")
+
+        cancelled = child.expect(MessageType.CANCELLED, timeout=CANCEL_BUDGET)
+        assert cancelled["task_id"] == "t2"
+
+        child.send(MessageType.SHUTDOWN)
+        assert child.expect(MessageType.BYE) is not None
+        child.process.join(3)
+        assert child.process.exitcode == 0
+    finally:
+        child.close()

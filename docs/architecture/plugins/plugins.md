@@ -318,7 +318,7 @@ zrealizowany:
 *   ✅ wątek IPC i wątek roboczy wewnątrz procesu wtyczki (`runtime.py`),
 *   ✅ wersjonowany, asynchroniczny protokół (`HELLO`/`READY`, `EXECUTE_TASK`, `CANCEL_TASK`, `PAUSE_TASK`, `PROGRESS`, `RESULT`, `ERROR`),
 *   ✅ adapter dla wtyczek w obecnym stylu (`LegacyPluginAdapter`) — bez przepisywania pluginów,
-*   ⬜ jawne API zadań dla nowych pluginów (`TaskPlugin` + `PluginTask` + `TaskPluginAdapter`, bez `AbstractTask._initialize`) — spec gotowa, implementacja w toku,
+*   ✅ jawne API zadań dla nowych pluginów (`TaskPlugin` + `PluginTask` + `TaskPluginAdapter`, bez `AbstractTask._initialize`),
 *   ⬜ test protokołu dla każdego pluginu zamiast jednego na styl,
 *   ⬜ opcjonalna izolacja OS (Landlock/bubblewrap) jako osobny etap.
 
