@@ -2,10 +2,10 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-from app.plugin_system.api import PluginBase, AbstractTask
+from app.plugin_system.api import PluginTask, TaskPlugin
 from tasks import ExtractRarTask
 
-class RarArchiverPlugin(PluginBase):
+class RarArchiverPlugin(TaskPlugin):
     def get_name(self):
         return "RAR Archiver"
 
@@ -15,7 +15,7 @@ class RarArchiverPlugin(PluginBase):
     def get_supported_extensions(self):
         return [".rar"]
 
-    def create_task(self, action_id: str, **kwargs) -> AbstractTask:
+    def create_task(self, action_id: str, **kwargs) -> PluginTask:
         if action_id == "extract_archive":
             return ExtractRarTask(kwargs['source_path'], kwargs['dest_dir'], kwargs['options'])
         else:

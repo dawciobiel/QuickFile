@@ -1,7 +1,7 @@
 {
   "id": "org.quickfile.copy_operation",
   "name": "Standard Copy Operation",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "standard_operations",
   "description": "Provides standard file copy functionality.",
   "author": "Dawid Bielecki",

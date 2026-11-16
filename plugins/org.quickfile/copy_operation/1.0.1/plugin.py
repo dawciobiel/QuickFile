@@ -2,17 +2,17 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-from app.plugin_system.api import PluginBase, AbstractTask
+from app.plugin_system.api import PluginTask, TaskPlugin
 from tasks import CopyTask # Zmieniono import na bezpośredni
 
-class CopyOperationPlugin(PluginBase):
+class CopyOperationPlugin(TaskPlugin):
     def get_name(self):
         return "Standard Copy Operation"
 
     def get_description(self):
         return "Provides standard file copy functionality."
 
-    def create_task(self, action_id: str, **kwargs) -> AbstractTask:
+    def create_task(self, action_id: str, **kwargs) -> PluginTask:
         if action_id == "copy_items":
             return CopyTask(kwargs['source_paths'], kwargs['destination_path'], kwargs['options'])
         else:

@@ -1,7 +1,7 @@
 {
   "id": "org.quickfile.delete_operation",
   "name": "Standard Delete Operation",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "standard_operations",
   "description": "Provides standard file delete functionality.",
   "author": "Dawid Bielecki",

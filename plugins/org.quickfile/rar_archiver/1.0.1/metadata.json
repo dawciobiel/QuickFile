@@ -2,7 +2,7 @@
   "id": "org.quickfile.rar_archiver",
   "group_id": "org.quickfile",
   "artifact_id": "rar_archiver",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "RAR Archiver",
   "type": "archive",
   "description": "Provides support for extracting RAR archives.",

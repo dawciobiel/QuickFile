@@ -1,7 +1,7 @@
 {
   "id": "org.quickfile.move_operation",
   "name": "Standard Move Operation",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "standard_operations",
   "description": "Provides standard file move functionality.",
   "author": "Dawid Bielecki",

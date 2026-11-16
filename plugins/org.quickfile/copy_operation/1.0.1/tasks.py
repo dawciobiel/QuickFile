@@ -5,16 +5,15 @@
 import os
 import shutil
 import time
-from app.plugin_system.api import AbstractTask
+from app.plugin_system.api import PluginTask
 
-class CopyTask(AbstractTask):
+class CopyTask(PluginTask):
     def __init__(self, source_paths, destination_path, options):
-        super().__init__()
         self.source_paths = source_paths
         self.destination_path = destination_path
         self.options = options
 
-    def run(self):
+    def run(self, ctx):
         self.total_size = 0
         self.copied_size = 0
         self.last_progress_update = 0
@@ -30,20 +29,18 @@ class CopyTask(AbstractTask):
                         self.total_size += os.path.getsize(os.path.join(root, f))
 
         for src in self.source_paths:
-            if self.context.is_cancelled():
-                raise InterruptedError("Copy operation cancelled.")
+            ctx.check_cancelled()
             
             basename = os.path.basename(src)
             dest = os.path.join(self.destination_path, basename)
             
             if os.path.isdir(src):
-                self._copy_tree_recursive(src, dest)
+                self._copy_tree_recursive(ctx, src, dest)
             else:
-                self._copy_file_chunked(src, dest)
+                self._copy_file_chunked(ctx, src, dest)
 
-    def _copy_tree_recursive(self, src, dest):
-        if self.context.is_cancelled():
-            raise InterruptedError("Copy operation cancelled.")
+    def _copy_tree_recursive(self, ctx, src, dest):
+        ctx.check_cancelled()
         
         os.makedirs(dest, exist_ok=True)
         shutil.copystat(src, dest)
@@ -53,23 +50,21 @@ class CopyTask(AbstractTask):
             dest_path = os.path.join(dest, entry)
             
             if os.path.isdir(src_path):
-                self._copy_tree_recursive(src_path, dest_path)
+                self._copy_tree_recursive(ctx, src_path, dest_path)
             else:
-                self._copy_file_chunked(src_path, dest_path)
+                self._copy_file_chunked(ctx, src_path, dest_path)
 
-    def _copy_file_chunked(self, src, dest):
-        if self.context.is_cancelled():
-            raise InterruptedError("Copy operation cancelled.")
-        self.context.wait_if_paused()
+    def _copy_file_chunked(self, ctx, src, dest):
+        ctx.check_cancelled()
+        ctx.wait_if_paused()
 
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         
         chunk_size = 64 * 1024
         with open(src, 'rb') as fsrc, open(dest, 'wb') as fdest:
             while True:
-                if self.context.is_cancelled():
-                    raise InterruptedError("Copy operation cancelled.")
-                self.context.wait_if_paused()
+                ctx.check_cancelled()
+                ctx.wait_if_paused()
                 
                 chunk = fsrc.read(chunk_size)
                 if not chunk:
@@ -81,7 +76,7 @@ class CopyTask(AbstractTask):
                 if self.total_size > 0:
                     pct = int(self.copied_size * 100 / self.total_size)
                     if pct != self.last_pct and (time.time() - self.last_progress_update > 0.1):
-                        self.emit_progress(pct)
+                        ctx.progress(pct)
                         self.last_pct = pct
                         self.last_progress_update = time.time()
         
