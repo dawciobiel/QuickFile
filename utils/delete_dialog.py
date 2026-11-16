@@ -30,6 +30,7 @@ class DeleteDialog(QDialog):
 
     def _init_ui(self):
         self.stackedWidget.setCurrentWidget(self.options_page)
+        self.fallback_checkbox.setEnabled(self.move_to_trash_checkbox.isChecked())
 
         if len(self.item_paths) == 1:
             full_path = self.item_paths[0]
@@ -54,9 +55,16 @@ class DeleteDialog(QDialog):
         self.start_button.clicked.connect(self.start_operation)
         self.queue_button.clicked.connect(self.queue_operation)
         self.cancel_button.clicked.connect(self.cancel_operation)
+        self.move_to_trash_checkbox.toggled.connect(self._on_move_to_trash_toggled)
+
+    def _on_move_to_trash_toggled(self, checked):
+        self.fallback_checkbox.setEnabled(checked)
+        if not checked:
+            self.fallback_checkbox.setChecked(False)
 
     def retranslate_ui(self):
         self.move_to_trash_checkbox.setText(translation_manager.translate("DeleteDialog", "Move to Trash (if available)"))
+        self.fallback_checkbox.setText(translation_manager.translate("DeleteDialog", "Delete permanently if the Trash is unavailable"))
         self.warning_label.setText(translation_manager.translate("DeleteDialog", "This operation cannot be undone if not moved to Trash."))
         
         self.start_button.setText(translation_manager.translate("Buttons", "Delete"))
@@ -68,6 +76,10 @@ class DeleteDialog(QDialog):
     def get_options(self):
         return {
             "move_to_trash": self.move_to_trash_checkbox.isChecked(),
+            "permanent_fallback": (
+                self.move_to_trash_checkbox.isChecked()
+                and self.fallback_checkbox.isChecked()
+            ),
             "plugin_id": DELETE_PLUGIN_ID,
         }
 

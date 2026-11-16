@@ -40,6 +40,7 @@
     "DeleteDialog.Are you sure you want to delete:": "Czy na pewno chcesz usunąć:",
     "DeleteDialog.Are you sure you want to delete <b>{count}</b> items?": "Czy na pewno chcesz usunąć <b>{count}</b> elementów?",
     "DeleteDialog.Delete": "Usuń",
+    "DeleteDialog.Delete permanently if the Trash is unavailable": "Usuń trwale, jeśli Kosz jest niedostępny",
     "DeleteDialog.Move to Trash (if available)": "Przenieś do Kosza (jeśli dostępne)",
     "DeleteDialog.This operation cannot be undone if not moved to Trash.": "Tej operacji nie można cofnąć, jeśli nie zostanie przeniesiona do Kosza.",
     "DialogHandler.File Comparison Result": "Wynik porównania plików",
