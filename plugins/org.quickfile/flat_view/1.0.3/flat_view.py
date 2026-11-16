@@ -8,7 +8,7 @@ import logging
 import os
 import pwd
 
-from PyQt6.QtCore import pyqtSignal, Qt, QModelIndex, QDir, QTimer
+from PyQt6.QtCore import pyqtSignal, Qt, QModelIndex, QDir
 from PyQt6.QtGui import QColor, QFont, QAction
 from PyQt6.QtWidgets import QTableView, QHeaderView, QAbstractItemView, QFileIconProvider, QMenu
 
@@ -538,16 +538,12 @@ class FlatFileView(AbstractFileView):
     def handle_key_event(self, event):
         if event.key() == Qt.Key.Key_Insert:
             self.toggle_selection()
-            
+
             current_idx = self.view.currentIndex()
             if current_idx.isValid() and current_idx.row() < self.model.rowCount() - 1:
                 next_idx = self.model.index(current_idx.row() + 1, 0)
-                
-                def move():
-                    self.view.setCurrentIndex(next_idx)
-                    self.view.scrollTo(next_idx)
-                
-                QTimer.singleShot(10, move)
+                self.view.setCurrentIndex(next_idx)
+                self.view.scrollTo(next_idx)
             return True
         elif event.key() == Qt.Key.Key_Home:
             if self.model.rowCount() > 0:
