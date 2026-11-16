@@ -127,6 +127,17 @@ class TaskQueueManager(QObject):
             )
             return
 
+        if task.type == TaskType.CALCULATE_SIZE:
+            # A read-only scan does not need a plugin process: run the existing
+            # FileManager implementation off the UI thread instead of failing
+            # with "requires a 'plugin_id'".
+            self.background_task_manager.run_task(
+                task,
+                target=self.file_manager.calculate_directory_size,
+                directory_path=task.source_paths[0],
+            )
+            return
+
         plugin_id = task.options.get("plugin_id")
         plugin = self.plugin_manager.get_plugin_by_id(plugin_id) if plugin_id else None
 

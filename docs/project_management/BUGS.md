@@ -16,14 +16,23 @@
   - This happens because the user lacks write permissions to the root of the mount point where `send2trash` tries to create the `.Trash-1000` folder.
   - **Workaround**: Users should use permanent delete (Shift+Delete) for files on such partitions.
   - **Future Fix**: Implement a fallback mechanism in `StandardOperationsPlugin` to catch this error and prompt the user to permanently delete the file.
-- **Directory size calculation has no plugin**: `ApplicationLogicHandler.calculate_directory_size` creates
-  a `TaskType.CALCULATE_SIZE` task without `plugin_id`, and no bundled plugin implements that action.
-  The task fails with "requires a 'plugin_id'". The feature needs a real implementation (it can live in
-  `disk_utils_standard`) or the menu entry should be removed.
 
 ## Fixed
 
 ### Task queue (2026-11-16)
+
+- **Calculator of directory size was wired to nothing**: `FileManager.calculate_directory_size`
+  was fully implemented (walk, size, progress, cancellation checks) but
+  `TaskQueueManager` sent `TaskType.CALCULATE_SIZE` through the plugin queue, where
+  no plugin implements `calculate_directory_size`, so every attempt failed with
+  "requires a 'plugin_id'" and the menu entry did nothing. The queue now runs the
+  existing implementation in-process, like `SYNC`, via
+  `BackgroundTaskManager.run_task`. The scan reports progress through the worker's
+  progress signal, and cancellation raises `InterruptedError`, which the queue maps
+  to `CANCELLED` (previously a cancelled scan would have returned 0 and been shown
+  as a finished size of 0). `run_task` now also passes its `TaskContext`, so
+  in-process targets can see a pause/cancel. Covered by
+  `tests/unit/test_directory_size_task.py`.
 
 - **Resuming a paused task raised `AttributeError`**: `BackgroundTaskManager.resume_task`
   read `self.active_tasks` (that mapping lives in `TaskQueueManager`) and an

@@ -126,6 +126,7 @@ class BackgroundTaskManager(QObject):
         self.contexts[task.id] = context
         task.context = context
 
+        kwargs.setdefault("task_context", context)
         worker = Worker(target, task=task, **kwargs)
         worker.signals.progress.connect(lambda p: self.task_progress_updated.emit(task.id, p))
         worker.signals.result.connect(lambda r: self._on_worker_success(task.id, r))
@@ -139,7 +140,12 @@ class BackgroundTaskManager(QObject):
 
     def _on_worker_error(self, task_id, error_tuple):
         exctype, value, tb = error_tuple
-        logging.error(f"Task {task_id} failed: {value}\n{tb}")
+        context = self.contexts.get(task_id)
+        if context is not None and context.is_cancelled:
+            # The task ended because the user asked it to; not an error.
+            logging.info(f"Task {task_id} cancelled: {value}")
+        else:
+            logging.error(f"Task {task_id} failed: {value}\n{tb}")
         self.task_failed.emit(task_id, str(value))
 
     def _on_plugin_progress(self, task_id, percentage):
