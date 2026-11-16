@@ -49,40 +49,50 @@ class FileManager:
                         pass
         return total_size
 
-    def calculate_directory_size(self, directory_path, task_context=None, task=None):
+    def calculate_directory_size(
+        self, directory_path, task_context=None, task=None, progress_callback=None
+    ):
         """
         Calculates the total size of a directory and all its subdirectories.
+
+        Runs off the UI thread when started by ``TaskQueueManager``. Cancellation
+        is cooperative: the context/task is checked between files, and a cancel
+        raises ``InterruptedError`` so the queue reports ``CANCELLED`` instead of
+        marking a half-scanned directory as finished.
         """
         self._validate_path(directory_path, must_exist=True, is_directory=True, name="Directory")
+
+        def cancelled():
+            if task is not None and task.status == TaskStatus.CANCELLED:
+                return True
+            return task_context is not None and task_context.is_cancelled
+
+        def report_progress(percent):
+            # ``Worker`` passes its Qt progress signal, so the same contract as
+            # ``DirectorySynchronizer`` applies: emit, do not call.
+            if progress_callback is not None:
+                progress_callback.emit(percent)
+            elif task is not None:
+                task.set_progress(percent)
+
         total_size = 0
         file_count = 0
         try:
             # First, count the number of files for progress calculation
             total_files = 0
             for _, _, filenames in os.walk(directory_path):
-                if task and task.status == TaskStatus.CANCELLED:
-                    break
-                if task_context and task_context.is_cancelled:
-                    break
+                if cancelled():
+                    raise InterruptedError("Directory size calculation cancelled.")
                 total_files += len(filenames)
-
-            if task and task.status == TaskStatus.CANCELLED:
-                return 0
-            if task_context and task_context.is_cancelled:
-                return 0
 
             processed_files = 0
             for dirpath, dirnames, filenames in os.walk(directory_path):
-                if task and task.status == TaskStatus.CANCELLED:
-                    break
-                if task_context and task_context.is_cancelled:
-                    break
+                if cancelled():
+                    raise InterruptedError("Directory size calculation cancelled.")
 
                 for f in filenames:
-                    if task and task.status == TaskStatus.CANCELLED:
-                        break
-                    if task_context and task_context.is_cancelled:
-                        break
+                    if cancelled():
+                        raise InterruptedError("Directory size calculation cancelled.")
 
                     fp = os.path.join(dirpath, f)
 
@@ -95,30 +105,23 @@ class FileManager:
                             file_count += 1
                         except OSError as e:
                             logging.warning(f"Could not get size of {fp}: {e}")
-                            pass
 
                     processed_files += 1
-                    if task and total_files > 0:
-                        progress = int(processed_files * 100 / total_files)
-                        task.set_progress(progress)
+                    if total_files > 0:
+                        report_progress(int(processed_files * 100 / total_files))
 
-                if task and task.status == TaskStatus.CANCELLED:
-                    break
-                if task_context and task_context.is_cancelled:
-                    break
+                if cancelled():
+                    raise InterruptedError("Directory size calculation cancelled.")
 
+        except InterruptedError:
+            raise
         except Exception as e:
             logging.error(f"Error calculating size for {directory_path}: {e}")
             raise FileManagerError(f"Error calculating size: {e}")
 
-        if task and task.status == TaskStatus.CANCELLED:
-            return 0
-        if task_context and task_context.is_cancelled:
-            return 0
-
         if task:
             task.set_details(f"Found {file_count} files.")
-            task.set_progress(100)
+        report_progress(100)
 
         return total_size
 
