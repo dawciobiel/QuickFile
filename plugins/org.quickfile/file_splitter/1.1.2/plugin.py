@@ -2,10 +2,10 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-from app.plugin_system.api import PluginBase, AbstractTask
+from app.plugin_system.api import PluginTask, TaskPlugin
 from tasks import SplitFileTask, JoinFilesTask
 
-class FileSplitterPlugin(PluginBase):
+class FileSplitterPlugin(TaskPlugin):
     def get_name(self):
         return "File Splitter"
 
@@ -32,7 +32,7 @@ class FileSplitterPlugin(PluginBase):
             }
         ]
 
-    def create_task(self, action_id: str, **kwargs) -> AbstractTask:
+    def create_task(self, action_id: str, **kwargs) -> PluginTask:
         if action_id == "split_file":
             return SplitFileTask(kwargs['source_paths'][0], kwargs['destination_path'], kwargs['options'])
         elif action_id == "join_files":

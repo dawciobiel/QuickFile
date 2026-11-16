@@ -18,7 +18,6 @@ Two regressions are covered here:
 """
 
 import importlib
-import logging
 import os
 import sys
 
@@ -81,15 +80,8 @@ def run_task(plugin_modules, paths, **options):
     _plugin, tasks = plugin_modules
     task = tasks.DeleteTask([str(path) for path in paths], options)
     context = RecordingContext()
-    progress = []
-    task._initialize(
-        context,
-        progress.append,
-        lambda _name, _payload: None,
-        lambda _name, _payload: {},
-    )
-    task.run()
-    return context, progress
+    task.run(context)
+    return context, context.progress_values
 
 
 # --- Move to Trash -----------------------------------------------------------
@@ -130,7 +122,7 @@ def test_a_failed_trash_move_keeps_the_file_and_explains_the_fix(
 
 
 def test_permanent_fallback_deletes_when_the_user_opted_in(
-    plugin_modules, tmp_path, mocker, caplog
+    plugin_modules, tmp_path, mocker
 ):
     _plugin, tasks = plugin_modules
     path = tmp_path / "doomed.txt"
@@ -141,16 +133,18 @@ def test_permanent_fallback_deletes_when_the_user_opted_in(
         side_effect=PermissionError(13, "Permission denied"),
     )
 
-    with caplog.at_level(logging.WARNING):
-        run_task(
-            plugin_modules,
-            [path],
-            move_to_trash=True,
-            permanent_fallback=True,
-        )
+    context, _progress = run_task(
+        plugin_modules,
+        [path],
+        move_to_trash=True,
+        permanent_fallback=True,
+    )
 
     assert not path.exists()
-    assert any("permanently" in record.getMessage() for record in caplog.records)
+    assert any(
+        level == "warning" and "permanently" in message
+        for level, message in context.logs
+    )
 
 
 # --- Permanent deletion and symlinks ----------------------------------------

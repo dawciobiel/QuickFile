@@ -5,16 +5,15 @@
 import os
 import time
 import zlib
-from app.plugin_system.api import AbstractTask
+from app.plugin_system.api import PluginTask, TaskCancelled
 
-class SplitFileTask(AbstractTask):
+class SplitFileTask(PluginTask):
     def __init__(self, source_path, dest_dir, options):
-        super().__init__()
         self.source_path = source_path
         self.dest_dir = dest_dir
         self.options = options
 
-    def run(self):
+    def run(self, ctx):
         chunk_size = self.options.get("chunk_size")
         generate_checksum = self.options.get("generate_checksum", False)
         
@@ -35,9 +34,8 @@ class SplitFileTask(AbstractTask):
         try:
             with open(self.source_path, 'rb') as f_in:
                 while True:
-                    if self.context.is_cancelled():
-                        raise InterruptedError("Split operation cancelled by user.")
-                    self.context.wait_if_paused()
+                    ctx.check_cancelled()
+                    ctx.wait_if_paused()
                     
                     part_ext = f".{part_num:03d}"
                     part_path = os.path.join(self.dest_dir, base_name + part_ext)
@@ -45,9 +43,8 @@ class SplitFileTask(AbstractTask):
                     with open(part_path, 'wb') as f_out:
                         chunk_written = 0
                         while chunk_written < chunk_size:
-                            if self.context.is_cancelled():
-                                raise InterruptedError("Split operation cancelled by user.")
-                            self.context.wait_if_paused()
+                            ctx.check_cancelled()
+                            ctx.wait_if_paused()
                             
                             read_size = min(64 * 1024, chunk_size - chunk_written)
                             data = f_in.read(read_size)
@@ -63,7 +60,7 @@ class SplitFileTask(AbstractTask):
                             if file_size > 0: 
                                 pct = int(bytes_read * 100 / file_size)
                                 if pct != last_pct and (time.time() - last_progress_update > 0.1):
-                                    self.emit_progress(pct)
+                                    ctx.progress(pct)
                                     last_pct = pct
                                     last_progress_update = time.time()
                             
@@ -83,7 +80,7 @@ class SplitFileTask(AbstractTask):
                     f_crc.write(f"crc32={crc32 & 0xFFFFFFFF:08X}\n")
                     f_crc.write(f"parts_count={part_num - 1}\n")
 
-        except InterruptedError:
+        except TaskCancelled:
             raise
         except Exception as e:
             raise Exception(f"Error in split_file: {e}")
@@ -91,14 +88,13 @@ class SplitFileTask(AbstractTask):
             if f_in:
                 f_in.close()
 
-class JoinFilesTask(AbstractTask):
+class JoinFilesTask(PluginTask):
     def __init__(self, source_path, dest_dir, options):
-        super().__init__()
         self.source_path = source_path
         self.dest_dir = dest_dir
         self.options = options
 
-    def run(self):
+    def run(self, ctx):
         output_filename = self.options.get("output_filename")
         output_path = os.path.join(self.dest_dir, output_filename)
         
@@ -180,15 +176,13 @@ class JoinFilesTask(AbstractTask):
         
         with open(output_path, 'wb') as f_out:
             for part in parts:
-                if self.context.is_cancelled():
-                    raise InterruptedError("Join operation cancelled by user.")
-                self.context.wait_if_paused()
+                ctx.check_cancelled()
+                ctx.wait_if_paused()
                 
                 with open(part, 'rb') as f_in:
                     while True:
-                        if self.context.is_cancelled():
-                            raise InterruptedError("Join operation cancelled by user.")
-                        self.context.wait_if_paused()
+                        ctx.check_cancelled()
+                        ctx.wait_if_paused()
                         
                         chunk = f_in.read(64 * 1024)
                         if not chunk:
@@ -201,7 +195,7 @@ class JoinFilesTask(AbstractTask):
                         if total_size > 0:
                             pct = int(bytes_written * 100 / total_size)
                             if pct != last_pct and (time.time() - last_progress_update > 0.1):
-                                self.emit_progress(pct)
+                                ctx.progress(pct)
                                 last_pct = pct
                                 last_progress_update = time.time()
                             

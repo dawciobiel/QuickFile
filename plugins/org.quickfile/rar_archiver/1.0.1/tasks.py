@@ -4,11 +4,10 @@
 
 import os
 import rarfile
-from app.plugin_system.api import AbstractTask
+from app.plugin_system.api import PluginTask
 
-class ExtractRarTask(AbstractTask):
+class ExtractRarTask(PluginTask):
     def __init__(self, source_path, dest_dir, options):
-        super().__init__()
         self.source_path = source_path
         self.dest_dir = dest_dir
         self.options = options
@@ -17,7 +16,7 @@ class ExtractRarTask(AbstractTask):
         self.last_progress_update = 0
         self.last_pct = -1
 
-    def run(self):
+    def run(self, ctx):
         if not os.path.exists(self.dest_dir):
             os.makedirs(self.dest_dir)
 
@@ -25,19 +24,18 @@ class ExtractRarTask(AbstractTask):
             self.total_files = len(rf.infolist())
 
             for member in rf.infolist():
-                if self.context.is_cancelled():
-                    raise InterruptedError("Extraction cancelled by user.")
-                self.context.wait_if_paused()
+                ctx.check_cancelled()
+                ctx.wait_if_paused()
 
                 rf.extract(member, self.dest_dir)
-                self._update_progress()
+                self._update_progress(ctx)
         
         return {"extract_path": self.dest_dir}
 
-    def _update_progress(self):
+    def _update_progress(self, ctx):
         self.processed_files += 1
         if self.total_files > 0:
             pct = int(self.processed_files * 100 / self.total_files)
             if pct != self.last_pct:
-                self.emit_progress(pct)
+                ctx.progress(pct)
                 self.last_pct = pct

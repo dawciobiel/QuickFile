@@ -2,7 +2,7 @@
   "id": "org.quickfile.zip_archiver",
   "group_id": "org.quickfile",
   "artifact_id": "zip_archiver",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "Standard ZIP Archiver",
   "type": "archive",
   "description": "Provides support for creating and extracting ZIP archives.",

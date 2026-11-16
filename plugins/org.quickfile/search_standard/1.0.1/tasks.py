@@ -4,11 +4,10 @@
 
 import os
 import fnmatch
-from app.plugin_system.api import AbstractTask
+from app.plugin_system.api import PluginTask
 
-class SearchTask(AbstractTask):
+class SearchTask(PluginTask):
     def __init__(self, start_path, options):
-        super().__init__()
         self.start_path = start_path
         self.options = options
         self.file_name_pattern = options.get("file_name", "*")
@@ -16,17 +15,17 @@ class SearchTask(AbstractTask):
         self.include_hidden = options.get("include_hidden", True)
         self.exclude_paths = options.get("exclude_paths", [])
 
-    def run(self):
-        self.emit_event("log", {"message": "Search task started."})
+    def run(self, ctx):
+        ctx.event("log", {"message": "Search task started."})
         
         if not self.case_sensitive:
             self.file_name_pattern = self.file_name_pattern.lower()
 
         for root, dirs, files in os.walk(self.start_path, topdown=True):
-            if self.context.is_cancelled():
-                self.emit_event("log", {"message": "Search cancelled during directory walk."})
-                raise InterruptedError("Search operation cancelled.")
-            self.context.wait_if_paused()
+            if ctx.is_cancelled():
+                ctx.event("log", {"message": "Search cancelled during directory walk."})
+            ctx.check_cancelled()
+            ctx.wait_if_paused()
 
             # Filter directories
             if not self.include_hidden:
@@ -37,15 +36,15 @@ class SearchTask(AbstractTask):
 
             # Process files
             for file in files:
-                if self.context.is_cancelled():
-                    self.emit_event("log", {"message": "Search cancelled during file walk."})
-                    raise InterruptedError("Search operation cancelled.")
+                if ctx.is_cancelled():
+                    ctx.event("log", {"message": "Search cancelled during file walk."})
+                ctx.check_cancelled()
                 
                 file_to_match = file if self.case_sensitive else file.lower()
                 
                 if fnmatch.fnmatch(file_to_match, self.file_name_pattern):
                     full_path = os.path.join(root, file)
-                    self.emit_event("item_found", {"path": full_path})
+                    ctx.event("item_found", {"path": full_path})
         
-        self.emit_event("log", {"message": "Search task finished."})
+        ctx.event("log", {"message": "Search task finished."})
         return "Search complete" # Jawny return

@@ -5,12 +5,11 @@
 import os
 import zipfile
 
-from app.plugin_system.api import AbstractTask
+from app.plugin_system.api import PluginTask
 
 
-class CreateZipTask(AbstractTask):
+class CreateZipTask(PluginTask):
     def __init__(self, source_paths, destination_path, options):
-        super().__init__()
         self.source_paths = source_paths
         self.destination_path = destination_path
         self.options = options
@@ -19,7 +18,7 @@ class CreateZipTask(AbstractTask):
         self.last_progress_update = 0
         self.last_pct = -1
 
-    def run(self):
+    def run(self, ctx):
         compression = self.options.get("compression", zipfile.ZIP_DEFLATED)
         compresslevel = self.options.get("compresslevel", -1)
 
@@ -34,36 +33,33 @@ class CreateZipTask(AbstractTask):
         # Phase 2: Create archive
         with zipfile.ZipFile(self.destination_path, 'w', compression=compression, compresslevel=compresslevel) as zipf:
             for src_path in self.source_paths:
-                if self.context.is_cancelled():
-                    raise InterruptedError("Archive creation cancelled.")
+                ctx.check_cancelled()
 
                 if os.path.isdir(src_path):
                     base_dir = os.path.dirname(src_path)
                     for root, _, files in os.walk(src_path):
                         for file in files:
-                            if self.context.is_cancelled():
-                                raise InterruptedError("Archive creation cancelled.")
-                            self.context.wait_if_paused()
+                            ctx.check_cancelled()
+                            ctx.wait_if_paused()
 
                             file_path = os.path.join(root, file)
                             arcname = os.path.relpath(file_path, base_dir)
                             zipf.write(file_path, arcname)
-                            self._update_progress()
+                            self._update_progress(ctx)
                 else:  # It's a file
-                    if self.context.is_cancelled():
-                        raise InterruptedError("Archive creation cancelled.")
-                    self.context.wait_if_paused()
+                    ctx.check_cancelled()
+                    ctx.wait_if_paused()
 
                     arcname = os.path.basename(src_path)
                     zipf.write(src_path, arcname)
-                    self._update_progress()
+                    self._update_progress(ctx)
 
         return {"archive_path": self.destination_path}
 
-    def _update_progress(self):
+    def _update_progress(self, ctx):
         self.processed_files += 1
         if self.total_files > 0:
             pct = int(self.processed_files * 100 / self.total_files)
             if pct != self.last_pct:
-                self.emit_progress(pct)
+                ctx.progress(pct)
                 self.last_pct = pct
