@@ -21,6 +21,13 @@
 
 ### File browser (2026-11-16)
 
+- **"Could not get current theme data" warning on every launch**: `FlatFileSystemModel.__init__`
+  calls `on_theme_changed()`, but `main.py` applies the saved theme only after `MainWindow`
+  (and its file views) is built, so `ThemeManager.current_theme_data` is still empty at that
+  point. The model correctly starts with empty styles and reloads them through `theme_changed`
+  when the theme is applied, so the empty state is expected — it is now logged at debug level
+  instead of warning. Covered by `tests/unit/test_flat_view_theme.py`.
+
 - **Insert skipped rows when pressed quickly**: `FlatFileView.handle_key_event` toggled the
   current row and then deferred the cursor move with `QTimer.singleShot(10, ...)`. Presses
   arriving before the timer fired toggled the same row again (removing the mark) and both
