@@ -21,18 +21,15 @@
 
 ### Task queue (2026-11-16)
 
-- **Calculator of directory size was wired to nothing**: `FileManager.calculate_directory_size`
-  was fully implemented (walk, size, progress, cancellation checks) but
-  `TaskQueueManager` sent `TaskType.CALCULATE_SIZE` through the plugin queue, where
-  no plugin implements `calculate_directory_size`, so every attempt failed with
-  "requires a 'plugin_id'" and the menu entry did nothing. The queue now runs the
-  existing implementation in-process, like `SYNC`, via
-  `BackgroundTaskManager.run_task`. The scan reports progress through the worker's
-  progress signal, and cancellation raises `InterruptedError`, which the queue maps
-  to `CANCELLED` (previously a cancelled scan would have returned 0 and been shown
-  as a finished size of 0). `run_task` now also passes its `TaskContext`, so
-  in-process targets can see a pause/cancel. Covered by
-  `tests/unit/test_directory_size_task.py`.
+- **Calculator of directory size was wired to nothing**: `ApplicationLogicHandler.calculate_directory_size`
+  created a `TaskType.CALCULATE_SIZE` task without `plugin_id`, and no bundled plugin implemented
+  `calculate_directory_size`, so every attempt failed with "requires a 'plugin_id'". It was first fixed
+  in-process (the queue ran `FileManager.calculate_directory_size` like `SYNC`), then moved to the
+  plugin it belongs to: the sandboxed `org.quickfile.directory_size`
+  (`TaskPlugin` + `PluginTask`), mapped by `PLUGIN_ID_BY_ACTION["calculate_directory_size"]`.
+  The plugin owns the two-pass `os.walk`, reports progress via `ctx.progress()` and cancels through
+  `ctx.check_cancelled()`; replacing it only requires another plugin that declares the same action.
+  Covered by `tests/unit/test_directory_size_plugin.py`, including a run over the real protocol.
 
 - **Resuming a paused task raised `AttributeError`**: `BackgroundTaskManager.resume_task`
   read `self.active_tasks` (that mapping lives in `TaskQueueManager`) and an
