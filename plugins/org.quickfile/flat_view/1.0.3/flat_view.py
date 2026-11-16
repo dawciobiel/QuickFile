@@ -48,7 +48,10 @@ class FlatFileSystemModel(AbstractFileSystemModel):
         
         theme_data = self.theme_manager.get_current_theme_data()
         if not theme_data:
-            logging.warning("on_theme_changed: Could not get current theme data.")
+            # The theme is applied after the window is built (see main.py), so
+            # a view created during startup legitimately has no styles yet.
+            # ``theme_changed`` will call this method again once it is applied.
+            logging.debug("No theme applied yet; file styles are empty.")
             self._file_styles = {}
             self._special_type_styles = {}
             self.layoutChanged.emit()
