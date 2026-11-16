@@ -3,7 +3,6 @@
 # See LICENSE file for details.
 
 import os
-import pytest
 from PyQt6.QtWidgets import QInputDialog
 
 def test_rename_end_to_end(main_window, qtbot, mocker):

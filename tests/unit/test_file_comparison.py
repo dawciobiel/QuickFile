@@ -2,7 +2,6 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-import pytest
 from PyQt6.QtWidgets import QDialog
 
 def test_compare_no_selection(create_app_handler, mocker):

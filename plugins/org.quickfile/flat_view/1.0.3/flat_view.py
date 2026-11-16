@@ -4,7 +4,6 @@
 
 import datetime
 import grp
-import json
 import logging
 import os
 import pwd
@@ -99,7 +98,7 @@ class FlatFileSystemModel(AbstractFileSystemModel):
             
             other_items.sort(key=lambda x: (not x[2], x[0].lower()))
 
-        except OSError as e:
+        except OSError:
             msg = translation_manager.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
             show_error_message(self.parent_widget.notification_manager, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
             other_items = []
@@ -213,19 +212,27 @@ class FlatFileSystemModel(AbstractFileSystemModel):
                 if not is_dir:
                     try:
                         size_bytes = os.path.getsize(item_path)
-                        if size_bytes < 1024: return f"{size_bytes} B"
-                        elif size_bytes < 1024**2: return f"{size_bytes / 1024:.1f} KB"
-                        elif size_bytes < 1024**3: return f"{size_bytes / (1024**2):.1f} MB"
-                        else: return f"{size_bytes / (1024**3):.1f} GB"
+                        if size_bytes < 1024:
+                            return f"{size_bytes} B"
+                        elif size_bytes < 1024**2:
+                            return f"{size_bytes / 1024:.1f} KB"
+                        elif size_bytes < 1024**3:
+                            return f"{size_bytes / (1024**2):.1f} MB"
+                        else:
+                            return f"{size_bytes / (1024**3):.1f} GB"
                     except OSError:
                         return "N/A"
                 else:
                     if item_path in self._directory_sizes:
-                         size_bytes = self._directory_sizes[item_path]
-                         if size_bytes < 1024: return f"{size_bytes} B"
-                         elif size_bytes < 1024**2: return f"{size_bytes / 1024:.1f} KB"
-                         elif size_bytes < 1024**3: return f"{size_bytes / (1024**2):.1f} MB"
-                         else: return f"{size_bytes / (1024**3):.1f} GB"
+                        size_bytes = self._directory_sizes[item_path]
+                        if size_bytes < 1024:
+                            return f"{size_bytes} B"
+                        elif size_bytes < 1024**2:
+                            return f"{size_bytes / 1024:.1f} KB"
+                        elif size_bytes < 1024**3:
+                            return f"{size_bytes / (1024**2):.1f} MB"
+                        else:
+                            return f"{size_bytes / (1024**3):.1f} GB"
                     return ""
             elif index.column() == 2:
                 if is_dir:

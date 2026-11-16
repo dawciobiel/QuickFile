@@ -7,7 +7,6 @@ from PyQt6.QtWidgets import QDialog, QDialogButtonBox
 from PyQt6.uic import loadUi
 
 from app.translation_manager import translation_manager
-from utils.resource_path import get_resource_path
 
 class FeedbackDialog(QDialog):
     def __init__(self, parent=None):

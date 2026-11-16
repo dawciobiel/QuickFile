@@ -4,7 +4,7 @@
 
 import os
 import logging
-from PyQt6.QtCore import QObject, QUrl
+from PyQt6.QtCore import QObject
 # from PyQt6.QtMultimedia import QSoundEffect # Temporarily disabled
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from ui.notification_popup import NotificationPopup

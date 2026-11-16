@@ -2,9 +2,7 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-import pytest
 from PyQt6.QtCore import Qt
-from app.task_queue_manager import TaskType, Task
 from utils.search_dialog import SearchDialog
 
 def test_search_end_to_end(main_window, qtbot, handle_modal_dialog):

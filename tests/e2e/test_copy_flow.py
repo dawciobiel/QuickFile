@@ -3,8 +3,6 @@
 # See LICENSE file for details.
 
 import os
-import pytest
-from PyQt6.QtCore import Qt
 from app.task_queue_manager import TaskType, Task
 
 def test_copy_flow_e2e(main_window, qtbot):

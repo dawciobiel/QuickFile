@@ -4,9 +4,7 @@
 
 import pytest
 import json
-import os
 from app.plugin_manager import PluginManager
-from plugins.base import ViewerPlugin
 from app.plugin_sandbox import SandboxedPluginWrapper # Import SandboxedPluginWrapper
 
 # Fixture to create a fake plugin structure

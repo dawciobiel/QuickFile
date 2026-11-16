@@ -348,7 +348,7 @@ class PluginManager:
                 # Force reload the plugin's module to ensure we have the latest code
                 if hasattr(plugin, '__module_name__') and plugin.__module_name__ in sys.modules:
                     try:
-                        reloaded_module = importlib.reload(sys.modules[plugin.__module_name__])
+                        importlib.reload(sys.modules[plugin.__module_name__])
                         # We need to find the class again in the reloaded module
                         # and create a new instance. This is tricky because we don't know the class name here.
                         # For now, we'll just reload and hope the existing instance picks up changes if possible.

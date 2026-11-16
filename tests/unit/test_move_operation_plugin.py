@@ -2,8 +2,6 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-import os
-import time
 import pytest
 from PyQt6.QtCore import QTimer
 

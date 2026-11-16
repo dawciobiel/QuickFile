@@ -7,14 +7,14 @@ import os
 
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize
-from PyQt6.QtGui import QAction, QPainter, QColor, QActionGroup, QPixmap, QIcon, QPalette
+from PyQt6.QtGui import QAction, QPainter, QColor, QActionGroup, QPixmap
 from PyQt6.QtWidgets import QMainWindow, QPlainTextEdit, QWidget, QComboBox, QLabel, QMessageBox, QSizePolicy, QToolBar, QStackedWidget, \
     QStatusBar, QTextBrowser
 
 # Try to import Pygments
 try:
     from pygments import highlight
-    from pygments.lexers import get_lexer_for_filename, get_lexer_by_name
+    from pygments.lexers import get_lexer_for_filename
     from pygments.lexers.special import TextLexer
     from pygments.formatters import HtmlFormatter
     from pygments.util import ClassNotFound

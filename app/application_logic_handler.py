@@ -4,7 +4,6 @@ import logging
 import os
 import subprocess
 import platform
-import shutil
 
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QMessageBox
@@ -75,7 +74,7 @@ class ApplicationLogicHandler(QObject):
         try:
             if "%f" in command_template:
                 # Ensure the file path is quoted to handle spaces
-                if f'"%f"' in command_template or f"'%f'" in command_template:
+                if '"%f"' in command_template or "'%f'" in command_template:
                     # User has already quoted, just replace
                     command = command_template.replace("%f", file_path)
                 else:
@@ -83,7 +82,7 @@ class ApplicationLogicHandler(QObject):
                     command = command_template.replace("%f", f'"{file_path}"')
             elif "%d" in command_template:
                  # Ensure the directory path is quoted to handle spaces
-                if f'"%d"' in command_template or f"'%d'" in command_template:
+                if '"%d"' in command_template or "'%d'" in command_template:
                     command = command_template.replace("%d", file_path)
                 else:
                     command = command_template.replace("%d", f'"{file_path}"')

@@ -3,7 +3,6 @@
 # See LICENSE file for details.
 
 import os
-import pytest
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialogButtonBox
 from app.task_queue_manager import TaskType, Task

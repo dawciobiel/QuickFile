@@ -9,7 +9,6 @@ from typing import Callable
 
 from PyQt6.QtCore import QObject, QRunnable, pyqtSignal, QThreadPool, QMutex, QWaitCondition, QThread
 
-from app.plugin_sandbox import SandboxedPluginWrapper
 
 
 class WorkerSignals(QObject):
@@ -84,7 +83,7 @@ class Worker(QRunnable):
     def run(self):
         try:
             result = self.fn(*self.args, **self.kwargs)
-        except:
+        except Exception:
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, traceback.format_exc()))
         else:

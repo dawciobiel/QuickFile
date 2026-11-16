@@ -1,6 +1,5 @@
 import time
 from multiprocessing.connection import Connection
-from typing import Optional
 
 class SandboxedTaskContext:
     """

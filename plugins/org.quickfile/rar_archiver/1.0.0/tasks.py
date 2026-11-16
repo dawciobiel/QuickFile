@@ -3,7 +3,6 @@
 # See LICENSE file for details.
 
 import os
-import time
 import rarfile
 from app.plugin_system.api import AbstractTask
 

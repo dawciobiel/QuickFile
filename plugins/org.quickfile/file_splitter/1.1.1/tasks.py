@@ -5,7 +5,6 @@
 import os
 import time
 import zlib
-import traceback
 from app.plugin_system.api import AbstractTask
 
 class SplitFileTask(AbstractTask):
@@ -56,7 +55,8 @@ class SplitFileTask(AbstractTask):
                                 break
                             
                             f_out.write(data)
-                            if generate_checksum: crc32 = zlib.crc32(data, crc32)
+                            if generate_checksum:
+                                crc32 = zlib.crc32(data, crc32)
                             chunk_written += len(data)
                             bytes_read += len(data)
                             
@@ -191,7 +191,8 @@ class JoinFilesTask(AbstractTask):
                         self.context.wait_if_paused()
                         
                         chunk = f_in.read(64 * 1024)
-                        if not chunk: break
+                        if not chunk:
+                            break
                         
                         f_out.write(chunk)
                         crc32 = zlib.crc32(chunk, crc32)

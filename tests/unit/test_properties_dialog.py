@@ -2,7 +2,6 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-import pytest
 from PyQt6.QtWidgets import QDialog
 
 def test_show_properties_dialog_with_file(create_app_handler, mocker):

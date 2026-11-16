@@ -3,7 +3,6 @@
 # See LICENSE file for details.
 
 import os
-import shutil
 import time
 from app.plugin_system.api import AbstractTask
 
