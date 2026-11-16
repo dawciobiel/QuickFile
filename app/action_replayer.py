@@ -139,10 +139,14 @@ class ActionReplayer:
     def _handle_sync_dirs(self, source, destination, options, **kwargs):
         self._ensure_dir_exists(source)
         self._ensure_dir_exists(destination)
-        with open(os.path.join(source, "file1.txt"), 'w') as f: f.write("a")
-        with open(os.path.join(source, "file2.txt"), 'w') as f: f.write("b")
-        with open(os.path.join(destination, "file2.txt"), 'w') as f: f.write("c")
-        with open(os.path.join(destination, "file3.txt"), 'w') as f: f.write("d")
+        with open(os.path.join(source, "file1.txt"), 'w') as f:
+            f.write("a")
+        with open(os.path.join(source, "file2.txt"), 'w') as f:
+            f.write("b")
+        with open(os.path.join(destination, "file2.txt"), 'w') as f:
+            f.write("c")
+        with open(os.path.join(destination, "file3.txt"), 'w') as f:
+            f.write("d")
         
         self.dir_synchronizer.synchronize(source, destination, options)
 

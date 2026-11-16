@@ -14,7 +14,7 @@ pytest-order     # Control the order of test execution
 packaging        # Version parsing and comparison
 
 # Code quality and static analysis
-ruff             # Linter and formatter
+ruff==0.7.3       # keep in sync with flake.nix
 
 # Tooling
 pipreqs          # Auto-generate requirements from imports

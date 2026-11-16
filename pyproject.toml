@@ -50,3 +50,19 @@ ui = ["*.ui"]
 # Plugin directories contain a dot (org.quickfile.*) and are therefore not
 # importable packages: they are loaded by file path and shipped as data.
 plugins = ["**/*.py", "**/*.json", "**/*.ui", "**/*.svg"]
+
+[tool.ruff]
+# Default rule set (E4, E7, E9, F). Formatting rules are opt-in.
+target-version = "py312"
+
+[tool.ruff.lint.per-file-ignores]
+# Plugin entry modules insert their own directory into sys.path so they can
+# import sibling modules (relative imports do not work: plugins are loaded by
+# file path). The imports after that block are intentional.
+"plugins/org.quickfile/linux_attribute_editor/*/plugin.py" = ["E402"]
+"plugins/org.quickfile/standard_viewer/*/plugin.py" = ["E402"]
+"plugins/org.quickfile/symlink_manager/*/plugin.py" = ["E402"]
+"plugins/org.quickfile/windows_operations/*/plugin.py" = ["E402"]
+# Same pattern: the script puts the project root on sys.path before importing
+# the application modules.
+"scripts/replay_actions.py" = ["E402"]

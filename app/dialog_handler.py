@@ -1,7 +1,6 @@
 import logging
 import os
 import subprocess
-import sys
 
 from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 
@@ -327,7 +326,7 @@ class DialogHandler:
             action_logger.log_action("copy", sources=source_paths, destination=destination_path, options=options)
             task = Task(TaskType.COPY, source_paths, destination_path, options)
             self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage(f"Added copy task to queue.")
+            self.main_window.statusBar().showMessage("Added copy task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
             self.ui_state_provider.folder_browser.clear_selection()
         elif dialog.result() == QDialog.DialogCode.Accepted and dialog.task:
@@ -351,7 +350,7 @@ class DialogHandler:
             action_logger.log_action("move", sources=paths_to_move, destination=destination_path, options=options)
             task = Task(TaskType.MOVE, paths_to_move, destination_path, options)
             self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage(f"Added move task to queue.")
+            self.main_window.statusBar().showMessage("Added move task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
             self.ui_state_provider.folder_browser.clear_selection()
         elif dialog.result() == QDialog.DialogCode.Accepted and dialog.task:
@@ -372,7 +371,7 @@ class DialogHandler:
             action_logger.log_action("delete", paths=selected_paths, options=options)
             task = Task(TaskType.DELETE, selected_paths, options=options)
             self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage(f"Added delete task to queue.")
+            self.main_window.statusBar().showMessage("Added delete task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
             self.ui_state_provider.folder_browser.clear_selection()
         elif dialog.result() == QDialog.DialogCode.Accepted and dialog.task:

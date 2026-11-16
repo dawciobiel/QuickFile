@@ -1,7 +1,7 @@
 import os
-from PyQt6.QtWidgets import QPlainTextEdit, QWidget, QHBoxLayout, QTextEdit, QVBoxLayout, QToolBar, QStyle, QInputDialog
-from PyQt6.QtGui import QColor, QPainter, QTextFormat, QIcon
-from PyQt6.QtCore import Qt, QRect, QSize
+from PyQt6.QtWidgets import QPlainTextEdit, QWidget, QHBoxLayout, QTextEdit, QVBoxLayout, QToolBar, QInputDialog
+from PyQt6.QtGui import QColor, QPainter, QTextFormat
+from PyQt6.QtCore import Qt, QRect
 
 from .highlighter import PygmentsHighlighter
 from .line_number_area import LineNumberArea

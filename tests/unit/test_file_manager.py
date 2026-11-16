@@ -3,9 +3,7 @@
 # See LICENSE file for details.
 
 import pytest
-from file_operations.file_manager import FileManager, FileManagerError
-from app.task_queue_manager import TaskStatus
-import os
+from file_operations.file_manager import FileManager
 
 # region Create Tests
 def test_create_file_successfully(tmp_path):

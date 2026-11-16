@@ -5,15 +5,11 @@
 import logging
 import os
 import shutil
-import sys
 import time
 
 import pytest
 from PyQt6.QtCore import QTimer, QEventLoop, QObject
 from PyQt6.QtWidgets import QApplication, QMainWindow
-
-# Suppress PyQt6.uic debug logs
-logging.getLogger("PyQt6.uic").setLevel(logging.WARNING)
 
 from app.background_task_manager import BackgroundTaskManager
 from app.plugin_manager import PluginManager
@@ -25,6 +21,9 @@ from app.plugin_sandbox import SandboxedPluginWrapper
 from app.notification_manager import NotificationManager
 from app.file_association_manager import FileAssociationManager
 from app.settings_manager import SettingsManager
+
+# Suppress PyQt6.uic debug logs
+logging.getLogger("PyQt6.uic").setLevel(logging.WARNING)
 
 # Importujemy get_latest_plugin_path
 

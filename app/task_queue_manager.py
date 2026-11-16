@@ -4,13 +4,11 @@
 
 import logging
 import uuid
-from typing import Callable
 
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
 
 from app.enums import TaskStatus, TaskType
 from app.plugin_ids import plugin_id_for_action
-from app.plugin_sandbox import SandboxedPluginWrapper
 
 
 class Task(QObject):

@@ -6,7 +6,6 @@ import pytest
 from unittest.mock import MagicMock, patch
 from PyQt6.QtWidgets import QDialog
 from app.dialog_handler import DialogHandler
-from app.task_queue_manager import Task, TaskType # Import Task and TaskType
 
 @pytest.fixture
 def mock_dependencies(mocker):

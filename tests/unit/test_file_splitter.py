@@ -3,8 +3,7 @@ import sys
 import zlib
 import pytest
 import time
-from PyQt6.QtCore import QEventLoop, QTimer
-from unittest.mock import MagicMock
+from PyQt6.QtCore import QTimer
 
 # Dodajemy główny katalog projektu do ścieżki, aby móc importować moduły aplikacji
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -12,9 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 # Importujemy nowe fixtury i klasy
 from app.enums import TaskType
 from app.task_queue_manager import Task
-from app.background_task_manager import TaskContext # Importujemy TaskContext
 # Importujemy AsyncTestHelper z conftest.py (niejawnie, pytest to załatwi)
-from tests.plugin_helpers import get_latest_plugin_path
 
 def test_split_file_logic(tmp_path, async_plugin_test_env):
     """

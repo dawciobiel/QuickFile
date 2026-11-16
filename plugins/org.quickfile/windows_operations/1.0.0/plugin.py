@@ -143,7 +143,7 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
         destination_full_path = None
         try:
             long_source = self._validate_path(source_path, must_exist=True, name="Source path")
-            long_dest_dir = self._validate_path(destination_path, must_exist=True, is_directory=True, name="Destination path")
+            self._validate_path(destination_path, must_exist=True, is_directory=True, name="Destination path")
 
             base_name = os.path.basename(source_path)
             destination_full_path = os.path.join(destination_path, base_name)
@@ -227,7 +227,7 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                 raise
             except Exception as e:
                 logging.error(f"Failed to copy {source_path}: {e}")
-        return f"Batch copy completed."
+        return "Batch copy completed."
 
     def _move_item_with_options(self, source_path, destination_path, options, progress_callback=None, task_context=None, task=None):
         destination_full_path = None
@@ -297,7 +297,7 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                 raise
             except Exception as e:
                 logging.error(f"Failed to move {source_path}: {e}")
-        return f"Batch move completed."
+        return "Batch move completed."
 
     def _get_paths_and_total_size(self, item_paths, task_context=None, task=None):
         total_size = 0
