@@ -116,3 +116,20 @@ if __name__ == "__main__":
 - Dodanie obsługi klawiatury (np. kopiowanie, wklejanie plików).
 - Podświetlanie aktywnego panelu (np. zmiana ramki wokół aktywnego widoku).
 - Obsługa przeciągania i upuszczania pomiędzy panelami.
+
+## Zaznaczanie klawiszem `Insert`
+
+`FlatFileView` (wtyczka `org.quickfile.flat_view`) obsługuje `Insert` w
+`handle_key_event`:
+
+1. bieżący wiersz jest przełączany w zbiorze `insert_selected_items`
+   (wiersz `..` jest pomijany),
+2. kursor **natychmiast** przechodzi o jeden wiersz w dół; na ostatnim wierszu
+   pozostaje bez zmian.
+
+Przełączenie i przesunięcie muszą być synchroniczne. Odroczenie przesunięcia
+przez `QTimer.singleShot` powodowało, że dwa szybkie naciśnięcia przełączały
+ten sam wiersz (drugie zdejmowało zaznaczenie), a oba odroczone przesunięcia
+liczyły cel od tego samego, jeszcze niezmienionego wiersza. Kursor jechał
+w dół, ale elementy nie zostawały zaznaczone. Kontrakt pilnuje
+`tests/unit/test_flat_view_insert_navigation.py`.

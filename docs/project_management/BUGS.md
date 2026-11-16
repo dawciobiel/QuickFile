@@ -19,6 +19,16 @@
 
 ## Fixed
 
+### File browser (2026-11-16)
+
+- **Insert skipped rows when pressed quickly**: `FlatFileView.handle_key_event` toggled the
+  current row and then deferred the cursor move with `QTimer.singleShot(10, ...)`. Presses
+  arriving before the timer fired toggled the same row again (removing the mark) and both
+  callbacks computed their target from the same, unchanged current row, so the cursor moved
+  down while nothing was marked. The move is now synchronous: every keypress marks the row
+  that is current at that moment and advances the cursor immediately. Covered by
+  `tests/unit/test_flat_view_insert_navigation.py`.
+
 ### Task queue (2026-11-16)
 
 - **Calculator of directory size was wired to nothing**: `ApplicationLogicHandler.calculate_directory_size`
