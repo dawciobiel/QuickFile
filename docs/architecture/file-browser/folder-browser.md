@@ -133,3 +133,26 @@ ten sam wiersz (drugie zdejmowało zaznaczenie), a oba odroczone przesunięcia
 liczyły cel od tego samego, jeszcze niezmienionego wiersza. Kursor jechał
 w dół, ale elementy nie zostawały zaznaczone. Kontrakt pilnuje
 `tests/unit/test_flat_view_insert_navigation.py`.
+
+## Pole ścieżki (`PanelWidget.path_edit`)
+
+Pole ścieżki to `PathLineEdit`, czyli `QLineEdit` z jednym dodatkowym
+zachowaniem przy wklejaniu.
+
+* `Ctrl+L` (`view.focus_path`) ustawia fokus na polu aktywnego panelu i zaznacza
+  całą ścieżkę, więc `Ctrl+V` zastępuje ją w całości. Wklejanie w polu ścieżki
+  nie może uruchamiać żadnej innej akcji.
+* Wklejenie ścieżki absolutnej, gdy tekst przed kursorem kończy się separatorem
+  (np. użytkownik wpisał `/`), nie może zostawić `//` na początku pola: wynik
+  wklejenia ma dokładnie jeden wiodący `/`.
+* Zatwierdzenie pola (`Enter`, `returnPressed`) normalizuje tekst **przed**
+  sprawdzeniem ścieżki: powtarzające się separatory są zwijane (`//tmp//x` →
+  `/tmp/x`), `~` jest rozwijane, a tekst przycinany. Dopiero znormalizowana
+  ścieżka trafia do `file_view.set_path()`. Po nawigacji pole pokazuje tę samą
+  postać przez `_on_path_changed`.
+* Normalizacja nie zmienia semantyki ścieżek: nie rozwiązuje `..`, nie zmienia
+  ścieżek względnych i nie dotyka prefiksu UNC na Windows.
+* Nieistniejąca ścieżka nadal kończy się `set_error_state()` z
+  znormalizowanym tekstem.
+
+Kontrakt pilnuje `tests/unit/test_path_edit.py`.
