@@ -28,6 +28,7 @@ class EditorWidget(QWidget):
         self.update_line_number_area_width(0)
         
         self.editor.setPlainText(file_content)
+        self.editor.document().setModified(False)
         self.apply_theme()
         self.highlight_current_line()
 
@@ -179,10 +180,14 @@ class EditorWidget(QWidget):
         except Exception as e:
             return f"Error loading file: {e}"
 
+    def has_unsaved_changes(self):
+        return self.editor.document().isModified()
+
     def save_file(self):
         try:
             with open(self.file_path, 'w', encoding='utf-8') as f:
                 f.write(self.editor.toPlainText())
+            self.editor.document().setModified(False)
             return True
         except Exception as e:
             print(f"Error saving file: {e}")

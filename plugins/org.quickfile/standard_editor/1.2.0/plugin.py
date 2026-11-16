@@ -7,9 +7,12 @@ import sys
 from PyQt6.QtWidgets import QWidget
 from plugins.base import EditorPlugin
 
+
 class StandardEditorPlugin(EditorPlugin):
     def __init__(self):
         super().__init__()
+        #: Absolute file path -> open EditorWindow. One window per file.
+        self.open_editors = {}
 
     def get_name(self) -> str:
         return "Standard Editor"
@@ -20,16 +23,34 @@ class StandardEditorPlugin(EditorPlugin):
     def can_handle(self, file_path: str) -> bool:
         return True
 
-    def open_editor(self, file_path: str, theme_manager, parent: QWidget):
-        plugin_dir = os.path.dirname(__file__)
-        if plugin_dir not in sys.path:
-            sys.path.insert(0, plugin_dir)
-            
-        # Import our custom dialog
-        from widgets.editor_dialog import EditorDialog
-        
-        dialog = EditorDialog(file_path, theme_manager, parent)
-        dialog.exec()
+    def open_editor(self, file_path: str, theme_manager, parent: QWidget = None):
+        file_path = os.path.abspath(file_path)
 
-        if plugin_dir in sys.path:
-            sys.path.remove(plugin_dir)
+        existing = self.open_editors.get(file_path)
+        if existing is not None:
+            existing.raise_()
+            existing.activateWindow()
+            return existing
+
+        plugin_dir = os.path.dirname(__file__)
+        added_to_path = plugin_dir not in sys.path
+        if added_to_path:
+            sys.path.insert(0, plugin_dir)
+
+        try:
+            from widgets.editor_window import EditorWindow
+
+            window = EditorWindow(file_path, theme_manager, parent)
+        finally:
+            if added_to_path and plugin_dir in sys.path:
+                sys.path.remove(plugin_dir)
+
+        self.open_editors[file_path] = window
+        window.closed.connect(lambda path=file_path: self._forget_editor(path))
+        window.show()
+        return window
+
+    def _forget_editor(self, file_path: str):
+        window = self.open_editors.pop(file_path, None)
+        if window is not None:
+            window.deleteLater()
