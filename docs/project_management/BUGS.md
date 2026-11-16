@@ -12,12 +12,27 @@
   `/run/media/dawciobiel/4cb3e6fb-e74b-4ce8-b6db-d2f6943a2697/home/dawciobiel/PyCharmProjects/QuickFile`
   Application is located on NixOS partition:
   `Permission denied to access directory: /home/dawciobiel/PycharmProjects/QuickFile/resources/icons`
-- **Trash Permission Error**: `send2trash` fails with `PermissionError: [Errno 13]` when deleting files from external or mounted partitions (e.g., `/run/media/...`) on Linux.
-  - This happens because the user lacks write permissions to the root of the mount point where `send2trash` tries to create the `.Trash-1000` folder.
-  - **Workaround**: Users should use permanent delete (Shift+Delete) for files on such partitions.
-  - **Future Fix**: Implement a fallback mechanism in `StandardOperationsPlugin` to catch this error and prompt the user to permanently delete the file.
 
 ## Fixed
+
+### Delete (2026-11-16)
+
+- **"Move to Trash" was ignored on Linux**: `DeleteDialog` sends `move_to_trash=True` by
+  default, but `org.quickfile.delete_operation` ignored the option and always called
+  `os.remove`/`os.rmdir`; `send2trash` was only used by the Windows-only plugin. Files the
+  user expected in the Trash were deleted permanently. The task now moves items with
+  `send2trash` when `move_to_trash` is set. If the platform cannot create a Trash (for
+  example an external partition without write access at its root), it raises
+  `TrashUnavailableError` **before deleting anything**, and the error tells the user to
+  uncheck "Move to Trash". The dialog also offers "Delete permanently if the Trash is
+  unavailable" (`permanent_fallback`); when ticked, the plugin logs a warning and deletes
+  that item permanently instead of aborting. Covered by
+  `tests/unit/test_delete_operation_trash.py` and `tests/unit/test_delete_dialog_options.py`.
+- **Deleting a symlink to a directory destroyed the target's contents**:
+  `os.path.isdir()` follows symlinks, so the task walked the target, deleted its files and
+  then failed on `os.rmdir()` of the link. Nested symlinked directories hit the same
+  `rmdir` path. Deletion now treats symlinks as leaves (`os.path.islink`/`os.remove`) and
+  uses `os.path.lexists` so broken links are removed too. The target is never entered.
 
 ### File browser (2026-11-16)
 

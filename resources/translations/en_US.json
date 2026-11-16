@@ -40,6 +40,7 @@
     "DeleteDialog.Are you sure you want to delete:": "Are you sure you want to delete:",
     "DeleteDialog.Are you sure you want to delete <b>{count}</b> items?": "Are you sure you want to delete <b>{count}</b> items?",
     "DeleteDialog.Delete": "Delete",
+    "DeleteDialog.Delete permanently if the Trash is unavailable": "Delete permanently if the Trash is unavailable",
     "DeleteDialog.Move to Trash (if available)": "Move to Trash (if available)",
     "DeleteDialog.This operation cannot be undone if not moved to Trash.": "This operation cannot be undone if not moved to Trash.",
     "DialogHandler.File Comparison Result": "File Comparison Result",

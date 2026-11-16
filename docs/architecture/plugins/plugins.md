@@ -269,6 +269,22 @@ Interfejs dla wtyczek zapewniających podgląd plików (F3).
 
 ## Dostępne Wtyczki Standardowe
 
+### `org.quickfile.delete_operation`
+
+Sandboxowana wtyczka usuwania (`delete_items`, `TaskType.DELETE`). Respektuje
+opcję `move_to_trash`:
+
+* `move_to_trash=True` (domyślnie): element jest przenoszony do kosza przez
+  `send2trash`. Jeśli platforma nie potrafi utworzyć kosza (np. partycja
+  zewnętrzna bez prawa zapisu), zadanie kończy się błędem `TrashUnavailableError`
+  i **nic nie jest usuwane**; komunikat podpowiada odznaczenie „Move to Trash”.
+  Gdy użytkownik zaznaczy „Delete permanently if the Trash is unavailable”,
+  wtyczka loguje ostrzeżenie i usuwa element trwale, zamiast przerywać zadanie.
+* `move_to_trash=False`: trwałe usuwanie drzewa katalogów.
+* Dowiązania symboliczne są zawsze usuwane jako dowiązania — wtyczka nigdy nie
+  wchodzi do katalogu docelowego (również przy usuwaniu trwałym i dla zepsutych
+  dowiązań).
+
 ### `org.quickfile.directory_size`
 
 Sandboxowana wtyczka licząca rozmiar katalogu dla

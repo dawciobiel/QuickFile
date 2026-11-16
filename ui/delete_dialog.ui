@@ -49,6 +49,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="fallback_checkbox">
+         <property name="text">
+          <string>Delete permanently if the Trash is unavailable</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="warning_label">
          <property name="text">
           <string>This operation cannot be undone if not moved to Trash.</string>
