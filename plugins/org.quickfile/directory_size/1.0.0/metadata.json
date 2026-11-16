@@ -1,0 +1,12 @@
+{
+  "id": "org.quickfile.directory_size",
+  "name": "Directory Size",
+  "version": "1.0.0",
+  "type": "directory_size",
+  "description": "Calculates the total size of a directory and its subdirectories.",
+  "author": "QuickFile Team",
+  "entry_point": "plugin:DirectorySizePlugin",
+  "class_name": "DirectorySizePlugin",
+  "sandboxed": true,
+  "platforms": ["linux", "windows", "macos"]
+}

@@ -269,6 +269,19 @@ Interfejs dla wtyczek zapewniających podgląd plików (F3).
 
 ## Dostępne Wtyczki Standardowe
 
+### `org.quickfile.directory_size`
+
+Sandboxowana wtyczka licząca rozmiar katalogu dla
+`TaskType.CALCULATE_SIZE` (akcja `calculate_directory_size`). Używa jawnego API
+zadań (`TaskPlugin` + `PluginTask`): dwa przebiegi `os.walk` (najpierw liczba
+plików, potem suma rozmiarów), `ctx.check_cancelled()` między plikami i
+`ctx.progress()` po każdym pliku. Wynikiem jest `int` w bajtach.
+
+Kolejka mapuje akcję na wtyczkę przez
+`PLUGIN_ID_BY_ACTION["calculate_directory_size"]`. Implementacja jest wymienna:
+wtyczka dla innego systemu plików wystarczy, że zadeklaruje ten sam `action_id`,
+a mapowanie wskaże ją zamiast wersji standardowej.
+
 ### `org.quickfile.standard_viewer`
 
 Wbudowana przeglądarka plików, która obsługuje:
@@ -284,7 +297,7 @@ Wbudowana przeglądarka plików, która obsługuje:
 Klasa `PluginManager` (`app/plugin_manager.py`) odpowiada za:
 1.  **Skanowanie**: Przeszukuje katalog `plugins/` w poszukiwaniu poprawnych struktur wtyczek.
 2.  **Ładowanie**: Dynamicznie ładuje moduły Pythona i tworzy instancje klas wtyczek. Dla wtyczek oznaczonych jako `sandboxed`, tworzy instancję `SandboxedPluginWrapper`, która uruchamia wtyczkę w osobnym procesie.
-3. **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`, `menu_action`) i udostępnia je reszcie
+3. **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`, `directory_size`, `disk_utils`, `ui_extension`, `viewer`, `menu_action`) i udostępnia je reszcie
    aplikacji.
 4.  **Instalację i Aktualizację**: Przy starcie porównuje wersje wtyczek wbudowanych w aplikację z tymi zainstalowanymi u użytkownika. Jeśli wbudowana wersja jest nowsza, automatycznie aktualizuje wtyczkę w katalogu użytkownika.
 
@@ -325,7 +338,7 @@ poza opcjonalną izolacją OS:
 *   ✅ wersjonowany, asynchroniczny protokół (`HELLO`/`READY`, `EXECUTE_TASK`, `CANCEL_TASK`, `PAUSE_TASK`, `PROGRESS`, `RESULT`, `ERROR`),
 *   ✅ adapter dla wtyczek w obecnym stylu (`LegacyPluginAdapter`) — bez przepisywania pluginów,
 *   ✅ jawne API zadań dla nowych pluginów (`TaskPlugin` + `PluginTask` + `TaskPluginAdapter`, bez `AbstractTask._initialize`),
-*   ✅ test protokołu dla każdego sandboxowanego pluginu — smoke `tests/unit/test_bundled_plugins_protocol.py` (handshake + `get_name` + `get_menu_actions` dla wszystkich ośmiu) oraz test e2e zadania per plugin; wtyczki in-process nie mówią protokołem,
+*   ✅ test protokołu dla każdego sandboxowanego pluginu — smoke `tests/unit/test_bundled_plugins_protocol.py` (handshake + `get_name` + `get_menu_actions` dla każdego sandboxowanego) oraz test e2e zadania per plugin; wtyczki in-process nie mówią protokołem,
 *   ⬜ opcjonalna izolacja OS (Landlock/bubblewrap) jako osobny etap.
 
 **Kontrakt protokołu jest zdefiniowany w [`runtime-protocol.md`](runtime-protocol.md).**
