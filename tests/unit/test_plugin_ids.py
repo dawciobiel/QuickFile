@@ -21,6 +21,7 @@ from app.plugin_ids import (
     CHECKSUM_PLUGIN_ID,
     COPY_PLUGIN_ID,
     DELETE_PLUGIN_ID,
+    DIRECTORY_SIZE_PLUGIN_ID,
     FILE_SPLITTER_PLUGIN_ID,
     MOVE_PLUGIN_ID,
     PLUGIN_ID_BY_ACTION,
@@ -55,6 +56,7 @@ def test_all_referenced_plugin_ids_exist_in_the_bundle():
         SEARCH_PLUGIN_ID,
         CHECKSUM_PLUGIN_ID,
         FILE_SPLITTER_PLUGIN_ID,
+        DIRECTORY_SIZE_PLUGIN_ID,
     }
 
     assert referenced <= known, f"Unknown plugin ids: {sorted(referenced - known)}"
@@ -70,6 +72,7 @@ def test_all_referenced_plugin_ids_exist_in_the_bundle():
         (TaskType.CHECKSUM.value, CHECKSUM_PLUGIN_ID),
         (TaskType.SPLIT_FILE.value, FILE_SPLITTER_PLUGIN_ID),
         (TaskType.JOIN_FILES.value, FILE_SPLITTER_PLUGIN_ID),
+        (TaskType.CALCULATE_SIZE.value, DIRECTORY_SIZE_PLUGIN_ID),
     ],
 )
 def test_action_to_plugin_mapping(action_id, expected):

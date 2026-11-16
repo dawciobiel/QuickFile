@@ -41,6 +41,7 @@ class PluginManager:
             "ui_extension": [],
             "disk_utils": [],
             "menu_action": [],
+            "directory_size": [],
         }
         self.version_regex = re.compile(r"^\d+(\.\d+)*$")
         self.dependency_manager = PluginDependencyManager()

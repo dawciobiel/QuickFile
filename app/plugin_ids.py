@@ -22,6 +22,7 @@ DELETE_PLUGIN_ID = "org.quickfile.delete_operation"
 SEARCH_PLUGIN_ID = "org.quickfile.search_standard"
 CHECKSUM_PLUGIN_ID = "org.quickfile.checksum_standard"
 FILE_SPLITTER_PLUGIN_ID = "org.quickfile.file_splitter"
+DIRECTORY_SIZE_PLUGIN_ID = "org.quickfile.directory_size"
 
 # TaskType value (action id) -> bundled plugin that implements it.
 #
@@ -35,6 +36,7 @@ PLUGIN_ID_BY_ACTION = {
     "calculate_checksum": CHECKSUM_PLUGIN_ID,
     "split_file": FILE_SPLITTER_PLUGIN_ID,
     "join_files": FILE_SPLITTER_PLUGIN_ID,
+    "calculate_directory_size": DIRECTORY_SIZE_PLUGIN_ID,
 }
 
 
