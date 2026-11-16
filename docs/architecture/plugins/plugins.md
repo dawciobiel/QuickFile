@@ -62,7 +62,7 @@ Konsekwencje, których trzeba przestrzegać:
     `from .tasks import CopyTask` kończy się błędem `attempted relative import with no known parent package`.
     Poprawnie: `from tasks import CopyTask`.
 2.  **Podkatalogi z `__init__.py` są pakietami** i wewnątrz nich importy relatywne są w porządku
-    (np. `widgets/editor_dialog.py` może robić `from .editor_widget import EditorWidget`).
+    (np. `widgets/editor_window.py` może robić `from .editor_widget import EditorWidget`).
 3.  Nazwa wersji w `metadata.json` **musi** być identyczna z nazwą katalogu wersji.
 
 Punkty 1 i 3 są pilnowane przez testy w `tests/unit/test_plugin_structure.py`.
@@ -317,6 +317,23 @@ Wbudowana przeglądarka plików, która obsługuje:
 * **Markdown**: Renderowanie sformatowanego tekstu z plików `.md` i `.markdown` (z obsługą linków).
 * **Kod Źródłowy**: Kolorowanie składni dla wielu języków programowania (wykorzystuje bibliotekę `Pygments` i styl `monokai`).
 * **Tryby Binarne**: Podgląd w trybach HEX, DEC, BIN.
+
+### `org.quickfile.standard_editor`
+
+Wbudowany edytor (F4) otwiera plik w **niemieszającym** oknie `EditorWindow`,
+czyli `QMainWindow` z flagami `WindowMinMaxButtonsHint` i
+`WindowCloseButtonHint`, a nie w modalnym `QDialog`.
+
+* Jedno okno na ścieżkę pliku. Ponowne otwarcie tego samego pliku podnosi
+  istniejące okno (`raise_`/`activateWindow`) zamiast tworzyć drugie.
+* `Save` zapisuje plik i zamyka okno (dotychczasowe zachowanie). `Cancel`
+  oraz zamknięcie okna przy niezapisanych zmianach pytają
+  `Save` / `Discard` / `Cancel`; wybór `Cancel` zostawia okno otwarte.
+* Zamknięcie okna bez zmian nie pokazuje pytania.
+* `EditorWidget.has_unsaved_changes()` odpowiada
+  `QTextDocument.isModified()`, a udany `save_file()` zeruje tę flagę.
+* Okno jest usuwane po zamknięciu i wyrejestrowywane z listy otwartych
+  edytorów wtyczki.
 
 ## Zarządzanie Wtyczkami (`PluginManager`)
 

@@ -2,7 +2,6 @@
 
 ## Known Issues
 
-- **To add maxymize, minimalize build it editor window**: Okno pluginu wbudowanego edytora powinno mieć również możliwość minimalizacji, maksymalizacji. Obecnie jest to chyba okno dialogowe. Więc powinno zostać zmodyfikowane tak jak okno pluginu default viewer.
 - **Translation**: Some parts of the UI are not yet translated.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 - **Error message**: During launching application under Garuda occur error message: 
@@ -11,6 +10,20 @@
   `Permission denied to access directory: /home/dawciobiel/PycharmProjects/QuickFile/resources/icons`
 
 ## Fixed
+
+### Editor (2026-11-16)
+
+- **The built-in editor had no minimise/maximise buttons and blocked the app**:
+  `org.quickfile.standard_editor` opened a modal `QDialog` with `exec()`, so the window
+  could not be minimised or maximised and the main window waited for it. It now uses
+  `EditorWindow` (`QMainWindow`, `WindowMinMaxButtonsHint`) shown non-modally, like the
+  file viewer. The plugin keeps one window per absolute path in `open_editors` and raises
+  the existing window when the same file is opened again. Closing with unsaved changes
+  asks `Save` / `Discard` / `Cancel`; `Save` still writes and closes, and `Cancel` keeps
+  the window open. `EditorWidget.has_unsaved_changes()` reads
+  `QTextDocument.isModified()`, which a successful `save_file()` now clears. Closed
+  windows are removed from the registry and deleted. Covered by
+  `tests/unit/test_standard_editor_window.py`.
 
 ### Delete (2026-11-16)
 
