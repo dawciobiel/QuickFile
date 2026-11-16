@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 
 import psutil
@@ -31,12 +32,58 @@ def _format_size(bytes_val):
     return f"{bytes_val:.1f} {power_labels[n]}"
 
 
+def _collapse_path_separators(path):
+    """Collapses runs of repeated separators, preserving a UNC prefix."""
+    if os.name == "nt":
+        prefix = ""
+        if path.startswith("\\\\") or path.startswith("//"):
+            prefix = path[:2]
+            path = path[2:]
+        path = re.sub(r"[\\/]{2,}", lambda match: match.group(0)[0], path)
+        return prefix + path
+    return re.sub(r"/{2,}", "/", path)
+
+
+def normalize_path_text(text):
+    """Returns a typed or pasted path with repeated separators collapsed.
+
+    ``os.path.normpath`` is deliberately not used: it resolves ``..``
+    lexically, which would change the meaning of a path that goes through a
+    symlink. Only duplicated separators are collapsed, so ``//tmp//x`` becomes
+    ``/tmp/x`` without touching anything else.
+    """
+    return _collapse_path_separators(os.path.expanduser(text.strip()))
+
+
 class DriveComboBox(QComboBox):
     popup_about_to_show = pyqtSignal()
 
     def showPopup(self):
         self.popup_about_to_show.emit()
         super().showPopup()
+
+
+class PathLineEdit(QLineEdit):
+    """Path field that does not keep a doubled leading separator after paste."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # textEdited is emitted for keyboard paste (and other user edits), but
+        # not for setText(), so programmatic updates stay untouched.
+        self.textEdited.connect(self._collapse_leading_separators)
+
+    def _collapse_leading_separators(self, text):
+        if os.name == "nt":
+            return
+
+        collapsed = re.sub(r"^/{2,}", "/", text)
+        if collapsed == text:
+            return
+
+        removed = len(text) - len(collapsed)
+        cursor = self.cursorPosition()
+        self.setText(collapsed)
+        self.setCursorPosition(max(0, cursor - removed))
 
 
 class PanelWidget(QWidget):
@@ -54,7 +101,7 @@ class PanelWidget(QWidget):
         self.layout.setSpacing(2)
 
         # Path Edit (Top Row)
-        self.path_edit = QLineEdit()
+        self.path_edit = PathLineEdit()
         self.layout.addWidget(self.path_edit)
 
         self.completer = QCompleter(self)
@@ -260,7 +307,11 @@ class PanelWidget(QWidget):
             self.file_view.setEnabled(True)
 
     def on_path_edited(self):
-        path = os.path.expanduser(self.path_edit.text().strip())
+        text = self.path_edit.text()
+        path = normalize_path_text(text)
+        if path != text:
+            self.path_edit.setText(path)
+
         if os.path.isdir(path):
             self.clear_error_state()
             if isinstance(self.file_view, AbstractFileView):
