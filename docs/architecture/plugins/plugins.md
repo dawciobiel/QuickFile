@@ -49,7 +49,7 @@ plugins/
 ### Przykład
 
 ```
-~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.0/
+~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.1/
 ```
 
 ## Kontrakt ładowania modułów
@@ -237,8 +237,18 @@ procesu wtyczki; host widzi tylko `READY`.
 Wzorcową migracją jest `checksum_standard`
 (`plugins/org.quickfile/checksum_standard/1.0.0/`): pętla czyta plik, woła
 `ctx.check_cancelled()` i `ctx.wait_if_paused()`, raportuje `ctx.progress()`.
-Pozostałe bundlowane wtyczki przechodzą na nowy styl w osobnych zmianach —
-stary kontrakt nadal działa i nie ma potrzeby migrować ich hurtem.
+
+Wszystkie bundlowane, sandboxowane wtyczki z zadaniami używają stylu jawnego:
+`checksum_standard`, `directory_size`, `copy_operation`, `delete_operation`,
+`move_operation`, `file_splitter`, `rar_archiver`, `search_standard` oraz
+`zip_archiver`. Kontrakt pilnuje `tests/unit/test_bundled_task_plugins_api.py`:
+klasa wtyczki dziedziczy po `TaskPlugin`, `create_task` zwraca `PluginTask`,
+`run` przyjmuje kontekst, a moduły wtyczki nie używają `AbstractTask`,
+`self.context`, `emit_progress`, `emit_event` ani `request_user_input`.
+
+`LegacyPluginAdapter` i `AbstractTask` pozostają w API dla wtyczek zewnętrznych,
+które nie zostały jeszcze zmigrowane. Nowe wtyczki zawsze piszemy w stylu
+jawnym.
 
 
 ### `FileOperationPlugin` (Bazowy)
@@ -352,8 +362,9 @@ poza opcjonalną izolacją OS:
 
 *   ✅ wątek IPC i wątek roboczy wewnątrz procesu wtyczki (`runtime.py`),
 *   ✅ wersjonowany, asynchroniczny protokół (`HELLO`/`READY`, `EXECUTE_TASK`, `CANCEL_TASK`, `PAUSE_TASK`, `PROGRESS`, `RESULT`, `ERROR`),
-*   ✅ adapter dla wtyczek w obecnym stylu (`LegacyPluginAdapter`) — bez przepisywania pluginów,
+*   ✅ adapter dla wtyczek w obecnym stylu (`LegacyPluginAdapter`) — bez przepisywania pluginów zewnętrznych,
 *   ✅ jawne API zadań dla nowych pluginów (`TaskPlugin` + `PluginTask` + `TaskPluginAdapter`, bez `AbstractTask._initialize`),
+*   ✅ migracja wszystkich bundlowanych wtyczek zadań na styl jawny (kontrakt: `tests/unit/test_bundled_task_plugins_api.py`),
 *   ✅ test protokołu dla każdego sandboxowanego pluginu — smoke `tests/unit/test_bundled_plugins_protocol.py` (handshake + `get_name` + `get_menu_actions` dla każdego sandboxowanego) oraz test e2e zadania per plugin; wtyczki in-process nie mówią protokołem,
 *   ⬜ opcjonalna izolacja OS (Landlock/bubblewrap) jako osobny etap.
 
