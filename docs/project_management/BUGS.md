@@ -2,9 +2,6 @@
 
 ## Known Issues
 
-- **Bug for pasting path**: Brak możliwości wklejenia (CTRL+V) ścieżki w polu edycji ścieżki.
-  - Skrót klawiszowy CTRL+V jest przypisany do innej akcji która zostaje wywoływana (prawdopodobnie jest to wklejenie katalogu lub pliku).
-  - W polu edycji ścieżki jako pierwszy znak zawsze wpisany jest znak `/`. Więc jeżeli wstawiany ciąg znaków zawiera na początku np. `/some-path` to jako całość w tym polu wstawione będzie `//some-path`.
 - **To add maxymize, minimalize build it editor window**: Okno pluginu wbudowanego edytora powinno mieć również możliwość minimalizacji, maksymalizacji. Obecnie jest to chyba okno dialogowe. Więc powinno zostać zmodyfikowane tak jak okno pluginu default viewer.
 - **Translation**: Some parts of the UI are not yet translated.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
@@ -35,6 +32,16 @@
   uses `os.path.lexists` so broken links are removed too. The target is never entered.
 
 ### File browser (2026-11-16)
+
+- **Pasting a path produced a doubled leading slash**: `Ctrl+V` did reach the path
+  field (the global key filter is installed on the file view, not on the path edit,
+  and `Ctrl+L` selects the whole path), but typing `/` and then pasting an absolute
+  path left `//some-path`, which was then rejected as an invalid directory. The field
+  now collapses a run of leading separators after every user edit, and `Enter`
+  normalises repeated separators before validating the path, so `//tmp//x` navigates
+  to `/tmp/x`. `..` is not resolved, so paths through symlinks keep their meaning,
+  and a UNC prefix is preserved on Windows. Covered by
+  `tests/unit/test_path_edit.py`.
 
 - **"Could not get current theme data" warning on every launch**: `FlatFileSystemModel.__init__`
   calls `on_theme_changed()`, but `main.py` applies the saved theme only after `MainWindow`
