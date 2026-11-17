@@ -111,3 +111,40 @@ def test_plugin_refresh_drops_libs_of_versions_that_are_no_longer_bundled(tmp_pa
 
     assert (target / "1.2.0" / "libs" / "keep").is_dir()
     assert not (target / "1.1.0").exists()
+
+
+def test_non_sandboxed_plugin_that_needs_libs_is_rejected(tmp_path, mocker, caplog):
+    mocker.patch.object(PluginManager, "_ensure_bundled_plugins", return_value=None)
+
+    version_dir = tmp_path / "plugins" / "org.example" / "dep" / "1.0.0"
+    version_dir.mkdir(parents=True)
+    (version_dir / "metadata.json").write_text(json.dumps({
+        "id": "org.example.dep",
+        "version": "1.0.0",
+        "type": "viewer",
+        "entry_point": "plugin:DepPlugin",
+        "python_dependencies": ["quickfile-testdep"],
+    }))
+    (version_dir / "plugin.py").write_text("""
+from plugins.base import ViewerPlugin
+class DepPlugin(ViewerPlugin):
+    def get_name(self): return "DepPlugin"
+    def get_description(self): return "Needs a dependency from libs"
+    def can_view(self, path): return True
+    def view_file(self, file_path: str, theme_manager=None, parent=None): pass
+""")
+
+    info = version_dir / "libs" / "quickfile_testdep-1.0.dist-info"
+    info.mkdir(parents=True)
+    (info / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: quickfile-testdep\nVersion: 1.0\n",
+        encoding="utf-8",
+    )
+
+    manager = PluginManager(plugin_dirs=[str(tmp_path / "plugins")])
+    try:
+        assert manager.plugins["viewer"] == []
+    finally:
+        manager.shutdown()
+
+    assert "sandboxed" in caplog.text

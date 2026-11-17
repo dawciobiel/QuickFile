@@ -107,6 +107,14 @@ class PluginDependencyManager:
         if status.satisfied:
             return True
 
+        if not metadata.get("sandboxed", False):
+            self.logger.error(
+                "Cannot install dependencies for plugin %s: it is not sandboxed. "
+                "A plugin that needs libs must run in a separate process.",
+                metadata.get("id", "<unknown>"),
+            )
+            return False
+
         lock_path = self._lock_path(plugin_path, metadata)
         wheels_dir = self._wheels_dir(plugin_path, metadata)
 
@@ -133,6 +141,24 @@ class PluginDependencyManager:
             ", ".join(status.missing),
         )
         return self._pip_install(libs_dir, lock_path, wheels_dir)
+
+    # ------------------------------------------------------------------
+    # Isolation
+    # ------------------------------------------------------------------
+    @staticmethod
+    def validate_isolation(status: DependencyStatus, metadata: Dict) -> None:
+        """Reject a non-sandboxed plugin that needs libraries from ``libs``.
+
+        A separate process gives the plugin its own ``sys.path``. A plugin
+        loaded into the host would share the host's imports, so its pinned
+        dependencies could not be isolated.
+        """
+        if status.libs_dir and not metadata.get("sandboxed", False):
+            raise ValueError(
+                f"Plugin {metadata.get('id', '<unknown>')} needs dependencies from "
+                "its libs directory but is not sandboxed; isolated dependencies "
+                "require a separate process."
+            )
 
     # ------------------------------------------------------------------
     # Backwards compatibility

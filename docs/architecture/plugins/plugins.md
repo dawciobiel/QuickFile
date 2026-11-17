@@ -101,6 +101,14 @@ Zasady:
 *   Zależności wbudowanych wtyczek są w `flake.nix`. `libs/` jest mechanizmem dla wtyczek
     zewnętrznych, a każda zainstalowana wersja wtyczki ma własny katalog `libs/`. Odświeżenie
     wtyczki usuwa `libs/` wersji, której nowa paczka już nie zawiera.
+*   Wtyczka, która naprawdę potrzebuje `libs/` (host nie dostarcza zależności), **musi** mieć
+    `sandboxed: true`. Ładowanie takiej wtyczki do procesu hosta jest odrzucane, a
+    `install_dependencies` odmawia instalacji. Zależności dostarczane przez host (np. `PyQt6`)
+    nie wymagają sandboxu, bo nic nie ląduje w `libs/`.
+*   Wbudowane wtyczki deklarują tylko to, co Nix już daje (`rar_archiver` → `rarfile`,
+    `delete_operation` → `send2trash`). Pilnuje tego
+    `tests/unit/test_bundled_plugin_dependencies.py`: deklaracja musi być spełniona przez
+    host i nie może wymagać `libs/`.
 *   Brakująca zależność jest logowana jako ostrzeżenie, a wtyczka i tak się ładuje.
 
 ## Metadane (`metadata.json`)
@@ -129,7 +137,7 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 *   **description**: Krótki opis.
 *   **entry_point**: Nazwa modułu Pythona i klasy (np. `plugin:ZipPlugin`) zawierającej klasę wtyczki.
 *   **class_name**: Nazwa klasy implementującej interfejs wtyczki.
-*   **sandboxed**: (Opcjonalnie, `boolean`) Jeśli `true`, wtyczka zostanie uruchomiona w osobnym procesie. **Zalecane dla wtyczek wykonujących operacje w tle.** To wybór trybu uruchomienia, a nie deklaracja bezpieczeństwa — patrz „Izolacja Procesów”.
+*   **sandboxed**: (Opcjonalnie, `boolean`) Jeśli `true`, wtyczka zostanie uruchomiona w osobnym procesie. **Wymagane, gdy wtyczka potrzebuje zależności z `libs/`**; zależności dostarczane przez host nie wymagają sandboxu. To wybór trybu uruchomienia, a nie deklaracja bezpieczeństwa — patrz „Izolacja Procesów”.
 *   **platforms**: (Opcjonalnie, `array of strings`) Lista platform, na których wtyczka jest wspierana (np. `"windows"`, `"linux"`, `"macos"`).
 *   **python_dependencies**: (Opcjonalnie, `array of strings`) Zależności Pythona (PEP 508) — patrz „Zależności wtyczek”.
 *   **python_import_names**: (Opcjonalnie, `object`) Mapa dystrybucja → moduł dla zależności bez metadanych dystrybucji.
