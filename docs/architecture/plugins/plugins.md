@@ -72,16 +72,36 @@ Punkty 1 i 3 są pilnowane przez testy w `tests/unit/test_plugin_structure.py`.
 Wtyczka może zadeklarować zależności w `metadata.json`:
 
 ```json
-"python_dependencies": ["some-library>=1.0"]
+"python_dependencies": ["some-library>=1.0"],
+"python_import_names": {"some-library": "some_library"},
+"dependency_lock": "requirements.lock",
+"dependency_wheels": "wheels"
 ```
 
 Zasady:
 
 *   **Ładowanie wtyczki nigdy nie instaluje zależności.** QuickFile nie uruchamia `pip` przy starcie —
     wymagałoby to sieci, zmieniało środowisko aplikacji i uniemożliwiało reprodukcję błędów.
-*   Zależności, które host już posiada (np. `PyQt6`), są traktowane jako spełnione i nie wymagają deklaracji.
-*   Instalacja to jawna akcja (`PluginDependencyManager.install_dependencies`), wywoływana przez użytkownika
-    lub instalator wtyczki. Brakująca zależność jest logowana jako ostrzeżenie, a wtyczka i tak się ładuje.
+*   Wymagania są weryfikowane z **wersją**, nie tylko po nazwie dystrybucji. Sprawdzany jest host
+    (`importlib.metadata`) oraz `<plugin>/libs`; niezgodna wersja jest traktowana jak brak.
+*   `python_import_names` mapuje nazwę dystrybucji na moduł dla pojedynczych plików bez metadanych
+    (`PyYAML` → `yaml`). Taka mapa spełnia tylko wymagania bez specyfikatora wersji.
+*   Jeśli istnieje `requirements.lock`, jego przypięcia (`==`) **zastępują** szerokie wymagania z
+    metadanych i muszą pokrywać każdą zadeklarowaną dystrybucję. Lock jest w pełni rozwiązany
+    (z zależnościami tranzytywnymi) i zawiera hashe.
+*   Instalacja to jawna akcja (`PluginDependencyManager.install_dependencies`), wywoływana przez
+    użytkownika lub instalator wtyczki. Działa **offline**:
+
+    ```
+    python -m pip install --no-index --find-links <wheels> --require-hashes \
+        --target <plugin>/libs -r <lock>
+    ```
+
+    Brak locka albo lokalnych wheeli kończy się błędem — instalator nigdy nie sięga do sieci.
+*   Zależności wbudowanych wtyczek są w `flake.nix`. `libs/` jest mechanizmem dla wtyczek
+    zewnętrznych, a każda zainstalowana wersja wtyczki ma własny katalog `libs/`. Odświeżenie
+    wtyczki usuwa `libs/` wersji, której nowa paczka już nie zawiera.
+*   Brakująca zależność jest logowana jako ostrzeżenie, a wtyczka i tak się ładuje.
 
 ## Metadane (`metadata.json`)
 
@@ -111,7 +131,10 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 *   **class_name**: Nazwa klasy implementującej interfejs wtyczki.
 *   **sandboxed**: (Opcjonalnie, `boolean`) Jeśli `true`, wtyczka zostanie uruchomiona w osobnym procesie. **Zalecane dla wtyczek wykonujących operacje w tle.** To wybór trybu uruchomienia, a nie deklaracja bezpieczeństwa — patrz „Izolacja Procesów”.
 *   **platforms**: (Opcjonalnie, `array of strings`) Lista platform, na których wtyczka jest wspierana (np. `"windows"`, `"linux"`, `"macos"`).
-*   **python_dependencies**: (Opcjonalnie, `array of strings`) Zależności Pythona — patrz „Zależności wtyczek”.
+*   **python_dependencies**: (Opcjonalnie, `array of strings`) Zależności Pythona (PEP 508) — patrz „Zależności wtyczek”.
+*   **python_import_names**: (Opcjonalnie, `object`) Mapa dystrybucja → moduł dla zależności bez metadanych dystrybucji.
+*   **dependency_lock**: (Opcjonalnie, `string`, domyślnie `requirements.lock`) Ścieżka do hashowanego locka wewnątrz katalogu wersji.
+*   **dependency_wheels**: (Opcjonalnie, `string`, domyślnie `wheels`) Katalog z lokalnymi wheelami do instalacji offline.
 
 ## Interfejsy (Kontrakty)
 
