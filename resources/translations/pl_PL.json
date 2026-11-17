@@ -234,5 +234,9 @@
     "SyncDialog.Two-way synchronization (copy newer files both ways)": "Synchronizacja dwukierunkowa (kopiuj nowsze pliki w obie strony)",
     "SyncDialog.Delete files in destination folder if they don't exist in source": "Usuń pliki w folderze docelowym, jeśli nie istnieją w źródle",
     "SyncDialog.Include subdirectories": "Uwzględnij podkatalogi",
-    "TaskQueuePanel.Clear Finished": "Wyczyść zakończone"
+    "TaskQueuePanel.Clear Finished": "Wyczyść zakończone",
+    "PluginSettings.Plugin settings": "Ustawienia pluginu",
+    "PluginSettings.Invalid settings": "Nieprawidłowe ustawienia",
+    "PluginSettings.This plugin has an invalid settings schema.": "Ta wtyczka ma nieprawidłowy schemat ustawień.",
+    "CreateArchiveDialog.No configuration options available for this plugin.": "Ta wtyczka nie ma ustawień do skonfigurowania."
 }

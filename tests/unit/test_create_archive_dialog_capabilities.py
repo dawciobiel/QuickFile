@@ -22,8 +22,13 @@ class FakeArchivePlugin:
     def get_supported_extensions(self):
         return list(self.extensions)
 
-    def get_configuration_dialog(self, parent, current_options):
-        return None
+
+class FakeSettingsManager:
+    def get_plugin_settings(self, plugin_id):
+        return {}
+
+    def set_plugin_settings(self, plugin_id, options):
+        pass
 
 
 def test_the_dialog_offers_only_plugins_that_can_create_archives(qapp):
@@ -31,7 +36,9 @@ def test_the_dialog_offers_only_plugins_that_can_create_archives(qapp):
     manager = MagicMock()
     manager.get_archivers.return_value = [plugin]
 
-    dialog = CreateArchiveDialog(None, manager, "/tmp")
+    dialog = CreateArchiveDialog(
+        None, manager, "/tmp", settings_manager=FakeSettingsManager()
+    )
     try:
         assert dialog.type_combo.count() == 1
         assert dialog.type_combo.itemData(0) is plugin

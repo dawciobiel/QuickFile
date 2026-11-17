@@ -46,6 +46,7 @@ class SettingsManager:
             "bringToFrontOnStartup": True,
             "theme": "dark",
             "sound_notifications_enabled": True,
+            "plugin_settings": {},
         }
         
         # Add default notification settings for all task types
@@ -106,6 +107,26 @@ class SettingsManager:
 
     def set_setting(self, key, value):
         self.settings[key] = value
+        self.save_settings_to_file()
+
+    def get_plugin_settings(self, plugin_id: str) -> dict:
+        """Return a copy of the saved options for one plugin.
+
+        Keying by plugin id, not display name, survives renaming a plugin.
+        A corrupted value in settings.json must not break plugin loading.
+        """
+        stored = self.settings.get("plugin_settings")
+        if not isinstance(stored, dict):
+            return {}
+        value = stored.get(plugin_id, {})
+        return dict(value) if isinstance(value, dict) else {}
+
+    def set_plugin_settings(self, plugin_id: str, options: dict):
+        stored = self.settings.get("plugin_settings")
+        if not isinstance(stored, dict):
+            stored = {}
+            self.settings["plugin_settings"] = stored
+        stored[plugin_id] = dict(options)
         self.save_settings_to_file()
 
     def load_window_settings(self, window: QMainWindow):

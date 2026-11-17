@@ -171,7 +171,12 @@ class DialogHandler:
         else:
             base_dir = os.path.dirname(paths_to_archive[0])
 
-        dialog = CreateArchiveDialog(self.main_window, self.task_queue_manager.plugin_manager, base_dir)
+        dialog = CreateArchiveDialog(
+            self.main_window,
+            self.task_queue_manager.plugin_manager,
+            base_dir,
+            settings_manager=self.settings_manager,
+        )
         if dialog.exec() == QDialog.DialogCode.Accepted:
             data = dialog.get_data()
             if data:

@@ -49,7 +49,7 @@ plugins/
 ### Przykład
 
 ```
-~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.3/
+~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.4/
 ```
 
 ## Kontrakt ładowania modułów
@@ -170,6 +170,7 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 *   **version**: Wersja wtyczki; musi być równa nazwie katalogu wersji.
 *   **type**: Typ wtyczki (np. `archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`, `menu_action`). Używany przez `PluginManager` do kategoryzacji.
 *   **capabilities**: (Opcjonalnie, `array of strings`) Możliwości w obrębie typu, np. `archive.create` / `archive.extract` — patrz „Capabilities”.
+*   **settings**: (Opcjonalnie, `object`) Deklaracja ustawień — patrz „Ustawienia pluginów”.
 *   **description**: Krótki opis.
 *   **entry_point**: Nazwa modułu Pythona i klasy (np. `plugin:ZipPlugin`) zawierającej klasę wtyczki.
 *   **class_name**: Nazwa klasy implementującej interfejs wtyczki.
@@ -179,6 +180,67 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 *   **python_import_names**: (Opcjonalnie, `object`) Mapa dystrybucja → moduł dla zależności bez metadanych dystrybucji.
 *   **dependency_lock**: (Opcjonalnie, `string`, domyślnie `requirements.lock`) Ścieżka do hashowanego locka wewnątrz katalogu wersji.
 *   **dependency_wheels**: (Opcjonalnie, `string`, domyślnie `wheels`) Katalog z lokalnymi wheelami do instalacji offline.
+
+## Ustawienia pluginów (`settings.schema`)
+
+Ustawienia **deklaruje plugin, a renderuje host**. Plugin nie dostarcza `QDialog`:
+
+*   sandboxowana wtyczka nie może przesłać widgetów przez IPC,
+*   host pilnuje spójnego wyglądu, motywów, tłumaczeń i dostępności,
+*   zapis, wartości domyślne i walidacja typów są w jednym miejscu,
+*   formularz można przetestować bez uruchamiania procesu wtyczki.
+
+```json
+"settings": {
+  "schema": {
+    "compression": {
+      "type": "enum",
+      "title": "Compression method",
+      "default": "deflate",
+      "choices": [
+        {"value": "deflate", "label": "Deflate"},
+        {"value": "store", "label": "Store (no compression)"}
+      ]
+    },
+    "compresslevel": {
+      "type": "integer",
+      "title": "Compression level",
+      "description": "Ignored when the method is Store.",
+      "default": 6,
+      "minimum": 1,
+      "maximum": 9
+    }
+  }
+}
+```
+
+Obsługiwany jest zamknięty podzbiór typów:
+
+| `type` | Wymagane pola | Widget hosta |
+|---|---|---|
+| `string` | `default` (string) | `QLineEdit` |
+| `integer` | `default` (int), opcjonalnie `minimum` / `maximum` | `QSpinBox` |
+| `boolean` | `default` (bool) | `QCheckBox` |
+| `enum` | `default`, `choices` (`value` + `label`) | `QComboBox` |
+
+Każde pole ma `title`; `description` trafia do tooltipa. `default` jest wymagany, żeby host
+zawsze miał deterministyczną wartość początkową. Schemat jest walidowany przez
+`app/plugin_settings.py`; nieznany `type`, brak `default`, wartość poza zakresem albo
+`default` spoza `choices` to błąd konfiguracji.
+
+Zasady:
+
+*   Wartości są zapisywane w `settings.json` pod `plugin_settings.<plugin_id>`, a nie pod nazwą
+    wyświetlaną. Nieznane klucze są zachowywane, więc aktualizacja pluginu nie kasuje
+    ustawień, których nowa wersja hosta jeszcze nie zna.
+*   Host tylko renderuje i sprawdza typy. Semantyczna walidacja (np. czy metoda kompresji
+    jest obsługiwana) należy do pluginu, który i tak waliduje opcje w `create_task()`.
+*   **Nie pokazujemy ustawienia, którego plugin nie honoruje.** Dlatego docelowo wspólne
+    grupy (np. `archive.compression`) będą deklarowane jawnie przez plugin; na razie
+    schemat opisuje tylko ustawienia konkretnej wtyczki.
+*   Własny dialog pluginu (`settings.mode: "dialog"`) **nie jest** obsługiwany. To ewentualny
+    wyjątek dla wtyczek in-process, nigdy dla sandboxowanych.
+*   Kontrakt dla wbudowanych wtyczek pilnuje `tests/unit/test_bundled_plugin_settings.py`.
 
 ## Interfejsy (Kontrakty)
 
