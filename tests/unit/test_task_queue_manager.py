@@ -90,6 +90,31 @@ def test_copy_task_without_plugin_id_uses_task_type(queue, plugin_manager):
     assert task.status == TaskStatus.IN_PROGRESS
 
 
+def test_extract_task_passes_the_plugin_contract_arguments(queue, plugin_manager):
+    """Archive plugins take source_path/dest_dir, not only the generic keys."""
+    plugin = MagicMock()
+    plugin.metadata = {"id": "org.quickfile.zip_archiver"}
+    plugin_manager.get_plugin_by_id.return_value = plugin
+    task = Task(
+        TaskType.EXTRACT_ARCHIVE,
+        ["/tmp/archive.zip"],
+        "/tmp/out",
+        {"plugin_id": "org.quickfile.zip_archiver"},
+    )
+
+    queue.add_task(task)
+
+    plugin.execute_task.assert_called_once_with(
+        task_id=task.id,
+        action_id=TaskType.EXTRACT_ARCHIVE.value,
+        options=task.options,
+        source_paths=["/tmp/archive.zip"],
+        destination_path="/tmp/out",
+        source_path="/tmp/archive.zip",
+        dest_dir="/tmp/out",
+    )
+
+
 def test_task_fails_clearly_when_no_plugin_exists(queue, plugin_manager):
     task = Task(
         TaskType.COPY,

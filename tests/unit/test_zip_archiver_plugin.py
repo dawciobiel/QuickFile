@@ -108,3 +108,49 @@ def test_create_zip_cancellation(tmp_path, async_plugin_test_env, qtbot):
     elif exit_code == 1:
         _, error, _ = async_helper.failed_error
         assert "cancelled" in error.lower() or "InterruptedError" in error
+
+
+def test_extract_zip_success(tmp_path, async_plugin_test_env):
+    """Tests successful ZIP archive extraction through the plugin process."""
+    plugin_manager, background_task_manager, async_test_helper_factory = async_plugin_test_env
+    async_helper = async_test_helper_factory("org.quickfile.zip_archiver")
+
+    source_zip = tmp_path / "source.zip"
+    with zipfile.ZipFile(source_zip, "w") as zipf:
+        zipf.writestr("file1.txt", "Hello")
+        zipf.writestr("subdir/file2.txt", "World")
+
+    dest_dir = tmp_path / "extracted"
+    options = {"plugin_id": "org.quickfile.zip_archiver"}
+    task = Task(
+        TaskType.EXTRACT_ARCHIVE,
+        source_paths=[str(source_zip)],
+        destination_path=str(dest_dir),
+        options=options,
+    )
+
+    background_task_manager.register_plugin_task(task, async_helper.plugin_wrapper)
+
+    async_helper.plugin_wrapper.execute_task(
+        task_id=task.id,
+        action_id="extract_archive",
+        source_path=str(source_zip),
+        dest_dir=str(dest_dir),
+        options=options,
+    )
+
+    timer = QTimer()
+    timer.setSingleShot(True)
+    timer.timeout.connect(lambda: async_helper.task_finished_event.exit(3))
+    timer.start(5000)
+
+    exit_code = async_helper.task_finished_event.exec()
+    timer.stop()
+
+    if exit_code == 3:
+        pytest.fail("Timeout waiting for zip extract task")
+    elif exit_code != 0:
+        pytest.fail(f"Zip extract task failed: {async_helper.failed_error}")
+
+    assert (dest_dir / "file1.txt").read_text() == "Hello"
+    assert (dest_dir / "subdir" / "file2.txt").read_text() == "World"
