@@ -223,6 +223,7 @@ class PluginManager:
             # dependency is reported, but the plugin is still loaded: PyQt6 and
             # other host-provided packages are always available anyway.
             dependency_status = self.dependency_manager.check_dependencies(base_path, metadata)
+            self.dependency_manager.validate_isolation(dependency_status, metadata)
             if dependency_status.libs_dir:
                 sys.path.insert(0, dependency_status.libs_dir)
             if not dependency_status.satisfied:

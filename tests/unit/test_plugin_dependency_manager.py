@@ -18,7 +18,7 @@ import subprocess
 
 import pytest
 
-from app.plugin_dependency_manager import PluginDependencyManager
+from app.plugin_dependency_manager import DependencyStatus, PluginDependencyManager
 
 
 @pytest.fixture
@@ -226,7 +226,8 @@ def test_install_uses_only_local_wheels_and_hashes(manager, tmp_path, monkeypatc
     )
 
     installed = manager.install_dependencies(
-        str(tmp_path), {"python_dependencies": ["quickfile-testdep"]}
+        str(tmp_path),
+        {"python_dependencies": ["quickfile-testdep"], "sandboxed": True},
     )
 
     assert installed is True
@@ -238,3 +239,54 @@ def test_install_uses_only_local_wheels_and_hashes(manager, tmp_path, monkeypatc
     assert str(wheels) in cmd
     assert str(tmp_path / "requirements.lock") in cmd
     assert str(tmp_path / "libs") in cmd
+
+
+def test_libs_dependencies_require_a_sandboxed_plugin(manager, tmp_path):
+    libs = tmp_path / "libs"
+    write_dist_info(libs, "quickfile-testdep", "1.0")
+    status = manager.check_dependencies(
+        str(tmp_path), {"python_dependencies": ["quickfile-testdep"]}
+    )
+
+    with pytest.raises(ValueError, match="sandboxed"):
+        manager.validate_isolation(status, {"id": "org.example.dep"})
+
+
+def test_host_dependencies_do_not_require_a_sandbox(manager, tmp_path):
+    status = manager.check_dependencies(
+        str(tmp_path), {"python_dependencies": ["PyQt6"]}
+    )
+
+    manager.validate_isolation(status, {"id": "org.example.editor"})
+
+
+def test_a_sandboxed_plugin_may_use_libs(manager, tmp_path):
+    libs = tmp_path / "libs"
+    write_dist_info(libs, "quickfile-testdep", "1.0")
+    status = manager.check_dependencies(
+        str(tmp_path), {"python_dependencies": ["quickfile-testdep"]}
+    )
+
+    manager.validate_isolation(
+        status, {"id": "org.example.dep", "sandboxed": True}
+    )
+
+
+def test_install_refuses_a_non_sandboxed_plugin(manager, tmp_path, monkeypatch):
+    forbid_pip(monkeypatch)
+    write_lock(tmp_path, ["quickfile-testdep==1.0 --hash=sha256:" + "a" * 64])
+    wheels = tmp_path / "wheels"
+    wheels.mkdir()
+    (wheels / "quickfile_testdep-1.0-py3-none-any.whl").write_bytes(b"")
+
+    installed = manager.install_dependencies(
+        str(tmp_path), {"python_dependencies": ["quickfile-testdep"]}
+    )
+
+    assert installed is False
+
+
+def test_validate_isolation_accepts_a_satisfied_status_without_libs(manager):
+    manager.validate_isolation(
+        DependencyStatus(True, None, []), {"id": "org.example.editor"}
+    )
