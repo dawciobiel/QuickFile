@@ -96,3 +96,18 @@ def test_loading_broken_plugin_is_handled(plugin_manager):
     # The assertion from test_load_latest_plugin_version further confirms that
     # the valid plugin was loaded despite the broken one.
     assert len(plugin_manager.plugins["viewer"]) == 1
+
+
+def test_plugin_refresh_drops_libs_of_versions_that_are_no_longer_bundled(tmp_path):
+    source = tmp_path / "source"
+    (source / "1.2.0").mkdir(parents=True)
+    (source / "1.2.0" / "plugin.py").write_text("", encoding="utf-8")
+
+    target = tmp_path / "target"
+    (target / "1.1.0" / "libs" / "old").mkdir(parents=True)
+    (target / "1.2.0" / "libs" / "keep").mkdir(parents=True)
+
+    PluginManager._copy_preserving_libs(str(source), str(target))
+
+    assert (target / "1.2.0" / "libs" / "keep").is_dir()
+    assert not (target / "1.1.0").exists()

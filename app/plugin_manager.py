@@ -89,11 +89,14 @@ class PluginManager:
             return False
         return self._tree_fingerprint(source) == self._tree_fingerprint(target)
 
-    def _copy_preserving_libs(self, source, target):
-        """Replace ``target`` with ``source`` but keep any ``libs/`` directories.
+    @staticmethod
+    def _copy_preserving_libs(source, target):
+        """Replace ``target`` with ``source`` but keep installed ``libs/``.
 
         ``libs/`` lives inside a version directory, so every occurrence in the
-        tree has to be preserved, not just one at the plugin root.
+        tree has to be preserved, not just one at the plugin root. Libraries of
+        a version that the new copy no longer ships are dropped: keeping them
+        would leave dead code and stale dependencies behind after an upgrade.
         """
         with tempfile.TemporaryDirectory() as staging:
             preserved = []
@@ -101,11 +104,14 @@ class PluginManager:
                 for dirpath, dirnames, _ in os.walk(target):
                     if os.path.basename(dirpath) == "libs":
                         relative = os.path.relpath(dirpath, target)
+                        owner = os.path.dirname(relative)
+                        dirnames[:] = []  # do not descend into installed dependencies
+                        if owner and not os.path.isdir(os.path.join(source, owner)):
+                            continue
                         staged = os.path.join(staging, relative)
                         os.makedirs(os.path.dirname(staged), exist_ok=True)
                         shutil.copytree(dirpath, staged)
                         preserved.append(relative)
-                        dirnames[:] = []  # do not descend into installed dependencies
 
             if os.path.exists(target):
                 shutil.rmtree(target)
