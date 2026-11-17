@@ -3,7 +3,7 @@
 # See LICENSE file for details.
 
 from app.plugin_system.api import PluginTask, TaskPlugin
-from tasks import CreateZipTask
+from tasks import CreateZipTask, ExtractZipTask
 
 
 class ZipArchiverPlugin(TaskPlugin):
@@ -11,7 +11,7 @@ class ZipArchiverPlugin(TaskPlugin):
         return "ZIP Archiver"
 
     def get_description(self):
-        return "Creates ZIP archives."
+        return "Creates and extracts ZIP archives."
 
     def get_supported_extensions(self):
         """Returns a list of supported archive extensions."""
@@ -20,5 +20,7 @@ class ZipArchiverPlugin(TaskPlugin):
     def create_task(self, action_id: str, **kwargs) -> PluginTask:
         if action_id == "create_archive":
             return CreateZipTask(kwargs['source_paths'], kwargs['destination_path'], kwargs['options'])
+        elif action_id == "extract_archive":
+            return ExtractZipTask(kwargs['source_path'], kwargs['dest_dir'], kwargs['options'])
         else:
             raise ValueError(f"Unknown action_id: {action_id}")

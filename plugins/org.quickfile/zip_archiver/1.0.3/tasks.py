@@ -3,6 +3,7 @@
 # See LICENSE file for details.
 
 import os
+import shutil
 import zipfile
 
 from app.plugin_system.api import PluginTask
@@ -55,6 +56,69 @@ class CreateZipTask(PluginTask):
                     self._update_progress(ctx)
 
         return {"archive_path": self.destination_path}
+
+    def _update_progress(self, ctx):
+        self.processed_files += 1
+        if self.total_files > 0:
+            pct = int(self.processed_files * 100 / self.total_files)
+            if pct != self.last_pct:
+                ctx.progress(pct)
+                self.last_pct = pct
+
+
+class ExtractZipTask(PluginTask):
+    def __init__(self, source_path, dest_dir, options):
+        self.source_path = source_path
+        self.dest_dir = dest_dir
+        self.options = options
+        self.total_files = 0
+        self.processed_files = 0
+        self.last_pct = -1
+
+    def run(self, ctx):
+        os.makedirs(self.dest_dir, exist_ok=True)
+
+        with zipfile.ZipFile(self.source_path) as archive:
+            members = archive.infolist()
+            self.total_files = len(members)
+
+            for member in members:
+                ctx.check_cancelled()
+                ctx.wait_if_paused()
+
+                target = self._safe_target(member.filename)
+                if member.is_dir():
+                    os.makedirs(target, exist_ok=True)
+                else:
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
+                    with archive.open(member) as source, open(target, "wb") as destination:
+                        shutil.copyfileobj(source, destination)
+
+                self._update_progress(ctx)
+
+        return {"extract_path": self.dest_dir}
+
+    def _safe_target(self, member_name):
+        """Resolve an archive member inside ``dest_dir``.
+
+        ZIP entry names come from an untrusted file. Without this check a name
+        like ``../evil`` or an absolute path would write outside the directory
+        the user selected (the "zip slip" bug).
+        """
+        root = os.path.realpath(self.dest_dir)
+        relative = member_name.replace("\\", "/")
+        target = os.path.realpath(os.path.join(root, relative))
+
+        try:
+            inside = os.path.commonpath([root, target]) == root
+        except ValueError:
+            inside = False
+
+        if not inside:
+            raise ValueError(
+                f"Archive member {member_name!r} escapes the destination directory"
+            )
+        return target
 
     def _update_progress(self, ctx):
         self.processed_files += 1

@@ -8,7 +8,7 @@ plugins, and a highly configurable user interface.
 - **Dual-Panel Interface**: Classic two-panel layout for efficient file management.
 - **Tabs**: Use multiple tabs in each panel to navigate different folders simultaneously.
 - **Extensible via Plugins**:
-    - **Archive Management**: Handles ZIP, TAR, and RAR (extraction only) archives.
+    - **Archive Management**: Handles ZIP (create and extract) and RAR (extraction only) archives.
     - **Checksum Calculation**: Supports various algorithms (MD5, SHA-256, etc.).
     - **Advanced File Attributes**: Edit file owner/group on Linux systems.
     - **File Viewer**: Built-in viewer with text and hex modes.

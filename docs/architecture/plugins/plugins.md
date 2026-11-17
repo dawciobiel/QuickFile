@@ -49,7 +49,7 @@ plugins/
 ### Przykład
 
 ```
-~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.2/
+~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.3/
 ```
 
 ## Kontrakt ładowania modułów
@@ -156,12 +156,12 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
   "version": "1.0.0",
   "author": "QuickFile Team",
   "type": "archive",
-  "description": "Creates ZIP archives.",
+  "description": "Creates and extracts ZIP archives.",
   "entry_point": "plugin:ZipArchiverPlugin",
   "class_name": "ZipArchiverPlugin",
   "sandboxed": true,
   "platforms": ["windows", "linux", "macos"],
-  "capabilities": ["archive.create"]
+  "capabilities": ["archive.create", "archive.extract"]
 }
 ```
 
@@ -327,7 +327,7 @@ Wspólny interfejs dla wszystkich wtyczek.
 Interfejs dla wtyczek obsługujących archiwizację.
 *   `get_supported_extensions()`: Zwraca listę obsługiwanych rozszerzeń (np. `['.zip']` albo `['zip']`; host normalizuje wielkość liter i wiodącą kropkę).
 *   `create_archive(source_paths, destination_path, options, progress_callback, task_context, task, send_trace)`: Tworzy archiwum.
-*   `extract_archive(archive_path, destination_path, options, progress_callback, task_context, task, send_trace)`: Wypakowuje archiwum.
+*   `extract_archive(archive_path, destination_path, options, progress_callback, task_context, task, send_trace)`: Wypakowuje archiwum. Wpisy wychodzące poza katalog docelowy (`../`, ścieżki absolutne) muszą być odrzucone przed zapisem — `zip_archiver` zgłasza wtedy `ValueError`.
 
 ### `DiskUtilsPlugin` (Typ: `disk_utils`)
 Interfejs dla wtyczek dostarczających informacje o systemie plików i dyskach. Służy do oddzielenia warstwy prezentacji (UI) od warstwy dostępu do danych systemowych.

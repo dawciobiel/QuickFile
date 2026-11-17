@@ -2,10 +2,10 @@
   "id": "org.quickfile.zip_archiver",
   "group_id": "org.quickfile",
   "artifact_id": "zip_archiver",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "name": "Standard ZIP Archiver",
   "type": "archive",
-  "description": "Creates ZIP archives.",
+  "description": "Creates and extracts ZIP archives.",
   "entry_point": "plugin:ZipArchiverPlugin",
   "class_name": "ZipArchiverPlugin",
   "platforms": [
@@ -15,6 +15,7 @@
   ],
   "sandboxed": true,
   "capabilities": [
-    "archive.create"
+    "archive.create",
+    "archive.extract"
   ]
 }

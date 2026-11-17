@@ -76,11 +76,26 @@ def _kwargs(tmp_path):
     }
 
 
+EXPECTED_CAPABILITIES = {
+    "org.quickfile.zip_archiver": {
+        Capability.ARCHIVE_CREATE,
+        Capability.ARCHIVE_EXTRACT,
+    },
+    "org.quickfile.rar_archiver": {Capability.ARCHIVE_EXTRACT},
+}
+
+
 def test_the_contract_covers_both_archive_plugins():
-    assert {metadata["id"] for _, metadata in CASES} == {
-        "org.quickfile.rar_archiver",
-        "org.quickfile.zip_archiver",
-    }
+    assert {metadata["id"] for _, metadata in CASES} == set(EXPECTED_CAPABILITIES)
+
+
+@pytest.mark.parametrize(
+    "metadata_path,metadata", CASES, ids=[meta["id"] for _, meta in CASES]
+)
+def test_archive_plugins_declare_the_capabilities_they_are_shipped_with(
+    metadata_path, metadata
+):
+    assert set(metadata["capabilities"]) == EXPECTED_CAPABILITIES[metadata["id"]]
 
 
 @pytest.mark.parametrize(
