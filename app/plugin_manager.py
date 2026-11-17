@@ -377,14 +377,59 @@ class PluginManager:
             return self.plugins["symlink"][0]
         return None
 
-    def get_archiver_for_extension(self, extension: str) -> ArchivePlugin | None:
-        for plugin in self.plugins["archive"]:
-            if extension in plugin.get_supported_extensions():
+    @staticmethod
+    def _supports_capability(plugin, capability: str) -> bool:
+        """Check a plugin's declared capability.
+
+        Capabilities live in metadata because a sandboxed plugin only exposes
+        methods, not attributes. A plugin without a ``capabilities`` list is
+        legacy: it matched every extension before capabilities existed, so it
+        keeps matching everything until it declares its own list.
+        """
+        metadata = getattr(plugin, "metadata", None) or {}
+        declared = metadata.get("capabilities")
+        if not declared:
+            return True
+        return capability in declared
+
+    def get_archivers(self, capability: str | None = None) -> list[ArchivePlugin]:
+        """Return archive plugins, optionally filtered by a capability."""
+        if capability is None:
+            return self.plugins["archive"]
+        return [
+            plugin
+            for plugin in self.plugins["archive"]
+            if self._supports_capability(plugin, capability)
+        ]
+
+    @staticmethod
+    def _normalize_extension(extension: str) -> str:
+        return extension.lower().lstrip(".")
+
+    def get_archiver_for_extension(
+        self, extension: str, capability: str | None = None
+    ) -> ArchivePlugin | None:
+        wanted = self._normalize_extension(extension)
+        for plugin in self.get_archivers(capability):
+            supported = {
+                self._normalize_extension(item)
+                for item in plugin.get_supported_extensions()
+            }
+            if wanted in supported:
                 return plugin
         return None
 
+    def get_archiver_for_file(
+        self, file_path: str, capability: str | None = None
+    ) -> ArchivePlugin | None:
+        extension = os.path.splitext(file_path)[1]
+        if not extension:
+            return None
+        return self.get_archiver_for_extension(extension, capability)
+
     def get_all_archivers(self) -> list[ArchivePlugin]:
-        return self.plugins["archive"]
+        """Deprecated: use ``get_archivers()``."""
+        return self.get_archivers()
 
     def get_checksum_plugins(self) -> list[ChecksumPlugin]:
         return self.plugins["checksum"]

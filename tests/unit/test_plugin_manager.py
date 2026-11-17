@@ -5,6 +5,7 @@
 import pytest
 import json
 from app.plugin_manager import PluginManager
+from app.plugin_system.api import Capability
 from app.plugin_sandbox import SandboxedPluginWrapper # Import SandboxedPluginWrapper
 
 # Fixture to create a fake plugin structure
@@ -148,3 +149,80 @@ class DepPlugin(ViewerPlugin):
         manager.shutdown()
 
     assert "sandboxed" in caplog.text
+
+
+class FakeArchivePlugin:
+    def __init__(self, plugin_id, extensions, capabilities):
+        self.metadata = {"id": plugin_id, "capabilities": capabilities}
+        self.extensions = extensions
+
+    def get_supported_extensions(self):
+        return list(self.extensions)
+
+
+def test_get_archivers_filters_by_capability(plugin_manager):
+    creator = FakeArchivePlugin(
+        "org.example.creator", ["zip"], [Capability.ARCHIVE_CREATE]
+    )
+    extractor = FakeArchivePlugin(
+        "org.example.extractor", [".rar"], [Capability.ARCHIVE_EXTRACT]
+    )
+    plugin_manager.plugins["archive"] = [creator, extractor]
+
+    assert plugin_manager.get_archivers(Capability.ARCHIVE_CREATE) == [creator]
+    assert plugin_manager.get_archivers(Capability.ARCHIVE_EXTRACT) == [extractor]
+    assert plugin_manager.get_archivers() == [creator, extractor]
+
+
+def test_archiver_lookups_normalize_extensions_and_capabilities(plugin_manager):
+    creator = FakeArchivePlugin(
+        "org.example.creator", ["zip"], [Capability.ARCHIVE_CREATE]
+    )
+    extractor = FakeArchivePlugin(
+        "org.example.extractor", [".ZIP"], [Capability.ARCHIVE_EXTRACT]
+    )
+    plugin_manager.plugins["archive"] = [creator, extractor]
+
+    assert (
+        plugin_manager.get_archiver_for_extension(
+            ".zip", Capability.ARCHIVE_CREATE
+        )
+        is creator
+    )
+    assert (
+        plugin_manager.get_archiver_for_file(
+            "/tmp/archive.ZIP", Capability.ARCHIVE_EXTRACT
+        )
+        is extractor
+    )
+    assert (
+        plugin_manager.get_archiver_for_file(
+            "/tmp/archive.ZIP", Capability.ARCHIVE_CREATE
+        )
+        is creator
+    )
+
+
+def test_archiver_without_capabilities_stays_available_for_legacy_plugins(
+    plugin_manager,
+):
+    legacy = FakeArchivePlugin("org.example.legacy", ["tar"], [])
+    plugin_manager.plugins["archive"] = [legacy]
+
+    assert plugin_manager.get_archivers(Capability.ARCHIVE_CREATE) == [legacy]
+    assert plugin_manager.get_archivers(Capability.ARCHIVE_EXTRACT) == [legacy]
+
+
+def test_a_capability_filter_can_exclude_every_archiver(plugin_manager):
+    creator = FakeArchivePlugin(
+        "org.example.creator", ["zip"], [Capability.ARCHIVE_CREATE]
+    )
+    plugin_manager.plugins["archive"] = [creator]
+
+    assert plugin_manager.get_archivers(Capability.ARCHIVE_EXTRACT) == []
+    assert (
+        plugin_manager.get_archiver_for_file(
+            "/tmp/archive.zip", Capability.ARCHIVE_EXTRACT
+        )
+        is None
+    )
