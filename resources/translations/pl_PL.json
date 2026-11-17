@@ -238,5 +238,7 @@
     "PluginSettings.Plugin settings": "Ustawienia pluginu",
     "PluginSettings.Invalid settings": "Nieprawidłowe ustawienia",
     "PluginSettings.This plugin has an invalid settings schema.": "Ta wtyczka ma nieprawidłowy schemat ustawień.",
-    "CreateArchiveDialog.No configuration options available for this plugin.": "Ta wtyczka nie ma ustawień do skonfigurowania."
+    "CreateArchiveDialog.No configuration options available for this plugin.": "Ta wtyczka nie ma ustawień do skonfigurowania.",
+    "DialogHandler.Missing external tool": "Brak zewnętrznego narzędzia",
+    "DialogHandler.{plugin} requires an external tool: {tool}. Install one of: {executables}.": "{plugin} wymaga zewnętrznego narzędzia: {tool}. Zainstaluj jedno z: {executables}."
 }

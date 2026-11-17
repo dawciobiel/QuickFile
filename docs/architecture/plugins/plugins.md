@@ -111,6 +111,49 @@ Zasady:
     host i nie może wymagać `libs/`.
 *   Brakująca zależność jest logowana jako ostrzeżenie, a wtyczka i tak się ładuje.
 
+### Narzędzia zewnętrzne (`external_tools`)
+
+`python_dependencies` opisuje pakiety Pythona. Niektóre wtyczki potrzebują jednak **programu
+w systemie hosta**, którego nie wolno ani nie da się dołączyć do aplikacji: `rarfile` jest tylko
+nakładką i wymaga `unrar`, `unar`, `bsdtar` albo `7z`. Bez deklaracji brak narzędzia wychodzi
+dopiero w środku zadania, jako nieczytelny wyjątek z wnętrza biblioteki.
+
+```json
+"external_tools": [
+  {
+    "id": "rar_backend",
+    "name": "RAR extraction backend",
+    "executables": ["unrar", "unar", "bsdtar", "7z", "7zz"]
+  }
+]
+```
+
+Zasady:
+
+*   Wymaganie jest **spełnione, gdy w `PATH` istnieje którykolwiek** z `executables`. Lista
+    wariantów jest konieczna, bo biblioteka sama wybiera dostępny backend.
+*   Wpis jest **twardym wymaganiem**. Opcjonalne narzędzia („działa bez tego, tylko wolniej”)
+    nie są obsługiwane, dopóki nie pojawi się realny przypadek — inaczej każdy plugin musiałby
+    opisywać, co traci bez narzędzia.
+*   `id` jest stabilnym kluczem w obrębie wtyczki (przyszłe nadpisanie ścieżki w ustawieniach),
+    `name` trafia do komunikatu, `executables` to **same nazwy poleceń**, nigdy ścieżki.
+    Windows nie potrzebuje osobnej listy: `shutil.which` respektuje `PATHEXT`, więc `unrar`
+    znajduje `UnRAR.exe`.
+*   Host **tylko sprawdza obecność**: nie instaluje, nie pobiera i nie odpytuje o wersję.
+    Parsowanie `--version` jest zależne od narzędzia i może zawiesić UI; minimalna wersja
+    backendu to osobna decyzja, gdy pojawi się problem zgodności.
+*   Błędna deklaracja (brak `id`, puste `executables`, wpis niebędący obiektem) to **błąd
+    konfiguracji**: wtyczka nie jest ładowana, a powód trafia do logu. Nie da się wtedy
+    stwierdzić, czy wtyczka zadziała, więc udawanie, że jest dostępna, tylko przesuwa błąd
+    w czasie. Wbudowane wtyczki pilnuje `tests/unit/test_bundled_external_tools.py`.
+*   Pakiet, który sam jest nakładką na binarkę (np. `rarfile`), deklaruje **oba**: wpis w
+    `python_dependencies` i wymaganie w `external_tools`.
+
+Preflight należy do **hosta i dzieje się przed dodaniem zadania do kolejki**
+(`app/external_tools.py`). Gdy wymaganie nie jest spełnione, użytkownik dostaje przetłumaczony
+komunikat z nazwą wtyczki i listą akceptowanych poleceń, a zadanie nie powstaje. Wtyczka
+nadal waliduje swoje opcje w `create_task()`, bo kolejka może być użyta bez dialogu.
+
 ## Capabilities
 
 `type` decyduje, do którego slotu `PluginManager.plugins` trafia wtyczka. Nie mówi jednak,
@@ -180,6 +223,7 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 *   **python_import_names**: (Opcjonalnie, `object`) Mapa dystrybucja → moduł dla zależności bez metadanych dystrybucji.
 *   **dependency_lock**: (Opcjonalnie, `string`, domyślnie `requirements.lock`) Ścieżka do hashowanego locka wewnątrz katalogu wersji.
 *   **dependency_wheels**: (Opcjonalnie, `string`, domyślnie `wheels`) Katalog z lokalnymi wheelami do instalacji offline.
+*   **external_tools**: (Opcjonalnie, `array of objects`) Wymagane programy hosta — patrz „Narzędzia zewnętrzne”.
 
 ## Ustawienia pluginów (`settings.schema`)
 

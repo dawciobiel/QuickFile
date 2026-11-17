@@ -2,7 +2,7 @@
   "id": "org.quickfile.rar_archiver",
   "group_id": "org.quickfile",
   "artifact_id": "rar_archiver",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "name": "RAR Archiver",
   "type": "archive",
   "description": "Provides support for extracting RAR archives.",
@@ -19,5 +19,18 @@
   ],
   "capabilities": [
     "archive.extract"
+  ],
+  "external_tools": [
+    {
+      "id": "rar_backend",
+      "name": "RAR extraction backend",
+      "executables": [
+        "unrar",
+        "unar",
+        "bsdtar",
+        "7z",
+        "7zz"
+      ]
+    }
   ]
 }

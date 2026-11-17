@@ -238,5 +238,7 @@
     "PluginSettings.Plugin settings": "Plugin settings",
     "PluginSettings.Invalid settings": "Invalid settings",
     "PluginSettings.This plugin has an invalid settings schema.": "This plugin has an invalid settings schema.",
-    "CreateArchiveDialog.No configuration options available for this plugin.": "No configuration options available for this plugin."
+    "CreateArchiveDialog.No configuration options available for this plugin.": "No configuration options available for this plugin.",
+    "DialogHandler.Missing external tool": "Missing external tool",
+    "DialogHandler.{plugin} requires an external tool: {tool}. Install one of: {executables}.": "{plugin} requires an external tool: {tool}. Install one of: {executables}."
 }

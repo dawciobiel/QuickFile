@@ -15,6 +15,7 @@ import sys
 import tempfile
 
 from app.plugin_dependency_manager import PluginDependencyManager
+from app.external_tools import ExternalToolsError, requirements_for
 from app.plugin_sandbox import SandboxedPluginWrapper  # Import the new wrapper
 from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, \
     ArchivePlugin, \
@@ -218,6 +219,20 @@ class PluginManager:
         try:
             with open(metadata_path, 'r') as f:
                 metadata = json.load(f)
+
+            # A declaration the host cannot parse also cannot say whether the
+            # plugin will work, so the plugin is not registered at all. Missing
+            # tools are a different case: the plugin stays available and the
+            # caller refuses the action with an actionable message.
+            try:
+                requirements_for(metadata)
+            except ExternalToolsError:
+                logging.error(
+                    "Rejected plugin %s: invalid external_tools declaration.",
+                    metadata.get("id"),
+                    exc_info=True,
+                )
+                return
 
             # Verify dependencies without installing anything. A missing
             # dependency is reported, but the plugin is still loaded: PyQt6 and

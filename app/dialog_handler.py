@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import QDialog, QMessageBox, QInputDialog
 
 from app.action_logger import action_logger
 from app.background_task_manager import BackgroundTaskManager
+from app.external_tools import missing_tools
 from app.plugin_ids import (
     CHECKSUM_PLUGIN_ID,
     COPY_PLUGIN_ID,
@@ -204,6 +205,17 @@ class DialogHandler:
             QMessageBox.warning(self.main_window, "Extraction Error", "No suitable plugin found to extract this archive type.")
             return
 
+        # Check the host binaries before asking for a destination: queueing a
+        # task that cannot run wastes the user's time and hides the real cause.
+        missing = missing_tools(extract_plugin.metadata)
+        if missing:
+            QMessageBox.warning(
+                self.main_window,
+                translation_manager.translate("DialogHandler", "Missing external tool"),
+                self._missing_tools_message(extract_plugin, missing),
+            )
+            return
+
         extract_path, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "Extract Archive"), translation_manager.translate("DialogHandler", "Destination path:"), text=os.path.dirname(selected_archive_path))
         if ok and extract_path:
             action_logger.log_action("extract_archive", source=selected_archive_path, destination=extract_path)
@@ -214,6 +226,25 @@ class DialogHandler:
             self.main_window.statusBar().showMessage("Added extract task to queue.")
             self.ui_state_provider.folder_browser.refresh_all_views()
             self.ui_state_provider.folder_browser.clear_selection()
+
+    @staticmethod
+    def _missing_tools_message(plugin, missing) -> str:
+        """Explain what to install, using the plugin's own wording for the tool."""
+        metadata = getattr(plugin, "metadata", None) or {}
+        plugin_name = metadata.get("name") or metadata.get("id", "")
+        template = translation_manager.translate(
+            "DialogHandler",
+            "{plugin} requires an external tool: {tool}. Install one of: {executables}.",
+        )
+
+        return "\n\n".join(
+            template.format(
+                plugin=plugin_name,
+                tool=status.requirement.name,
+                executables=", ".join(status.requirement.executables),
+            )
+            for status in missing
+        )
 
     def calculate_checksum(self, checked=False):
         selected_paths = self.ui_state_provider.get_selected_paths()
