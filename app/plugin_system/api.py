@@ -6,6 +6,28 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Callable
 
 
+class Capability:
+    """Closed vocabulary of plugin capabilities.
+
+    ``type`` decides which slot a plugin occupies in ``PluginManager.plugins``;
+    a capability says what the plugin can do inside that slot. Archive plugins
+    are the first user: ``type: archive`` alone cannot tell a creator from an
+    extractor, so ``archive.create`` and ``archive.extract`` are declared in
+    ``metadata.json`` and used to filter the UI and route tasks.
+
+    Values are plain strings so they survive JSON and the plugin process
+    boundary unchanged. Keep the vocabulary closed: add constants here instead
+    of inventing strings in metadata.
+    """
+
+    #: Plugin can build an archive from files. Handles ``create_archive``.
+    ARCHIVE_CREATE = "archive.create"
+    #: Plugin can unpack an archive. Handles ``extract_archive``.
+    ARCHIVE_EXTRACT = "archive.extract"
+
+    ALL = frozenset({ARCHIVE_CREATE, ARCHIVE_EXTRACT})
+
+
 class TaskCancelled(Exception):
     """Raised by ``TaskContext.check_cancelled()`` when the user cancels.
 

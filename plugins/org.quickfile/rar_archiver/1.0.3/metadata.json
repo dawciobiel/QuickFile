@@ -2,7 +2,7 @@
   "id": "org.quickfile.rar_archiver",
   "group_id": "org.quickfile",
   "artifact_id": "rar_archiver",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "name": "RAR Archiver",
   "type": "archive",
   "description": "Provides support for extracting RAR archives.",
@@ -16,5 +16,8 @@
   "sandboxed": true,
   "python_dependencies": [
     "rarfile"
+  ],
+  "capabilities": [
+    "archive.extract"
   ]
 }

@@ -6,6 +6,7 @@ import os
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QFileDialog, QDialogButtonBox, QMessageBox, QLineEdit, QComboBox, QPushButton
 
+from app.plugin_system.api import Capability
 from app.translation_manager import translation_manager
 from utils.resource_path import get_resource_path
 
@@ -55,7 +56,7 @@ class CreateArchiveDialog(QDialog):
         self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText(translation_manager.translate("Buttons", "Start"))
 
     def _populate_plugins(self):
-        self.plugins = self.plugin_manager.get_all_archivers()
+        self.plugins = self.plugin_manager.get_archivers(Capability.ARCHIVE_CREATE)
         for plugin in self.plugins:
             # Use the first supported extension as the label, or plugin name
             exts = plugin.get_supported_extensions()
@@ -110,17 +111,20 @@ class CreateArchiveDialog(QDialog):
         if not name or not path or not plugin:
             return None
 
-        # Construct full archive path based on selected plugin's extension
+        # Construct full archive path based on selected plugin's extension.
+        # Plugins return extensions both with and without a leading dot, so
+        # normalise before comparing and appending.
         exts = plugin.get_supported_extensions()
-        ext = exts[0] if exts else ".zip"
-        if not name.lower().endswith(ext):
-            full_path = os.path.join(path, name + ext)
+        ext = exts[0].lower().lstrip(".") if exts else "zip"
+        suffix = f".{ext}"
+        if not name.lower().endswith(suffix):
+            full_path = os.path.join(path, name + suffix)
         else:
             full_path = os.path.join(path, name)
 
         plugin_name = plugin.get_name()
         options = self.plugin_options.get(plugin_name, {})
-        options['plugin_id'] = plugin.id  # Dodajemy ID pluginu do opcji
+        options['plugin_id'] = plugin.metadata["id"]
 
         return {
             "source_paths": [],  # To be filled by caller

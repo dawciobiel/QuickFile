@@ -49,7 +49,7 @@ plugins/
 ### Przykład
 
 ```
-~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.1/
+~/.config/QuickFile/plugins/org.quickfile/zip_archiver/1.0.2/
 ```
 
 ## Kontrakt ładowania modułów
@@ -111,6 +111,40 @@ Zasady:
     host i nie może wymagać `libs/`.
 *   Brakująca zależność jest logowana jako ostrzeżenie, a wtyczka i tak się ładuje.
 
+## Capabilities
+
+`type` decyduje, do którego slotu `PluginManager.plugins` trafia wtyczka. Nie mówi jednak,
+**co wtyczka potrafi** w obrębie tego slotu: archiwizator może tworzyć archiwa, wypakowywać je
+albo jedno i drugie. Do tego służy `capabilities` — zamknięty słownik stałych z
+`app/plugin_system/api.py` (`Capability`):
+
+| Capability | Znaczenie | Obsługiwany `action_id` |
+|---|---|---|
+| `archive.create` | Wtyczka tworzy archiwa | `create_archive` |
+| `archive.extract` | Wtyczka wypakowuje archiwa | `extract_archive` |
+
+```json
+"type": "archive",
+"capabilities": ["archive.extract"]
+```
+
+Zasady:
+
+*   Lista jest **deklaracją kontraktu**, nie opisem implementacji. Deklarowane capability musi
+    odpowiadać obsługiwanemu `action_id` w `create_task()`; pilnuje tego
+    `tests/unit/test_bundled_archive_capabilities.py`.
+*   UI i routing filtrują po capability: `PluginManager.get_archivers(capability)`,
+    `get_archiver_for_extension(extension, capability)` i
+    `get_archiver_for_file(path, capability)`. Dzięki temu dialog tworzenia archiwum nie
+    proponuje wtyczki, która tylko wypakowuje.
+*   Rozszerzenia są normalizowane (wielkość liter i wiodąca kropka), bo wtyczki zwracają
+    zarówno `"zip"`, jak i `".rar"`.
+*   Wtyczka **bez** listy `capabilities` jest traktowana jako legacy i pasuje do każdej
+    capability. To zachowuje działanie wtyczek zewnętrznych sprzed wprowadzenia słownika, ale
+    nowe wtyczki powinny deklarować capabilities jawnie.
+*   Słownik jest zamknięty. Nową capability dodajemy jako stałą w `Capability`, razem z
+    mapowaniem na `action_id` i testem kontraktowym.
+
 ## Metadane (`metadata.json`)
 
 Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik ten definiuje podstawowe informacje o wtyczce oraz punkt wejścia dla `PluginManager`.
@@ -122,11 +156,12 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
   "version": "1.0.0",
   "author": "QuickFile Team",
   "type": "archive",
-  "description": "Provides support for creating and extracting ZIP archives.",
-  "entry_point": "plugin:ZipPlugin",
-  "class_name": "ZipPlugin",
+  "description": "Creates ZIP archives.",
+  "entry_point": "plugin:ZipArchiverPlugin",
+  "class_name": "ZipArchiverPlugin",
   "sandboxed": true,
-  "platforms": ["windows", "linux", "macos"]
+  "platforms": ["windows", "linux", "macos"],
+  "capabilities": ["archive.create"]
 }
 ```
 
@@ -134,6 +169,7 @@ Każda wtyczka musi zawierać plik `metadata.json` w swoim katalogu wersji. Plik
 *   **name**: Wyświetlana nazwa wtyczki.
 *   **version**: Wersja wtyczki; musi być równa nazwie katalogu wersji.
 *   **type**: Typ wtyczki (np. `archive`, `checksum`, `disk_utils`, `ui_extension`, `viewer`, `menu_action`). Używany przez `PluginManager` do kategoryzacji.
+*   **capabilities**: (Opcjonalnie, `array of strings`) Możliwości w obrębie typu, np. `archive.create` / `archive.extract` — patrz „Capabilities”.
 *   **description**: Krótki opis.
 *   **entry_point**: Nazwa modułu Pythona i klasy (np. `plugin:ZipPlugin`) zawierającej klasę wtyczki.
 *   **class_name**: Nazwa klasy implementującej interfejs wtyczki.
@@ -289,7 +325,7 @@ Wspólny interfejs dla wszystkich wtyczek.
 
 ### `ArchivePlugin` (Typ: `archive`)
 Interfejs dla wtyczek obsługujących archiwizację.
-*   `get_supported_extensions()`: Zwraca listę obsługiwanych rozszerzeń (np. `['.zip']`).
+*   `get_supported_extensions()`: Zwraca listę obsługiwanych rozszerzeń (np. `['.zip']` albo `['zip']`; host normalizuje wielkość liter i wiodącą kropkę).
 *   `create_archive(source_paths, destination_path, options, progress_callback, task_context, task, send_trace)`: Tworzy archiwum.
 *   `extract_archive(archive_path, destination_path, options, progress_callback, task_context, task, send_trace)`: Wypakowuje archiwum.
 

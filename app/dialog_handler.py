@@ -13,6 +13,7 @@ from app.plugin_ids import (
     MOVE_PLUGIN_ID,
     SEARCH_PLUGIN_ID,
 )
+from app.plugin_system.api import Capability
 from app.settings_manager import SettingsManager
 from app.task_queue_manager import TaskQueueManager, Task, TaskType
 from app.translation_manager import translation_manager
@@ -191,7 +192,9 @@ class DialogHandler:
             raise ValueError("No archive file selected.")
         
         # Find appropriate plugin for extraction based on file extension
-        extract_plugin = self.task_queue_manager.plugin_manager.get_archiver_for_file(selected_archive_path)
+        extract_plugin = self.task_queue_manager.plugin_manager.get_archiver_for_file(
+            selected_archive_path, Capability.ARCHIVE_EXTRACT
+        )
         if not extract_plugin:
             QMessageBox.warning(self.main_window, "Extraction Error", "No suitable plugin found to extract this archive type.")
             return
