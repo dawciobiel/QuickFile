@@ -9,6 +9,12 @@ import zipfile
 from app.plugin_system.api import PluginTask
 
 
+COMPRESSION_METHODS = {
+    "deflate": zipfile.ZIP_DEFLATED,
+    "store": zipfile.ZIP_STORED,
+}
+
+
 class CreateZipTask(PluginTask):
     def __init__(self, source_paths, destination_path, options):
         self.source_paths = source_paths
@@ -20,11 +26,12 @@ class CreateZipTask(PluginTask):
         self.last_pct = -1
 
     def run(self, ctx):
-        compression = self.options.get("compression", zipfile.ZIP_DEFLATED)
+        compression = self._compression()
         compresslevel = self.options.get("compresslevel", -1)
 
         # Phase 1: Count files for progress reporting
         for src_path in self.source_paths:
+            ctx.check_cancelled()
             if os.path.isdir(src_path):
                 for root, _, files in os.walk(src_path):
                     self.total_files += len(files)
@@ -32,6 +39,7 @@ class CreateZipTask(PluginTask):
                 self.total_files += 1
 
         # Phase 2: Create archive
+        ctx.check_cancelled()
         with zipfile.ZipFile(self.destination_path, 'w', compression=compression, compresslevel=compresslevel) as zipf:
             for src_path in self.source_paths:
                 ctx.check_cancelled()
@@ -56,6 +64,24 @@ class CreateZipTask(PluginTask):
                     self._update_progress(ctx)
 
         return {"archive_path": self.destination_path}
+
+    def _compression(self):
+        """Translate the schema value into a ``zipfile`` constant.
+
+        Older callers may still pass the numeric constant directly, so both
+        shapes are accepted.
+        """
+        method = self.options.get("compression", "deflate")
+        if not isinstance(method, str):
+            return method
+
+        try:
+            return COMPRESSION_METHODS[method.lower()]
+        except KeyError:
+            raise ValueError(
+                f"Unknown ZIP compression method: {method!r}; "
+                f"expected one of {sorted(COMPRESSION_METHODS)}"
+            ) from None
 
     def _update_progress(self, ctx):
         self.processed_files += 1

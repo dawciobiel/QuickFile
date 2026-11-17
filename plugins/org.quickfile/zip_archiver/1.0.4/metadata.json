@@ -1,0 +1,48 @@
+{
+  "id": "org.quickfile.zip_archiver",
+  "group_id": "org.quickfile",
+  "artifact_id": "zip_archiver",
+  "version": "1.0.4",
+  "name": "Standard ZIP Archiver",
+  "type": "archive",
+  "description": "Creates and extracts ZIP archives.",
+  "entry_point": "plugin:ZipArchiverPlugin",
+  "class_name": "ZipArchiverPlugin",
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ],
+  "sandboxed": true,
+  "capabilities": [
+    "archive.create",
+    "archive.extract"
+  ],
+  "settings": {
+    "schema": {
+      "compression": {
+        "type": "enum",
+        "title": "Compression method",
+        "default": "deflate",
+        "choices": [
+          {
+            "value": "deflate",
+            "label": "Deflate"
+          },
+          {
+            "value": "store",
+            "label": "Store (no compression)"
+          }
+        ]
+      },
+      "compresslevel": {
+        "type": "integer",
+        "title": "Compression level",
+        "description": "Ignored when the compression method is Store.",
+        "default": 6,
+        "minimum": 1,
+        "maximum": 9
+      }
+    }
+  }
+}
