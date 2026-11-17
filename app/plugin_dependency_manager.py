@@ -3,12 +3,16 @@
 # See LICENSE file for details.
 
 import importlib.util
+from importlib import metadata as importlib_metadata
 import logging
 import os
-import re
 import subprocess
 import sys
 from typing import Dict, List, NamedTuple, Optional
+
+from packaging.requirements import InvalidRequirement, Requirement
+from packaging.utils import canonicalize_name
+from packaging.version import InvalidVersion
 
 
 class DependencyStatus(NamedTuple):
@@ -26,12 +30,14 @@ class PluginDependencyManager:
     Loading a plugin never installs anything. Installing dependencies on the
     fly means the application silently rewrites its own environment, requires
     network access at startup and makes bug reports unreproducible. Installation
-    is an explicit action (``install_dependencies``), triggered by the user or
-    by the plugin installer.
+    is an explicit, offline action (``install_dependencies``) driven by a hashed
+    lock file and local wheels.
 
-    Dependencies that the host application already provides (for example PyQt6,
-    which a Qt application always has) are treated as satisfied and never
-    installed.
+    Requirements are checked against the host interpreter and the plugin's own
+    ``libs`` directory. A version specifier (``>=2.0``, ``==1.2``) is enforced,
+    not just the distribution name. Dependencies that the host application
+    already provides (for example PyQt6, which a Qt application always has) are
+    treated as satisfied and never installed.
     """
 
     def __init__(self):
@@ -46,40 +52,87 @@ class PluginDependencyManager:
 
         Never touches the network and never runs pip.
         """
-        dependencies = metadata.get("python_dependencies", [])
-        if not dependencies:
-            return DependencyStatus(True, None, [])
-
         libs_dir = os.path.join(plugin_path, "libs")
-
-        missing_from_host = [dep for dep in dependencies if not self._is_available(dep)]
-        if not missing_from_host:
-            # Everything is provided by the host interpreter.
+        declared = metadata.get("python_dependencies", [])
+        if not declared and not os.path.isfile(self._lock_path(plugin_path, metadata)):
             return DependencyStatus(True, None, [])
 
-        installed_in_libs = self._installed_in_libs(libs_dir)
-        missing = [dep for dep in missing_from_host if not self._matches(dep, installed_in_libs)]
+        requirements = self._requirements(plugin_path, metadata)
+        libs_versions = self._libs_versions(libs_dir)
+        import_names = {
+            canonicalize_name(name): module
+            for name, module in metadata.get("python_import_names", {}).items()
+        }
 
-        if not missing:
-            return DependencyStatus(True, libs_dir, [])
+        missing = []
+        needs_libs = False
 
-        return DependencyStatus(False, libs_dir if os.path.isdir(libs_dir) else None, missing)
+        for requirement in requirements:
+            if self._version_satisfies(self._host_version(requirement.name), requirement):
+                continue
+
+            libs_version = libs_versions.get(canonicalize_name(requirement.name))
+            if self._version_satisfies(libs_version, requirement):
+                needs_libs = True
+                continue
+
+            # Single-file modules have no distribution metadata, so an explicit
+            # distribution -> module map is the only way to see them. It cannot
+            # prove a version, so it only satisfies unpinned requirements.
+            if not requirement.specifier:
+                module_name = import_names.get(
+                    canonicalize_name(requirement.name), requirement.name
+                )
+                if self._module_available(module_name):
+                    continue
+
+            missing.append(str(requirement))
+
+        satisfied = not missing
+        return DependencyStatus(
+            satisfied,
+            libs_dir if needs_libs and os.path.isdir(libs_dir) else None,
+            missing,
+        )
 
     def install_dependencies(self, plugin_path: str, metadata: Dict) -> bool:
         """
-        Install missing dependencies into ``<plugin>/libs`` using pip.
+        Install missing dependencies into ``<plugin>/libs``, offline.
 
-        This is an explicit action and must not be called while loading plugins.
+        The plugin must ship a fully resolved, hashed lock file and the wheels
+        it references. This is an explicit action and must not be called while
+        loading plugins.
         """
         status = self.check_dependencies(plugin_path, metadata)
         if status.satisfied:
             return True
 
+        lock_path = self._lock_path(plugin_path, metadata)
+        wheels_dir = self._wheels_dir(plugin_path, metadata)
+
+        if not os.path.isfile(lock_path):
+            self.logger.error(
+                "Cannot install plugin dependencies: %s does not exist. "
+                "Ship a hashed lock file with the plugin.",
+                lock_path,
+            )
+            return False
+
+        if not self._has_wheels(wheels_dir):
+            self.logger.error(
+                "Cannot install plugin dependencies: no wheels in %s. "
+                "Plugins must ship their wheels; installation never uses the network.",
+                wheels_dir,
+            )
+            return False
+
         libs_dir = os.path.join(plugin_path, "libs")
         self.logger.info(
-            "Installing dependencies for plugin at %s: %s", plugin_path, ", ".join(status.missing)
+            "Installing dependencies for plugin at %s: %s",
+            plugin_path,
+            ", ".join(status.missing),
         )
-        return self._pip_install(libs_dir, status.missing)
+        return self._pip_install(libs_dir, lock_path, wheels_dir)
 
     # ------------------------------------------------------------------
     # Backwards compatibility
@@ -101,65 +154,175 @@ class PluginDependencyManager:
         return status.libs_dir
 
     # ------------------------------------------------------------------
-    # Internals
+    # Requirements and metadata
     # ------------------------------------------------------------------
-    @staticmethod
-    def _dependency_name(dependency: str) -> str:
-        """Extract the bare distribution name from a requirement string."""
-        return re.split(r"[<>=!~\[; ]", dependency, maxsplit=1)[0].strip()
+    def _requirements(self, plugin_path: str, metadata: Dict) -> List[Requirement]:
+        """Return the requirements to verify, using lock pins when present."""
+        declared = []
+        for dependency in metadata.get("python_dependencies", []):
+            try:
+                declared.append(Requirement(dependency))
+            except InvalidRequirement as error:
+                raise ValueError(
+                    f"Invalid python dependency {dependency!r} in metadata: {error}"
+                ) from error
+
+        locked = self._locked_requirements(plugin_path, metadata)
+        if locked is None:
+            return declared
+
+        locked_names = {canonicalize_name(requirement.name) for requirement in locked}
+        uncovered = [
+            str(requirement)
+            for requirement in declared
+            if canonicalize_name(requirement.name) not in locked_names
+        ]
+        if uncovered:
+            raise ValueError(
+                "Dependency lock file does not cover every declared dependency: "
+                + ", ".join(uncovered)
+            )
+
+        return locked
+
+    def _locked_requirements(
+        self, plugin_path: str, metadata: Dict
+    ) -> Optional[List[Requirement]]:
+        """Parse the plugin's hashed requirements lock, or return None."""
+        lock_path = self._lock_path(plugin_path, metadata)
+        if not os.path.isfile(lock_path):
+            return None
+
+        requirements = []
+        with open(lock_path, encoding="utf-8") as handle:
+            for line_number, raw_line in enumerate(handle, start=1):
+                line = raw_line.split("#", 1)[0].strip()
+                if not line or line.startswith("-"):
+                    continue
+
+                requirement_text = line.split(" --hash=", 1)[0].strip()
+                try:
+                    requirement = Requirement(requirement_text)
+                except InvalidRequirement as error:
+                    raise ValueError(
+                        f"{lock_path}:{line_number}: invalid requirement "
+                        f"{requirement_text!r}: {error}"
+                    ) from error
+
+                if requirement.marker is not None and not requirement.marker.evaluate():
+                    continue
+
+                requirements.append(requirement)
+
+        if not requirements:
+            raise ValueError(f"{lock_path}: lock file contains no requirements")
+
+        return requirements
+
+    def _lock_path(self, plugin_path: str, metadata: Dict) -> str:
+        return self._plugin_relative_path(
+            plugin_path, metadata.get("dependency_lock", "requirements.lock")
+        )
+
+    def _wheels_dir(self, plugin_path: str, metadata: Dict) -> str:
+        return self._plugin_relative_path(
+            plugin_path, metadata.get("dependency_wheels", "wheels")
+        )
 
     @staticmethod
-    def _is_available(dependency: str) -> bool:
-        """True if the current interpreter can import the dependency."""
-        name = PluginDependencyManager._dependency_name(dependency)
+    def _plugin_relative_path(plugin_path: str, relative_path: str) -> str:
+        """Resolve a metadata path, refusing to escape the plugin directory."""
+        root = os.path.abspath(plugin_path)
+        resolved = os.path.abspath(os.path.join(root, relative_path))
+        if os.path.commonpath([root, resolved]) != root:
+            raise ValueError(
+                f"Plugin dependency path {relative_path!r} leaves the plugin directory"
+            )
+        return resolved
+
+    @staticmethod
+    def _host_version(distribution: str) -> Optional[str]:
         try:
-            return importlib.util.find_spec(name) is not None
+            return importlib_metadata.version(distribution)
+        except (importlib_metadata.PackageNotFoundError, ValueError):
+            return None
+
+    @staticmethod
+    def _libs_versions(libs_dir: str) -> Dict[str, str]:
+        """Map canonical distribution names to versions installed in ``libs``."""
+        if not os.path.isdir(libs_dir):
+            return {}
+
+        versions = {}
+        try:
+            distributions = importlib_metadata.distributions(path=[libs_dir])
+            for distribution in distributions:
+                metadata = distribution.metadata
+                name = metadata.get("Name") if metadata is not None else None
+                if name and distribution.version:
+                    versions[canonicalize_name(name)] = distribution.version
+        except (OSError, ValueError):
+            logging.getLogger("PluginDependencyManager").warning(
+                "Could not read installed distribution metadata from %s",
+                libs_dir,
+                exc_info=True,
+            )
+        return versions
+
+    @staticmethod
+    def _version_satisfies(version: Optional[str], requirement: Requirement) -> bool:
+        if version is None:
+            return False
+        if not requirement.specifier:
+            return True
+        try:
+            return requirement.specifier.contains(version, prereleases=True)
+        except InvalidVersion:
+            return False
+
+    @staticmethod
+    def _module_available(module_name: str) -> bool:
+        try:
+            return importlib.util.find_spec(module_name) is not None
         except (ImportError, ValueError, ModuleNotFoundError):
             return False
 
     @staticmethod
-    def _installed_in_libs(libs_dir: str) -> List[str]:
-        """Return distribution names found in a ``libs`` directory."""
-        if not os.path.isdir(libs_dir):
-            return []
-        names = []
-        for entry in os.listdir(libs_dir):
-            if entry.endswith(".dist-info"):
-                # "requests-2.32.5.dist-info" -> "requests"
-                names.append(entry[: -len(".dist-info")].rsplit("-", 1)[0])
-        return names
+    def _has_wheels(wheels_dir: str) -> bool:
+        if not os.path.isdir(wheels_dir):
+            return False
+        return any(name.endswith(".whl") for name in os.listdir(wheels_dir))
 
-    @staticmethod
-    def _matches(dependency: str, installed: List[str]) -> bool:
-        wanted = PluginDependencyManager._normalize(dependency)
-        return any(
-            PluginDependencyManager._normalize(name) == wanted for name in installed
-        )
-
-    @staticmethod
-    def _normalize(name: str) -> str:
-        """Normalize a distribution name the way PEP 503 does."""
-        return (
-            PluginDependencyManager._dependency_name(name)
-            .lower()
-            .replace("_", "-")
-            .replace(".", "-")
-        )
-
-    def _pip_install(self, target_dir: str, dependencies: List[str]) -> bool:
-        os.makedirs(target_dir, exist_ok=True)
-
-        try:
-            import pip  # noqa: F401
-        except ImportError:
+    # ------------------------------------------------------------------
+    # Installation
+    # ------------------------------------------------------------------
+    def _pip_install(self, target_dir: str, lock_path: str, wheels_dir: str) -> bool:
+        if importlib.util.find_spec("pip") is None:
             self.logger.error(
                 "Cannot install plugin dependencies: pip is not available in this "
-                "interpreter. Install them manually: %s",
-                " ".join(dependencies),
+                "interpreter. Install the wheels from %s manually into %s.",
+                wheels_dir,
+                target_dir,
             )
             return False
 
-        cmd = [sys.executable, "-m", "pip", "install", "--target", target_dir] + dependencies
+        os.makedirs(target_dir, exist_ok=True)
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--no-index",
+            "--no-cache-dir",
+            "--find-links",
+            wheels_dir,
+            "--require-hashes",
+            "--target",
+            target_dir,
+            "-r",
+            lock_path,
+        ]
 
         try:
             result = subprocess.run(

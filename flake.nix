@@ -20,6 +20,7 @@
           psutil
           rarfile
           send2trash
+          packaging
           pillow # used by scripts/slice_spritesheet.py
 
           # Tests
