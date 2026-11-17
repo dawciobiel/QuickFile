@@ -2,17 +2,32 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
+import logging
 import os
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QFileDialog, QDialogButtonBox, QMessageBox, QLineEdit, QComboBox, QPushButton
 
+from app.plugin_settings import (
+    PluginSettingsError,
+    normalize_options,
+    schema_for_plugin,
+)
 from app.plugin_system.api import Capability
+from app.settings_manager import SettingsManager
 from app.translation_manager import translation_manager
+from utils.plugin_settings_dialog import PluginSettingsDialog
 from utils.resource_path import get_resource_path
 
 
 class CreateArchiveDialog(QDialog):
-    def __init__(self, parent, plugin_manager, default_path, default_name="archive"):
+    def __init__(
+        self,
+        parent,
+        plugin_manager,
+        default_path,
+        default_name="archive",
+        settings_manager=None,
+    ):
         super().__init__(parent)
 
         # --- Declare UI attributes for linter ---
@@ -29,7 +44,8 @@ class CreateArchiveDialog(QDialog):
         self.setWindowTitle(translation_manager.translate("CreateArchiveDialog", "Create Archive"))
 
         self.plugin_manager = plugin_manager
-        self.plugin_options = {}  # Stores options for each plugin: {plugin_name: options_dict}
+        self.settings_manager = settings_manager or SettingsManager()
+        self.plugin_options = {}  # {plugin_id: options_dict}
         self.add_to_queue = False
 
         # noinspection PyTypeChecker
@@ -65,8 +81,28 @@ class CreateArchiveDialog(QDialog):
             # noinspection PyTypeChecker
             self.type_combo.addItem(label, plugin)
 
-            # Initialize default options for this plugin if needed
-            self.plugin_options[plugin_name] = {}
+            self.plugin_options[plugin.metadata["id"]] = self._load_plugin_options(
+                plugin
+            )
+
+    def _load_plugin_options(self, plugin) -> dict:
+        """Load saved options and fill defaults from the declared schema."""
+        plugin_id = plugin.metadata["id"]
+        stored = self.settings_manager.get_plugin_settings(plugin_id)
+        schema = schema_for_plugin(plugin)
+        if not schema:
+            return stored
+
+        try:
+            return normalize_options(schema, stored)
+        except PluginSettingsError:
+            logging.warning(
+                "Plugin %s has an invalid settings schema; using saved options "
+                "without defaults.",
+                plugin_id,
+                exc_info=True,
+            )
+            return stored
 
     def browse_path(self):
         path = QFileDialog.getExistingDirectory(self, translation_manager.translate("CreateArchiveDialog", "Select Destination Directory"))
@@ -80,21 +116,44 @@ class CreateArchiveDialog(QDialog):
         if not plugin:
             return
 
-        plugin_name = plugin.get_name()
-        current_options = self.plugin_options.get(plugin_name, {})
+        plugin_id = plugin.metadata["id"]
+        schema = schema_for_plugin(plugin)
+        if not schema:
+            QMessageBox.information(
+                self,
+                "Info",
+                translation_manager.translate(
+                    "CreateArchiveDialog",
+                    "No configuration options available for this plugin.",
+                ),
+            )
+            return
 
-        # Check if the plugin supports configuration
-        dialog = plugin.get_configuration_dialog(self, current_options)
-        if dialog:
-            if dialog.exec() == QDialog.DialogCode.Accepted:
-                # Assuming the dialog has a method to get the new options
-                # Or it modifies the passed dictionary in place (less safe but possible)
-                # Let's assume it returns new options via a method, e.g., get_options()
-                if hasattr(dialog, 'get_options'):
-                    self.plugin_options[plugin_name] = dialog.get_options()
-        else:
-            QMessageBox.information(self, "Info", translation_manager.translate("CreateArchiveDialog",
-                                                                                "No configuration options available for this plugin."))
+        try:
+            dialog = PluginSettingsDialog(
+                self,
+                plugin.get_name(),
+                schema,
+                self.plugin_options.get(plugin_id, {}),
+            )
+        except PluginSettingsError:
+            logging.warning(
+                "Plugin %s has an invalid settings schema.", plugin_id, exc_info=True
+            )
+            QMessageBox.warning(
+                self,
+                translation_manager.translate("PluginSettings", "Invalid settings"),
+                translation_manager.translate(
+                    "PluginSettings",
+                    "This plugin has an invalid settings schema.",
+                ),
+            )
+            return
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            options = dialog.get_options()
+            self.plugin_options[plugin_id] = options
+            self.settings_manager.set_plugin_settings(plugin_id, options)
 
     def on_queue_clicked(self):
         self.add_to_queue = True
@@ -122,9 +181,9 @@ class CreateArchiveDialog(QDialog):
         else:
             full_path = os.path.join(path, name)
 
-        plugin_name = plugin.get_name()
-        options = self.plugin_options.get(plugin_name, {})
-        options['plugin_id'] = plugin.metadata["id"]
+        plugin_id = plugin.metadata["id"]
+        options = dict(self.plugin_options.get(plugin_id, {}))
+        options['plugin_id'] = plugin_id
 
         return {
             "source_paths": [],  # To be filled by caller

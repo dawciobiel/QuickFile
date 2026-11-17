@@ -234,5 +234,9 @@
     "SyncDialog.Two-way synchronization (copy newer files both ways)": "Two-way synchronization (copy newer files both ways)",
     "SyncDialog.Delete files in destination folder if they don't exist in source": "Delete files in destination folder if they don't exist in source",
     "SyncDialog.Include subdirectories": "Include subdirectories",
-    "TaskQueuePanel.Clear Finished": "Clear Finished"
+    "TaskQueuePanel.Clear Finished": "Clear Finished",
+    "PluginSettings.Plugin settings": "Plugin settings",
+    "PluginSettings.Invalid settings": "Invalid settings",
+    "PluginSettings.This plugin has an invalid settings schema.": "This plugin has an invalid settings schema.",
+    "CreateArchiveDialog.No configuration options available for this plugin.": "No configuration options available for this plugin."
 }
