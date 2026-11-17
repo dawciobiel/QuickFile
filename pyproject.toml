@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "QuickFile"
-version = "0.21.10"
+version = "0.21.11"
 description = "Modular file manager with a plugin system"
 readme = "README.md"
 requires-python = ">=3.10"
