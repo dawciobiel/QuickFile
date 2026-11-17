@@ -187,6 +187,11 @@ class TaskQueueManager(QObject):
         elif task.type == TaskType.CHECKSUM:
             plugin_kwargs["file_path"] = task.source_paths[0]
             plugin_kwargs["algorithms"] = task.options.get("algorithms", [])
+        elif task.type == TaskType.EXTRACT_ARCHIVE:
+            # Archive plugins use the singular contract while the queue works
+            # with lists; keep both so external plugins can use either.
+            plugin_kwargs["source_path"] = task.source_paths[0]
+            plugin_kwargs["dest_dir"] = task.destination_path
 
         # Execute task using the new architecture
         plugin.execute_task(
