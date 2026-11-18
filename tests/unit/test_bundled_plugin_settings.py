@@ -13,29 +13,19 @@ instead of failing at runtime.
 Specification: ``docs/architecture/plugins/plugins.md`` ("Ustawienia pluginów").
 """
 
-import glob
-import json
-import os
-
 import pytest
 
 from app.plugin_settings import defaults_for, validate_schema
-
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-PLUGINS_DIR = os.path.join(PROJECT_ROOT, "plugins", "org.quickfile")
+from tests.plugin_helpers import iter_plugin_metadata
 
 
 def _settings_cases():
-    cases = []
-    for metadata_path in sorted(
-        glob.glob(os.path.join(PLUGINS_DIR, "*", "*", "metadata.json"))
-    ):
-        with open(metadata_path, encoding="utf-8") as handle:
-            metadata = json.load(handle)
-        schema = (metadata.get("settings") or {}).get("schema")
-        if schema:
-            cases.append((metadata_path, metadata, schema))
-    return cases
+    return [
+        (metadata_path, metadata, schema)
+        for metadata_path, metadata in iter_plugin_metadata()
+        for schema in [(metadata.get("settings") or {}).get("schema")]
+        if schema
+    ]
 
 
 CASES = _settings_cases()

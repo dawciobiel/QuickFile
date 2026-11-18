@@ -40,7 +40,9 @@ include = [
     "ui*",
     "utils*",
 ]
-exclude = ["tests*", "experiments*", "scripts*", "build*", "dist*"]
+# plugins-external/ holds sources for packages published separately. It must
+# never end up inside the application wheel or the PyInstaller bundle.
+exclude = ["tests*", "experiments*", "scripts*", "build*", "dist*", "plugins-external*"]
 
 [tool.setuptools.package-data]
 # Resources (icons, themes, translations, config defaults) are shipped with

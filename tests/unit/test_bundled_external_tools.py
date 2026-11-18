@@ -12,26 +12,14 @@ shippable mistakes, so the bundled metadata is checked here.
 Specification: ``docs/architecture/plugins/plugins.md`` ("Narzędzia zewnętrzne").
 """
 
-import glob
-import json
-import os
-
 import pytest
 
 from app.external_tools import requirements_for
-
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-PLUGINS_DIR = os.path.join(PROJECT_ROOT, "plugins", "org.quickfile")
+from tests.plugin_helpers import iter_plugin_metadata
 
 
 def _metadata_cases():
-    cases = []
-    for metadata_path in sorted(
-        glob.glob(os.path.join(PLUGINS_DIR, "*", "*", "metadata.json"))
-    ):
-        with open(metadata_path, encoding="utf-8") as handle:
-            cases.append((metadata_path, json.load(handle)))
-    return cases
+    return list(iter_plugin_metadata())
 
 
 CASES = _metadata_cases()

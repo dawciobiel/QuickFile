@@ -15,25 +15,18 @@ That catches packaging and import regressions (missing ``libs/``, broken
 which the dummy plugin cannot see.
 """
 
-import glob
-import json
 import os
 import platform
 
 import pytest
 
 from app.plugin_system.host import SandboxedPluginWrapper
-
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-PLUGINS_DIR = os.path.join(PROJECT_ROOT, "plugins", "org.quickfile")
+from tests.plugin_helpers import iter_plugin_metadata
 
 
 def _discover_sandboxed_plugins():
     plugins = []
-    pattern = os.path.join(PLUGINS_DIR, "*", "*", "metadata.json")
-    for metadata_path in sorted(glob.glob(pattern)):
-        with open(metadata_path, encoding="utf-8") as handle:
-            metadata = json.load(handle)
+    for metadata_path, metadata in iter_plugin_metadata():
         if metadata.get("sandboxed", False):
             plugins.append((os.path.dirname(metadata_path), metadata))
     return plugins

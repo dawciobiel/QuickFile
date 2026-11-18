@@ -14,20 +14,14 @@ picked ZIP (create-only). The vocabulary lives in ``Capability``.
 Specification: ``docs/architecture/plugins/plugins.md`` ("Capabilities").
 """
 
-import glob
 import importlib
-import json
-import os
 import sys
 from contextlib import contextmanager
 
 import pytest
 
 from app.plugin_system.api import Capability, PluginTask
-from tests.plugin_helpers import get_latest_plugin_path
-
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-PLUGINS_DIR = os.path.join(PROJECT_ROOT, "plugins", "org.quickfile")
+from tests.plugin_helpers import get_latest_plugin_path, iter_plugin_metadata
 
 CAPABILITY_ACTIONS = {
     Capability.ARCHIVE_CREATE: "create_archive",
@@ -36,15 +30,11 @@ CAPABILITY_ACTIONS = {
 
 
 def _archive_cases():
-    cases = []
-    for metadata_path in sorted(
-        glob.glob(os.path.join(PLUGINS_DIR, "*", "*", "metadata.json"))
-    ):
-        with open(metadata_path, encoding="utf-8") as handle:
-            metadata = json.load(handle)
-        if metadata.get("type") == "archive":
-            cases.append((metadata_path, metadata))
-    return cases
+    return [
+        (metadata_path, metadata)
+        for metadata_path, metadata in iter_plugin_metadata()
+        if metadata.get("type") == "archive"
+    ]
 
 
 CASES = _archive_cases()

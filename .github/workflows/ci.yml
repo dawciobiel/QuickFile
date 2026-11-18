@@ -63,9 +63,12 @@ jobs:
 
       # Every plugin is packaged and the package is installed into a scratch
       # directory, so a metadata or layout change cannot ship a broken zip.
+      # plugins-external/ holds sources that are not part of the application
+      # itself, but whose packages are still released.
       - name: Build plugin packages
         run: |
-          python scripts/build_plugin_package.py --all --output dist/plugins
+          python scripts/build_plugin_package.py --all --source-root plugins --output dist/plugins
+          python scripts/build_plugin_package.py --all --source-root plugins-external --output dist/plugins-external
 
       # Artifacts expire and need a GitHub account, so they are for maintainers
       # and tests; users get packages from a release.
@@ -74,5 +77,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: plugin-packages
-          path: dist/plugins/*.zip
+          path: |
+            dist/plugins/*.zip
+            dist/plugins-external/*.zip
           if-no-files-found: error

@@ -6,30 +6,9 @@ import os
 import json
 import pytest
 
-def get_all_plugin_version_paths():
-    """
-    Scans the plugins directory and yields tuples of
-    (plugin_name, version_dir_name, metadata_path).
-    """
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-    plugins_dir = os.path.join(project_root, 'plugins', 'org.quickfile')
+from tests.plugin_helpers import iter_plugin_version_paths
 
-    if not os.path.isdir(plugins_dir):
-        return
-
-    for plugin_name in os.listdir(plugins_dir):
-        plugin_path = os.path.join(plugins_dir, plugin_name)
-        if not os.path.isdir(plugin_path):
-            continue
-
-        for version_dir_name in os.listdir(plugin_path):
-            version_path = os.path.join(plugin_path, version_dir_name)
-            if os.path.isdir(version_path) and version_dir_name[0].isdigit():
-                metadata_file = os.path.join(version_path, 'metadata.json')
-                if os.path.isfile(metadata_file):
-                    yield (plugin_name, version_dir_name, metadata_file)
-
-PLUGIN_CASES = list(get_all_plugin_version_paths())
+PLUGIN_CASES = list(iter_plugin_version_paths())
 PLUGIN_IDS = [f"{name}-{version}" for name, version, _ in PLUGIN_CASES]
 
 
