@@ -532,7 +532,7 @@ Zasady:
 
 *   Host skanuje oba katalogi; `plugins-external/` może nie istnieć i nie jest tworzony przy starcie.
 *   Katalog zewnętrzny **nigdy** nie jest celem instalacji wbudowanych wtyczek: `_ensure_bundled_plugins` pisze wyłącznie do pierwszego wpisu `plugin_dirs`. Aktualizacja aplikacji nie dotyka plików użytkownika.
-*   Brak sieci i auto-aktualizacji: instalacja to rozpakowanie katalogu wtyczki i restart. Sklep i instalator to osobny etap.
+*   Brak sieci i auto-aktualizacji: instalacja to jawna akcja użytkownika — patrz „Instalacja wtyczki zewnętrznej”. Sklep i instalator z UI to osobny etap.
 *   Wtyczka zewnętrzna podlega **wszystkim** regułom wydania: `sandboxed` przy `libs/`, `capabilities`, `settings.schema`, `external_tools` i walidacji metadanych.
 *   **Kolizja `id`:** jeśli wtyczka o danym `id` jest już załadowana z katalogu instalacyjnego, kopia z `plugins-external/` jest pomijana, a konflikt trafia do logu jako błąd. Katalog użytkownika nie przesłania wtyczki z wydania — inaczej zgłoszenia błędów dotyczyłyby kodu, którego nie wydaliśmy.
 *   Wtyczka usunięta z wydania **nie jest usuwana** z katalogu użytkownika; działa dalej, dopóki użytkownik sam jej nie usunie. To świadoma cena: stara kopia nie dostaje poprawek. Dlatego przeniesienie do external robimy dopiero wtedy, gdy istnieje sposób instalacji, który nie wymaga ręcznego kopiowania plików.
@@ -540,6 +540,77 @@ Zasady:
 ### `rar_archiver`
 
 Wtyczka pozostaje wbudowana (1.0.4) do czasu powstania ścieżki instalacji. Dopiero potem jej katalog trafia do `plugins-external/`, a `plugins/` przestaje ją zawierać. Do tego czasu użytkownik bez backendu dostaje komunikat preflight, a nie błąd w środku zadania.
+
+## Instalacja wtyczki zewnętrznej
+
+Instalacja jest **jawną, offline akcją**. Host nie pobiera wtyczek i nie nadpisuje
+istniejących plików.
+
+### Format paczki
+
+ZIP, w którym na najwyższym poziomie leży zawartość **jednego katalogu wersji**:
+
+```
+metadata.json
+plugin.py
+tasks.py            # opcjonalnie
+libs/               # opcjonalnie, zależności offline
+requirements.lock   # opcjonalnie
+wheels/             # opcjonalnie
+```
+
+Katalogów `groupId/artifactId` nie ma w archiwum — wynikają z metadanych. Instalator
+przyjmuje też rozpakowany katalog wersji, żeby dało się zainstalować wtyczkę z drzewa
+roboczego.
+
+### Miejsce docelowe
+
+`<dest>/<groupId>/<artifactId>/<version>/`, gdzie `groupId` i `artifactId` wynikają z
+`id` (podział na ostatniej kropce), a `version` z `metadata.json`. Jeśli metadane zawierają
+`group_id` lub `artifact_id`, muszą być zgodne z `id`; rozbieżność to błąd.
+
+### Walidacja
+
+Przed rozpakowaniem i po nim:
+
+1.  Archiwum zawiera **dokładnie jeden** `metadata.json`: w korzeniu albo w jedynym katalogu
+    na najwyższym poziomie (typowe „zipowanie folderu”). Inne wpisy obok takiego katalogu to
+    błąd. `__pycache__/` i pliki `.pyc` są pomijane.
+2.  Wymagane pola: `id`, `version`, `type`, `entry_point`. `entry_point` ma postać
+    `moduł:Klasa`, a `moduł.py` istnieje w paczce.
+3.  `version` jest poprawną nazwą katalogu wersji (`1`, `1.2`, `1.2.3` — jak w `PluginManager`).
+4.  `settings.schema` i `external_tools` przechodzą walidację hosta (`app/plugin_settings.py`,
+    `app/external_tools.py`). Błąd w tych sekcjach odrzuca paczkę, a nie tylko formularz.
+5.  Ścieżki w archiwum są względne, bez `..` i bez absolutnych; symlinki są odrzucane
+    (ochrona przed zip-slip).
+6.  **Kolizje:** `id` dostarczane z katalogu instalacyjnego → odmowa, bo `PluginManager`
+    i tak pominąłby tę kopię. Ta sama wersja już w `plugins-external/` → odmowa. Inna wersja →
+    dozwolona; `PluginManager` ładuje najwyższą.
+7.  Zależności: `PluginDependencyManager.check_dependencies` i `validate_isolation`.
+    Niespełnione zależności są **ostrzeżeniem** (instalacja `libs/` to osobna akcja offline);
+    wtyczka nie-sandboxowana wymagająca `libs/` jest odrzucana, bo host i tak by jej nie załadował.
+
+### Atomowość
+
+Paczka jest rozpakowywana do katalogu tymczasowego, walidowana i dopiero potem przenoszona
+do miejsca docelowego. Błąd w dowolnym kroku zostawia `plugins-external/` bez zmian —
+nie może powstać połowicznie zainstalowana wtyczka.
+
+### CLI
+
+```
+python -m app.plugin_installer install <paczka.zip|katalog> [--dest KATALOG] [--install-dir KATALOG]
+```
+
+Domyślny `--dest` to `~/.config/QuickFile/plugins-external`, a `--install-dir` to
+`~/.config/QuickFile/plugins` (tylko do sprawdzania kolizji z wydaniem). Sukces wypisuje
+ścieżkę docelową; błąd kończy się kodem wyjścia 1 i jednym czytelnym komunikatem. Komunikaty
+CLI są po angielsku: nie ma tam Qt ani `TranslationManager`, a tłumaczenia dotyczą UI.
+
+### Poza zakresem
+
+UI instalatora, aktualizacje, odinstalowywanie, podpisy paczek, pobieranie z sieci i
+przypinanie wersji.
 
 ## Integracja z Kolejką Zadań
 
