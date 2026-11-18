@@ -60,3 +60,19 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           pytest
+
+      # Every plugin is packaged and the package is installed into a scratch
+      # directory, so a metadata or layout change cannot ship a broken zip.
+      - name: Build plugin packages
+        run: |
+          python scripts/build_plugin_package.py --all --output dist/plugins
+
+      # Artifacts expire and need a GitHub account, so they are for maintainers
+      # and tests; users get packages from a release.
+      - name: Upload plugin packages
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-packages
+          path: dist/plugins/*.zip
+          if-no-files-found: error
