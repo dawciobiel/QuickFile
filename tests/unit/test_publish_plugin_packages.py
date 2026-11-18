@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import subprocess
+import zipfile
 
 import pytest
 
@@ -28,10 +29,40 @@ def digest(content):
     return hashlib.sha256(content).hexdigest()
 
 
-def make_package(directory, name="zip_archiver-1.0.4.zip", content=b"package"):
+def make_package(
+    directory,
+    name="zip_archiver-1.0.4.zip",
+    content=b"package",
+    plugin_id=None,
+    version=None,
+    metadata=True,
+):
+    """Build a package shaped like ``build_plugin_package.py`` output.
+
+    ``metadata`` is ``True`` for metadata derived from the name, a dict to
+    write verbatim, a string to write the metadata under that archive path, or
+    ``False`` to omit it entirely.
+    """
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / name
-    path.write_bytes(content)
+    artifact_id, _, name_version = name[: -len(".zip")].rpartition("-")
+    if plugin_id is None:
+        plugin_id = f"org.quickfile.{artifact_id}"
+    if version is None:
+        version = name_version
+
+    entries = {"plugin.py": content}
+    if metadata is True or isinstance(metadata, str):
+        target = "metadata.json" if metadata is True else metadata
+        entries[target] = json.dumps({"id": plugin_id, "version": version}).encode()
+    elif isinstance(metadata, dict):
+        entries["metadata.json"] = json.dumps(metadata).encode()
+
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+        for entry_name in sorted(entries):
+            info = zipfile.ZipInfo(entry_name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, entries[entry_name])
     return path
 
 
@@ -40,6 +71,7 @@ class FakeGh:
         self.assets = assets or {}
         self.release_exists = release_exists
         self.uploads = []
+        self.uploaded = {}
         self.created = []
         self.downloads = []
         self.contents = {}
@@ -54,7 +86,10 @@ class FakeGh:
         self.release_exists = True
 
     def upload_asset(self, tag, path):
-        self.uploads.append((tag, os.path.basename(path)))
+        name = os.path.basename(path)
+        self.uploads.append((tag, name))
+        with open(path, "rb") as handle:
+            self.uploaded[name] = handle.read()
 
     def download_asset(self, tag, name, directory):
         self.downloads.append((tag, name))
@@ -70,9 +105,10 @@ def test_missing_assets_are_uploaded(tmp_path):
 
     actions = publish_packages("v1", [tmp_path / "dist"], gh)
 
-    assert gh.uploads == [("v1", package.name)]
+    assert gh.uploads == [("v1", package.name), ("v1", "plugin-index.json")]
     assert [(action.kind, action.name) for action in actions] == [
-        ("upload", package.name)
+        ("upload", package.name),
+        ("upload", "plugin-index.json"),
     ]
 
 
@@ -91,9 +127,9 @@ def test_an_identical_asset_is_skipped_by_digest(tmp_path):
 
     actions = publish_packages("v1", [tmp_path / "dist"], gh)
 
-    assert gh.uploads == []
+    assert gh.uploads == [("v1", "plugin-index.json")]
     assert gh.downloads == []
-    assert actions[0].kind == "skip"
+    assert [action.kind for action in actions] == ["skip", "upload"]
 
 
 def test_an_asset_with_different_bytes_is_refused(tmp_path):
@@ -125,8 +161,8 @@ def test_without_a_digest_the_asset_is_downloaded_and_compared(tmp_path):
     actions = publish_packages("v1", [tmp_path / "dist"], gh)
 
     assert gh.downloads == [("v1", package.name)]
-    assert gh.uploads == []
-    assert actions[0].kind == "skip"
+    assert gh.uploads == [("v1", "plugin-index.json")]
+    assert [action.kind for action in actions] == ["skip", "upload"]
 
 
 def test_without_a_digest_different_bytes_are_refused(tmp_path):
@@ -155,7 +191,7 @@ def test_dry_run_reports_but_does_not_upload(tmp_path):
         "v1", [tmp_path / "dist"], gh, dry_run=True
     )
 
-    assert [action.kind for action in actions] == ["upload"]
+    assert [action.kind for action in actions] == ["upload", "upload"]
     assert gh.uploads == []
 
 
@@ -178,8 +214,8 @@ def test_create_release_publishes_when_the_release_is_missing(tmp_path):
     )
 
     assert gh.created == ["v1"]
-    assert [action.kind for action in actions] == ["create", "upload"]
-    assert len(gh.uploads) == 1
+    assert [action.kind for action in actions] == ["create", "upload", "upload"]
+    assert len(gh.uploads) == 2
 
 
 def test_dry_run_does_not_create_a_release(tmp_path):
@@ -191,7 +227,7 @@ def test_dry_run_does_not_create_a_release(tmp_path):
     )
 
     assert gh.created == []
-    assert [action.kind for action in actions] == ["create", "upload"]
+    assert [action.kind for action in actions] == ["create", "upload", "upload"]
 
 
 def test_duplicate_package_names_are_refused(tmp_path):
@@ -316,3 +352,164 @@ def test_the_gh_client_fails_when_the_download_is_missing(tmp_path):
 
     with pytest.raises(PublishError, match="did not download"):
         client.download_asset("v1", "zip-1.0.0.zip", str(tmp_path))
+
+
+def read_index(gh):
+    return json.loads(gh.uploaded["plugin-index.json"])
+
+
+def test_the_index_describes_the_uploaded_packages(tmp_path):
+    package = make_package(
+        tmp_path / "dist", name="rar_archiver-1.0.4.zip", content=b"rar"
+    )
+    gh = FakeGh()
+
+    publish_packages("v1", [tmp_path / "dist"], gh)
+
+    assert read_index(gh) == {
+        "schema_version": 1,
+        "packages": [
+            {
+                "id": "org.quickfile.rar_archiver",
+                "version": "1.0.4",
+                "file": "rar_archiver-1.0.4.zip",
+                "sha256": digest(package.read_bytes()),
+                "size": package.stat().st_size,
+            }
+        ],
+    }
+
+
+def test_the_index_is_uploaded_after_every_package(tmp_path):
+    make_package(tmp_path / "dist", name="zip_archiver-1.0.4.zip")
+    gh = FakeGh()
+
+    publish_packages("v1", [tmp_path / "dist"], gh)
+
+    assert [name for _, name in gh.uploads] == [
+        "zip_archiver-1.0.4.zip",
+        "plugin-index.json",
+    ]
+
+
+def test_the_index_is_sorted_by_id_then_numeric_version(tmp_path):
+    make_package(tmp_path / "dist", name="zeta-1.0.9.zip")
+    make_package(tmp_path / "dist", name="zeta-1.0.10.zip")
+    make_package(
+        tmp_path / "dist", name="alpha-2.0.0.zip", plugin_id="org.quickfile.alpha"
+    )
+    gh = FakeGh()
+
+    publish_packages("v1", [tmp_path / "dist"], gh)
+
+    entries = read_index(gh)["packages"]
+    assert [(entry["id"], entry["version"]) for entry in entries] == [
+        ("org.quickfile.alpha", "2.0.0"),
+        ("org.quickfile.zeta", "1.0.9"),
+        ("org.quickfile.zeta", "1.0.10"),
+    ]
+
+
+def test_the_index_is_byte_identical_for_the_same_packages(tmp_path):
+    make_package(tmp_path / "dist", name="zeta-1.0.9.zip")
+    make_package(tmp_path / "dist", name="alpha-2.0.0.zip")
+    second = FakeGh()
+    first = FakeGh()
+
+    publish_packages("v1", [tmp_path / "dist"], first)
+    publish_packages("v1", [tmp_path / "dist"], second)
+
+    assert first.uploaded["plugin-index.json"] == second.uploaded["plugin-index.json"]
+
+
+def test_the_index_uses_metadata_inside_the_package(tmp_path):
+    make_package(
+        tmp_path / "dist",
+        name="renamed-1.0.4.zip",
+        plugin_id="org.quickfile.rar_archiver",
+        version="1.0.4",
+    )
+
+    with pytest.raises(PublishError, match="does not match metadata"):
+        publish_packages("v1", [tmp_path / "dist"], FakeGh())
+
+
+def test_a_package_without_metadata_is_refused(tmp_path):
+    make_package(tmp_path / "dist", metadata=False)
+
+    with pytest.raises(PublishError, match="no metadata.json"):
+        publish_packages("v1", [tmp_path / "dist"], FakeGh())
+
+
+def test_a_nested_metadata_file_is_not_accepted(tmp_path):
+    make_package(tmp_path / "dist", metadata="nested/metadata.json")
+
+    with pytest.raises(PublishError, match="no metadata.json"):
+        publish_packages("v1", [tmp_path / "dist"], FakeGh())
+
+
+def test_invalid_metadata_is_refused(tmp_path):
+    make_package(tmp_path / "dist", metadata={"id": "org.quickfile.zip_archiver"})
+
+    with pytest.raises(PublishError, match="version"):
+        publish_packages("v1", [tmp_path / "dist"], FakeGh())
+
+
+def test_a_non_numeric_version_is_refused(tmp_path):
+    make_package(
+        tmp_path / "dist", name="zip_archiver-1.0.4.zip", version="latest"
+    )
+
+    with pytest.raises(PublishError, match="not a valid version"):
+        publish_packages("v1", [tmp_path / "dist"], FakeGh())
+
+
+def test_an_identical_index_is_skipped(tmp_path):
+    package = make_package(tmp_path / "dist")
+    gh = FakeGh()
+    publish_packages("v1", [tmp_path / "dist"], gh)
+    index = gh.uploaded["plugin-index.json"]
+
+    existing = FakeGh(
+        assets={
+            "plugin-index.json": {
+                "name": "plugin-index.json",
+                "size": len(index),
+                "digest": f"sha256:{digest(index)}",
+            }
+        }
+    )
+    actions = publish_packages("v1", [tmp_path / "dist"], existing)
+
+    assert existing.uploads == [("v1", package.name)]
+    assert [action.kind for action in actions] == ["upload", "skip"]
+    assert actions[-1].name == "plugin-index.json"
+
+
+def test_a_different_published_index_is_refused(tmp_path):
+    make_package(tmp_path / "dist")
+    gh = FakeGh(
+        assets={
+            "plugin-index.json": {
+                "name": "plugin-index.json",
+                "size": 2,
+                "digest": f"sha256:{digest(b'{}')}",
+            }
+        }
+    )
+
+    with pytest.raises(PublishError, match="refusing to replace"):
+        publish_packages("v1", [tmp_path / "dist"], gh)
+
+
+def test_dry_run_plans_the_index_but_does_not_upload_it(tmp_path):
+    make_package(tmp_path / "dist")
+    gh = FakeGh()
+
+    actions = publish_packages("v1", [tmp_path / "dist"], gh, dry_run=True)
+
+    assert gh.uploads == []
+    assert [action.name for action in actions] == [
+        "zip_archiver-1.0.4.zip",
+        "plugin-index.json",
+    ]
