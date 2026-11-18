@@ -10,6 +10,9 @@ the same bytes is skipped, and an asset with different bytes is an error rather
 than a silent replacement. The decision logic lives here so it can be tested
 without network access; ``gh`` is only the transport.
 
+The release also carries ``plugin-index.json``, generated from the same files
+and uploaded last so a client never sees an index pointing at a missing asset.
+
 Specification: ``docs/architecture/plugins/plugins.md`` ("Publikacja paczek").
 """
 
@@ -18,11 +21,17 @@ import glob
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
+import zipfile
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence
+
+INDEX_NAME = "plugin-index.json"
+INDEX_SCHEMA_VERSION = 1
+VERSION_PATTERN = re.compile(r"^\d+(\.\d+)*$")
 
 
 class PublishError(Exception):
@@ -35,6 +44,8 @@ class Package:
     name: str
     size: int
     sha256: str
+    plugin_id: str = ""
+    version: str = ""
 
 
 @dataclass(frozen=True)
@@ -138,23 +149,43 @@ def publish_packages(
 
     with tempfile.TemporaryDirectory(prefix="quickfile-publish-") as scratch:
         for package in packages:
-            existing = assets.get(package.name)
-            if existing is None:
-                actions.append(
-                    Action("upload", package.name, "missing from release")
-                )
-                if not dry_run:
-                    gh.upload_asset(tag, package.path)
-                continue
+            _publish_asset(tag, package, gh, assets, actions, dry_run, scratch)
 
-            if not _asset_matches(package, existing, gh, tag, scratch):
-                raise PublishError(
-                    f"Release asset {package.name} differs from {package.path}; "
-                    "refusing to replace it."
-                )
-            actions.append(Action("skip", package.name, "identical"))
+        _publish_asset(
+            tag,
+            _write_index(packages, scratch),
+            gh,
+            assets,
+            actions,
+            dry_run,
+            scratch,
+        )
 
     return actions
+
+
+def _publish_asset(
+    tag: str,
+    package: Package,
+    gh: GhClient,
+    assets: Dict[str, dict],
+    actions: List[Action],
+    dry_run: bool,
+    scratch: str,
+) -> None:
+    existing = assets.get(package.name)
+    if existing is None:
+        actions.append(Action("upload", package.name, "missing from release"))
+        if not dry_run:
+            gh.upload_asset(tag, package.path)
+        return
+
+    if not _asset_matches(package, existing, gh, tag, scratch):
+        raise PublishError(
+            f"Release asset {package.name} differs from {package.path}; "
+            "refusing to replace it."
+        )
+    actions.append(Action("skip", package.name, "identical"))
 
 
 def _collect_packages(package_dirs: Sequence[str]) -> List[Package]:
@@ -173,8 +204,16 @@ def _collect_packages(package_dirs: Sequence[str]) -> List[Package]:
                     f"Duplicate package name {name} in {seen[name]} and {path}."
                 )
             seen[name] = path
+            plugin_id, version = _read_package_identity(path, name)
             packages.append(
-                Package(path, name, os.path.getsize(path), _hash_file(path))
+                Package(
+                    path,
+                    name,
+                    os.path.getsize(path),
+                    _hash_file(path),
+                    plugin_id,
+                    version,
+                )
             )
 
     if not packages:
@@ -182,6 +221,75 @@ def _collect_packages(package_dirs: Sequence[str]) -> List[Package]:
             "No .zip packages found in: " + ", ".join(os.fspath(d) for d in package_dirs)
         )
     return packages
+
+
+def _read_package_identity(path: str, name: str):
+    """Read ``id`` and ``version`` from ``metadata.json`` inside the package."""
+    try:
+        with zipfile.ZipFile(path) as archive:
+            try:
+                raw = archive.read("metadata.json")
+            except KeyError:
+                raise PublishError(
+                    f"Package {name} has no metadata.json at its root."
+                ) from None
+    except (zipfile.BadZipFile, OSError) as error:
+        raise PublishError(f"Cannot read package {name}: {error}") from error
+
+    try:
+        metadata = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise PublishError(f"Invalid metadata.json in {name}: {error}") from error
+
+    plugin_id = metadata.get("id") if isinstance(metadata, dict) else None
+    version = metadata.get("version") if isinstance(metadata, dict) else None
+    if not isinstance(plugin_id, str) or not plugin_id:
+        raise PublishError(f"metadata.json in {name} must define id and version.")
+    if not isinstance(version, str) or not version:
+        raise PublishError(f"metadata.json in {name} must define id and version.")
+    if not VERSION_PATTERN.match(version):
+        raise PublishError(
+            f"Metadata version {version!r} in {name} is not a valid version."
+        )
+
+    artifact_id = plugin_id.rsplit(".", 1)[-1]
+    expected = f"{artifact_id}-{version}.zip"
+    if name != expected:
+        raise PublishError(
+            f"Package {name} does not match metadata id {plugin_id!r} and "
+            f"version {version!r} (expected {expected})."
+        )
+    return plugin_id, version
+
+
+def _write_index(packages: Sequence[Package], scratch: str) -> Package:
+    """Render the deterministic index and store it in the scratch directory."""
+    entries = [
+        {
+            "id": package.plugin_id,
+            "version": package.version,
+            "file": package.name,
+            "sha256": package.sha256,
+            "size": package.size,
+        }
+        for package in sorted(
+            packages,
+            key=lambda item: (item.plugin_id, _version_key(item.version)),
+        )
+    ]
+    content = json.dumps(
+        {"schema_version": INDEX_SCHEMA_VERSION, "packages": entries},
+        indent=2,
+        sort_keys=True,
+    )
+    path = os.path.join(scratch, INDEX_NAME)
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(content + "\n")
+    return Package(path, INDEX_NAME, os.path.getsize(path), _hash_file(path))
+
+
+def _version_key(version: str):
+    return tuple(map(int, version.split(".")))
 
 
 def _asset_matches(

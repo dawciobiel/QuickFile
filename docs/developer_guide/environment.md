@@ -118,6 +118,12 @@ Skrypt jest idempotentny i odmawia nadpisania assetu o innym SHA-256. `--dry-run
 plan, a `--create-release` tworzy wydanie dla istniejącego tagu. Workflow
 `.github/workflows/plugin-release.yml` robi to samo na push tagu `v*` albo ręcznie.
 
+Skrypt publikuje także `plugin-index.json` zbudowany z tych samych paczek i wysyła go
+**na końcu**, więc klient nigdy nie zobaczy indeksu wskazującego na brakujący asset.
+`id` i `version` pochodzą z `metadata.json` wewnątrz paczki; nazwa pliku musi być równa
+`<artifactId>-<version>.zip`. Indeks jest deterministyczny i podlega tej samej kontroli
+SHA-256 co paczki. Format opisuje `docs/architecture/plugins/plugins.md`.
+
 ## Najczęstsze pułapki
 
 | Objaw | Przyczyna | Rozwiązanie |
