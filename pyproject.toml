@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "QuickFile"
-version = "0.21.14"
+version = "0.21.15"
 description = "Modular file manager with a plugin system"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -40,7 +40,9 @@ include = [
     "ui*",
     "utils*",
 ]
-exclude = ["tests*", "experiments*", "scripts*", "build*", "dist*"]
+# plugins-external/ holds sources for packages published separately. It must
+# never end up inside the application wheel or the PyInstaller bundle.
+exclude = ["tests*", "experiments*", "scripts*", "build*", "dist*", "plugins-external*"]
 
 [tool.setuptools.package-data]
 # Resources (icons, themes, translations, config defaults) are shipped with

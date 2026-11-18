@@ -14,10 +14,8 @@ third-party plugins, but every bundled task plugin is expected to be migrated.
 """
 
 import ast
-import glob
 import importlib
 import inspect
-import json
 import os
 import sys
 from contextlib import contextmanager
@@ -25,11 +23,9 @@ from contextlib import contextmanager
 import pytest
 
 from app.plugin_system.api import PluginTask, TaskPlugin
-from tests.plugin_helpers import get_latest_plugin_path
+from tests.plugin_helpers import get_latest_plugin_path, iter_plugin_metadata
 
 PLUGIN_GROUP = "org.quickfile"
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-PLUGINS_DIR = os.path.join(PROJECT_ROOT, "plugins", PLUGIN_GROUP)
 
 LEGACY_ATTRIBUTES = {"context", "emit_progress", "emit_event", "request_user_input"}
 
@@ -103,11 +99,7 @@ TASK_CASES = {
 
 def _discover_sandboxed_plugins():
     found = {}
-    for metadata_path in sorted(
-        glob.glob(os.path.join(PLUGINS_DIR, "*", "*", "metadata.json"))
-    ):
-        with open(metadata_path, encoding="utf-8") as handle:
-            metadata = json.load(handle)
+    for _metadata_path, metadata in iter_plugin_metadata(PLUGIN_GROUP):
         if metadata.get("sandboxed", False):
             found[metadata["id"]] = metadata
     return found

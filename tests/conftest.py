@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow
 
 from app.background_task_manager import BackgroundTaskManager
 from app.plugin_manager import PluginManager
+from app import plugin_installer
 from app.task_queue_manager import TaskQueueManager, Task
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_manager import FileManager
@@ -115,13 +116,54 @@ def qapp():
     app.quit()
 
 
+def _install_external_plugin_sources(external_dir, install_dir):
+    """Install repository sources through the same path a packaged plugin takes."""
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    source_root = os.path.join(project_root, "plugins-external")
+    if not os.path.isdir(source_root):
+        return
+
+    for group_name in sorted(os.listdir(source_root)):
+        group_dir = os.path.join(source_root, group_name)
+        if not os.path.isdir(group_dir):
+            continue
+        for artifact_name in sorted(os.listdir(group_dir)):
+            plugin_dir = os.path.join(group_dir, artifact_name)
+            if not os.path.isdir(plugin_dir):
+                continue
+            for version_name in sorted(os.listdir(plugin_dir)):
+                version_dir = os.path.join(plugin_dir, version_name)
+                if not os.path.isfile(os.path.join(version_dir, "metadata.json")):
+                    continue
+                plugin_installer.install(
+                    version_dir,
+                    dest=str(external_dir),
+                    install_dir=str(install_dir),
+                )
+
+
 @pytest.fixture(scope="function")
-def async_plugin_test_env(qapp, qtbot):
+def async_plugin_test_env(qapp, qtbot, tmp_path_factory):
     """
     Provides a setup for testing asynchronous plugin operations.
     Returns a tuple: (plugin_manager, background_task_manager, async_test_helper_factory)
+
+    Plugins are installed into an isolated directory instead of the user's
+    configuration: shipped sources are copied by ``PluginManager`` itself, and
+    ``plugins-external/`` sources go through ``app.plugin_installer`` so the
+    tests run the same layout the user gets.
     """
-    plugin_manager = PluginManager()
+    base_dir = tmp_path_factory.mktemp("async_plugin_env")
+    plugin_dir = base_dir / "plugins"
+    external_dir = base_dir / "plugins-external"
+    plugin_dir.mkdir()
+    external_dir.mkdir()
+
+    _install_external_plugin_sources(external_dir, plugin_dir)
+
+    plugin_manager = PluginManager(
+        plugin_dirs=[str(plugin_dir), str(external_dir)]
+    )
     background_task_manager = BackgroundTaskManager()
     
     # Factory function to create AsyncTestHelper for a specific plugin

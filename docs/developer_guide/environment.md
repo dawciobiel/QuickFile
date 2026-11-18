@@ -61,6 +61,10 @@ redystrybuowane) leżą w `~/.config/QuickFile/plugins-external/`. Ten katalog j
 skanowany: aplikacja nic do niego nie instaluje i nie odświeża. Kolizja `id` z wtyczką
 z wydania jest logowana jako błąd, a kopia zewnętrzna jest pomijana.
 
+Ich źródła leżą w repozytorium w `plugins-external/<grupa>/<artefakt>/<wersja>/`. Ten katalog
+nie jest częścią wydania: `PluginManager` czyta wyłącznie `plugins/`, a `plugins-external/`
+służy do budowania paczek.
+
 Instalacja wtyczki zewnętrznej to jawna akcja offline:
 
 ```bash
@@ -95,11 +99,13 @@ Paczki pojedynczych wtyczek (format przyjmowany przez instalator) buduje:
 
 ```bash
 python scripts/build_plugin_package.py --all            # dist/plugins/*.zip
-python scripts/build_plugin_package.py plugins/org.quickfile/rar_archiver
+python scripts/build_plugin_package.py plugins/org.quickfile/zip_archiver
+python scripts/build_plugin_package.py --all --source-root plugins-external --output dist/plugins-external
 ```
 
 Budowanie jest deterministyczne i kończy się instalacją własnego wyniku w katalogu
-tymczasowym — paczka, której nie da się zainstalować, nie powstaje.
+tymczasowym — paczka, której nie da się zainstalować, nie powstaje. Wtyczki zewnętrzne mają
+źródła w `plugins-external/`, więc buduje się je drugim wywołaniem z `--source-root`.
 
 ## Najczęstsze pułapki
 

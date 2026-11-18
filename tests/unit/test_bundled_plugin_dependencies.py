@@ -3,36 +3,30 @@
 # See LICENSE file for details.
 
 """
-Contract for dependencies declared by bundled plugins.
+Contract for dependencies declared by shipped and external plugin sources.
 
-Bundled plugins must get their third-party libraries from the Nix development
-environment (``flake.nix``), not from a ``libs`` directory. That keeps the
-shipped application reproducible. A plugin that does need its own ``libs``
-must be sandboxed so its ``sys.path`` cannot leak into the host.
+Plugins delivered with the repository must get their third-party libraries from
+the Nix development environment (``flake.nix``), not from a ``libs`` directory.
+That keeps the application and the packages reproducible. A plugin that does
+need its own ``libs`` must be sandboxed so its ``sys.path`` cannot leak into the
+host.
 
-Specification: ``docs/architecture/plugins/plugins.md`` ("Zależności wtyczek").
+Specification: ``docs/architecture/plugins/plugins.md`` ("Zależności wtyczek",
+"Źródła w repozytorium").
 """
 
-import glob
-import json
 import os
 
 from app.plugin_dependency_manager import PluginDependencyManager
-
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-PLUGINS_DIR = os.path.join(PROJECT_ROOT, "plugins", "org.quickfile")
+from tests.plugin_helpers import iter_plugin_metadata
 
 
 def _metadata_with_dependencies():
-    cases = []
-    for metadata_path in sorted(
-        glob.glob(os.path.join(PLUGINS_DIR, "*", "*", "metadata.json"))
-    ):
-        with open(metadata_path, encoding="utf-8") as handle:
-            metadata = json.load(handle)
-        if metadata.get("python_dependencies"):
-            cases.append((metadata_path, metadata))
-    return cases
+    return [
+        (metadata_path, metadata)
+        for metadata_path, metadata in iter_plugin_metadata()
+        if metadata.get("python_dependencies")
+    ]
 
 
 CASES = _metadata_with_dependencies()

@@ -30,7 +30,13 @@ Wtyczki są przechowywane w katalogu konfiguracyjnym użytkownika, co pozwala na
 
 **Lokalizacja produkcyjna:** `~/.config/QuickFile/plugins/`
 **Wtyczki spoza wydania:** `~/.config/QuickFile/plugins-external/` — patrz „Wtyczki zewnętrzne”
-**Lokalizacja w repozytorium (dev):** `plugins/`
+**Lokalizacja w repozytorium (dev):** `plugins/` (wydawane) i `plugins-external/` (tylko źródła paczek)
+
+Oba katalogi w repozytorium mają ten sam układ `grupa/artefakt/wersja/`. `plugins/` jest
+kopiowany do katalogu użytkownika przy starcie, a `plugins-external/` **nie**: nie widzi go
+`_ensure_bundled_plugins` ani runtime. To źródło, z którego buduje się paczki do wydania.
+Kontrakty testowe skanują oba katalogi — inaczej wtyczka zewnętrzna wypadłaby z walidacji
+metadanych, capabilities, ustawień i narzędzi.
 
 Przy starcie `PluginManager` porównuje zawartość wtyczek wbudowanych z tymi w katalogu użytkownika (hash plików, nie numer wersji) i w razie różnicy odświeża kopię użytkownika. Wbudowane wtyczki są częścią pakietu (dane, nie kod importowalny — patrz „Kontrakt ładowania”).
 
@@ -106,8 +112,8 @@ Zasady:
     `sandboxed: true`. Ładowanie takiej wtyczki do procesu hosta jest odrzucane, a
     `install_dependencies` odmawia instalacji. Zależności dostarczane przez host (np. `PyQt6`)
     nie wymagają sandboxu, bo nic nie ląduje w `libs/`.
-*   Wbudowane wtyczki deklarują tylko to, co Nix już daje (`rar_archiver` → `rarfile`,
-    `delete_operation` → `send2trash`). Pilnuje tego
+*   Wtyczki dostarczane z repozytorium (wydawane i źródła zewnętrzne) deklarują tylko to, co
+    Nix już daje (`rar_archiver` → `rarfile`, `delete_operation` → `send2trash`). Pilnuje tego
     `tests/unit/test_bundled_plugin_dependencies.py`: deklaracja musi być spełniona przez
     host i nie może wymagać `libs/`.
 *   Brakująca zależność jest logowana jako ostrzeżenie, a wtyczka i tak się ładuje.
@@ -512,7 +518,7 @@ czyli `QMainWindow` z flagami `WindowMinMaxButtonsHint` i
 ## Zarządzanie Wtyczkami (`PluginManager`)
 
 Klasa `PluginManager` (`app/plugin_manager.py`) odpowiada za:
-1.  **Skanowanie**: Przeszukuje katalog `plugins/` w poszukiwaniu poprawnych struktur wtyczek.
+1.  **Skanowanie**: Przeszukuje katalog instalacyjny i `plugins-external/` w poszukiwaniu poprawnych struktur wtyczek.
 2.  **Ładowanie**: Dynamicznie ładuje moduły Pythona i tworzy instancje klas wtyczek. Dla wtyczek oznaczonych jako `sandboxed`, tworzy instancję `SandboxedPluginWrapper`, która uruchamia wtyczkę w osobnym procesie.
 3. **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`, `directory_size`, `disk_utils`, `ui_extension`, `viewer`, `menu_action`) i udostępnia je reszcie
    aplikacji.
@@ -535,11 +541,37 @@ Zasady:
 *   Brak sieci i auto-aktualizacji: instalacja to jawna akcja użytkownika — patrz „Instalacja wtyczki zewnętrznej”. Sklep i instalator z UI to osobny etap.
 *   Wtyczka zewnętrzna podlega **wszystkim** regułom wydania: `sandboxed` przy `libs/`, `capabilities`, `settings.schema`, `external_tools` i walidacji metadanych.
 *   **Kolizja `id`:** jeśli wtyczka o danym `id` jest już załadowana z katalogu instalacyjnego, kopia z `plugins-external/` jest pomijana, a konflikt trafia do logu jako błąd. Katalog użytkownika nie przesłania wtyczki z wydania — inaczej zgłoszenia błędów dotyczyłyby kodu, którego nie wydaliśmy.
-*   Wtyczka usunięta z wydania **nie jest usuwana** z katalogu użytkownika; działa dalej, dopóki użytkownik sam jej nie usunie. To świadoma cena: stara kopia nie dostaje poprawek. Dlatego przeniesienie do external robimy dopiero wtedy, gdy istnieje sposób instalacji, który nie wymaga ręcznego kopiowania plików.
+*   Wtyczka usunięta z wydania **nie jest usuwana** z katalogu użytkownika; działa dalej, dopóki użytkownik sam jej nie usunie. To świadoma cena: stara kopia nie dostaje poprawek. Dlatego przeniesienie do external ma sens tylko wtedy, gdy istnieje droga instalacji, która nie wymaga ręcznego kopiowania plików — od 0.21.15 jest to paczka + instalator.
+
+### Źródła w repozytorium
+
+Wtyczki zewnętrzne mają swoje źródła w `plugins-external/<grupa>/<artefakt>/<wersja>/`.
+Ten katalog:
+
+*   **nie jest** częścią wydania ani paczki aplikacji — `_ensure_bundled_plugins` czyta wyłącznie
+    `plugins/` i pisze wyłącznie do katalogu instalacyjnego użytkownika,
+*   jest jedynym miejscem, z którego `scripts/build_plugin_package.py --all --source-root
+    plugins-external` buduje paczki zewnętrzne,
+*   podlega tym samym testom kontraktowym co `plugins/`: wersja katalogu zgodna z metadanymi,
+    płaskie importy, deklaracje zależności, `external_tools`, `settings.schema`, capabilities
+    i protokół sandboxu.
+
+Testy uruchamiające wtyczki zewnętrzne nie czytają ich z repozytorium bezpośrednio. Fixture
+`async_plugin_test_env` najpierw instaluje każde źródło przez `app.plugin_installer` do
+izolowanego katalogu `plugins-external`, a dopiero potem tworzy `PluginManager`. Dzięki temu
+testowany jest ten sam format, który dostaje użytkownik.
 
 ### `rar_archiver`
 
-Wtyczka pozostaje wbudowana (1.0.4) do czasu powstania ścieżki instalacji. Dopiero potem jej katalog trafia do `plugins-external/`, a `plugins/` przestaje ją zawierać. Do tego czasu użytkownik bez backendu dostaje komunikat preflight, a nie błąd w środku zadania.
+Wtyczka jest **dostarczana jako paczka**, nie w wydaniu aplikacji. Źródło leży w
+`plugins-external/org.quickfile/rar_archiver/1.0.4/`, a `plugins/` jej nie zawiera. Paczka
+`rar_archiver-1.0.4.zip` jest publikowana przy wydaniu i instalowana przez
+`python -m app.plugin_installer install`.
+
+Użytkownik, który ma starszą kopię w `~/.config/QuickFile/plugins/`, nie traci jej: kopia
+zostaje i nadal się ładuje. Nowa instalacja trafia do `plugins-external/`, a `PluginManager`
+skanuje oba katalogi. Wtyczka wymaga backendu `unrar`, `unar`, `bsdtar`, `7z` albo `7zz`;
+brak narzędzia jest sprawdzany przed zadaniem (preflight), a nie w środku wypakowywania.
 
 ## Instalacja wtyczki zewnętrznej
 
@@ -632,14 +664,37 @@ Zasady:
     tymczasowego i przechodzi te same sprawdzenia co instalacja użytkownika. Paczka, której nie
     da się zainstalować, nie opuszcza budowania.
 
-CI buduje paczki **wszystkich** wtyczek przy każdym pushu na `master` i publikuje je jako
-artifact `plugin-packages`. To jest dowód, że pipeline działa na realnym drzewie, a nie tylko
-na fixturze testowej.
+CI buduje paczki **obu źródeł** przy każdym pushu na `master`:
 
-Publikacja dla użytkowników to **GitHub Release** z paczkami przy tagu wydania. To osobny krok,
-który wchodzi razem z przeniesieniem pierwszej wtyczki do `plugins-external/`: artifact
-z Actions wymaga konta GitHub i wygasa, więc nie jest kanałem dystrybucji. Do tego czasu
-paczki służą maintainerom i testom.
+```
+python scripts/build_plugin_package.py --all --source-root plugins --output dist/plugins
+python scripts/build_plugin_package.py --all --source-root plugins-external --output dist/plugins-external
+```
+
+Artifact `plugin-packages` zawiera oba zestawy. To jest dowód, że pipeline działa na realnym
+drzewie, a nie tylko na fixturze testowej.
+
+### Publikacja paczek
+
+Publikacja dla użytkowników to **GitHub Release**: paczki z obu źródeł są assetami przy tagu
+wydania. Artifact z Actions wymaga konta GitHub i wygasa, więc nie jest kanałem dystrybucji.
+
+Publikację wykonuje skrypt, nie YAML:
+
+```
+python scripts/publish_plugin_packages.py --tag v0.21.15 --packages dist/plugins dist/plugins-external
+```
+
+Zasady:
+
+*   Skrypt jest **idempotentny**: paczka o tej samej nazwie i tym samym SHA-256 już obecna w
+    wydaniu jest pomijana, a istniejący asset o innym rozmiarze/hashu jest błędem, nie cichym
+    nadpisaniem.
+*   `--dry-run` wypisuje plan bez wywołań `gh`, więc logikę można przetestować bez sieci.
+*   Brak tagu albo wydania to błąd; skrypt nie tworzy tagów.
+*   Workflow `plugin-release.yml` uruchamia się przez `workflow_dispatch` (z podaniem tagu)
+    albo na push tagu `v*`, buduje paczki i wywołuje skrypt. Workflow jest cienki: cała logika
+    i testy żyją w skrypcie.
 
 ### Poza zakresem
 
