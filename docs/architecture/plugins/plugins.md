@@ -538,7 +538,7 @@ Zasady:
 
 *   Host skanuje oba katalogi; `plugins-external/` może nie istnieć i nie jest tworzony przy starcie.
 *   Katalog zewnętrzny **nigdy** nie jest celem instalacji wbudowanych wtyczek: `_ensure_bundled_plugins` pisze wyłącznie do pierwszego wpisu `plugin_dirs`. Aktualizacja aplikacji nie dotyka plików użytkownika.
-*   Brak sieci i auto-aktualizacji: instalacja to jawna akcja użytkownika — patrz „Instalacja wtyczki zewnętrznej”. Sklep i instalator z UI to osobny etap.
+*   Brak **automatycznych** aktualizacji: sprawdzenie i pobranie to jawne polecenie użytkownika — patrz „Aktualizacja wtyczki zewnętrznej”. Sklep i instalator z UI to osobny etap.
 *   Wtyczka zewnętrzna podlega **wszystkim** regułom wydania: `sandboxed` przy `libs/`, `capabilities`, `settings.schema`, `external_tools` i walidacji metadanych.
 *   **Kolizja `id`:** jeśli wtyczka o danym `id` jest już załadowana z katalogu instalacyjnego, kopia z `plugins-external/` jest pomijana, a konflikt trafia do logu jako błąd. Katalog użytkownika nie przesłania wtyczki z wydania — inaczej zgłoszenia błędów dotyczyłyby kodu, którego nie wydaliśmy.
 *   Wtyczka usunięta z wydania **nie jest usuwana** z katalogu użytkownika; działa dalej, dopóki użytkownik sam jej nie usunie. To świadoma cena: stara kopia nie dostaje poprawek. Dlatego przeniesienie do external ma sens tylko wtedy, gdy istnieje droga instalacji, która nie wymaga ręcznego kopiowania plików — od 0.21.15 jest to paczka + instalator.
@@ -572,6 +572,8 @@ Użytkownik, który ma starszą kopię w `~/.config/QuickFile/plugins/`, nie tra
 zostaje i nadal się ładuje. Nowa instalacja trafia do `plugins-external/`, a `PluginManager`
 skanuje oba katalogi. Wtyczka wymaga backendu `unrar`, `unar`, `bsdtar`, `7z` albo `7zz`;
 brak narzędzia jest sprawdzany przed zadaniem (preflight), a nie w środku wypakowywania.
+Kolejne wersje instaluje się przez `python -m app.plugin_updater update`, a nie przez ręczne
+szukanie ZIP-a — patrz „Aktualizacja wtyczki zewnętrznej”.
 
 ## Instalacja wtyczki zewnętrznej
 
@@ -702,11 +704,160 @@ Zasady:
 *   Workflow `plugin-release.yml` uruchamia się przez `workflow_dispatch` (z podaniem tagu)
     albo na push tagu `v*`, buduje paczki i wywołuje skrypt. Workflow jest cienki: cała logika
     i testy żyją w skrypcie.
+*   Skrypt generuje także `plugin-index.json` (format i zasady: „Kanał: `plugin-index.json`”)
+    z **tych samych** plików, które wysyła, i uploaduje go **na końcu**. Indeks jest
+    deterministyczny i podlega tym samym regułom idempotencji co paczki.
 
 ### Poza zakresem
 
-UI instalatora, aktualizacje, odinstalowywanie, podpisy paczek, pobieranie z sieci i
-przypinanie wersji.
+UI instalatora, odinstalowywanie, podpisy paczek i przypinanie wersji.
+
+## Aktualizacja wtyczki zewnętrznej
+
+Aktualizacja jest **jawną akcją użytkownika**. Aplikacja nie sprawdza nic w tle i nie
+pobiera, dopóki użytkownik nie wyda polecenia. Zakres: wtyczki z `plugins-external/`;
+wtyczki wbudowane odświeża `_ensure_bundled_plugins` przy starcie.
+
+### Kanał: `plugin-index.json`
+
+Każde wydanie publikuje asset `plugin-index.json` obok paczek. To jedyne źródło wersji dla
+updatera — klient nie zgaduje wersji z nazw tagów ani nie pobiera wszystkich paczek, żeby je
+porównać.
+
+Domyślny, stały adres:
+
+```
+https://github.com/dawciobiel/QuickFile/releases/latest/download/plugin-index.json
+```
+
+`--feed URL` wskazuje inne wydanie, mirror albo plik lokalny (testy, instalacje offline).
+Dozwolone schematy: `https` i `file`.
+
+Format:
+
+```json
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "id": "org.quickfile.rar_archiver",
+      "version": "1.0.4",
+      "file": "rar_archiver-1.0.4.zip",
+      "sha256": "e0d13344509ccc8eb3e44323607c6e45934bfd5fc9740d47c0867db622fdda48",
+      "size": 1234
+    }
+  ]
+}
+```
+
+Zasady:
+
+*   `packages` jest posortowane po `id`, a przy wielu wersjach po wersji numerycznej.
+    Kolejność i formatowanie JSON są deterministyczne (bez timestampu), więc ten sam zestaw
+    paczek daje identyczny plik.
+*   `file` to sama nazwa pliku, bez ścieżki. Klient rozwiązuje ją względem katalogu feedu.
+*   `sha256` to lowercase hex, `size` to liczba bajtów paczki.
+*   `id` i `version` pochodzą z `metadata.json` **wewnątrz** paczki, nie z nazwy pliku.
+    Wydawca dodatkowo sprawdza, że nazwa pliku to `<artifactId>-<version>.zip`.
+*   `schema_version` większy niż obsługiwany jest błędem; nieznane pola są ignorowane.
+*   Indeks zawiera paczki obu źródeł. Updater używa tylko wpisów, których `id` nie jest
+    dostarczane z aplikacją.
+
+Publikacja: `scripts/publish_plugin_packages.py` generuje indeks z tych samych plików, które
+wysyła, i uploaduje go **na końcu** — klient nigdy nie może zobaczyć indeksu wskazującego na
+brakujący asset. Indeks jest deterministyczny i podlega tym samym regułom idempotencji co
+paczki.
+
+### Sprawdzanie aktualizacji
+
+```
+python -m app.plugin_updater check [--feed URL] [--json]
+```
+
+1.  Wczytuje indeks i waliduje go w całości. Uszkodzony wpis unieważnia cały feed — nie
+    chcemy częściowo działającej listy wersji.
+2.  Skanuje `plugins-external/` i wybiera najwyższą zainstalowaną wersję każdego `id` — tę
+    samą, którą załadowałby `PluginManager`.
+3.  Porównuje ją z najwyższą wersją w indeksie. Wersje porównuje się numerycznie
+    (`1.0.10` > `1.0.9`), nie leksykograficznie.
+4.  `id` obecne w katalogu instalacyjnym jest raportowane jako zarządzane przez aplikację i
+    pomijane.
+5.  Brak wtyczki w feedzie to status `not-in-feed`, nie błąd.
+
+Statusy: `update-available`, `up-to-date`, `not-in-feed`, `managed-by-application`.
+`--json` wypisuje `{feed, packages: [{id, installed, available, status}]}`. Kod wyjścia: 0,
+gdy sprawdzenie się udało (także bez dostępnych aktualizacji); 1 przy błędzie sieci, feedu
+albo walidacji.
+
+### Aktualizacja
+
+```
+python -m app.plugin_updater update <plugin-id> [--feed URL] [--version WERSJA]
+```
+
+Bez `--version` wybierana jest najwyższa wersja z feedu; `--version` pozwala wybrać konkretną,
+ale tylko **nowszą** od aktywnej. Downgrade to `rollback`, nie `update`.
+
+Kroki:
+
+1.  Wczytaj i zwaliduj indeks; znajdź wpis. `id` dostarczane z aplikacją → błąd.
+2.  Sprawdź, że wybrana wersja jest nowsza od aktywnej: równa → `up-to-date`, starsza →
+    błąd.
+3.  Pobierz paczkę do katalogu tymczasowego, nigdy bezpośrednio do `plugins-external/`.
+    Limit: `size` z indeksu i twardy limit 256 MiB; przekroczenie przerywa pobieranie.
+4.  Sprawdź rozmiar i SHA-256 **przed** instalacją. Niezgodność → błąd, starej wersji nie
+    ruszamy.
+5.  Zainstaluj przez `app.plugin_installer.install` — ta sama walidacja metadanych, schema,
+    `external_tools`, kolizji i atomowości co przy ręcznej instalacji. Instalator odmówi,
+    jeśli `id` jest dostarczane z aplikacją albo ta wersja już istnieje.
+6.  Nie usuwaj starej wersji. `PluginManager` ładuje najwyższą, więc nowa staje się aktywna
+    po restarcie aplikacji; stara zostaje jako punkt wycofania.
+7.  Nie przenoś `libs/` ani ustawień. Ustawienia są kluczowane po `id`, więc nowa wersja je
+    widzi, a brakujące klucze uzupełnia jej `settings.schema`. `libs/` instaluje się osobno z
+    `wheels/`, tak jak przy pierwszej instalacji.
+
+Aktualizacja **nie uruchamia** wtyczki. Walidacja dotyczy struktury, metadanych i
+integralności paczki, nie zachowania kodu. Jeśli nowa wersja nie wystartuje, użytkownik robi
+`rollback`.
+
+Kod wyjścia: 0 po instalacji albo gdy wersja jest aktualna; 1 przy każdym błędzie. Sukces
+wypisuje `id`, wersję i ścieżkę docelową. Ostrzeżenia instalatora (np. brakujące zależności
+Pythona) są wypisywane, ale nie zmieniają kodu wyjścia — tak samo jak przy `install`.
+
+### Wycofanie
+
+```
+python -m app.plugin_updater rollback <plugin-id>
+```
+
+1.  Znajdź najwyższą **aktywną** wersję w `plugins-external/`. `id` z katalogu instalacyjnego
+    albo brak wersji → błąd.
+2.  Jeśli istnieje tylko jedna aktywna wersja → błąd: nie ma do czego wracać.
+3.  Zmień nazwę katalogu wersji na `<wersja>.disabled`. `PluginManager` ignoruje taki katalog
+    (nie pasuje do wzorca wersji), więc po restarcie aktywna staje się poprzednia wersja.
+4.  Nie nadpisuj istniejącego `<wersja>.disabled`; to błąd.
+5.  Nie ruszaj `libs/` ani ustawień. Wyłączona wersja zostaje na dysku; ponowne włączenie to
+    ręczna zmiana nazwy (albo przyszły `activate`).
+
+`rollback` jest jedynym mechanizmem downgrade'u. Nie pobiera nic z sieci.
+
+### Zaufanie i bezpieczeństwo
+
+*   Indeks i paczki są pobierane wyłącznie na jawne polecenie; nie ma automatycznego
+    sprawdzania w tle.
+*   SHA-256 z indeksu chroni przed uszkodzonym plikiem, błędem transmisji i pomyleniem
+    wersji. **Nie** chroni przed przejęciem kanału wydania: kto kontroluje release, kontroluje
+    też indeks. Podpisy paczek i indeksu to osobny etap.
+*   Domyślnie tylko `https`; `file` jest dozwolone dla testów i mirrorów offline. `update`
+    nie przyjmuje `http`.
+*   Pobranie nigdy nie trafia bezpośrednio do `plugins-external/`; instalator dostaje
+    zweryfikowany plik w katalogu tymczasowym.
+
+### Poza zakresem aktualizacji
+
+UI i powiadomienia, aktualizacje w tle, kanały beta, podpisy, delta updates, instalacja
+zależności Pythona, downgrade przez `update`, automatyczne wycofanie po awarii wtyczki,
+prywatne repozytoria i przypinanie wersji.
 
 ## Integracja z Kolejką Zadań
 
