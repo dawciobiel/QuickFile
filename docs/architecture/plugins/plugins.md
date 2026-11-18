@@ -607,6 +607,40 @@ Domyślny `--dest` to `~/.config/QuickFile/plugins-external`, a `--install-dir` 
 ścieżkę docelową; błąd kończy się kodem wyjścia 1 i jednym czytelnym komunikatem. Komunikaty
 CLI są po angielsku: nie ma tam Qt ani `TranslationManager`, a tłumaczenia dotyczą UI.
 
+### Budowanie paczek
+
+Ręczne zipowanie jest źródłem błędów: zły poziom katalogów, `__pycache__` w środku, paczka,
+której instalator nie przyjmie. Dlatego paczki buduje skrypt, nie człowiek:
+
+```
+python scripts/build_plugin_package.py <katalog pluginu|katalog wersji> [--output dist/plugins]
+python scripts/build_plugin_package.py --all [--source-root plugins] [--output dist/plugins]
+```
+
+Zasady:
+
+*   Wejściem jest **katalog wersji** albo katalog pluginu (wtedy wybierana jest najwyższa
+    wersja, tak samo jak robi to `PluginManager`).
+*   Zawartość paczki to pliki katalogu wersji na najwyższym poziomie — dokładnie w formacie,
+    który przyjmuje instalator. `__pycache__/`, `*.pyc` i `libs/` są pomijane: `libs/` to
+    zainstalowane zależności lokalnej kopii, nie część wydania.
+*   Budowanie jest **deterministyczne**: posortowane wpisy, stały timestamp ZIP (1980-01-01)
+    i deflate. Dwa budowania z tego samego drzewa dają identyczny plik, więc hash paczki jest
+    porównywalny między wydaniami.
+*   Nazwa: `<artifactId>-<version>.zip` (np. `rar_archiver-1.0.4.zip`), domyślnie w `dist/plugins/`.
+*   Skrypt **weryfikuje wynik przez instalator**: paczka jest rozpakowywana do katalogu
+    tymczasowego i przechodzi te same sprawdzenia co instalacja użytkownika. Paczka, której nie
+    da się zainstalować, nie opuszcza budowania.
+
+CI buduje paczki **wszystkich** wtyczek przy każdym pushu na `master` i publikuje je jako
+artifact `plugin-packages`. To jest dowód, że pipeline działa na realnym drzewie, a nie tylko
+na fixturze testowej.
+
+Publikacja dla użytkowników to **GitHub Release** z paczkami przy tagu wydania. To osobny krok,
+który wchodzi razem z przeniesieniem pierwszej wtyczki do `plugins-external/`: artifact
+z Actions wymaga konta GitHub i wygasa, więc nie jest kanałem dystrybucji. Do tego czasu
+paczki służą maintainerom i testom.
+
 ### Poza zakresem
 
 UI instalatora, aktualizacje, odinstalowywanie, podpisy paczek, pobieranie z sieci i
