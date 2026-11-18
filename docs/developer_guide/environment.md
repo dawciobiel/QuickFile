@@ -91,6 +91,16 @@ wtyczki w `~/.config/QuickFile/plugins`.
 
 Dystrybucja desktopowa odbywa się przez PyInstaller: `scripts/package_builder/build_app.py`.
 
+Paczki pojedynczych wtyczek (format przyjmowany przez instalator) buduje:
+
+```bash
+python scripts/build_plugin_package.py --all            # dist/plugins/*.zip
+python scripts/build_plugin_package.py plugins/org.quickfile/rar_archiver
+```
+
+Budowanie jest deterministyczne i kończy się instalacją własnego wyniku w katalogu
+tymczasowym — paczka, której nie da się zainstalować, nie powstaje.
+
 ## Najczęstsze pułapki
 
 | Objaw | Przyczyna | Rozwiązanie |
