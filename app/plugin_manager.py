@@ -26,7 +26,12 @@ class PluginManager:
     def __init__(self, plugin_dirs=None):
         if plugin_dirs is None:
             user_config_dir = os.path.expanduser("~/.config/QuickFile")
-            plugin_dirs = [os.path.join(user_config_dir, "plugins")]
+            plugin_dirs = [
+                os.path.join(user_config_dir, "plugins"),
+                # User-managed plugins that cannot ship with the app. Scanned,
+                # never installed into: only the first directory is a target.
+                os.path.join(user_config_dir, "plugins-external"),
+            ]
 
         self.plugin_dirs = plugin_dirs
         self.plugins = {
@@ -231,6 +236,18 @@ class PluginManager:
                     "Rejected plugin %s: invalid external_tools declaration.",
                     metadata.get("id"),
                     exc_info=True,
+                )
+                return
+
+            # Two copies of the same id would make every lookup arbitrary. The
+            # install directory is scanned first, so a user copy can never
+            # shadow a plugin that shipped with this release.
+            plugin_id = metadata.get("id")
+            if self.get_plugin_by_id(plugin_id) is not None:
+                logging.error(
+                    "Plugin id conflict: %s is already loaded; skipping %s.",
+                    plugin_id,
+                    metadata_path,
                 )
                 return
 

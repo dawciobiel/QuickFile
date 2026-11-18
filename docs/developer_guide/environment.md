@@ -56,6 +56,11 @@ HOME=/tmp/quickfile-test QT_QPA_PLATFORM=offscreen python -m pytest tests/e2e -q
 
 `QT_QPA_PLATFORM=offscreen` jest wymagane na maszynie bez wyświetlacza.
 
+Wtyczki spoza wydania (te, które wymagają programu w systemie albo nie mogą być
+redystrybuowane) leżą w `~/.config/QuickFile/plugins-external/`. Ten katalog jest tylko
+skanowany: aplikacja nic do niego nie instaluje i nie odświeża. Kolizja `id` z wtyczką
+z wydania jest logowana jako błąd, a kopia zewnętrzna jest pomijana.
+
 ## Dodawanie zależności
 
 1. Dopisz pakiet do listy `python312.withPackages` w `flake.nix`.

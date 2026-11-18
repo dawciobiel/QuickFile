@@ -29,9 +29,10 @@ W związku z tym:
 Wtyczki są przechowywane w katalogu konfiguracyjnym użytkownika, co pozwala na łatwą instalację i aktualizację bez uprawnień administratora.
 
 **Lokalizacja produkcyjna:** `~/.config/QuickFile/plugins/`
+**Wtyczki spoza wydania:** `~/.config/QuickFile/plugins-external/` — patrz „Wtyczki zewnętrzne”
 **Lokalizacja w repozytorium (dev):** `plugins/`
 
-Przy starcie `PluginManager` porównuje wersje wtyczek wbudowanych z tymi w katalogu użytkownika i w razie potrzeby kopiuje nowszą wersję. Wbudowane wtyczki są częścią pakietu (dane, nie kod importowalny — patrz „Kontrakt ładowania”).
+Przy starcie `PluginManager` porównuje zawartość wtyczek wbudowanych z tymi w katalogu użytkownika (hash plików, nie numer wersji) i w razie różnicy odświeża kopię użytkownika. Wbudowane wtyczki są częścią pakietu (dane, nie kod importowalny — patrz „Kontrakt ładowania”).
 
 Struktura katalogów jest inspirowana konwencją Maven (`groupId/artifactId/version`), co zapewnia unikalność i wsparcie dla wielu wersji tej samej wtyczki.
 
@@ -515,7 +516,30 @@ Klasa `PluginManager` (`app/plugin_manager.py`) odpowiada za:
 2.  **Ładowanie**: Dynamicznie ładuje moduły Pythona i tworzy instancje klas wtyczek. Dla wtyczek oznaczonych jako `sandboxed`, tworzy instancję `SandboxedPluginWrapper`, która uruchamia wtyczkę w osobnym procesie.
 3. **Rejestrację**: Grupuje wtyczki według typu (`archive`, `checksum`, `directory_size`, `disk_utils`, `ui_extension`, `viewer`, `menu_action`) i udostępnia je reszcie
    aplikacji.
-4.  **Instalację i Aktualizację**: Przy starcie porównuje wersje wtyczek wbudowanych w aplikację z tymi zainstalowanymi u użytkownika. Jeśli wbudowana wersja jest nowsza, automatycznie aktualizuje wtyczkę w katalogu użytkownika.
+4.  **Instalację i Aktualizację**: Przy starcie porównuje zawartość wtyczek wbudowanych w aplikację z tymi zainstalowanymi u użytkownika (hash plików, nie numer wersji). Różnica oznacza odświeżenie kopii użytkownika z zachowaniem zainstalowanych `libs/`.
+
+## Wtyczki zewnętrzne (`plugins-external`)
+
+Nie każda wtyczka powinna być częścią wydania. Do katalogu zewnętrznego przenosimy wtyczkę, gdy:
+
+*   wymaga programu w systemie hosta, którego aplikacja nie może dostarczyć (`rar_archiver` → `unrar`/`unar`/`bsdtar`/`7z`),
+*   zależy od licencji, której nie wolno redystrybuować,
+*   jest użyteczna tylko dla wąskiej grupy użytkowników.
+
+**Lokalizacja:** `~/.config/QuickFile/plugins-external/`, z tym samym układem `groupId/artifactId/version`, co katalog instalacyjny.
+
+Zasady:
+
+*   Host skanuje oba katalogi; `plugins-external/` może nie istnieć i nie jest tworzony przy starcie.
+*   Katalog zewnętrzny **nigdy** nie jest celem instalacji wbudowanych wtyczek: `_ensure_bundled_plugins` pisze wyłącznie do pierwszego wpisu `plugin_dirs`. Aktualizacja aplikacji nie dotyka plików użytkownika.
+*   Brak sieci i auto-aktualizacji: instalacja to rozpakowanie katalogu wtyczki i restart. Sklep i instalator to osobny etap.
+*   Wtyczka zewnętrzna podlega **wszystkim** regułom wydania: `sandboxed` przy `libs/`, `capabilities`, `settings.schema`, `external_tools` i walidacji metadanych.
+*   **Kolizja `id`:** jeśli wtyczka o danym `id` jest już załadowana z katalogu instalacyjnego, kopia z `plugins-external/` jest pomijana, a konflikt trafia do logu jako błąd. Katalog użytkownika nie przesłania wtyczki z wydania — inaczej zgłoszenia błędów dotyczyłyby kodu, którego nie wydaliśmy.
+*   Wtyczka usunięta z wydania **nie jest usuwana** z katalogu użytkownika; działa dalej, dopóki użytkownik sam jej nie usunie. To świadoma cena: stara kopia nie dostaje poprawek. Dlatego przeniesienie do external robimy dopiero wtedy, gdy istnieje sposób instalacji, który nie wymaga ręcznego kopiowania plików.
+
+### `rar_archiver`
+
+Wtyczka pozostaje wbudowana (1.0.4) do czasu powstania ścieżki instalacji. Dopiero potem jej katalog trafia do `plugins-external/`, a `plugins/` przestaje ją zawierać. Do tego czasu użytkownik bez backendu dostaje komunikat preflight, a nie błąd w środku zadania.
 
 ## Integracja z Kolejką Zadań
 
