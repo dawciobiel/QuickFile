@@ -682,16 +682,23 @@ wydania. Artifact z Actions wymaga konta GitHub i wygasa, więc nie jest kanałe
 Publikację wykonuje skrypt, nie YAML:
 
 ```
-python scripts/publish_plugin_packages.py --tag v0.21.15 --packages dist/plugins dist/plugins-external
+python scripts/publish_plugin_packages.py --tag v0.21.15 \
+    --packages dist/plugins dist/plugins-external [--repo owner/repo] [--dry-run] [--create-release]
 ```
 
 Zasady:
 
 *   Skrypt jest **idempotentny**: paczka o tej samej nazwie i tym samym SHA-256 już obecna w
     wydaniu jest pomijana, a istniejący asset o innym rozmiarze/hashu jest błędem, nie cichym
-    nadpisaniem.
-*   `--dry-run` wypisuje plan bez wywołań `gh`, więc logikę można przetestować bez sieci.
-*   Brak tagu albo wydania to błąd; skrypt nie tworzy tagów.
+    nadpisaniem. Gdy API nie zwraca `digest`, skrypt pobiera asset do katalogu tymczasowego i
+    porównuje hash lokalnie.
+*   `--dry-run` wypisuje plan i nie zmienia wydania. Odczyt listy assetów (i ewentualne
+    pobranie do porównania) jest dozwolony, bo niczego nie publikuje.
+*   Brak tagu to błąd; skrypt nigdy nie tworzy tagów. Brak wydania jest błędem, chyba że podano
+    `--create-release` — wtedy skrypt tworzy wydanie dla **istniejącego** tagu (`--verify-tag`)
+    i dopiero potem publikuje paczki.
+*   `--repo` jest opcjonalne; bez niego `gh` wnioskuje repozytorium z checkoutu. Workflow podaje
+    je jawnie.
 *   Workflow `plugin-release.yml` uruchamia się przez `workflow_dispatch` (z podaniem tagu)
     albo na push tagu `v*`, buduje paczki i wywołuje skrypt. Workflow jest cienki: cała logika
     i testy żyją w skrypcie.

@@ -107,6 +107,17 @@ Budowanie jest deterministyczne i kończy się instalacją własnego wyniku w ka
 tymczasowym — paczka, której nie da się zainstalować, nie powstaje. Wtyczki zewnętrzne mają
 źródła w `plugins-external/`, więc buduje się je drugim wywołaniem z `--source-root`.
 
+Publikacja paczek w GitHub Release:
+
+```bash
+python scripts/publish_plugin_packages.py --tag v0.21.15 \
+    --packages dist/plugins dist/plugins-external
+```
+
+Skrypt jest idempotentny i odmawia nadpisania assetu o innym SHA-256. `--dry-run` pokazuje
+plan, a `--create-release` tworzy wydanie dla istniejącego tagu. Workflow
+`.github/workflows/plugin-release.yml` robi to samo na push tagu `v*` albo ręcznie.
+
 ## Najczęstsze pułapki
 
 | Objaw | Przyczyna | Rozwiązanie |

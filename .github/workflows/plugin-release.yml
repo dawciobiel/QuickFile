@@ -1,0 +1,50 @@
+name: Publish plugin packages
+
+# Triggered by a release tag or manually with an existing tag. The release is
+# created here when it does not exist yet (--create-release); the tag itself is
+# never created by this workflow or by the script.
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag, for example v0.21.16"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Each build verifies its own output with the installer, so a broken
+      # package fails here instead of becoming a release asset.
+      - name: Build plugin packages
+        run: |
+          python scripts/build_plugin_package.py --all --source-root plugins --output dist/plugins
+          python scripts/build_plugin_package.py --all --source-root plugins-external --output dist/plugins-external
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          python scripts/publish_plugin_packages.py \
+            --tag "$TAG" \
+            --packages dist/plugins dist/plugins-external \
+            --repo "$GITHUB_REPOSITORY" \
+            --create-release
