@@ -61,6 +61,12 @@ redystrybuowane) leżą w `~/.config/QuickFile/plugins-external/`. Ten katalog j
 skanowany: aplikacja nic do niego nie instaluje i nie odświeża. Kolizja `id` z wtyczką
 z wydania jest logowana jako błąd, a kopia zewnętrzna jest pomijana.
 
+Instalacja wtyczki zewnętrznej to jawna akcja offline:
+
+```bash
+python -m app.plugin_installer install <paczka.zip|katalog>
+```
+
 ## Dodawanie zależności
 
 1. Dopisz pakiet do listy `python312.withPackages` w `flake.nix`.
