@@ -2,7 +2,11 @@
 
 ## Known Issues
 
-- **Translation**: Some parts of the UI are not yet translated.
+- **Translation**: Every string the Python code looks up now has a Polish translation, and
+  `tests/unit/test_translations.py` keeps it that way. What remains is text loaded verbatim
+  from `ui/*.ui` by `uic.loadUi`: dialogs that never call `translation_manager` for a widget
+  (e.g. parts of the search, split, sync and select dialogs) still show the English text
+  from the `.ui` file.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 - **Error message**: During launching application under Garuda occur error message: 
   `/run/media/dawciobiel/4cb3e6fb-e74b-4ce8-b6db-d2f6943a2697/home/dawciobiel/PyCharmProjects/QuickFile`

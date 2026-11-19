@@ -37,11 +37,24 @@ Rules:
 python scripts/check_translations.py
 ```
 
-The script scans Python sources for literal `translation_manager.translate(...)` calls and
-prints keys missing from each language file plus keys that no longer appear in code. The
-report is informational and covers the whole project.
+The script scans Python sources with a single-line regular expression and prints keys
+missing from each language file plus keys that no longer appear in code. It only sees
+`translation_manager.translate("...", "...")` written on one line, so multi-line calls and
+runtime-built keys show up as false positives; use it as a rough report, not as a gate.
 
-The plugin management page is guarded by
-`tests/unit/test_plugin_management_translations.py`, which fails when a string from that
-page has no key in `en_US.json` or `pl_PL.json`, when the English value differs from the
-source text, or when the two language files diverge.
+Coverage is enforced by `tests/unit/test_translations.py`. It parses every literal
+`translate(...)` call in `app/`, `ui/`, `utils/`, `browser/`, `panels/`, `plugins/` and
+`plugins-external/`, adds the runtime-built strings listed above, and fails when:
+
+*   a key is missing or empty in `en_US.json` or `pl_PL.json`,
+*   the `en_US.json` value differs from the source text,
+*   a `{placeholder}` from the source text is absent from the translation,
+*   the two language files have different key sets.
+
+Strings assembled from variables (`f"..."` with a runtime value) or passed in from data
+cannot be checked statically. Build them from a fixed, listed set of keys instead of
+interpolating into the lookup key.
+
+Texts stored in `.ui` files are loaded verbatim by `uic.loadUi`; only strings that code
+sets through `translation_manager` are translated. When adding a dialog, translate its
+widgets in code rather than relying on the `.ui` text.
