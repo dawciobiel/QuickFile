@@ -859,6 +859,44 @@ UI i powiadomienia, aktualizacje w tle, kanały beta, podpisy, delta updates, in
 zależności Pythona, downgrade przez `update`, automatyczne wycofanie po awarii wtyczki,
 prywatne repozytoria i przypinanie wersji.
 
+## Zarządzanie wtyczkami zewnętrznymi
+
+Zakładka **Plugins** w Ustawieniach pokazuje wyłącznie wtyczki z
+`plugins-external/`; wtyczki wbudowane są aktualizowane razem z aplikacją i nie są tam
+wyświetlane. Wiersz zawiera `id`, zainstalowaną wersję, najnowszą wersję z feedu i status
+(`update-available`, `up-to-date`, `not-in-feed`, `managed-by-application`, `disabled`).
+
+Akcje są jawne. Otwarcie zakładki nie łączy się z siecią; „Check for updates” uruchamia
+`check` poza wątkiem UI, a jego wynik trafia do tabeli. „Update” używa tej samej ścieżki co
+`python -m app.plugin_updater update` (pobranie do katalogu tymczasowego, weryfikacja
+rozmiaru i SHA-256, instalacja przez instalator). „Rollback” wyłącza najwyższą aktywną
+wersję tak jak polecenie `rollback`. Po każdej akcji zmieniającej stan na dysku UI
+informuje, że zmiana zadziała po restarcie aplikacji.
+
+### Włączanie i wyłączanie
+
+Cała wtyczka zewnętrzna jest wyłączana przez zmianę nazwy katalogu artefaktu na
+`<artefakt>.disabled`:
+
+```
+plugins-external/org.example/viewer/1.0.1/          # aktywna
+plugins-external/org.example/viewer.disabled/1.0.1/ # wyłączona
+```
+
+*   `PluginManager` ignoruje katalogi artefaktów kończące się `.disabled`, więc nie ładuje
+    żadnej wersji wyłączonej wtyczki.
+*   `check` i `update` pomijają wyłączone wtyczki. Aby je zaktualizować, trzeba je najpierw
+    włączyć; `rollback` również wymaga aktywnej wtyczki.
+*   Włączenie to zmiana nazwy z powrotem. Istniejący katalog docelowy jest kolizją i
+    powoduje błąd, podobnie jak istniejący `<artefakt>.disabled` przy wyłączaniu.
+*   `id` dostarczane z aplikacją nie może być wyłączane ani włączane tą drogą — jest
+    zarządzane przez aplikację.
+*   Wyłączanie nie usuwa plików, `libs/` ani ustawień. Ustawienia są kluczowane po `id`,
+    więc po ponownym włączeniu wtyczka je odzyskuje.
+*   Wyłączenie całej wtyczki (`<artefakt>.disabled`) i wycofanie wersji
+    (`<wersja>.disabled`) to różne operacje: pierwsze chowa wtyczkę, drugie przełącza ją
+    na poprzednią wersję.
+
 ## Integracja z Kolejką Zadań
 
 `TaskQueueManager` wykorzystuje `PluginManager` do delegowania zadań.

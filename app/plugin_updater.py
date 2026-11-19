@@ -35,6 +35,12 @@ from app.plugin_installer import (
     default_install_dir,
     install as install_plugin,
 )
+from app.plugin_state import (
+    ExternalPlugin,
+    PluginStateError,
+    is_shipped,
+    scan_external_plugins,
+)
 
 DEFAULT_FEED = (
     "https://github.com/dawciobiel/QuickFile/releases/latest/download/"
@@ -70,14 +76,6 @@ class FeedEntry:
 class Feed:
     url: str
     packages: Tuple[FeedEntry, ...]
-
-
-@dataclass(frozen=True)
-class InstalledVersion:
-    plugin_id: str
-    version: str
-    path: str
-    versions: Tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -204,7 +202,7 @@ def check_updates(
     for plugin_id in sorted(installed):
         current = installed[plugin_id]
         available = newest.get(plugin_id)
-        if _is_shipped(plugin_id, shipped_root):
+        if is_shipped(plugin_id, shipped_root):
             status = STATUS_MANAGED
         elif available is None:
             status = STATUS_NOT_IN_FEED
@@ -236,7 +234,7 @@ def update_plugin(
     destination = os.path.abspath(dest or default_destination())
     shipped_root = os.path.abspath(install_dir or default_install_dir())
 
-    if _is_shipped(plugin_id, shipped_root):
+    if is_shipped(plugin_id, shipped_root):
         raise UpdateError(
             f"Plugin {plugin_id} is shipped with QuickFile; it is updated "
             "with the application, not from the feed."
@@ -298,7 +296,7 @@ def rollback(
     destination = os.path.abspath(dest or default_destination())
     shipped_root = os.path.abspath(install_dir or default_install_dir())
 
-    if _is_shipped(plugin_id, shipped_root):
+    if is_shipped(plugin_id, shipped_root):
         raise UpdateError(
             f"Plugin {plugin_id} is shipped with QuickFile; there is nothing "
             "to roll back."
@@ -390,63 +388,12 @@ def _newest_versions(feed: Feed) -> Dict[str, FeedEntry]:
     return newest
 
 
-def _scan_installed(destination: str) -> Dict[str, InstalledVersion]:
-    found: Dict[str, InstalledVersion] = {}
-    if not os.path.isdir(destination):
-        return found
-
-    for group_id in sorted(os.listdir(destination)):
-        group_path = os.path.join(destination, group_id)
-        if group_id.startswith("__") or not os.path.isdir(group_path):
-            continue
-        for artifact_id in sorted(os.listdir(group_path)):
-            plugin_path = os.path.join(group_path, artifact_id)
-            if not os.path.isdir(plugin_path):
-                continue
-            versions = _version_directories(plugin_path)
-            if not versions:
-                continue
-            plugin_id = _read_plugin_id(os.path.join(plugin_path, versions[0]))
-            if plugin_id is None:
-                continue
-            if plugin_id in found:
-                raise UpdateError(
-                    f"Plugin {plugin_id} is installed in more than one "
-                    "directory; resolve the duplicate first."
-                )
-            found[plugin_id] = InstalledVersion(
-                plugin_id, versions[0], plugin_path, tuple(versions)
-            )
-    return found
-
-
-def _version_directories(plugin_path: str) -> List[str]:
-    versions = [
-        name
-        for name in os.listdir(plugin_path)
-        if VERSION_PATTERN.match(name)
-        and os.path.isdir(os.path.join(plugin_path, name))
-    ]
-    versions.sort(key=_version_key, reverse=True)
-    return versions
-
-
-def _read_plugin_id(version_path: str) -> Optional[str]:
-    metadata_path = os.path.join(version_path, "metadata.json")
+def _scan_installed(destination: str) -> Dict[str, ExternalPlugin]:
     try:
-        with open(metadata_path, encoding="utf-8") as handle:
-            metadata = json.load(handle)
-    except (OSError, json.JSONDecodeError):
-        return None
-    plugin_id = metadata.get("id") if isinstance(metadata, dict) else None
-    return plugin_id if isinstance(plugin_id, str) and plugin_id else None
-
-
-def _is_shipped(plugin_id: str, install_dir: str) -> bool:
-    group_id, _, artifact_id = plugin_id.rpartition(".")
-    return bool(group_id) and os.path.isdir(
-        os.path.join(install_dir, group_id, artifact_id)
-    )
+        plugins = scan_external_plugins(destination, include_disabled=False)
+    except PluginStateError as error:
+        raise UpdateError(str(error)) from error
+    return {plugin.plugin_id: plugin for plugin in plugins}
 
 
 def _version_key(version: str):
