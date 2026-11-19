@@ -218,7 +218,9 @@ class SettingsDialog(QDialog):
         # Dynamically create checkboxes for each task type
         for task_type in TaskType:
             task_name = task_type.name.replace('_', ' ').title()
-            checkbox = QCheckBox(translation_manager.translate("SettingsDialog", f"Notify on '{task_name}' completion"))
+            translated_task = translation_manager.translate("TaskType", task_name)
+            checkbox = QCheckBox(translation_manager.translate(
+                "SettingsDialog", "Notify on '{task}' completion").format(task=translated_task))
             self.notifications_group.layout().addWidget(checkbox)
             self.notification_checkboxes[task_type] = checkbox
 
