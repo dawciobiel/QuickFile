@@ -865,13 +865,16 @@ Zakładka **Plugins** w Ustawieniach pokazuje wyłącznie wtyczki z
 `plugins-external/`; wtyczki wbudowane są aktualizowane razem z aplikacją i nie są tam
 wyświetlane. Wiersz zawiera `id`, zainstalowaną wersję, najnowszą wersję z feedu i status
 (`update-available`, `up-to-date`, `not-in-feed`, `managed-by-application`, `disabled`).
+Przed pierwszym sprawdzeniem wiersz ma status `not-checked` — to stan UI, nie wartość
+z feedu.
 
 Akcje są jawne. Otwarcie zakładki nie łączy się z siecią; „Check for updates” uruchamia
 `check` poza wątkiem UI, a jego wynik trafia do tabeli. „Update” używa tej samej ścieżki co
 `python -m app.plugin_updater update` (pobranie do katalogu tymczasowego, weryfikacja
 rozmiaru i SHA-256, instalacja przez instalator). „Rollback” wyłącza najwyższą aktywną
 wersję tak jak polecenie `rollback`. Po każdej akcji zmieniającej stan na dysku UI
-informuje, że zmiana zadziała po restarcie aplikacji.
+informuje, że zmiana zadziała po restarcie aplikacji. Akcje wykonują się natychmiast;
+przyciski Save/Cancel zamykają okno ustawień i **nie** cofają operacji na wtyczkach.
 
 ### Włączanie i wyłączanie
 
