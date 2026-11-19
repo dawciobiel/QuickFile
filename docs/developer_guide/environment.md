@@ -124,6 +124,23 @@ Skrypt publikuje także `plugin-index.json` zbudowany z tych samych paczek i wys
 `<artifactId>-<version>.zip`. Indeks jest deterministyczny i podlega tej samej kontroli
 SHA-256 co paczki. Format opisuje `docs/architecture/plugins/plugins.md`.
 
+## Aktualizacje wtyczek zewnętrznych
+
+Aktualizacja jest jawną akcją; aplikacja nie sprawdza nic w tle. Domyślny feed to
+`plugin-index.json` z najnowszego wydania GitHub. `--feed` przyjmuje `https` albo `file`
+(test, mirror offline); `http` jest odrzucane.
+
+```bash
+python -m app.plugin_updater check [--feed URL] [--json]
+python -m app.plugin_updater update <plugin-id> [--feed URL] [--version WERSJA]
+python -m app.plugin_updater rollback <plugin-id>
+```
+
+`update` pobiera paczkę do katalogu tymczasowego i sprawdza rozmiar oraz SHA-256 **przed**
+instalacją; instaluje przez ten sam instalator co ręczna instalacja i nie usuwa starej
+wersji. `rollback` zmienia nazwę najwyższej wersji na `<wersja>.disabled`, więc po restarcie
+aktywna jest poprzednia. Szczegóły: `docs/architecture/plugins/plugins.md`.
+
 ## Najczęstsze pułapki
 
 | Objaw | Przyczyna | Rozwiązanie |
