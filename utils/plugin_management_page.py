@@ -19,6 +19,7 @@ from typing import Callable, Optional
 
 from PyQt6.QtCore import QObject, QRunnable, Qt, QThreadPool, pyqtSignal
 from PyQt6.QtWidgets import (
+    QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -147,6 +148,11 @@ class PluginManagementPage(QWidget):
         layout.addWidget(self.message_label)
 
         buttons = QHBoxLayout()
+        self.install_button = QPushButton(
+            translation_manager.translate(
+                "PluginManagement", "Install from file..."
+            )
+        )
         self.check_button = QPushButton(
             translation_manager.translate(
                 "PluginManagement", "Check for updates"
@@ -165,6 +171,7 @@ class PluginManagementPage(QWidget):
             translation_manager.translate("PluginManagement", "Refresh")
         )
         for button in (
+            self.install_button,
             self.check_button,
             self.update_button,
             self.rollback_button,
@@ -174,6 +181,7 @@ class PluginManagementPage(QWidget):
             buttons.addWidget(button)
         layout.addLayout(buttons)
 
+        self.install_button.clicked.connect(self.install_from_file)
         self.check_button.clicked.connect(self.check)
         self.update_button.clicked.connect(self.update_selected)
         self.rollback_button.clicked.connect(self.rollback_selected)
@@ -194,6 +202,30 @@ class PluginManagementPage(QWidget):
 
         self._plugins = {plugin.plugin_id: plugin for plugin in plugins}
         self._populate()
+
+    def install_from_file(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            translation_manager.translate(
+                "PluginManagement", "Install plugin package"
+            ),
+            "",
+            translation_manager.translate(
+                "PluginManagement", "Plugin packages (*.zip);;All files (*)"
+            ),
+        )
+        if path:
+            self.install_path(path)
+
+    def install_path(self, path):
+        self.message_label.setText(
+            translation_manager.translate("PluginManagement", "Installing...")
+        )
+        self._run_job(
+            lambda: self.service.install(path),
+            self._installed,
+            self._failed,
+        )
 
     def check(self):
         self.message_label.setText(
@@ -259,6 +291,24 @@ class PluginManagementPage(QWidget):
                 "PluginManagement", "Update check completed."
             )
         )
+
+    def _installed(self, result):
+        self._report = None
+        self.refresh()
+        message = translation_manager.translate(
+            "PluginManagement",
+            "Installed {plugin} {version} at {path}. "
+            "Restart QuickFile to load it.",
+        ).format(
+            plugin=result.plugin_id,
+            version=result.version,
+            path=result.path,
+        )
+        if result.warnings:
+            message += "\n" + "\n".join(
+                f"warning: {warning}" for warning in result.warnings
+            )
+        self.message_label.setText(message)
 
     def _updated(self, result):
         self._report = None
@@ -385,6 +435,7 @@ class PluginManagementPage(QWidget):
         plugin = self._plugins.get(plugin_id) if plugin_id else None
         status = self._statuses.get(plugin_id) if plugin_id else None
 
+        self.install_button.setEnabled(not self._busy)
         self.check_button.setEnabled(not self._busy)
         self.refresh_button.setEnabled(not self._busy)
         self.update_button.setEnabled(

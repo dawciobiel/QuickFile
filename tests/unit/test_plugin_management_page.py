@@ -62,19 +62,21 @@ def run_sync(function, on_success, on_error):
         on_success(result)
 
 
-def make_package(directory, version="1.0.0", plugin_id=PLUGIN_ID):
+def make_package(
+    directory, version="1.0.0", plugin_id=PLUGIN_ID, extra_metadata=None
+):
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{plugin_id.rsplit('.', 1)[-1]}-{version}.zip"
+    metadata = {
+        "id": plugin_id,
+        "version": version,
+        "type": "viewer",
+        "name": "Managed Viewer",
+        "entry_point": "plugin:Viewer",
+    }
+    metadata.update(extra_metadata or {})
     entries = {
-        "metadata.json": json.dumps(
-            {
-                "id": plugin_id,
-                "version": version,
-                "type": "viewer",
-                "name": "Managed Viewer",
-                "entry_point": "plugin:Viewer",
-            }
-        ).encode(),
+        "metadata.json": json.dumps(metadata).encode(),
         "plugin.py": PLUGIN_SOURCE.encode(),
     }
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -268,6 +270,67 @@ def test_a_shipped_plugin_is_not_toggled(qapp, env):
 
         assert status_for(page) == "managed-by-application"
         assert not page.toggle_button.isEnabled()
+    finally:
+        page.deleteLater()
+
+
+def test_install_from_file_adds_the_plugin(qapp, env):
+    page = make_page(env)
+    package = make_package(env.packages)
+    try:
+        page.install_path(str(package))
+
+        assert (env.dest / "org.example" / "viewer" / "1.0.0").is_dir()
+        assert row_for(page) == 0
+        assert PLUGIN_ID in page.message_label.text()
+        assert "1.0.0" in page.message_label.text()
+        assert "Restart" in page.message_label.text()
+    finally:
+        page.deleteLater()
+
+
+def test_install_from_file_reports_an_installer_error(qapp, env):
+    page = make_page(env)
+    broken = env.root / "broken.zip"
+    broken.write_bytes(b"not a zip archive")
+    try:
+        page.install_path(str(broken))
+
+        assert "readable zip" in page.message_label.text()
+        assert page.table.rowCount() == 0
+    finally:
+        page.deleteLater()
+
+
+def test_install_from_file_shows_dependency_warnings(qapp, env):
+    page = make_page(env)
+    package = make_package(
+        env.packages, extra_metadata={"python_dependencies": ["quickfile-testdep"]}
+    )
+    try:
+        page.install_path(str(package))
+
+        assert (env.dest / "org.example" / "viewer" / "1.0.0").is_dir()
+        assert "quickfile-testdep" in page.message_label.text()
+        assert "warning" in page.message_label.text()
+    finally:
+        page.deleteLater()
+
+
+def test_the_install_button_uses_a_file_dialog(qapp, env, monkeypatch):
+    from PyQt6.QtWidgets import QFileDialog
+
+    package = make_package(env.packages)
+    monkeypatch.setattr(
+        QFileDialog,
+        "getOpenFileName",
+        staticmethod(lambda *args, **kwargs: (str(package), "")),
+    )
+    page = make_page(env)
+    try:
+        page.install_button.click()
+
+        assert (env.dest / "org.example" / "viewer" / "1.0.0").is_dir()
     finally:
         page.deleteLater()
 

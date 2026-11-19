@@ -13,6 +13,7 @@ testable with a temporary directory and a ``file://`` feed.
 import os
 from typing import Optional, Sequence
 
+from app.plugin_installer import InstalledPlugin, install
 from app.plugin_state import (
     ExternalPlugin,
     disable_plugin,
@@ -46,6 +47,11 @@ class PluginManagementService:
     def plugins(self) -> Sequence[ExternalPlugin]:
         return scan_external_plugins(
             self.dest, include_disabled=True
+        )
+
+    def install(self, source: str) -> InstalledPlugin:
+        return install(
+            source, dest=self.dest, install_dir=self.install_dir
         )
 
     def check(self) -> CheckReport:
