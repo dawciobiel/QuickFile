@@ -10,25 +10,42 @@ For detailed information about installation, features, and configuration, please
 
 ## Requirements
 
-- Python 3.9+
-- PyQt6
-- Additional libraries (listed in `requirements.txt`)
+- **Linux (recommended):** [Nix](https://nixos.org/) with flakes and, optionally,
+  [direnv](https://direnv.net/).
+- **Windows / macOS / Linux without Nix:** Python 3.10+ and the packages from
+  `requirements.txt`.
+
+The Linux development environment is defined only by `flake.nix`. It already contains
+Python 3.12, PyQt6 and every runtime, test and packaging dependency.
 
 ## Installation
 
-To get started, clone the repository and set up a virtual environment:
+Clone the repository and enter the Nix development shell:
 
 ```bash
 git clone https://github.com/dawciobiel/QuickFile.git
 cd QuickFile
+direnv allow        # or: nix develop
+```
+
+Do **not** create a virtual environment or run `pip install` on Linux with Nix: the shell
+already provides the correct interpreter and libraries. On first start, QuickFile installs
+its bundled plugins into `~/.config/QuickFile/plugins`.
+
+`requirements.txt` is a secondary path for systems without Nix:
+
+```bash
 python3 -m venv .venv
-source .venv/bin/activate  # On Windows use .venv\Scripts\activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+It is not used on Linux with Nix, where `flake.nix` is the single source of truth.
+See the [environment guide](docs/developer_guide/environment.md) for details.
+
 ## Usage
 
-Once the dependencies are installed, run the application:
+With the development shell active (or the secondary virtual environment), run:
 
 ```bash
 python main.py
