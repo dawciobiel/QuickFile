@@ -15,6 +15,7 @@ from app.settings_manager import SettingsManager
 from app.task_queue_manager import TaskType
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
+from app.ui_translation import translate_widgets
 from plugins.base import AbstractFileView
 from utils.resource_path import get_resource_path
 
@@ -422,6 +423,7 @@ class FolderBrowser(QWidget):
 
         try:
             uic.loadUi(get_resource_path("ui/folder_browser.ui"), self)
+            translate_widgets(self)
         except Exception as e:
             logging.critical(f"Failed to load UI: {e}", exc_info=True)
             raise

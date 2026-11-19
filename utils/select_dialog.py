@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QDialog, QComboBox, QCheckBox, QLabel, QDialogButton
 from PyQt6.uic import loadUi
 
 from app.settings_manager import SettingsManager
+from app.ui_translation import translate_widgets
 
 
 class SelectDialog(QDialog):
@@ -24,6 +25,7 @@ class SelectDialog(QDialog):
         
         ui_path = os.path.join(os.path.dirname(__file__), '..', 'ui', 'select_dialog.ui')
         loadUi(ui_path, self)
+        translate_widgets(self)
 
         self._load_history()
 

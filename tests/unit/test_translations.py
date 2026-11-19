@@ -8,7 +8,8 @@ Every string the application asks for is translated.
 The application looks strings up as ``Context.Text`` in flat JSON files under
 ``resources/translations/``. This test parses literal ``translate(...)`` calls
 in the source tree, adds the strings built at runtime (status labels and task
-names), and checks that both language files cover them.
+names), reads the texts that Qt Designer stored in ``ui/*.ui``, and checks that
+both language files cover them.
 
 Strings assembled from variables or formatted with runtime values cannot be
 checked here; they must be listed explicitly by the code that builds them.
@@ -20,10 +21,22 @@ import ast
 import json
 import os
 import re
+import xml.etree.ElementTree as ET
 
 import pytest
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QTabWidget,
+    QWidget,
+)
 
 from app.enums import TaskType
+from app.translation_manager import translation_manager
+from app.ui_translation import translate_widgets
 from utils.plugin_management_page import STATUS_LABELS
 
 PROJECT_ROOT = os.path.dirname(
@@ -42,6 +55,21 @@ SOURCE_ROOTS = (
 LANGUAGES = ("en_US.json", "pl_PL.json")
 SKIPPED_DIRECTORIES = {"__pycache__", "tests", "experiments"}
 TASK_NOTIFICATION = "Notify on '{task}' completion"
+UI_DIR = os.path.join(PROJECT_ROOT, "ui")
+UI_CONTEXT = "Ui"
+UI_PROPERTIES = ("text", "title", "windowTitle", "placeholderText")
+# Examples and app names that must stay exactly as written.
+UNTRANSLATED_UI_TEXTS = {
+    "QuickFile",
+    "/path/to/source",
+    "/path/to/destination",
+    "e.g. *.txt, report_??.doc",
+    "e.g. py, cpp",
+    "rwx",
+    "r-x",
+    "---",
+    "...",
+}
 
 
 def source_files():
@@ -92,6 +120,34 @@ def literal_calls():
     return expected
 
 
+def designer_strings():
+    """Every text Qt Designer stored in a host ``.ui`` file."""
+    found = {}
+    for name in sorted(os.listdir(UI_DIR)):
+        if not name.endswith(".ui"):
+            continue
+        path = os.path.join(UI_DIR, name)
+        try:
+            root = ET.parse(path).getroot()
+        except ET.ParseError:
+            continue
+        parents = {child: node for node in root.iter() for child in node}
+        for element in root.iter("string"):
+            text = element.text.strip() if element.text else ""
+            if not text:
+                continue
+            holder = parents[element]
+            translated_property = holder.tag == "property" and holder.get(
+                "name"
+            ) in UI_PROPERTIES
+            translated_tab = (
+                holder.tag == "attribute" and holder.get("name") == "title"
+            )
+            if translated_property or translated_tab:
+                found[text] = name
+    return found
+
+
 def expected_strings():
     """Every key the application can look up, with its English text."""
     expected = dict(literal_calls())
@@ -101,6 +157,9 @@ def expected_strings():
         name = task_type.name.replace("_", " ").title()
         expected[f"TaskType.{name}"] = name
     expected[f"SettingsDialog.{TASK_NOTIFICATION}"] = TASK_NOTIFICATION
+    for text in designer_strings():
+        if text not in UNTRANSLATED_UI_TEXTS:
+            expected[f"{UI_CONTEXT}.{text}"] = text
     return expected
 
 
@@ -150,3 +209,52 @@ def test_translations_keep_placeholders(language):
                 break
 
     assert sorted(broken) == []
+
+
+@pytest.fixture
+def polish_translations():
+    previous = translation_manager.translations
+    translation_manager.translations = load_translations("pl_PL.json")
+    try:
+        yield translation_manager.translations
+    finally:
+        translation_manager.translations = previous
+
+
+def test_translate_widgets_replaces_designer_texts(qapp, polish_translations):
+    root = QWidget()
+    root.setWindowTitle("Settings")
+    QLabel("Source:", root)
+    QGroupBox("Options", root)
+    QPushButton("Browse...", root)
+    field = QLineEdit(root)
+    field.setPlaceholderText("Filter bookmarks...")
+    tabs = QTabWidget(root)
+    tabs.addTab(QWidget(), "Browser")
+    combo = QComboBox(root)
+    combo.addItem("Case sensitive")
+
+    translate_widgets(root)
+
+    assert root.windowTitle() == polish_translations["Ui.Settings"]
+    assert root.findChild(QLabel).text() == polish_translations["Ui.Source:"]
+    assert root.findChild(QGroupBox).title() == polish_translations["Ui.Options"]
+    assert (
+        root.findChild(QPushButton).text() == polish_translations["Ui.Browse..."]
+    )
+    assert (
+        field.placeholderText()
+        == polish_translations["Ui.Filter bookmarks..."]
+    )
+    assert tabs.tabText(0) == polish_translations["Ui.Browser"]
+    assert combo.itemText(0) == polish_translations["Ui.Case sensitive"]
+    root.deleteLater()
+
+
+def test_translate_widgets_keeps_texts_without_a_key(qapp, polish_translations):
+    label = QLabel("/path/to/source")
+
+    translate_widgets(label)
+
+    assert label.text() == "/path/to/source"
+    label.deleteLater()

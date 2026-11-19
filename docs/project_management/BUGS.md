@@ -2,11 +2,13 @@
 
 ## Known Issues
 
-- **Translation**: Every string the Python code looks up now has a Polish translation, and
-  `tests/unit/test_translations.py` keeps it that way. What remains is text loaded verbatim
-  from `ui/*.ui` by `uic.loadUi`: dialogs that never call `translation_manager` for a widget
-  (e.g. parts of the search, split, sync and select dialogs) still show the English text
-  from the `.ui` file.
+- **Translation**: The host UI is fully translated. Every string the code looks up has a
+  Polish translation, host `.ui` texts are translated by `translate_widgets`, and
+  `tests/unit/test_translations.py` keeps it that way. What remains are the `.ui` files
+  inside bundled plugins (`linux_attribute_editor`, `symlink_manager`, `file_splitter`,
+  parts of `standard_viewer`): their dialogs still translate only the widgets their code
+  sets explicitly. Fixing that means editing plugin sources, so it needs a plugin version
+  bump and a new package release rather than a host-only change.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 - **Error message**: During launching application under Garuda occur error message: 
   `/run/media/dawciobiel/4cb3e6fb-e74b-4ce8-b6db-d2f6943a2697/home/dawciobiel/PyCharmProjects/QuickFile`

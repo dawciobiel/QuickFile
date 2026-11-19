@@ -5,12 +5,14 @@
 from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QDialogButtonBox
 from app.translation_manager import translation_manager
+from app.ui_translation import translate_widgets
 from utils.resource_path import get_resource_path
 
 class ShortcutsDialog(QDialog):
     def __init__(self, parent, shortcuts):
         super().__init__(parent)
         uic.loadUi(get_resource_path("ui/shortcuts_dialog.ui"), self)
+        translate_widgets(self)
         self.setWindowTitle(translation_manager.translate("ShortcutsDialog", "Keyboard Shortcuts"))
         self.shortcuts = shortcuts
         self._init_ui()

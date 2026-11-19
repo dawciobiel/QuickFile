@@ -11,6 +11,7 @@ from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from app.task_queue_manager import TaskType
+from app.ui_translation import translate_widgets
 from utils.plugin_management_page import PluginManagementPage
 from utils.resource_path import get_resource_path
 
@@ -19,6 +20,7 @@ class SettingsDialog(QDialog):
     def __init__(self, parent, settings_manager: SettingsManager, theme_manager: ThemeManager):
         super().__init__(parent)
         uic.loadUi(get_resource_path("ui/settings_dialog.ui"), self)
+        translate_widgets(self)
         self.setWindowTitle(translation_manager.translate("SettingsDialog", "Application Settings"))
         self.settings_manager = settings_manager
         self.theme_manager = theme_manager

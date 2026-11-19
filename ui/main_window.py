@@ -20,6 +20,7 @@ from app.task_queue_manager import TaskQueueManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from app.ui_state_provider import UIStateProvider
+from app.ui_translation import translate_widgets
 from browser.folder_browser import FolderBrowser
 from favorites.favorites_manager import FavoritesManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
@@ -64,6 +65,7 @@ class MainWindow(QMainWindow):
     def _init_ui(self):
         logging.info("MainWindow _init_ui started.")
         uic.loadUi(get_resource_path("ui/main_window.ui"), self)
+        translate_widgets(self)
         self.setWindowTitle(f"QuickFile v{__version__}")
         self.setWindowIcon(QIcon(get_resource_path("resources/icons/app_icon.png")))
 

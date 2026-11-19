@@ -9,6 +9,8 @@ from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QFileDialog, QLabel, QPushButton, QLineEdit, QRadioButton, QComboBox, QSpinBox, \
     QCheckBox
 
+from app.ui_translation import translate_widgets
+
 
 class SplitDialog(QDialog):
     # --- Declare UI attributes for linter ---
@@ -33,6 +35,7 @@ class SplitDialog(QDialog):
         except Exception as e:
             logging.error(f"Failed to load UI for SplitDialog: {e}")
             raise
+        translate_widgets(self)
 
         # Manually set user data for predefined sizes as a fallback for uic.loadUi issues
         self.predefinedCombo.setItemData(0, 1457664)      # 1.44 MB
@@ -91,6 +94,7 @@ class JoinDialog(QDialog):
         except Exception as e:
             logging.error(f"Failed to load UI for JoinDialog: {e}")
             raise
+        translate_widgets(self)
 
         self.source_file = source_file
         self.sourceFileLabel.setText(os.path.basename(source_file) if source_file else "None")

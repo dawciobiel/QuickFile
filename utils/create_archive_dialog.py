@@ -15,6 +15,7 @@ from app.plugin_settings import (
 from app.plugin_system.api import Capability
 from app.settings_manager import SettingsManager
 from app.translation_manager import translation_manager
+from app.ui_translation import translate_widgets
 from utils.plugin_settings_dialog import PluginSettingsDialog
 from utils.resource_path import get_resource_path
 
@@ -41,6 +42,7 @@ class CreateArchiveDialog(QDialog):
         # -----------------------------------------
 
         uic.loadUi(get_resource_path("ui/create_archive_dialog.ui"), self)
+        translate_widgets(self)
         self.setWindowTitle(translation_manager.translate("CreateArchiveDialog", "Create Archive"))
 
         self.plugin_manager = plugin_manager
