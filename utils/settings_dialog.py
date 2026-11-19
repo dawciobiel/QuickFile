@@ -11,6 +11,7 @@ from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from app.task_queue_manager import TaskType
+from utils.plugin_management_page import PluginManagementPage
 from utils.resource_path import get_resource_path
 
 
@@ -65,6 +66,13 @@ class SettingsDialog(QDialog):
         self.items[notifications_item.text()] = notifications_item
         self.pages[notifications_item.text()] = self.notifications_page
         self.tree_model.appendRow(notifications_item)
+
+        plugins_page = PluginManagementPage(self)
+        self.stackedWidget.addWidget(plugins_page)
+        plugins_item = QStandardItem(translation_manager.translate("SettingsDialog", "Plugins"))
+        self.items[plugins_item.text()] = plugins_item
+        self.pages[plugins_item.text()] = plugins_page
+        self.tree_model.appendRow(plugins_item)
 
     def _load_current_settings(self):
         self.current_show_dot_files = self.settings_manager.get_setting("showDotFiles")

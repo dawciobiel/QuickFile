@@ -139,7 +139,9 @@ python -m app.plugin_updater rollback <plugin-id>
 `update` pobiera paczkę do katalogu tymczasowego i sprawdza rozmiar oraz SHA-256 **przed**
 instalacją; instaluje przez ten sam instalator co ręczna instalacja i nie usuwa starej
 wersji. `rollback` zmienia nazwę najwyższej wersji na `<wersja>.disabled`, więc po restarcie
-aktywna jest poprzednia. Szczegóły: `docs/architecture/plugins/plugins.md`.
+aktywna jest poprzednia. Te same operacje są dostępne w Ustawieniach na zakładce
+**Plugins**, razem z włączaniem i wyłączaniem całej wtyczki (`<artefakt>.disabled`).
+Szczegóły: `docs/architecture/plugins/plugins.md`.
 
 ## Najczęstsze pułapki
 
