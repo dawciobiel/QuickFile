@@ -41,6 +41,17 @@ COLUMN_STATUS = 3
 STATUS_NOT_CHECKED = "not-checked"
 STATUS_DISABLED = "disabled"
 
+# Translated labels for every status the table can show. Kept at module level so
+# the translation coverage test can check that each label exists.
+STATUS_LABELS = {
+    STATUS_NOT_CHECKED: "Not checked",
+    STATUS_DISABLED: "Disabled",
+    "update-available": "Update available",
+    "up-to-date": "Up to date",
+    "not-in-feed": "Not in feed",
+    "managed-by-application": "Managed by application",
+}
+
 _ACTIVE_JOBS = set()
 
 
@@ -404,16 +415,8 @@ class PluginManagementPage(QWidget):
         self.table.setItem(row, column, item)
 
     def _status_label(self, status):
-        labels = {
-            STATUS_NOT_CHECKED: "Not checked",
-            STATUS_DISABLED: "Disabled",
-            "update-available": "Update available",
-            "up-to-date": "Up to date",
-            "not-in-feed": "Not in feed",
-            "managed-by-application": "Managed by application",
-        }
         return translation_manager.translate(
-            "PluginManagement", labels.get(status, status)
+            "PluginManagement", STATUS_LABELS.get(status, status)
         )
 
     def _selected_plugin_id(self):
