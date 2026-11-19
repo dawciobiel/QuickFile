@@ -78,6 +78,23 @@ def test_plugins_are_loaded_from_both_directories(separate_dirs):
         manager.shutdown()
 
 
+def test_a_disabled_artifact_directory_is_not_loaded(separate_dirs):
+    install, external = separate_dirs
+    write_plugin(install, "org.example.shipped", "1.0.0", "Shipped")
+    write_plugin(external, "org.example.user", "1.0.0", "User Installed")
+    (external / "org.example" / "user").rename(
+        external / "org.example" / "user.disabled"
+    )
+
+    manager = PluginManager(plugin_dirs=[str(install), str(external)])
+    try:
+        assert {
+            plugin.metadata["id"] for plugin in manager.plugins["viewer"]
+        } == {"org.example.shipped"}
+    finally:
+        manager.shutdown()
+
+
 def test_a_missing_external_directory_is_not_an_error(tmp_path, monkeypatch):
     monkeypatch.setattr(PluginManager, "_ensure_bundled_plugins", lambda self: None)
     install = tmp_path / "plugins"

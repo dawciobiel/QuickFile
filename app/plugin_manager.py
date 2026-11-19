@@ -17,6 +17,7 @@ import tempfile
 from app.plugin_dependency_manager import PluginDependencyManager
 from app.external_tools import ExternalToolsError, requirements_for
 from app.plugin_sandbox import SandboxedPluginWrapper  # Import the new wrapper
+from app.plugin_state import DISABLED_SUFFIX
 from plugins.base import StandardOperationsPlugin, ViewModePlugin, AttributeEditorPlugin, ViewerPlugin, SymlinkPlugin, \
     ArchivePlugin, \
     ChecksumPlugin, SearchPlugin, UiExtensionPlugin, DiskUtilsPlugin, EditorPlugin, MenuActionPlugin
@@ -200,6 +201,8 @@ class PluginManager:
                 org_path = os.path.join(plugin_dir, org_name)
                 if os.path.isdir(org_path) and org_name != "__pycache__":
                     for plugin_name in os.listdir(org_path):
+                        if plugin_name.endswith(DISABLED_SUFFIX):
+                            continue
                         plugin_path = os.path.join(org_path, plugin_name)
                         if os.path.isdir(plugin_path):
                             self._load_plugin_versions(plugin_path)

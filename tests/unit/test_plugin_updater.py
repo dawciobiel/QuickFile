@@ -23,6 +23,7 @@ import pytest
 
 from app import plugin_updater
 from app.plugin_installer import install
+from app.plugin_state import disable_plugin
 from app.plugin_updater import (
     MAX_PACKAGE_SIZE,
     UpdateError,
@@ -299,6 +300,15 @@ def test_update_refuses_a_plugin_missing_from_the_feed(env):
 
 def test_update_requires_an_installed_plugin(env):
     url = feed_with(env, ["1.0.0"])
+
+    with pytest.raises(UpdateError, match="not installed"):
+        update_plugin(PLUGIN_ID, url, dest=env.dest, install_dir=env.install_dir)
+
+
+def test_update_refuses_a_disabled_plugin(env):
+    install_version(env, "1.0.0")
+    disable_plugin(PLUGIN_ID, destination=env.dest, install_dir=env.install_dir)
+    url = feed_with(env, ["1.0.1"])
 
     with pytest.raises(UpdateError, match="not installed"):
         update_plugin(PLUGIN_ID, url, dest=env.dest, install_dir=env.install_dir)
