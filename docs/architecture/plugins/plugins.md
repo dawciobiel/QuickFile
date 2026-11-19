@@ -710,7 +710,7 @@ Zasady:
 
 ### Poza zakresem
 
-UI instalatora, odinstalowywanie, podpisy paczek i przypinanie wersji.
+Odinstalowywanie, podpisy paczek i przypinanie wersji.
 
 ## Aktualizacja wtyczki zewnętrznej
 
@@ -899,6 +899,16 @@ plugins-external/org.example/viewer.disabled/1.0.1/ # wyłączona
 *   Wyłączenie całej wtyczki (`<artefakt>.disabled`) i wycofanie wersji
     (`<wersja>.disabled`) to różne operacje: pierwsze chowa wtyczkę, drugie przełącza ją
     na poprzednią wersję.
+
+### Instalacja z pliku
+
+Przycisk „Install from file…” przyjmuje paczkę ZIP i wywołuje
+`app.plugin_installer.install` z tymi samymi katalogami co CLI. Obowiązuje ta sama
+walidacja: metadane, schema ustawień, `external_tools`, kolizje i atomowość. Ostrzeżenia
+instalatora (np. brakujące zależności Pythona) są pokazywane, ale nie zmieniają wyniku;
+błąd walidacji, kolizja albo `id` dostarczane z aplikacją kończą się komunikatem inline.
+Po instalacji lista jest odświeżana, a UI przypomina o restarcie. Instalacja nie przenosi
+ustawień ani `libs/` i nie uruchamia wtyczki.
 
 ## Integracja z Kolejką Zadań
 
