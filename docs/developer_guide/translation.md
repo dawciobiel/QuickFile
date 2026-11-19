@@ -55,6 +55,22 @@ Strings assembled from variables (`f"..."` with a runtime value) or passed in fr
 cannot be checked statically. Build them from a fixed, listed set of keys instead of
 interpolating into the lookup key.
 
-Texts stored in `.ui` files are loaded verbatim by `uic.loadUi`; only strings that code
-sets through `translation_manager` are translated. When adding a dialog, translate its
-widgets in code rather than relying on the `.ui` text.
+### Texts from `.ui` files
+
+`uic.loadUi` copies the strings from the `.ui` file verbatim, so a dialog built in Qt
+Designer stays English unless it translates its widgets. After loading a host dialog,
+call `translate_widgets` before setting any text from data:
+
+```python
+from app.ui_translation import translate_widgets
+
+uic.loadUi(get_resource_path("ui/search_dialog.ui"), self)
+translate_widgets(self)
+```
+
+It applies the `Ui.<text>` key to window titles, label/button/checkbox/radio texts, group
+box titles, tab titles, combo box items and placeholder texts. A text without a key keeps
+its original value, which is how examples such as `/path/to/source` or `e.g. py, cpp`
+stay untranslated. The coverage test requires a key for every text in `ui/*.ui` except
+those listed in `UNTRANSLATED_UI_TEXTS` in `tests/unit/test_translations.py`, so adding a
+label to a `.ui` file means adding `Ui.<text>` to both language files.

@@ -6,12 +6,14 @@ from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QFileDialog
 from app.translation_manager import translation_manager
 from app.plugin_ids import SEARCH_PLUGIN_ID
+from app.ui_translation import translate_widgets
 from utils.resource_path import get_resource_path
 
 class SearchDialog(QDialog):
     def __init__(self, parent, start_path):
         super().__init__(parent)
         uic.loadUi(get_resource_path("ui/search_dialog.ui"), self)
+        translate_widgets(self)
         
         self.startPathEdit.setText(start_path)
         

@@ -11,6 +11,7 @@ from app.action_logger import action_logger
 from app.plugin_ids import COPY_PLUGIN_ID
 from app.task_queue_manager import Task, TaskType, TaskStatus
 from app.translation_manager import translation_manager
+from app.ui_translation import translate_widgets
 from ui.dual_progress_bar import DualProgressBar
 from panels.task_queue_panel import TaskActionsWidget
 from utils.resource_path import get_resource_path
@@ -21,6 +22,7 @@ class CopyDialog(QDialog):
     def __init__(self, parent, source_paths, destination_path, task_queue_manager, background_task_manager, theme_manager):
         super().__init__(parent)
         uic.loadUi(get_resource_path("ui/file_operation_dialog.ui"), self)
+        translate_widgets(self)
         self.setWindowTitle(translation_manager.translate("CopyDialog", "Copy"))
         
         self.task_queue_manager = task_queue_manager

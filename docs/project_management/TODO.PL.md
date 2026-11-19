@@ -38,7 +38,7 @@
 
 - [ ] **Feature: Relaunch with admin rights**: Dodanie akcji pozwalającej na ponowne uruchomienie aplikacji z uprawnieniami administratora.
 
-- [ ] **Feature: Plugin Management UI**: Stworzenie interfejsu (np. w Ustawieniach) do włączania/wyłączania zainstalowanych pluginów.
+- [x] **Feature: Plugin Management UI**: Zakładka **Plugins** w Ustawieniach: lista wtyczek zewnętrznych, sprawdzanie aktualizacji, aktualizacja, rollback, włączanie/wyłączanie oraz instalacja z pliku ZIP. Backend: `app/plugin_state.py`, `app/plugin_updater.py`, `app/plugin_management.py`; UI: `utils/plugin_management_page.py`.
 
 - [ ] **Plugin: FTP/SFTP Client**: Stworzenie pluginu do obsługi protokołów FTP/SFTP, pozwalającego na przeglądanie zdalnych serwerów jak lokalnych dysków.
 
