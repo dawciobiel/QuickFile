@@ -24,12 +24,21 @@ plugins, and a highly configurable user interface.
 
 ## Quick Start
 
-1. Create a virtual environment:
-   `python -m venv .venv`
-2. Activate the environment and install dependencies:
-   `pip install -r requirements.txt`
-3. Run the application:
+On Linux the environment is defined by `flake.nix`:
+
+1. Enter the development shell:
+   `direnv allow` (or `nix develop`)
+2. Run the application:
    `python main.py`
+
+Do not create a virtual environment or run `pip install` on Linux with Nix. On Windows and
+macOS, `requirements.txt` is the secondary dependency path:
+
+1. `python -m venv .venv`
+2. Activate it and run `pip install -r requirements.txt`
+3. Run `python main.py`
+
+See [the environment guide](developer_guide/environment.md) for details.
 
 ## Contributing
 
