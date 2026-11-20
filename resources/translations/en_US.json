@@ -494,5 +494,11 @@
     "Ui.Synchronization Options": "Synchronization Options",
     "Ui.Two-way synchronization (copy newer files both ways)": "Two-way synchronization (copy newer files both ways)",
     "Ui.Delete files in destination folder if they don't exist in source": "Delete files in destination folder if they don't exist in source",
-    "Ui.Include subdirectories": "Include subdirectories"
+    "Ui.Include subdirectories": "Include subdirectories",
+    "Ui.Name:": "Name:",
+    "Ui.Current Attributes": "Current Attributes",
+    "Ui.Size:": "Size:",
+    "Ui.Permissions:": "Permissions:",
+    "Ui.New Owner": "New Owner",
+    "Ui.New Group": "New Group"
 }

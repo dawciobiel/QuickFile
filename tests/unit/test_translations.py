@@ -18,6 +18,8 @@ Specification: ``docs/developer_guide/translation.md``.
 """
 
 import ast
+import glob
+import importlib.util
 import json
 import os
 import re
@@ -37,6 +39,7 @@ from PyQt6.QtWidgets import (
 from app.enums import TaskType
 from app.translation_manager import translation_manager
 from app.ui_translation import translate_widgets
+from tests.plugin_helpers import iter_plugin_version_paths
 from utils.plugin_management_page import STATUS_LABELS
 
 PROJECT_ROOT = os.path.dirname(
@@ -148,6 +151,78 @@ def designer_strings():
     return found
 
 
+# QToolBar titles are object names (``toolBar``) shown only in Qt's toolbar
+# menu, so a plugin does not translate them.
+IGNORED_PLUGIN_WIDGET_CLASSES = {"QToolBar"}
+
+
+def plugin_translate_calls(directory):
+    """Return the texts a bundled plugin translates explicitly in its code."""
+    texts = set()
+    for path in sorted(glob.glob(os.path.join(directory, "*.py"))):
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not isinstance(node.func, ast.Attribute):
+                continue
+            if node.func.attr != "translate" or len(node.args) < 2:
+                continue
+            text = literal_text(node.args[1])
+            if text is not None:
+                texts.add(text)
+    return texts
+
+
+def plugin_designer_strings():
+    """Map a text from a bundled plugin ``.ui`` to whether its code translates it."""
+    found = {}
+    for _name, _version, metadata_path in iter_plugin_version_paths():
+        directory = os.path.dirname(metadata_path)
+        explicit = plugin_translate_calls(directory)
+        source = ""
+        for path in sorted(glob.glob(os.path.join(directory, "*.py"))):
+            with open(path, encoding="utf-8") as handle:
+                source += handle.read()
+        for path in sorted(glob.glob(os.path.join(directory, "*.ui"))):
+            with open(path, encoding="utf-8") as handle:
+                content = handle.read()
+            if not content.strip():
+                # file_splitter keeps empty .ui leftovers from the move to the
+                # host dialogs; they are never loaded.
+                continue
+            root = ET.fromstring(content)
+            parents = {child: node for node in root.iter() for child in node}
+            top_widget = root.find("widget")
+            for element in root.iter("string"):
+                text = element.text.strip() if element.text else ""
+                if not text:
+                    continue
+                holder = parents[element]
+                translated_property = holder.tag == "property" and holder.get(
+                    "name"
+                ) in UI_PROPERTIES
+                translated_tab = (
+                    holder.tag == "attribute" and holder.get("name") == "title"
+                )
+                if not (translated_property or translated_tab):
+                    continue
+                widget = parents[holder]
+                if widget.get("class") in IGNORED_PLUGIN_WIDGET_CLASSES:
+                    continue
+                # The dialog sets its own title before it is shown, so the text
+                # stored in the .ui file never reaches the user.
+                if (
+                    holder.get("name") == "windowTitle"
+                    and widget is top_widget
+                    and "self.setWindowTitle(" in source
+                ):
+                    continue
+                found[text] = found.get(text, False) or text in explicit
+    return found
+
+
 def expected_strings():
     """Every key the application can look up, with its English text."""
     expected = dict(literal_calls())
@@ -211,6 +286,27 @@ def test_translations_keep_placeholders(language):
     assert sorted(broken) == []
 
 
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_bundled_plugin_ui_texts_are_translated(language):
+    """A plugin either translates a ``.ui`` text in code or has a ``Ui.`` key."""
+    required = {
+        text
+        for text, explicit in plugin_designer_strings().items()
+        if not explicit and text not in UNTRANSLATED_UI_TEXTS
+    }
+    translations = load_translations(language)
+    missing = sorted(
+        text for text in required if f"{UI_CONTEXT}.{text}" not in translations
+    )
+
+    assert missing == []
+    if language == "en_US.json":
+        wrong = sorted(
+            text for text in required if translations[f"{UI_CONTEXT}.{text}"] != text
+        )
+        assert wrong == []
+
+
 @pytest.fixture
 def polish_translations():
     previous = translation_manager.translations
@@ -258,3 +354,46 @@ def test_translate_widgets_keeps_texts_without_a_key(qapp, polish_translations):
 
     assert label.text() == "/path/to/source"
     label.deleteLater()
+
+
+def load_plugin_module(plugin_name, module_name):
+    """Import a bundled plugin module by path, as the plugin loader does."""
+    pattern = os.path.join(
+        PROJECT_ROOT,
+        "plugins",
+        "org.quickfile",
+        plugin_name,
+        "*",
+        f"{module_name}.py",
+    )
+    paths = sorted(glob.glob(pattern))
+    assert len(paths) == 1, paths
+    spec = importlib.util.spec_from_file_location(
+        f"plugin_{plugin_name}_{module_name}", paths[0]
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_bundled_attribute_editor_translates_its_dialog(
+    qapp, polish_translations, tmp_path
+):
+    target = tmp_path / "example.txt"
+    target.write_text("content", encoding="utf-8")
+    module = load_plugin_module("linux_attribute_editor", "change_owner_dialog")
+
+    dialog = module.ChangeOwnerDialog(str(target))
+
+    try:
+        assert dialog.windowTitle() == "Zmień właściciela i grupę"
+        labels = {label.text() for label in dialog.findChildren(QLabel)}
+        assert "Nazwa:" in labels
+        assert "Rozmiar:" in labels
+        assert "Uprawnienia:" in labels
+        titles = {box.title() for box in dialog.findChildren(QGroupBox)}
+        assert "Bieżące atrybuty" in titles
+        assert "Nowy właściciel" in titles
+        assert "Nowa grupa" in titles
+    finally:
+        dialog.deleteLater()

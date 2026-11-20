@@ -2,13 +2,16 @@
 
 ## Known Issues
 
-- **Translation**: The host UI is fully translated. Every string the code looks up has a
-  Polish translation, host `.ui` texts are translated by `translate_widgets`, and
-  `tests/unit/test_translations.py` keeps it that way. What remains are the `.ui` files
-  inside bundled plugins (`linux_attribute_editor`, `symlink_manager`, `file_splitter`,
-  parts of `standard_viewer`): their dialogs still translate only the widgets their code
-  sets explicitly. Fixing that means editing plugin sources, so it needs a plugin version
-  bump and a new package release rather than a host-only change.
+- **Translation**: Host `.ui` texts and bundled plugin `.ui` texts are translated. Code
+  strings looked up with `translate(...)` are covered by
+  `tests/unit/test_translations.py`, and the test also requires that every text in a
+  bundled plugin's `.ui` file is translated explicitly or has a `Ui.<text>` key. What
+  remains are messages that code passes to widgets as plain literals instead of
+  `translate(...)` calls, for example the status-bar notes in `app/dialog_handler.py`
+  ("Added copy task to queue.") and the viewer's status messages in
+  `plugins/org.quickfile/standard_viewer` ("View Mode: HEX", "Invalid Image"). The
+  coverage test cannot see those, so fixing them means editing each call site and,
+  for plugins, bumping the package version.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 - **Error message**: During launching application under Garuda occur error message: 
   `/run/media/dawciobiel/4cb3e6fb-e74b-4ce8-b6db-d2f6943a2697/home/dawciobiel/PyCharmProjects/QuickFile`
