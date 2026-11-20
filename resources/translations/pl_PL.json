@@ -494,5 +494,11 @@
     "Ui.Use built-in editor (F4)": "Używaj wbudowanego edytora (F4)",
     "Ui.Use built-in viewer (F3)": "Używaj wbudowanego podglądu (F3)",
     "Ui.Use system default admin terminal": "Używaj systemowego terminala administratora",
-    "Ui.Use system default terminal": "Używaj systemowego terminala"
+    "Ui.Use system default terminal": "Używaj systemowego terminala",
+    "Ui.Name:": "Nazwa:",
+    "Ui.Current Attributes": "Bieżące atrybuty",
+    "Ui.Size:": "Rozmiar:",
+    "Ui.Permissions:": "Uprawnienia:",
+    "Ui.New Owner": "Nowy właściciel",
+    "Ui.New Group": "Nowa grupa"
 }

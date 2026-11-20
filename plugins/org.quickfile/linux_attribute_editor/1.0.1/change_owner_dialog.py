@@ -13,6 +13,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QCompleter, QGridLayout, QLineEdit, QLabel, QComboBox
 
 from app.translation_manager import translation_manager
+from app.ui_translation import translate_widgets
 
 
 class ChangeOwnerDialog(QDialog):
@@ -33,6 +34,7 @@ class ChangeOwnerDialog(QDialog):
         
         ui_path = os.path.join(os.path.dirname(__file__), "change_owner_dialog.ui")
         uic.loadUi(ui_path, self)
+        translate_widgets(self)
 
         # Set column stretch programmatically
         self.gridLayout.setColumnStretch(0, 2)

@@ -74,3 +74,11 @@ its original value, which is how examples such as `/path/to/source` or `e.g. py,
 stay untranslated. The coverage test requires a key for every text in `ui/*.ui` except
 those listed in `UNTRANSLATED_UI_TEXTS` in `tests/unit/test_translations.py`, so adding a
 label to a `.ui` file means adding `Ui.<text>` to both language files.
+
+Bundled plugins use the same helper. A plugin dialog that loads its own `.ui` file calls
+`translate_widgets(self)` right after `loadUi`; a plugin that prefers explicit
+`translation_manager.translate("Context", "Text")` calls needs no helper. The coverage
+test accepts either form: every text in a bundled plugin's `.ui` file must be translated
+explicitly in the plugin code or have a `Ui.<text>` key. Changing a plugin's files means
+renaming its version directory and updating `metadata.json`; the package builder rejects
+a directory whose name differs from the metadata version.
