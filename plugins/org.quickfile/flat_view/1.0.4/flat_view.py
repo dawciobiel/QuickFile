@@ -86,7 +86,10 @@ class FlatFileSystemModel(AbstractFileSystemModel):
             dot_dot_item.append(("..", os.path.dirname(self._current_path), True, False))
         
         if self._current_path == "/root":
-            msg = translation_manager.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
+            msg = translation_manager.translate(
+                "FlatFileSystemModel",
+                "Permission denied to access directory: {path}",
+            ).format(path=self._current_path)
             show_error_message(self.parent_widget.notification_manager, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
             other_items = []
 
@@ -102,7 +105,10 @@ class FlatFileSystemModel(AbstractFileSystemModel):
             other_items.sort(key=lambda x: (not x[2], x[0].lower()))
 
         except OSError:
-            msg = translation_manager.translate("FlatFileSystemModel", f"Permission denied to access directory: {self._current_path}")
+            msg = translation_manager.translate(
+                "FlatFileSystemModel",
+                "Permission denied to access directory: {path}",
+            ).format(path=self._current_path)
             show_error_message(self.parent_widget.notification_manager, translation_manager.translate("FlatFileSystemModel", "Permission Error"), msg)
             other_items = []
 

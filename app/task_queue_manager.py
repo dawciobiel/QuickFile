@@ -219,7 +219,15 @@ class TaskQueueManager(QObject):
             task = self.active_tasks[task_id]
             if task.context and task.context.is_cancelled:
                 task.set_status(TaskStatus.CANCELLED)
-                task.set_details("Operation cancelled by user.")
+                # Local import: translation_manager -> settings_manager ->
+                # task_queue_manager would close an import cycle.
+                from app.translation_manager import translation_manager
+
+                task.set_details(
+                    translation_manager.translate(
+                        "FileManager", "Operation cancelled by user."
+                    )
+                )
             else:
                 task.set_status(TaskStatus.ERROR)
                 task.set_details(error_message)

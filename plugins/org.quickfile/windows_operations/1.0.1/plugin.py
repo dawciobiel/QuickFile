@@ -61,29 +61,49 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
         return path
 
     def _validate_path(self, path, must_exist=True, is_directory=False, is_file=False, name="Path"):
+        name = translation_manager.translate("FileManager", name)
         if not path:
-            raise ValueError(translation_manager.translate("FileManager", f"{name} cannot be empty."))
+            raise ValueError(
+                translation_manager.translate("FileManager", "{name} cannot be empty.")
+                .format(name=name)
+            )
 
         long_path = self._ensure_long_path(path)
 
         if must_exist and not os.path.exists(long_path):
-            raise FileNotFoundError(translation_manager.translate("FileManager", f"{name} '{path}' does not exist."))
+            raise FileNotFoundError(
+                translation_manager.translate("FileManager", "{name} '{path}' does not exist.")
+                .format(name=name, path=path)
+            )
         if os.path.exists(long_path):
             if is_directory and not os.path.isdir(long_path):
-                raise NotADirectoryError(translation_manager.translate("FileManager", f"{name} '{path}' is not a directory."))
+                raise NotADirectoryError(
+                    translation_manager.translate("FileManager", "{name} '{path}' is not a directory.")
+                    .format(name=name, path=path)
+                )
             if is_file and not os.path.isfile(long_path):
-                raise IsADirectoryError(translation_manager.translate("FileManager", f"{name} '{path}' is not a file."))
+                raise IsADirectoryError(
+                    translation_manager.translate("FileManager", "{name} '{path}' is not a file.")
+                    .format(name=name, path=path)
+                )
         return long_path
 
     def _handle_destination_exists(self, destination_full_path, source_is_dir, overwrite_option, item_name):
         long_dest = self._ensure_long_path(destination_full_path)
         if os.path.exists(long_dest):
             if source_is_dir and os.path.isfile(long_dest):
-                raise IsADirectoryError(translation_manager.translate("FileManager",
-                                                                      f"Cannot move/copy directory '{item_name}' to existing file '{destination_full_path}'."))
+                raise IsADirectoryError(
+                    translation_manager.translate(
+                        "FileManager",
+                        "Cannot move/copy directory '{name}' to existing file '{path}'.",
+                    ).format(name=item_name, path=destination_full_path)
+                )
             elif not overwrite_option:
                 raise FileExistsError(
-                    translation_manager.translate("FileManager", f"Item '{item_name}' already exists in the destination."))
+                    translation_manager.translate(
+                        "FileManager", "Item '{name}' already exists in the destination."
+                    ).format(name=item_name)
+                )
             else:
                 if os.path.isdir(long_dest):
                     shutil.rmtree(long_dest)
@@ -105,7 +125,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                     while True:
                         if task_context:
                             if task_context.is_cancelled:
-                                raise OperationCancelledError("Operation cancelled by user.")
+                                raise OperationCancelledError(
+                                    translation_manager.translate(
+                                        "FileManager", "Operation cancelled by user."
+                                    )
+                                )
                             task_context.wait_if_paused()
 
                         buf = fsrc.read(buffer_size)
@@ -167,7 +191,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                 for dirpath, dirnames, filenames in os.walk(long_source):
                     if task_context:
                         if task_context.is_cancelled:
-                            raise OperationCancelledError("Operation cancelled by user.")
+                            raise OperationCancelledError(
+                                translation_manager.translate(
+                                    "FileManager", "Operation cancelled by user."
+                                )
+                            )
                         task_context.wait_if_paused()
 
                     # Calculate relative path from the original source path (without prefix if possible, but os.walk returns prefixed paths if input is prefixed)
@@ -181,7 +209,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                     for filename in filenames:
                         if task_context:
                             if task_context.is_cancelled:
-                                raise OperationCancelledError("Operation cancelled by user.")
+                                raise OperationCancelledError(
+                                    translation_manager.translate(
+                                        "FileManager", "Operation cancelled by user."
+                                    )
+                                )
                             task_context.wait_if_paused()
 
                         if task:
@@ -200,14 +232,19 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
             if task:
                 task.directory_changed.emit(destination_path)
 
-            return translation_manager.translate("FileManager", f"Copied '{base_name}' to '{destination_path}'")
+            return translation_manager.translate(
+                "FileManager", "Copied '{name}' to '{path}'"
+            ).format(name=base_name, path=destination_path)
 
         except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError, OperationCancelledError) as e:
             raise e
         except OSError as e:
             dest_info = destination_full_path if destination_full_path else "unknown destination"
             logging.exception(f"Error copying item from {source_path} to {dest_info}: {e}")
-            raise Exception(translation_manager.translate("FileManager", f"Error copying item: {e}"))
+            raise Exception(
+                translation_manager.translate("FileManager", "Error copying item: {error}")
+                .format(error=e)
+            )
 
     def copy_items(self, source_paths: list[str], destination_path: str, options: dict, progress_callback=None, task_context=None,
                    task=None):
@@ -217,7 +254,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                 task.set_details(f"({i + 1}/{total_items}) {os.path.basename(source_path)}")
             if task_context:
                 if task_context.is_cancelled:
-                    raise OperationCancelledError("Operation cancelled by user.")
+                    raise OperationCancelledError(
+                        translation_manager.translate(
+                            "FileManager", "Operation cancelled by user."
+                        )
+                    )
                 task_context.wait_if_paused()
             try:
                 self._copy_item_with_options(source_path, destination_path, options, progress_callback, task_context, task)
@@ -227,7 +268,7 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                 raise
             except Exception as e:
                 logging.error(f"Failed to copy {source_path}: {e}")
-        return "Batch copy completed."
+        return translation_manager.translate("FileManager", "Batch copy completed.")
 
     def _move_item_with_options(self, source_path, destination_path, options, progress_callback=None, task_context=None, task=None):
         destination_full_path = None
@@ -252,7 +293,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                 self._copy_item_with_options(source_path, destination_path, options, progress_callback, task_context, task)
 
                 if task_context and task_context.is_cancelled:
-                    raise OperationCancelledError("Operation cancelled by user.")
+                    raise OperationCancelledError(
+                        translation_manager.translate(
+                            "FileManager", "Operation cancelled by user."
+                        )
+                    )
 
                 if os.path.isdir(long_source):
                     shutil.rmtree(long_source)
@@ -260,7 +305,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                     os.remove(long_source)
             else:
                 if task_context and task_context.is_cancelled:
-                    raise OperationCancelledError("Operation cancelled by user.")
+                    raise OperationCancelledError(
+                        translation_manager.translate(
+                            "FileManager", "Operation cancelled by user."
+                        )
+                    )
 
                 shutil.move(long_source, long_dest_full)
                 if progress_callback:
@@ -270,14 +319,19 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                 task.directory_changed.emit(source_dir)
                 task.directory_changed.emit(destination_path)
 
-            return translation_manager.translate("FileManager", f"Moved '{base_name}' to '{destination_full_path}'")
+            return translation_manager.translate(
+                "FileManager", "Moved '{name}' to '{path}'"
+            ).format(name=base_name, path=destination_full_path)
 
         except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError, OperationCancelledError) as e:
             raise e
         except OSError as e:
             dest_info = destination_full_path if destination_full_path else "unknown destination"
             logging.exception(f"Error moving item from {source_path} to {dest_info}: {e}")
-            raise Exception(translation_manager.translate("FileManager", f"Error moving item: {e}"))
+            raise Exception(
+                translation_manager.translate("FileManager", "Error moving item: {error}")
+                .format(error=e)
+            )
 
     def move_items(self, source_paths: list[str], destination_path: str, options: dict, progress_callback=None, task_context=None,
                    task=None):
@@ -287,7 +341,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                 task.set_details(f"({i + 1}/{total_items}) {os.path.basename(source_path)}")
             if task_context:
                 if task_context.is_cancelled:
-                    raise OperationCancelledError("Operation cancelled by user.")
+                    raise OperationCancelledError(
+                        translation_manager.translate(
+                            "FileManager", "Operation cancelled by user."
+                        )
+                    )
                 task_context.wait_if_paused()
             try:
                 self._move_item_with_options(source_path, destination_path, options, progress_callback, task_context, task)
@@ -297,7 +355,7 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
                 raise
             except Exception as e:
                 logging.error(f"Failed to move {source_path}: {e}")
-        return "Batch move completed."
+        return translation_manager.translate("FileManager", "Batch move completed.")
 
     def _get_paths_and_total_size(self, item_paths, task_context=None, task=None):
         total_size = 0
@@ -350,7 +408,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
             total_items = len(item_paths)
             for i, path in enumerate(item_paths):
                 if task_context and task_context.is_cancelled:
-                    raise OperationCancelledError("Operation cancelled by user.")
+                    raise OperationCancelledError(
+                        translation_manager.translate(
+                            "FileManager", "Operation cancelled by user."
+                        )
+                    )
                 if task:
                     task.set_details(f"({i + 1}/{total_items}) {os.path.basename(path)}")
 
@@ -380,7 +442,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
 
             for i, (file_path, file_size) in enumerate(all_files):
                 if task_context and task_context.is_cancelled:
-                    raise OperationCancelledError("Operation cancelled by user.")
+                    raise OperationCancelledError(
+                        translation_manager.translate(
+                            "FileManager", "Operation cancelled by user."
+                        )
+                    )
                 if task:
                     task.set_details(f"({i + 1}/{len(all_files)}) {os.path.basename(file_path)}")
 
@@ -392,7 +458,11 @@ class WindowsOperationsPlugin(StandardOperationsPlugin):
 
             for dir_path in all_dirs:
                 if task_context and task_context.is_cancelled:
-                    raise OperationCancelledError("Operation cancelled by user.")
+                    raise OperationCancelledError(
+                        translation_manager.translate(
+                            "FileManager", "Operation cancelled by user."
+                        )
+                    )
                 try:
                     os.rmdir(dir_path)
                 except OSError:
