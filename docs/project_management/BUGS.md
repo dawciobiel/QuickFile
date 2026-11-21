@@ -2,16 +2,17 @@
 
 ## Known Issues
 
-- **Translation**: Host `.ui` texts and bundled plugin `.ui` texts are translated. Code
-  strings looked up with `translate(...)` are covered by
-  `tests/unit/test_translations.py`, and the test also requires that every text in a
-  bundled plugin's `.ui` file is translated explicitly or has a `Ui.<text>` key. What
-  remains are messages that code passes to widgets as plain literals instead of
-  `translate(...)` calls, for example the status-bar notes in `app/dialog_handler.py`
-  ("Added copy task to queue.") and the viewer's status messages in
-  `plugins/org.quickfile/standard_viewer` ("View Mode: HEX", "Invalid Image"). The
-  coverage test cannot see those, so fixing them means editing each call site and,
-  for plugins, bumping the package version.
+- **Translation**: Host `.ui` texts, bundled plugin `.ui` texts and status-bar messages
+  are translated. `tests/unit/test_translations.py` enforces the lookup keys, the plugin
+  `.ui` coverage, and that `setText`/`showMessage` do not receive plain literals. What
+  remains: (1) messages whose key is built at runtime, e.g.
+  `translate("FileManager", f"Renamed to: {new_name}")` in `file_operations/file_manager.py`
+  and the same pattern in `plugins/org.quickfile/windows_operations` and
+  `plugins/org.quickfile/flat_view` — the key never matches JSON, so they fall back to
+  English; (2) `QMessageBox` titles and texts passed as literals in host dialogs and in
+  the `standard_editor`, `symlink_manager` and `feedback_system` plugins; (3) the editor
+  window title `Editor - <file>`. Fixing (1) and (2) needs the key to become a
+  placeholder template; the plugin parts need package version bumps.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 - **Error message**: During launching application under Garuda occur error message: 
   `/run/media/dawciobiel/4cb3e6fb-e74b-4ce8-b6db-d2f6943a2697/home/dawciobiel/PyCharmProjects/QuickFile`

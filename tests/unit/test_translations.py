@@ -26,6 +26,7 @@ import re
 import xml.etree.ElementTree as ET
 
 import pytest
+from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
     QComboBox,
     QGroupBox,
@@ -37,6 +38,8 @@ from PyQt6.QtWidgets import (
 )
 
 from app.enums import TaskType
+from app.settings_manager import SettingsManager
+from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from app.ui_translation import translate_widgets
 from tests.plugin_helpers import iter_plugin_version_paths
@@ -121,6 +124,34 @@ def literal_calls():
             previous = expected.setdefault(key, text)
             assert previous == text, f"{path} uses {key} with a different text"
     return expected
+
+
+def contains_translate(call):
+    """Whether ``call`` already runs its text through ``translate``."""
+    return any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "translate"
+        for node in ast.walk(call)
+    )
+
+
+def literal_setters(method):
+    """Yield ``(path, line, text)`` for a literal first argument of ``method``."""
+    for path in source_files():
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not isinstance(node.func, ast.Attribute):
+                continue
+            if node.func.attr != method or not node.args:
+                continue
+            text = literal_text(node.args[0])
+            if text is None or contains_translate(node):
+                continue
+            yield os.path.relpath(path, PROJECT_ROOT), node.lineno, text
 
 
 def designer_strings():
@@ -286,6 +317,26 @@ def test_translations_keep_placeholders(language):
     assert sorted(broken) == []
 
 
+# Symbols and empty clears that are not sentences.
+UNTRANSLATED_SET_TEXTS = {"", "~", "/", "..", "="}
+
+
+def test_literal_widget_texts_are_translated():
+    found = sorted(
+        (path, line, text)
+        for path, line, text in literal_setters("setText")
+        if text not in UNTRANSLATED_SET_TEXTS
+    )
+
+    assert found == []
+
+
+def test_literal_status_bar_messages_are_translated():
+    found = sorted(literal_setters("showMessage"))
+
+    assert found == []
+
+
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_bundled_plugin_ui_texts_are_translated(language):
     """A plugin either translates a ``.ui`` text in code or has a ``Ui.`` key."""
@@ -397,3 +448,20 @@ def test_bundled_attribute_editor_translates_its_dialog(
         assert "Nowa grupa" in titles
     finally:
         dialog.deleteLater()
+
+
+def test_bundled_viewer_translates_status_and_modes(
+    qapp, polish_translations, tmp_path
+):
+    target = tmp_path / "example.txt"
+    target.write_text("hello", encoding="utf-8")
+    module = load_plugin_module("standard_viewer", "file_viewer_dialog")
+
+    viewer = module.FileViewerWindow(str(target), ThemeManager(SettingsManager()))
+
+    try:
+        assert viewer.statusBar.currentMessage() == "Kodowanie: utf-8"
+        modes = {action.text() for action in viewer.findChildren(QAction)}
+        assert {"Tekst", "Obraz", "Markdown", "Kod"} <= modes
+    finally:
+        viewer.deleteLater()

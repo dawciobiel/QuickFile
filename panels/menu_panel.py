@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import QDialog, QMessageBox
 
 from app.plugin_sandbox import SandboxedPluginWrapper
 from app.task_queue_manager import Task, TaskType
-from app.translation_manager import translation_manager
+from app.translation_manager import task_queued_message, translation_manager
 from utils.icon_manager import get_colorized_icon
 from utils.resource_path import get_resource_path
 
@@ -326,7 +326,7 @@ class MenuPanel:
                 
                 task = Task(task_type, source_paths=[selected_path], destination_path=data.get("destination_path"), options=options)
                 self.app_logic_handler.task_queue_manager.add_task(task)
-                self.main_window.statusBar().showMessage(f"Added {task_type.name.replace('_', ' ').lower()} task to queue.")
+                self.main_window.statusBar().showMessage(task_queued_message(task_type))
 
         except (ImportError, AttributeError) as e:
             logging.error(f"Could not load or create dialog for plugin {plugin_id}: {e}")
