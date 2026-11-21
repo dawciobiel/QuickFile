@@ -161,26 +161,34 @@ class FileViewerWindow(QMainWindow):
         self.view_mode_group = QActionGroup(self)
         self.view_mode_group.setExclusive(True)
 
-        self.text_mode_action = QAction("Text", self)
+        self.text_mode_action = QAction(
+            translation_manager.translate("FileViewer", "Text"), self
+        )
         self.text_mode_action.setCheckable(True)
         self.text_mode_action.setChecked(True)
         self.text_mode_action.triggered.connect(lambda: self.change_view_mode('text'))
         self.toolBar.addAction(self.text_mode_action)
         self.view_mode_group.addAction(self.text_mode_action)
 
-        self.picture_mode_action = QAction("Picture", self)
+        self.picture_mode_action = QAction(
+            translation_manager.translate("FileViewer", "Picture"), self
+        )
         self.picture_mode_action.setCheckable(True)
         self.picture_mode_action.triggered.connect(lambda: self.change_view_mode('picture'))
         self.toolBar.addAction(self.picture_mode_action)
         self.view_mode_group.addAction(self.picture_mode_action)
         
-        self.markdown_mode_action = QAction("Markdown", self)
+        self.markdown_mode_action = QAction(
+            translation_manager.translate("FileViewer", "Markdown"), self
+        )
         self.markdown_mode_action.setCheckable(True)
         self.markdown_mode_action.triggered.connect(lambda: self.change_view_mode('markdown'))
         self.toolBar.addAction(self.markdown_mode_action)
         self.view_mode_group.addAction(self.markdown_mode_action)
 
-        self.code_mode_action = QAction("Code", self)
+        self.code_mode_action = QAction(
+            translation_manager.translate("FileViewer", "Code"), self
+        )
         self.code_mode_action.setCheckable(True)
         self.code_mode_action.triggered.connect(lambda: self.change_view_mode('code'))
         self.toolBar.addAction(self.code_mode_action)
@@ -214,7 +222,11 @@ class FileViewerWindow(QMainWindow):
             with open(self.file_path, 'rb') as f:
                 self.raw_bytes = f.read(1024 * 1024 * 10)  # Read max 10MB
         except Exception as e:
-            self.text_edit.setPlainText(f"Could not read file: {e}")
+            self.text_edit.setPlainText(
+                translation_manager.translate(
+                    "FileViewer", "Could not read file: {error}"
+                ).format(error=e)
+            )
             self.stackedWidget.setCurrentWidget(self.text_page)
             return
 
@@ -270,7 +282,13 @@ class FileViewerWindow(QMainWindow):
         if parent and hasattr(parent, 'application_logic_handler'):
             parent.application_logic_handler.show_properties_dialog(parent=self)
         else:
-            QMessageBox.warning(self, "Error", "Could not access application logic.")
+            QMessageBox.warning(
+                self,
+                translation_manager.translate("FileViewer", "Error"),
+                translation_manager.translate(
+                    "FileViewer", "Could not access application logic."
+                ),
+            )
 
     def _auto_detect_encoding(self):
         try:
@@ -304,9 +322,18 @@ class FileViewerWindow(QMainWindow):
             self.stackedWidget.setCurrentWidget(self.image_page)
             if self.original_pixmap and not self.original_pixmap.isNull():
                 self._update_image_scale()
-                status_message = f"Image: {self.original_pixmap.width()}x{self.original_pixmap.height()}"
+                status_message = translation_manager.translate(
+                    "FileViewer", "Image: {width}x{height}"
+                ).format(
+                    width=self.original_pixmap.width(),
+                    height=self.original_pixmap.height(),
+                )
             else:
-                self.image_label.setText("Invalid Image")
+                self.image_label.setText(
+                    translation_manager.translate(
+                        "FileViewer", "Invalid Image"
+                    )
+                )
             self.statusBar.showMessage(status_message, 0)
             return
 
@@ -317,10 +344,19 @@ class FileViewerWindow(QMainWindow):
             try:
                 text = self.raw_bytes.decode('utf-8')
                 self.rich_text_browser.setMarkdown(text)
-                status_message = "View Mode: Markdown"
+                status_message = translation_manager.translate(
+                    "FileViewer", "View Mode: Markdown"
+                )
             except UnicodeDecodeError:
-                self.rich_text_browser.setPlainText("Error: Markdown file must be UTF-8 encoded.")
-                status_message = "Error: Invalid encoding for Markdown"
+                self.rich_text_browser.setPlainText(
+                    translation_manager.translate(
+                        "FileViewer",
+                        "Error: Markdown file must be UTF-8 encoded.",
+                    )
+                )
+                status_message = translation_manager.translate(
+                    "FileViewer", "Error: Invalid encoding for Markdown"
+                )
 
             self.statusBar.showMessage(status_message, 0)
             return
@@ -353,14 +389,25 @@ class FileViewerWindow(QMainWindow):
                     self.rich_text_browser.setStyleSheet(f"background-color: {style_bg_color}; color: #f8f8f2;")
 
                     self.rich_text_browser.setHtml(html_content)
-                    status_message = f"View Mode: Code ({self.lexer.name})"
+                    status_message = translation_manager.translate(
+                        "FileViewer", "View Mode: Code ({lexer})"
+                    ).format(lexer=self.lexer.name)
                 else:
                     self.rich_text_browser.setStyleSheet("")
                     self.rich_text_browser.setPlainText(text)
-                    status_message = "View Mode: Code (No highlighter)"
+                    status_message = translation_manager.translate(
+                        "FileViewer", "View Mode: Code (No highlighter)"
+                    )
             except UnicodeDecodeError:
-                self.rich_text_browser.setPlainText(f"Error: Cannot decode file with {self.current_encoding}")
-                status_message = f"Error: Invalid encoding {self.current_encoding}"
+                self.rich_text_browser.setPlainText(
+                        translation_manager.translate(
+                            "FileViewer",
+                            "Error: Cannot decode file with {encoding}",
+                        ).format(encoding=self.current_encoding)
+                    )
+                status_message = translation_manager.translate(
+                        "FileViewer", "Error: Invalid encoding {encoding}"
+                    ).format(encoding=self.current_encoding)
 
             self.statusBar.showMessage(status_message, 0)
             return
@@ -371,22 +418,36 @@ class FileViewerWindow(QMainWindow):
         if self.current_view_mode == 'text':
             try:
                 content = self.raw_bytes.decode(self.current_encoding)
-                status_message = f"Encoding: {self.current_encoding}"
+                status_message = translation_manager.translate(
+                    "FileViewer", "Encoding: {encoding}"
+                ).format(encoding=self.current_encoding)
             except UnicodeDecodeError:
-                content = f"Cannot display file with encoding '{self.current_encoding}'."
-                status_message = f"Error: Invalid encoding '{self.current_encoding}'"
+                content = translation_manager.translate(
+                    "FileViewer",
+                    "Cannot display file with encoding '{encoding}'.",
+                ).format(encoding=self.current_encoding)
+                status_message = translation_manager.translate(
+                    "FileViewer",
+                    "Error: Invalid encoding '{encoding}'",
+                ).format(encoding=self.current_encoding)
 
         elif self.current_view_mode == 'hex':
             content = ' '.join(f'{byte:02x}' for byte in self.raw_bytes)
-            status_message = "View Mode: HEX"
+            status_message = translation_manager.translate(
+                "FileViewer", "View Mode: HEX"
+            )
 
         elif self.current_view_mode == 'dec':
             content = ' '.join(f'{byte}' for byte in self.raw_bytes)
-            status_message = "View Mode: DEC"
+            status_message = translation_manager.translate(
+                "FileViewer", "View Mode: DEC"
+            )
 
         elif self.current_view_mode == 'bin':
             content = ' '.join(f'{byte:08b}' for byte in self.raw_bytes)
-            status_message = "View Mode: BIN"
+            status_message = translation_manager.translate(
+                "FileViewer", "View Mode: BIN"
+            )
 
         self.text_edit.setPlainText(content)
         self.statusBar.showMessage(status_message, 0)

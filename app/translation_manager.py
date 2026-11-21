@@ -104,5 +104,17 @@ class TranslationManager:
         key = f"{context}.{text}"
         return self.translations.get(key, text)
 
+
 # Global instance for easy access
 translation_manager = TranslationManager()
+
+
+def task_queued_message(task_type) -> str:
+    """Status-bar text for a task that was just added to the queue."""
+    task_name = translation_manager.translate(
+        "TaskType", task_type.name.replace("_", " ").title()
+    )
+    template = translation_manager.translate(
+        "StatusBar", "Task added to queue: {task}"
+    )
+    return template.format(task=task_name)

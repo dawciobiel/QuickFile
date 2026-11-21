@@ -17,7 +17,7 @@ from app.plugin_ids import (
 from app.plugin_system.api import Capability
 from app.settings_manager import SettingsManager
 from app.task_queue_manager import TaskQueueManager, Task, TaskType
-from app.translation_manager import translation_manager
+from app.translation_manager import task_queued_message, translation_manager
 from app.ui_state_provider import UIStateProvider
 from favorites.favorites_manager import FavoritesManager
 from file_operations.directory_synchronizer import DirectorySynchronizer
@@ -54,6 +54,9 @@ class DialogHandler:
         self.background_task_manager = background_task_manager
         self.task_queue_manager = task_queue_manager
         self.theme_manager = theme_manager
+
+    def _show_task_queued(self, task_type):
+        self.main_window.statusBar().showMessage(task_queued_message(task_type))
 
     def show_about_dialog(self, checked=False):
         action_logger.log_action("show_about")
@@ -188,7 +191,7 @@ class DialogHandler:
 
                 task = Task(TaskType.CREATE_ARCHIVE, source_paths=paths_to_archive, destination_path=archive_path, options=options)
                 self.task_queue_manager.add_task(task)
-                self.main_window.statusBar().showMessage("Added archive task to queue.")
+                self._show_task_queued(TaskType.CREATE_ARCHIVE)
                 self.ui_state_provider.folder_browser.refresh_all_views()
                 self.ui_state_provider.folder_browser.clear_selection()
 
@@ -223,7 +226,7 @@ class DialogHandler:
             options = {'plugin_id': extract_plugin.metadata['id']} # Ustawiamy plugin_id
             task = Task(TaskType.EXTRACT_ARCHIVE, source_paths=[selected_archive_path], destination_path=extract_path, options=options)
             self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage("Added extract task to queue.")
+            self._show_task_queued(TaskType.EXTRACT_ARCHIVE)
             self.ui_state_provider.folder_browser.refresh_all_views()
             self.ui_state_provider.folder_browser.clear_selection()
 
@@ -270,7 +273,7 @@ class DialogHandler:
             
             task = Task(TaskType.CHECKSUM, source_paths=files_only, options=options)
             self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage("Added checksum task to queue.")
+            self._show_task_queued(TaskType.CHECKSUM)
             self.ui_state_provider.folder_browser.clear_selection()
 
     def start_search(self, checked=False):
@@ -306,7 +309,7 @@ class DialogHandler:
 
                 task = Task(TaskType.SEARCH, source_paths=[start_path], options=options)
                 self.task_queue_manager.add_task(task)
-                self.main_window.statusBar().showMessage("Added search task to queue.")
+                self._show_task_queued(TaskType.SEARCH)
 
     def _on_search_item_found(self, task_id, event_name, payload):
         if event_name == "item_found":
@@ -326,7 +329,7 @@ class DialogHandler:
             action_logger.log_action("sync_dirs", source=left_path, destination=right_path, options=options)
             task = Task(TaskType.SYNC, source_paths=[left_path], destination_path=right_path, options=options)
             self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage("Added sync task to queue.")
+            self._show_task_queued(TaskType.SYNC)
 
     def create_new_file(self, current_dir=None, checked=False):
         if not current_dir:
@@ -365,7 +368,7 @@ class DialogHandler:
             action_logger.log_action("copy", sources=source_paths, destination=destination_path, options=options)
             task = Task(TaskType.COPY, source_paths, destination_path, options)
             self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage("Added copy task to queue.")
+            self._show_task_queued(TaskType.COPY)
             self.ui_state_provider.folder_browser.refresh_all_views()
             self.ui_state_provider.folder_browser.clear_selection()
         elif dialog.result() == QDialog.DialogCode.Accepted and dialog.task:
@@ -389,7 +392,7 @@ class DialogHandler:
             action_logger.log_action("move", sources=paths_to_move, destination=destination_path, options=options)
             task = Task(TaskType.MOVE, paths_to_move, destination_path, options)
             self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage("Added move task to queue.")
+            self._show_task_queued(TaskType.MOVE)
             self.ui_state_provider.folder_browser.refresh_all_views()
             self.ui_state_provider.folder_browser.clear_selection()
         elif dialog.result() == QDialog.DialogCode.Accepted and dialog.task:
@@ -410,7 +413,7 @@ class DialogHandler:
             action_logger.log_action("delete", paths=selected_paths, options=options)
             task = Task(TaskType.DELETE, selected_paths, options=options)
             self.task_queue_manager.add_task(task)
-            self.main_window.statusBar().showMessage("Added delete task to queue.")
+            self._show_task_queued(TaskType.DELETE)
             self.ui_state_provider.folder_browser.refresh_all_views()
             self.ui_state_provider.folder_browser.clear_selection()
         elif dialog.result() == QDialog.DialogCode.Accepted and dialog.task:

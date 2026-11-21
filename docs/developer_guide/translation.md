@@ -55,6 +55,24 @@ Strings assembled from variables (`f"..."` with a runtime value) or passed in fr
 cannot be checked statically. Build them from a fixed, listed set of keys instead of
 interpolating into the lookup key.
 
+### Texts set at runtime
+
+Two tests fail when code hands a widget a plain literal instead of a translation:
+
+*   `test_literal_widget_texts_are_translated` checks the first argument of `setText(...)`,
+*   `test_literal_status_bar_messages_are_translated` checks `showMessage(...)`.
+
+Use `translation_manager.translate` (or a helper such as `task_queued_message`) and pass
+the result to the widget. Dynamic text needs a placeholder in a fixed key:
+
+```python
+template = translation_manager.translate("StatusBar", "Task added to queue: {task}")
+self.statusBar().showMessage(template.format(task=name))
+```
+
+`UNTRANSLATED_SET_TEXTS` in the test lists the few values that are symbols rather than
+sentences: `""`, `"~"`, `"/"`, `".."` and `"="`.
+
 ### Texts from `.ui` files
 
 `uic.loadUi` copies the strings from the `.ui` file verbatim, so a dialog built in Qt
