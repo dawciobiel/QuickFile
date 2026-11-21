@@ -236,7 +236,11 @@ class ApplicationLogicHandler(QObject):
         current_path = self.ui_state_provider.get_active_panel_path()
         if current_path:
             self.favorites_manager.add_favorite(current_path)
-            self.main_window.statusBar().showMessage(translation_manager.translate("MenuPanel", f"Added to favorites: {current_path}"))
+            self.main_window.statusBar().showMessage(
+                translation_manager.translate("MenuPanel", "Added to favorites: {path}").format(
+                    path=current_path
+                )
+            )
 
     @handle_error
     def open_favorites_dialog(self, checked=False):

@@ -154,6 +154,25 @@ def literal_setters(method):
             yield os.path.relpath(path, PROJECT_ROOT), node.lineno, text
 
 
+def runtime_built_keys():
+    """Yield ``(path, line, expression)`` for ``translate`` keys with placeholders."""
+    for path in source_files():
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not isinstance(node.func, ast.Attribute):
+                continue
+            if node.func.attr != "translate" or len(node.args) < 2:
+                continue
+            text = node.args[1]
+            if not isinstance(text, ast.JoinedStr):
+                continue
+            if any(isinstance(value, ast.FormattedValue) for value in text.values):
+                yield os.path.relpath(path, PROJECT_ROOT), node.lineno, ast.unparse(text)
+
+
 def designer_strings():
     """Every text Qt Designer stored in a host ``.ui`` file."""
     found = {}
@@ -333,6 +352,13 @@ def test_literal_widget_texts_are_translated():
 
 def test_literal_status_bar_messages_are_translated():
     found = sorted(literal_setters("showMessage"))
+
+    assert found == []
+
+
+def test_translation_keys_are_not_built_at_runtime():
+    """An interpolated key never matches the JSON dictionary."""
+    found = sorted(runtime_built_keys())
 
     assert found == []
 

@@ -18,15 +18,28 @@ class FileManager:
         pass
 
     def _validate_path(self, path, must_exist=True, is_directory=False, is_file=False, name="Path"):
+        name = translation_manager.translate("FileManager", name)
         if not path:
-            raise ValueError(translation_manager.translate("FileManager", f"{name} cannot be empty."))
+            raise ValueError(
+                translation_manager.translate("FileManager", "{name} cannot be empty.")
+                .format(name=name)
+            )
         if must_exist and not os.path.exists(path):
-            raise FileNotFoundError(translation_manager.translate("FileManager", f"{name} '{path}' does not exist."))
+            raise FileNotFoundError(
+                translation_manager.translate("FileManager", "{name} '{path}' does not exist.")
+                .format(name=name, path=path)
+            )
         if os.path.exists(path):
             if is_directory and not os.path.isdir(path):
-                raise NotADirectoryError(translation_manager.translate("FileManager", f"{name} '{path}' is not a directory."))
+                raise NotADirectoryError(
+                    translation_manager.translate("FileManager", "{name} '{path}' is not a directory.")
+                    .format(name=name, path=path)
+                )
             if is_file and not os.path.isfile(path):
-                raise IsADirectoryError(translation_manager.translate("FileManager", f"{name} '{path}' is not a file."))
+                raise IsADirectoryError(
+                    translation_manager.translate("FileManager", "{name} '{path}' is not a file.")
+                    .format(name=name, path=path)
+                )
         return path
 
     def _get_total_size(self, paths):
@@ -123,14 +136,23 @@ class FileManager:
             directory = os.path.dirname(old_path)
             new_path = os.path.join(directory, new_name)
             if os.path.exists(new_path):
-                raise FileExistsError(translation_manager.translate("FileManager", f"An item named '{new_name}' already exists in '{directory}'."))
+                raise FileExistsError(
+                    translation_manager.translate(
+                        "FileManager", "An item named '{name}' already exists in '{directory}'."
+                    ).format(name=new_name, directory=directory)
+                )
             os.rename(old_path, new_path)
-            return translation_manager.translate("FileManager", f"Renamed to: {new_name}")
+            return translation_manager.translate("FileManager", "Renamed to: {name}").format(
+                name=new_name
+            )
         except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError) as e:
             raise e
         except OSError as e:
             logging.exception(f"Error renaming item {old_path} to {new_name}: {e}")
-            raise FileManagerError(translation_manager.translate("FileManager", f"Error renaming item: {e}"))
+            raise FileManagerError(
+                translation_manager.translate("FileManager", "Error renaming item: {error}")
+                .format(error=e)
+            )
 
     def create_file(self, directory, file_name):
         file_path = None
@@ -141,17 +163,26 @@ class FileManager:
 
             file_path = os.path.join(directory, file_name)
             if os.path.exists(file_path):
-                raise FileExistsError(translation_manager.translate("FileManager", f"File '{file_name}' already exists."))
+                raise FileExistsError(
+                    translation_manager.translate(
+                        "FileManager", "File '{name}' already exists."
+                    ).format(name=file_name)
+                )
 
             with open(file_path, 'w') as f:
                 pass
-            return translation_manager.translate("FileManager", f"File created: {file_path}")
+            return translation_manager.translate("FileManager", "File created: {path}").format(
+                path=file_path
+            )
         except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError) as e:
             raise e
         except OSError as e:
             path_info = file_path if file_path else "unknown path"
             logging.exception(f"Error creating file {path_info}: {e}")
-            raise FileManagerError(translation_manager.translate("FileManager", f"Error creating file: {e}"))
+            raise FileManagerError(
+                translation_manager.translate("FileManager", "Error creating file: {error}")
+                .format(error=e)
+            )
 
     def create_directory(self, parent_directory, directory_name):
         directory_path = None
@@ -162,13 +193,22 @@ class FileManager:
 
             directory_path = os.path.join(parent_directory, directory_name)
             if os.path.exists(directory_path):
-                raise FileExistsError(translation_manager.translate("FileManager", f"Folder '{directory_name}' already exists."))
+                raise FileExistsError(
+                    translation_manager.translate(
+                        "FileManager", "Folder '{name}' already exists."
+                    ).format(name=directory_name)
+                )
 
             os.makedirs(directory_path)
-            return translation_manager.translate("FileManager", f"Folder created: {directory_path}")
+            return translation_manager.translate("FileManager", "Folder created: {path}").format(
+                path=directory_path
+            )
         except (ValueError, FileNotFoundError, FileExistsError, NotADirectoryError, IsADirectoryError) as e:
             raise e
         except OSError as e:
             path_info = directory_path if directory_path else "unknown path"
             logging.exception(f"Error creating directory {path_info}: {e}")
-            raise FileManagerError(translation_manager.translate("FileManager", f"Error creating directory: {e}"))
+            raise FileManagerError(
+                translation_manager.translate("FileManager", "Error creating directory: {error}")
+                .format(error=e)
+            )

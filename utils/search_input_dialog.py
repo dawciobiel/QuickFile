@@ -13,7 +13,11 @@ class SearchInputDialog(QDialog):
         
         self.layout = QVBoxLayout(self)
         
-        self.path_label = QLabel(translation_manager.translate("SearchInputDialog", f"Searching in: {search_path}"))
+        self.path_label = QLabel(
+            translation_manager.translate("SearchInputDialog", "Searching in: {path}").format(
+                path=search_path
+            )
+        )
         self.layout.addWidget(self.path_label)
         
         self.query_input = QLineEdit()
