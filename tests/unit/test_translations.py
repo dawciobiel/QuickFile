@@ -43,8 +43,10 @@ from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from app.ui_translation import translate_widgets
+from file_operations.properties_manager import get_file_properties
 from tests.plugin_helpers import iter_plugin_version_paths
 from utils.plugin_management_page import STATUS_LABELS
+from utils.properties_dialog import PropertiesDialog
 
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -52,6 +54,8 @@ PROJECT_ROOT = os.path.dirname(
 TRANSLATIONS_DIR = os.path.join(PROJECT_ROOT, "resources", "translations")
 SOURCE_ROOTS = (
     "app",
+    "file_operations",
+    "favorites",
     "ui",
     "utils",
     "browser",
@@ -584,3 +588,28 @@ def test_bundled_editor_translates_window_and_toolbar(
         for name in list(sys.modules):
             if name == "widgets" or name.startswith("widgets."):
                 sys.modules.pop(name, None)
+
+
+def test_properties_dialog_translates_labels_and_size(
+    qapp, polish_translations, tmp_path
+):
+    target = tmp_path / "example.txt"
+    target.write_text("content", encoding="utf-8")
+    properties = get_file_properties(str(target))
+
+    dialog = PropertiesDialog(properties)
+
+    try:
+        labels = {label.text() for label in dialog.findChildren(QLabel)}
+        assert {
+            "Pełna ścieżka:",
+            "Rozmiar:",
+            "Data modyfikacji:",
+            "Data utworzenia:",
+            "Uprawnienia:",
+            "Właściciel:",
+            "Grupa:",
+        } <= labels
+        assert f"{target.stat().st_size} bajtów" in labels
+    finally:
+        dialog.deleteLater()

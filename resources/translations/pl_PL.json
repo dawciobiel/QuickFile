@@ -607,5 +607,14 @@
     "SymlinkManager.Success": "Sukces",
     "SymlinkManager.Warning": "Ostrzeżenie",
     "TaskQueuePanel.Info": "Informacja",
-    "TaskQueuePanel.More options not implemented yet.": "Więcej opcji nie zostało jeszcze zaimplementowanych."
+    "TaskQueuePanel.More options not implemented yet.": "Więcej opcji nie zostało jeszcze zaimplementowanych.",
+    "PropertiesDialog.{size} bytes": "{size} bajtów",
+    "PropertiesDialog.Yes": "Tak",
+    "PropertiesDialog.No": "Nie",
+    "PropertiesDialog.Error": "Błąd",
+    "PropertiesDialog.Could not retrieve all properties: {error}": "Nie można pobrać wszystkich właściwości: {error}",
+    "PropertiesDialog.Modification date": "Data modyfikacji",
+    "PropertiesDialog.Creation date": "Data utworzenia",
+    "PropertiesDialog.Read-only": "Tylko do odczytu",
+    "PropertiesDialog.Hidden": "Ukryty"
 }

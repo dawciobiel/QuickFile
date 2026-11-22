@@ -43,8 +43,9 @@ missing from each language file plus keys that no longer appear in code. It only
 runtime-built keys show up as false positives; use it as a rough report, not as a gate.
 
 Coverage is enforced by `tests/unit/test_translations.py`. It parses every literal
-`translate(...)` call in `app/`, `ui/`, `utils/`, `browser/`, `panels/`, `plugins/` and
-`plugins-external/`, adds the runtime-built strings listed above, and fails when:
+`translate(...)` call in `app/`, `file_operations/`, `favorites/`, `ui/`, `utils/`,
+`browser/`, `panels/`, `plugins/` and `plugins-external/`, adds the runtime-built strings
+listed above, and fails when:
 
 *   a key is missing or empty in `en_US.json` or `pl_PL.json`,
 *   the `en_US.json` value differs from the source text,
