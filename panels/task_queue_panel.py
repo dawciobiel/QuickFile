@@ -71,7 +71,13 @@ class TaskActionsWidget(QWidget):
         self.manager.cancel_task(self.task.id)
 
     def show_more_options(self):
-        QMessageBox.information(self, "Info", "More options not implemented yet.")
+        QMessageBox.information(
+            self,
+            translation_manager.translate("TaskQueuePanel", "Info"),
+            translation_manager.translate(
+                "TaskQueuePanel", "More options not implemented yet."
+            ),
+        )
 
     def update_button_state(self, status=None):
         play_icon_path = get_resource_path("resources/icons/play.svg")

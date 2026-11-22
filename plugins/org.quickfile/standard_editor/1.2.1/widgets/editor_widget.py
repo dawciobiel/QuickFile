@@ -6,6 +6,7 @@ from PyQt6.QtCore import Qt, QRect
 from .highlighter import PygmentsHighlighter
 from .line_number_area import LineNumberArea
 from utils.icon_manager import get_colorized_icon
+from app.translation_manager import translation_manager
 
 class EditorWidget(QWidget):
     def __init__(self, file_path: str, theme_manager, parent: QWidget = None):
@@ -60,17 +61,45 @@ class EditorWidget(QWidget):
             action.triggered.connect(slot)
             return action
 
-        create_action("save.svg", "Save", self.save_file)
+        create_action(
+            "save.svg",
+            translation_manager.translate("StandardEditor", "Save"),
+            self.save_file,
+        )
         self.toolbar.addSeparator()
-        create_action("undo.svg", "Undo", self.editor.undo)
-        create_action("redo.svg", "Redo", self.editor.redo)
+        create_action(
+            "undo.svg",
+            translation_manager.translate("StandardEditor", "Undo"),
+            self.editor.undo,
+        )
+        create_action(
+            "redo.svg",
+            translation_manager.translate("StandardEditor", "Redo"),
+            self.editor.redo,
+        )
         self.toolbar.addSeparator()
-        create_action("cut.svg", "Cut", self.editor.cut)
-        create_action("copy.svg", "Copy", self.editor.copy)
-        create_action("paste.svg", "Paste", self.editor.paste)
+        create_action(
+            "cut.svg",
+            translation_manager.translate("StandardEditor", "Cut"),
+            self.editor.cut,
+        )
+        create_action(
+            "copy.svg",
+            translation_manager.translate("StandardEditor", "Copy"),
+            self.editor.copy,
+        )
+        create_action(
+            "paste.svg",
+            translation_manager.translate("StandardEditor", "Paste"),
+            self.editor.paste,
+        )
 
     def find_text(self):
-        query, ok = QInputDialog.getText(self, "Find Text", "Enter text to find:")
+        query, ok = QInputDialog.getText(
+            self,
+            translation_manager.translate("StandardEditor", "Find Text"),
+            translation_manager.translate("StandardEditor", "Enter text to find:"),
+        )
         if ok and query:
             self.last_search_query = query
             self.find_next()

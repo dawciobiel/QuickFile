@@ -1,6 +1,6 @@
 {
   "id": "org.quickfile.feedback_system",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "Feedback System",
   "author": "QuickFile Team",
   "description": "A plugin to collect feedback and bug reports from users via GitHub issues.",

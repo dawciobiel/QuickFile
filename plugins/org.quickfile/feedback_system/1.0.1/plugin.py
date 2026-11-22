@@ -50,7 +50,14 @@ class FeedbackPlugin(UiExtensionPlugin):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             feedback_data = dialog.get_feedback_data()
             if not feedback_data["title"] or not feedback_data["description"]:
-                QMessageBox.warning(self.main_window, "Missing Information", "Please provide both a title and a description.")
+                QMessageBox.warning(
+                    self.main_window,
+                    translation_manager.translate("FeedbackPlugin", "Missing Information"),
+                    translation_manager.translate(
+                        "FeedbackPlugin",
+                        "Please provide both a title and a description.",
+                    ),
+                )
                 return
             self.create_github_issue(feedback_data)
 
@@ -101,4 +108,11 @@ class FeedbackPlugin(UiExtensionPlugin):
             webbrowser.open(url)
         except Exception as e:
             logging.error(f"Failed to open web browser: {e}")
-            QMessageBox.critical(self.main_window, "Error", f"Could not open web browser. Please create the issue manually at:\n{self.GITHUB_REPO_URL}")
+            QMessageBox.critical(
+                self.main_window,
+                translation_manager.translate("FeedbackPlugin", "Error"),
+                translation_manager.translate(
+                    "FeedbackPlugin",
+                    "Could not open web browser. Please create the issue manually at:\n{url}",
+                ).format(url=self.GITHUB_REPO_URL),
+            )

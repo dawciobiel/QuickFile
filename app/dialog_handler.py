@@ -77,18 +77,38 @@ class DialogHandler:
             if viewer_plugin:
                 viewer_plugin.view_file(selected_path, self.theme_manager, self.main_window)
             else:
-                QMessageBox.warning(self.main_window, "Viewer Not Found", "No suitable built-in viewer plugin found for this file type.")
+                QMessageBox.warning(
+                    self.main_window,
+                    translation_manager.translate("DialogHandler", "Viewer Not Found"),
+                    translation_manager.translate(
+                        "DialogHandler",
+                        "No suitable built-in viewer plugin found for this file type.",
+                    ),
+                )
         else:
             command = self.settings_manager.get_setting("viewer_command")
             if not command:
-                QMessageBox.warning(self.main_window, "Command Not Set", "External viewer command is not configured in settings.")
+                QMessageBox.warning(
+                    self.main_window,
+                    translation_manager.translate("DialogHandler", "Command Not Set"),
+                    translation_manager.translate(
+                        "DialogHandler",
+                        "External viewer command is not configured in settings.",
+                    ),
+                )
                 return
 
             try:
                 full_command = command.replace("%f", f'"{selected_path}"')
                 subprocess.Popen(full_command, shell=True)
             except Exception as e:
-                QMessageBox.critical(self.main_window, "Error", f"Failed to launch external viewer:\n{e}")
+                QMessageBox.critical(
+                    self.main_window,
+                    translation_manager.translate("DialogHandler", "Error"),
+                    translation_manager.translate(
+                        "DialogHandler", "Failed to launch external viewer:\n{error}"
+                    ).format(error=e),
+                )
 
     def show_file_editor_dialog(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
@@ -102,7 +122,14 @@ class DialogHandler:
         if editor_plugin:
             editor_plugin.open_editor(selected_path, self.theme_manager, self.main_window)
         else:
-             QMessageBox.warning(self.main_window, "Editor Not Found", "No suitable built-in editor plugin found for this file type.")
+             QMessageBox.warning(
+                 self.main_window,
+                 translation_manager.translate("DialogHandler", "Editor Not Found"),
+                 translation_manager.translate(
+                     "DialogHandler",
+                     "No suitable built-in editor plugin found for this file type.",
+                 ),
+             )
 
     def show_properties_dialog(self, checked=False, parent=None):
         selected_path = self.ui_state_provider.get_current_selected_path()
@@ -155,7 +182,16 @@ class DialogHandler:
             dialog.exec()
         else:
             logging.error("Directory Comparison Error: Could not compare directories.")
-            QMessageBox.critical(self.main_window, "Directory Comparison Error", "Could not compare directories. Ensure both paths are valid directories.")
+            QMessageBox.critical(
+                self.main_window,
+                translation_manager.translate(
+                    "DialogHandler", "Directory Comparison Error"
+                ),
+                translation_manager.translate(
+                    "DialogHandler",
+                    "Could not compare directories. Ensure both paths are valid directories.",
+                ),
+            )
 
     def open_favorites_dialog(self, checked=False):
         action_logger.log_action("open_favorites")
@@ -205,7 +241,14 @@ class DialogHandler:
             selected_archive_path, Capability.ARCHIVE_EXTRACT
         )
         if not extract_plugin:
-            QMessageBox.warning(self.main_window, "Extraction Error", "No suitable plugin found to extract this archive type.")
+            QMessageBox.warning(
+                self.main_window,
+                translation_manager.translate("DialogHandler", "Extraction Error"),
+                translation_manager.translate(
+                    "DialogHandler",
+                    "No suitable plugin found to extract this archive type.",
+                ),
+            )
             return
 
         # Check the host binaries before asking for a destination: queueing a

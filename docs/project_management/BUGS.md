@@ -2,14 +2,15 @@
 
 ## Known Issues
 
-- **Translation**: Host `.ui` texts, bundled plugin `.ui` texts, status-bar messages and
-  messages with runtime values are translated. `tests/unit/test_translations.py` enforces
-  the lookup keys, the plugin `.ui` coverage, literal `setText`/`showMessage` arguments,
-  and that no `translate` key is built from an f-string (such a key never matches JSON).
-  What remains: `QMessageBox` titles and texts passed as literals in host code and in
-  the `standard_editor`, `symlink_manager` and `feedback_system` plugins, plus the editor
-  window title `Editor - <file>`. Fixing that means translating each call site; the plugin
-  parts need package version bumps.
+- **Translation**: Host `.ui` texts, bundled plugin `.ui` texts, status-bar messages,
+  messages with runtime values and standard dialog captions/messages are translated.
+  `tests/unit/test_translations.py` enforces the lookup keys, the plugin `.ui` coverage,
+  literal `setText`/`showMessage` arguments, plain `QMessageBox`/`QInputDialog`/
+  `QFileDialog` strings, the editor window title, and that no `translate` key is built
+  from an f-string (such a key never matches JSON). What remains: plugin-provided menu
+  labels (`get_menu_actions()["text"]`), plugin names and descriptions shown in Plugin
+  Management, and the labels Qt adds to standard buttons (the app installs no
+  `QTranslator`, so `Save`/`Cancel` stay English).
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 - **Error message**: During launching application under Garuda occur error message: 
   `/run/media/dawciobiel/4cb3e6fb-e74b-4ce8-b6db-d2f6943a2697/home/dawciobiel/PyCharmProjects/QuickFile`
