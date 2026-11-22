@@ -7,6 +7,8 @@ import stat
 import datetime
 import platform
 
+from app.translation_manager import translation_manager
+
 def get_file_properties(path):
     """
     Retrieves properties of a file or folder, adapting to the operating system.
@@ -22,7 +24,9 @@ def get_file_properties(path):
         # Common information for all systems
         stat_info = os.stat(path)
         properties['Full path'] = os.path.abspath(path)
-        properties['Size'] = f"{stat_info.st_size} bajtów"
+        properties['Size'] = translation_manager.translate(
+            "PropertiesDialog", "{size} bytes"
+        ).format(size=stat_info.st_size)
         properties['Modification date'] = datetime.datetime.fromtimestamp(stat_info.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
         properties['Creation date'] = datetime.datetime.fromtimestamp(stat_info.st_ctime).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -46,11 +50,21 @@ def get_file_properties(path):
         elif system == "Windows":
             is_readonly = bool(stat_info.st_mode & stat.S_IREAD)
             is_hidden = bool(stat_info.st_file_attributes & stat.FILE_ATTRIBUTE_HIDDEN)
-            properties['Read-only'] = "Yes" if is_readonly else "No"
-            properties['Hidden'] = "Yes" if is_hidden else "No"
+            properties['Read-only'] = (
+                translation_manager.translate("PropertiesDialog", "Yes")
+                if is_readonly
+                else translation_manager.translate("PropertiesDialog", "No")
+            )
+            properties['Hidden'] = (
+                translation_manager.translate("PropertiesDialog", "Yes")
+                if is_hidden
+                else translation_manager.translate("PropertiesDialog", "No")
+            )
 
     except Exception as e:
         # In case of problems retrieving detailed information, basic info is returned
-        properties['Error'] = f"Could not retrieve all properties: {e}"
+        properties['Error'] = translation_manager.translate(
+            "PropertiesDialog", "Could not retrieve all properties: {error}"
+        ).format(error=e)
 
     return properties
