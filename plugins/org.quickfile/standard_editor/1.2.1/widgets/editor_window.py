@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .editor_widget import EditorWidget
+from app.translation_manager import translation_manager
 
 
 class EditorWindow(QMainWindow):
@@ -29,7 +30,11 @@ class EditorWindow(QMainWindow):
     def __init__(self, file_path, theme_manager, parent=None):
         super().__init__(parent)
         self.file_path = file_path
-        self.setWindowTitle(f"Editor - {os.path.basename(file_path)}")
+        self.setWindowTitle(
+            translation_manager.translate("StandardEditor", "Editor - {name}").format(
+                name=os.path.basename(file_path)
+            )
+        )
         self.setWindowFlags(
             Qt.WindowType.Window
             | Qt.WindowType.WindowMinMaxButtonsHint
@@ -56,8 +61,10 @@ class EditorWindow(QMainWindow):
         if not self.editor_widget.save_file():
             QMessageBox.warning(
                 self,
-                "Save Failed",
-                f"Could not save {os.path.basename(self.file_path)}.",
+                translation_manager.translate("StandardEditor", "Save Failed"),
+                translation_manager.translate(
+                    "StandardEditor", "Could not save {name}."
+                ).format(name=os.path.basename(self.file_path)),
             )
             return
         self.close()
@@ -70,8 +77,10 @@ class EditorWindow(QMainWindow):
 
         choice = QMessageBox.question(
             self,
-            "Unsaved Changes",
-            f"Save changes to {os.path.basename(self.file_path)}?",
+            translation_manager.translate("StandardEditor", "Unsaved Changes"),
+            translation_manager.translate(
+                "StandardEditor", "Save changes to {name}?"
+            ).format(name=os.path.basename(self.file_path)),
             QMessageBox.StandardButton.Save
             | QMessageBox.StandardButton.Discard
             | QMessageBox.StandardButton.Cancel,

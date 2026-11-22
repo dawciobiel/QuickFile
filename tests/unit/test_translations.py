@@ -23,6 +23,7 @@ import importlib.util
 import json
 import os
 import re
+import sys
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -173,6 +174,62 @@ def runtime_built_keys():
                 yield os.path.relpath(path, PROJECT_ROOT), node.lineno, ast.unparse(text)
 
 
+DIALOG_CLASSES = {"QFileDialog", "QInputDialog", "QMessageBox"}
+DIALOG_METHODS = {
+    "about",
+    "critical",
+    "getExistingDirectory",
+    "getItem",
+    "getMultiLineText",
+    "getOpenFileName",
+    "getOpenFileNames",
+    "getSaveFileName",
+    "getText",
+    "information",
+    "question",
+    "warning",
+}
+
+
+def dialog_strings():
+    """Yield literal titles and texts passed to a standard Qt dialog."""
+    for path in source_files():
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if not isinstance(func, ast.Attribute):
+                continue
+            if func.attr not in DIALOG_METHODS:
+                continue
+            if (
+                not isinstance(func.value, ast.Name)
+                or func.value.id not in DIALOG_CLASSES
+            ):
+                continue
+            # The first argument is the parent widget, never a caption.
+            for argument in node.args[1:]:
+                if contains_translate(argument):
+                    continue
+                if isinstance(argument, ast.Constant) and isinstance(
+                    argument.value, str
+                ):
+                    if argument.value:
+                        yield (
+                            os.path.relpath(path, PROJECT_ROOT),
+                            node.lineno,
+                            argument.value,
+                        )
+                elif isinstance(argument, ast.JoinedStr):
+                    yield (
+                        os.path.relpath(path, PROJECT_ROOT),
+                        node.lineno,
+                        ast.unparse(argument),
+                    )
+
+
 def designer_strings():
     """Every text Qt Designer stored in a host ``.ui`` file."""
     found = {}
@@ -239,8 +296,7 @@ def plugin_designer_strings():
             with open(path, encoding="utf-8") as handle:
                 content = handle.read()
             if not content.strip():
-                # file_splitter keeps empty .ui leftovers from the move to the
-                # host dialogs; they are never loaded.
+                # A zero-byte .ui file never loads.
                 continue
             root = ET.fromstring(content)
             parents = {child: node for node in root.iter() for child in node}
@@ -359,6 +415,13 @@ def test_literal_status_bar_messages_are_translated():
 def test_translation_keys_are_not_built_at_runtime():
     """An interpolated key never matches the JSON dictionary."""
     found = sorted(runtime_built_keys())
+
+    assert found == []
+
+
+def test_dialog_strings_are_translated():
+    """A dialog caption or message must not be a plain literal."""
+    found = sorted(dialog_strings())
 
     assert found == []
 
@@ -491,3 +554,33 @@ def test_bundled_viewer_translates_status_and_modes(
         assert {"Tekst", "Obraz", "Markdown", "Kod"} <= modes
     finally:
         viewer.deleteLater()
+
+
+def test_bundled_editor_translates_window_and_toolbar(
+    qapp, polish_translations, tmp_path
+):
+    target = tmp_path / "note.txt"
+    target.write_text("content", encoding="utf-8")
+    module = load_plugin_module("standard_editor", "plugin")
+    plugin = module.StandardEditorPlugin()
+
+    window = plugin.open_editor(
+        str(target), ThemeManager(SettingsManager()), None
+    )
+
+    try:
+        assert window.windowTitle() == "Edytor - note.txt"
+        labels = {action.text() for action in window.findChildren(QAction)}
+        assert {
+            "Zapisz",
+            "Cofnij",
+            "Ponów",
+            "Wytnij",
+            "Kopiuj",
+            "Wklej",
+        } <= labels
+    finally:
+        window.deleteLater()
+        for name in list(sys.modules):
+            if name == "widgets" or name.startswith("widgets."):
+                sys.modules.pop(name, None)

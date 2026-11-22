@@ -9,6 +9,7 @@ from PyQt6 import uic
 from PyQt6.QtWidgets import QDialog, QFileDialog, QLabel, QPushButton, QLineEdit, QRadioButton, QComboBox, QSpinBox, \
     QCheckBox
 
+from app.translation_manager import translation_manager
 from app.ui_translation import translate_widgets
 
 
@@ -52,7 +53,13 @@ class SplitDialog(QDialog):
             self.destinationEdit.setText(os.path.dirname(source_file))
 
     def browse_destination(self):
-        dir_path = QFileDialog.getExistingDirectory(self, "Select Destination Directory", self.destinationEdit.text())
+        dir_path = QFileDialog.getExistingDirectory(
+            self,
+            translation_manager.translate(
+                "SplitJoinDialogs", "Select Destination Directory"
+            ),
+            self.destinationEdit.text(),
+        )
         if dir_path:
             self.destinationEdit.setText(dir_path)
 
@@ -139,7 +146,13 @@ class JoinDialog(QDialog):
                 self.outputFilenameEdit.setText(base_name + ".joined")
 
     def browse_destination(self):
-        dir_path = QFileDialog.getExistingDirectory(self, "Select Destination Directory", self.destinationEdit.text())
+        dir_path = QFileDialog.getExistingDirectory(
+            self,
+            translation_manager.translate(
+                "SplitJoinDialogs", "Select Destination Directory"
+            ),
+            self.destinationEdit.text(),
+        )
         if dir_path:
             self.destinationEdit.setText(dir_path)
 

@@ -304,7 +304,13 @@ class MenuPanel:
         try:
             selected_path = self.app_logic_handler.ui_state_provider.get_current_selected_path()
             if not selected_path:
-                 QMessageBox.warning(self.main_window, "Action", "Please select an item first.")
+                 QMessageBox.warning(
+                     self.main_window,
+                     translation_manager.translate("MenuPanel", "Action"),
+                     translation_manager.translate(
+                         "MenuPanel", "Please select an item first."
+                     ),
+                 )
                  return
 
             dialog_module = importlib.import_module(dialog_module_name)
@@ -330,7 +336,19 @@ class MenuPanel:
 
         except (ImportError, AttributeError) as e:
             logging.error(f"Could not load or create dialog for plugin {plugin_id}: {e}")
-            QMessageBox.critical(self.main_window, "Error", f"Failed to open dialog for plugin: {plugin_id}")
+            QMessageBox.critical(
+                self.main_window,
+                translation_manager.translate("MenuPanel", "Error"),
+                translation_manager.translate(
+                    "MenuPanel", "Failed to open dialog for plugin: {plugin}"
+                ).format(plugin=plugin_id),
+            )
         except Exception as e:
             logging.error(f"An error occurred while handling sandboxed action for {plugin_id}: {e}", exc_info=True)
-            QMessageBox.critical(self.main_window, "Error", f"An unexpected error occurred: {e}")
+            QMessageBox.critical(
+                self.main_window,
+                translation_manager.translate("MenuPanel", "Error"),
+                translation_manager.translate(
+                    "MenuPanel", "An unexpected error occurred: {error}"
+                ).format(error=e),
+            )

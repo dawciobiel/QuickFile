@@ -16,6 +16,7 @@ from plugins.base import SymlinkPlugin
 from create_link_dialog import CreateLinkDialog
 from modify_link_dialog import ModifyLinkDialog
 from app.action_logger import action_logger
+from app.translation_manager import translation_manager
 from file_operations.file_manager import FileManager, FileManagerError
 
 
@@ -45,19 +46,39 @@ class SymlinkManagerPlugin(SymlinkPlugin):
                 try:
                     action_logger.log_action("create_link", source=source, link=link, is_hardlink=is_hardlink)
                     message = self.file_manager.create_link(source, link, is_hardlink)
-                    QMessageBox.information(parent, "Success", message)
+                    QMessageBox.information(
+                        parent,
+                        translation_manager.translate("SymlinkManager", "Success"),
+                        message,
+                    )
                 except (FileManagerError, ValueError, FileExistsError) as e:
-                    QMessageBox.critical(parent, "Error", str(e))
+                    QMessageBox.critical(
+                        parent,
+                        translation_manager.translate("SymlinkManager", "Error"),
+                        str(e),
+                    )
 
     def modify_link(self, link_path: str, parent: QWidget):
         if not os.path.islink(link_path):
-            QMessageBox.warning(parent, "Warning", "Please select a symbolic link to modify.")
+            QMessageBox.warning(
+                parent,
+                translation_manager.translate("SymlinkManager", "Warning"),
+                translation_manager.translate(
+                    "SymlinkManager", "Please select a symbolic link to modify."
+                ),
+            )
             return
 
         try:
             target_path = os.readlink(link_path)
         except OSError as e:
-            QMessageBox.critical(parent, "Error", f"Could not read link target: {e}")
+            QMessageBox.critical(
+                parent,
+                translation_manager.translate("SymlinkManager", "Error"),
+                translation_manager.translate(
+                    "SymlinkManager", "Could not read link target: {error}"
+                ).format(error=e),
+            )
             return
 
         dialog = ModifyLinkDialog(parent, link_path, target_path)
@@ -67,6 +88,14 @@ class SymlinkManagerPlugin(SymlinkPlugin):
                 try:
                     action_logger.log_action("modify_link", link=link_path, new_target=new_target)
                     message = self.file_manager.modify_symbolic_link(link_path, new_target)
-                    QMessageBox.information(parent, "Success", message)
+                    QMessageBox.information(
+                        parent,
+                        translation_manager.translate("SymlinkManager", "Success"),
+                        message,
+                    )
                 except (FileManagerError, ValueError, FileNotFoundError) as e:
-                    QMessageBox.critical(parent, "Error", str(e))
+                    QMessageBox.critical(
+                        parent,
+                        translation_manager.translate("SymlinkManager", "Error"),
+                        str(e),
+                    )

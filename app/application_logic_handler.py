@@ -155,7 +155,11 @@ class ApplicationLogicHandler(QObject):
         if command_template:
             self._execute_external_command(command_template, path)
         else:
-            QMessageBox.warning(self.main_window, "Configuration Error", "Terminal command is empty.")
+            QMessageBox.warning(
+                self.main_window,
+                translation_manager.translate("MenuPanel", "Configuration Error"),
+                translation_manager.translate("MenuPanel", "Terminal command is empty."),
+            )
 
     @handle_error
     def open_admin_terminal_in_path(self, path):
@@ -173,7 +177,13 @@ class ApplicationLogicHandler(QObject):
         if command_template:
             self._execute_external_command(command_template, path)
         else:
-            QMessageBox.warning(self.main_window, "Configuration Error", "Admin terminal command is empty.")
+            QMessageBox.warning(
+                self.main_window,
+                translation_manager.translate("MenuPanel", "Configuration Error"),
+                translation_manager.translate(
+                    "MenuPanel", "Admin terminal command is empty."
+                ),
+            )
 
     @handle_error
     def open_terminal_here(self, checked=False):
@@ -221,7 +231,13 @@ class ApplicationLogicHandler(QObject):
         if plugin:
             plugin.open_editor(selected_path, self.main_window)
         else:
-            QMessageBox.warning(self.main_window, "Not Supported", "Attribute editing is not supported on this system.")
+            QMessageBox.warning(
+                self.main_window,
+                translation_manager.translate("MenuPanel", "Not Supported"),
+                translation_manager.translate(
+                    "MenuPanel", "Attribute editing is not supported on this system."
+                ),
+            )
 
     @handle_error
     def update_status_bar_path(self, path):
@@ -428,7 +444,13 @@ class ApplicationLogicHandler(QObject):
     def create_link(self, checked=False):
         source_path = self.ui_state_provider.get_current_selected_path()
         if not source_path:
-            QMessageBox.warning(self.main_window, "Warning", "Please select a source file or directory.")
+            QMessageBox.warning(
+                self.main_window,
+                translation_manager.translate("MenuPanel", "Warning"),
+                translation_manager.translate(
+                    "MenuPanel", "Please select a source file or directory."
+                ),
+            )
             return
 
         link_dir = self.ui_state_provider.get_inactive_panel_path()
@@ -440,14 +462,26 @@ class ApplicationLogicHandler(QObject):
             plugin.create_link(source_path, link_dir, self.main_window)
             self.ui_state_provider.folder_browser.refresh_all_views()
         else:
-            QMessageBox.warning(self.main_window, "Not Supported",
-                                "Symlink creation is not supported on this system or no plugin is available.")
+            QMessageBox.warning(
+                self.main_window,
+                translation_manager.translate("MenuPanel", "Not Supported"),
+                translation_manager.translate(
+                    "MenuPanel",
+                    "Symlink creation is not supported on this system or no plugin is available.",
+                ),
+            )
 
     @handle_error
     def modify_symbolic_link(self, checked=False):
         link_path = self.ui_state_provider.get_current_selected_path()
         if not link_path:
-            QMessageBox.warning(self.main_window, "Warning", "Please select a symbolic link to modify.")
+            QMessageBox.warning(
+                self.main_window,
+                translation_manager.translate("MenuPanel", "Warning"),
+                translation_manager.translate(
+                    "MenuPanel", "Please select a symbolic link to modify."
+                ),
+            )
             return
 
         plugin = self.task_queue_manager.plugin_manager.get_symlink_plugin()
@@ -455,8 +489,14 @@ class ApplicationLogicHandler(QObject):
             plugin.modify_link(link_path, self.main_window)
             self.ui_state_provider.folder_browser.refresh_all_views()
         else:
-            QMessageBox.warning(self.main_window, "Not Supported",
-                                "Symlink modification is not supported on this system or no plugin is available.")
+            QMessageBox.warning(
+                self.main_window,
+                translation_manager.translate("MenuPanel", "Not Supported"),
+                translation_manager.translate(
+                    "MenuPanel",
+                    "Symlink modification is not supported on this system or no plugin is available.",
+                ),
+            )
 
     @handle_error
     def refresh_all_views(self, checked=False):

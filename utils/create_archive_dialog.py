@@ -123,7 +123,7 @@ class CreateArchiveDialog(QDialog):
         if not schema:
             QMessageBox.information(
                 self,
-                "Info",
+                translation_manager.translate("CreateArchiveDialog", "Info"),
                 translation_manager.translate(
                     "CreateArchiveDialog",
                     "No configuration options available for this plugin.",
