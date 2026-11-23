@@ -631,5 +631,7 @@
     "DialogHandler.No file/folder selected for renaming.": "Nie wybrano pliku ani katalogu do zmiany nazwy.",
     "DialogHandler.No inactive panel path to copy to.": "Brak ścieżki nieaktywnego panelu do skopiowania.",
     "DialogHandler.No inactive panel path to move to.": "Brak ścieżki nieaktywnego panelu do przeniesienia.",
-    "DirectorySynchronizer.Error during synchronization: {error}": "Błąd podczas synchronizacji: {error}"
+    "DirectorySynchronizer.Error during synchronization: {error}": "Błąd podczas synchronizacji: {error}",
+    "PluginAction.Split File...": "Podziel plik...",
+    "PluginAction.Join Files...": "Połącz pliki..."
 }
