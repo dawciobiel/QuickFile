@@ -25,6 +25,7 @@ import os
 import re
 import sys
 import xml.etree.ElementTree as ET
+from unittest.mock import MagicMock
 
 import pytest
 from PyQt6.QtGui import QAction
@@ -38,6 +39,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from app.dialog_handler import DialogHandler
 from app.enums import TaskType
 from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
@@ -65,6 +67,31 @@ SOURCE_ROOTS = (
 )
 LANGUAGES = ("en_US.json", "pl_PL.json")
 SKIPPED_DIRECTORIES = {"__pycache__", "tests", "experiments"}
+HOST_SOURCE_ROOTS = (
+    "app",
+    "browser",
+    "favorites",
+    "file_operations",
+    "panels",
+    "ui",
+    "utils",
+)
+# Plugin-author validation and internal protocol signals. Plugin Management
+# reports the former separately; the latter never reach a dialog.
+INTERNAL_ERROR_MODULES = {
+    "app/action_replayer.py",
+    "app/external_tools.py",
+    "app/plugin_dependency_manager.py",
+    "app/plugin_installer.py",
+    "app/plugin_settings.py",
+    "app/plugin_state.py",
+    "app/plugin_updater.py",
+    "app/plugin_system/api.py",
+    "app/plugin_system/host.py",
+    "app/plugin_system/protocol.py",
+    "app/plugin_system/runtime.py",
+    "app/plugin_task_interface.py",
+}
 TASK_NOTIFICATION = "Notify on '{task}' completion"
 UI_DIR = os.path.join(PROJECT_ROOT, "ui")
 UI_CONTEXT = "Ui"
@@ -83,8 +110,8 @@ UNTRANSLATED_UI_TEXTS = {
 }
 
 
-def source_files():
-    for root in SOURCE_ROOTS:
+def source_files(roots=SOURCE_ROOTS):
+    for root in roots:
         root_path = os.path.join(PROJECT_ROOT, root)
         if not os.path.isdir(root_path):
             continue
@@ -232,6 +259,31 @@ def dialog_strings():
                         node.lineno,
                         ast.unparse(argument),
                     )
+
+
+def host_error_strings():
+    """Yield literal messages raised in host code and shown to the user."""
+    for path in source_files(HOST_SOURCE_ROOTS):
+        relative = os.path.relpath(path, PROJECT_ROOT)
+        if relative in INTERNAL_ERROR_MODULES:
+            continue
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Raise) or node.exc is None:
+                continue
+            if not isinstance(node.exc, ast.Call):
+                continue
+            for argument in node.exc.args:
+                if contains_translate(argument):
+                    continue
+                if isinstance(argument, ast.Constant) and isinstance(
+                    argument.value, str
+                ):
+                    if argument.value:
+                        yield relative, node.lineno, argument.value
+                elif isinstance(argument, ast.JoinedStr):
+                    yield relative, node.lineno, ast.unparse(argument)
 
 
 def designer_strings():
@@ -428,6 +480,24 @@ def test_dialog_strings_are_translated():
     found = sorted(dialog_strings())
 
     assert found == []
+
+
+def test_host_error_messages_are_translated():
+    """The error dialog shows the message raised by a host action."""
+    found = sorted(host_error_strings())
+
+    assert found == []
+
+
+def test_host_action_error_uses_the_current_language(polish_translations):
+    handler = DialogHandler.__new__(DialogHandler)
+    handler.ui_state_provider = MagicMock()
+    handler.ui_state_provider.get_selected_paths.return_value = []
+
+    with pytest.raises(ValueError) as error:
+        handler.create_archive()
+
+    assert str(error.value) == "Nie wybrano pliku ani katalogu do archiwizacji."
 
 
 @pytest.mark.parametrize("language", LANGUAGES)

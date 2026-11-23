@@ -616,5 +616,20 @@
     "PropertiesDialog.Modification date": "Modification date",
     "PropertiesDialog.Creation date": "Creation date",
     "PropertiesDialog.Read-only": "Read-only",
-    "PropertiesDialog.Hidden": "Hidden"
+    "PropertiesDialog.Hidden": "Hidden",
+    "DialogHandler.Both panels must have valid paths for synchronization.": "Both panels must have valid paths for synchronization.",
+    "DialogHandler.Cannot determine search path.": "Cannot determine search path.",
+    "DialogHandler.Checksum can only be calculated for files.": "Checksum can only be calculated for files.",
+    "DialogHandler.Could not retrieve properties for: {path}": "Could not retrieve properties for: {path}",
+    "DialogHandler.No archive file selected.": "No archive file selected.",
+    "DialogHandler.No checksum plugins available.": "No checksum plugins available.",
+    "DialogHandler.No file selected for checksum calculation.": "No file selected for checksum calculation.",
+    "DialogHandler.No file/folder selected for archiving.": "No file/folder selected for archiving.",
+    "DialogHandler.No file/folder selected for copying.": "No file/folder selected for copying.",
+    "DialogHandler.No file/folder selected for deletion.": "No file/folder selected for deletion.",
+    "DialogHandler.No file/folder selected for moving.": "No file/folder selected for moving.",
+    "DialogHandler.No file/folder selected for renaming.": "No file/folder selected for renaming.",
+    "DialogHandler.No inactive panel path to copy to.": "No inactive panel path to copy to.",
+    "DialogHandler.No inactive panel path to move to.": "No inactive panel path to move to.",
+    "DirectorySynchronizer.Error during synchronization: {error}": "Error during synchronization: {error}"
 }
