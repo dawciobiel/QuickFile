@@ -256,7 +256,12 @@ class MenuPanel:
                 for action_info in plugin.get_menu_actions():
                     target_menu_name = action_info.get("menu", "").lower()
                     if target_menu_name in plugin_actions_by_menu:
-                        action = QAction(action_info["text"], self.main_window)
+                        action = QAction(
+                            translation_manager.translate(
+                                "PluginAction", action_info["text"]
+                            ),
+                            self.main_window,
+                        )
 
                         if isinstance(plugin, SandboxedPluginWrapper):
                             action_id = action_info.get("action_id")

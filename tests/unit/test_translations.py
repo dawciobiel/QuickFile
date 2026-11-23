@@ -34,6 +34,7 @@ from PyQt6.QtWidgets import (
     QGroupBox,
     QLabel,
     QLineEdit,
+    QMenu,
     QPushButton,
     QTabWidget,
     QWidget,
@@ -46,6 +47,7 @@ from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
 from app.ui_translation import translate_widgets
 from file_operations.properties_manager import get_file_properties
+from panels.menu_panel import MenuPanel
 from tests.plugin_helpers import iter_plugin_version_paths
 from utils.plugin_management_page import STATUS_LABELS
 from utils.properties_dialog import PropertiesDialog
@@ -338,6 +340,28 @@ def plugin_translate_calls(directory):
     return texts
 
 
+def plugin_menu_action_texts(directory):
+    """Return the literal labels a bundled plugin puts in ``get_menu_actions``."""
+    texts = set()
+    for path in sorted(glob.glob(os.path.join(directory, "*.py"))):
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            if node.name != "get_menu_actions":
+                continue
+            for inner in ast.walk(node):
+                if not isinstance(inner, ast.Dict):
+                    continue
+                for key, value in zip(inner.keys, inner.values):
+                    if isinstance(key, ast.Constant) and key.value == "text":
+                        text = literal_text(value)
+                        if text is not None:
+                            texts.add(text)
+    return texts
+
+
 def plugin_designer_strings():
     """Map a text from a bundled plugin ``.ui`` to whether its code translates it."""
     found = {}
@@ -521,6 +545,33 @@ def test_bundled_plugin_ui_texts_are_translated(language):
         assert wrong == []
 
 
+def plugin_menu_action_labels():
+    """Return the literal labels every bundled plugin puts in ``get_menu_actions``."""
+    labels = set()
+    for _name, _version, metadata_path in iter_plugin_version_paths():
+        labels.update(plugin_menu_action_texts(os.path.dirname(metadata_path)))
+    return labels
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_bundled_plugin_menu_actions_are_translated(language):
+    translations = load_translations(language)
+    labels = plugin_menu_action_labels()
+
+    missing = sorted(
+        label for label in labels if f"PluginAction.{label}" not in translations
+    )
+    assert missing == []
+
+    if language == "en_US.json":
+        wrong = sorted(
+            label
+            for label in labels
+            if translations[f"PluginAction.{label}"] != label
+        )
+        assert wrong == []
+
+
 @pytest.fixture
 def polish_translations():
     previous = translation_manager.translations
@@ -568,6 +619,40 @@ def test_translate_widgets_keeps_texts_without_a_key(qapp, polish_translations):
 
     assert label.text() == "/path/to/source"
     label.deleteLater()
+
+
+def test_plugin_menu_label_uses_the_current_language(qapp, polish_translations):
+    panel = MenuPanel.__new__(MenuPanel)
+    panel.main_window = QWidget()
+    panel.icon_color = "#000000"
+    panel.file_menu = QMenu()
+    panel.operations_menu = QMenu()
+    panel.view_menu = QMenu()
+    panel.options_menu = QMenu()
+    panel.help_menu = QMenu()
+    panel.actions = {"file.exit": QAction("Exit", panel.main_window)}
+
+    class Plugin:
+        def get_menu_actions(self):
+            return [
+                {
+                    "text": "Split File...",
+                    "menu": "file",
+                    "action_id": "split_file",
+                    "callback": lambda: None,
+                }
+            ]
+
+    manager = MagicMock()
+    manager.get_menu_action_plugins.return_value = [Plugin()]
+    panel.app_logic_handler = MagicMock()
+    panel.app_logic_handler.task_queue_manager.plugin_manager = manager
+
+    panel._add_plugin_actions()
+
+    labels = {action.text() for action in panel.file_menu.actions()}
+    assert "Podziel plik..." in labels
+    panel.main_window.deleteLater()
 
 
 def load_plugin_module(plugin_name, module_name):

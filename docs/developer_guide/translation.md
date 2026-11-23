@@ -117,3 +117,21 @@ test accepts either form: every text in a bundled plugin's `.ui` file must be tr
 explicitly in the plugin code or have a `Ui.<text>` key. Changing a plugin's files means
 renaming its version directory and updating `metadata.json`; the package builder rejects
 a directory whose name differs from the metadata version.
+
+### Plugin menu labels
+
+A plugin returns its menu entries from `get_menu_actions()`, and the label is data, not a
+`translate(...)` call, so the host translates it while building the menu. `MenuPanel`
+looks the label up as `PluginAction.<text>`:
+
+```python
+action = QAction(
+    translation_manager.translate("PluginAction", action_info["text"]),
+    self.main_window,
+)
+```
+
+A label without a key keeps its original value. `test_bundled_plugin_menu_actions_are_translated`
+requires a `PluginAction.<label>` key in both language files for every literal `"text"`
+a bundled plugin returns, so a new plugin action means two new keys in the host language
+files, not a change to the plugin.
