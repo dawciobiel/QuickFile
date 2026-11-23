@@ -143,7 +143,11 @@ class DialogHandler:
         if properties:
             PropertiesDialog(properties, dialog_parent).exec()
         else:
-            raise ValueError(f"Could not retrieve properties for: {selected_path}")
+            raise ValueError(
+                translation_manager.translate(
+                    "DialogHandler", "Could not retrieve properties for: {path}"
+                ).format(path=selected_path)
+            )
 
     def open_general_settings_dialog(self, checked=False):
         action_logger.log_action("open_settings")
@@ -204,7 +208,9 @@ class DialogHandler:
     def create_archive(self, checked=False):
         paths_to_archive = self.ui_state_provider.get_selected_paths()
         if not paths_to_archive:
-            raise ValueError("No file/folder selected for archiving.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No file/folder selected for archiving.")
+            )
 
         if len(paths_to_archive) > 1:
             base_dir = self.ui_state_provider.get_active_panel_path()
@@ -234,7 +240,9 @@ class DialogHandler:
     def extract_archive(self, checked=False):
         selected_archive_path = self.ui_state_provider.get_current_selected_path()
         if not selected_archive_path:
-            raise ValueError("No archive file selected.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No archive file selected.")
+            )
         
         # Find appropriate plugin for extraction based on file extension
         extract_plugin = self.task_queue_manager.plugin_manager.get_archiver_for_file(
@@ -295,18 +303,24 @@ class DialogHandler:
     def calculate_checksum(self, checked=False):
         selected_paths = self.ui_state_provider.get_selected_paths()
         if not selected_paths:
-            raise ValueError("No file selected for checksum calculation.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No file selected for checksum calculation.")
+            )
         
         files_only = [p for p in selected_paths if os.path.isfile(p)]
         if not files_only:
-            raise ValueError("Checksum can only be calculated for files.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "Checksum can only be calculated for files.")
+            )
 
         algorithms = set()
         for plugin in self.task_queue_manager.plugin_manager.get_checksum_plugins():
             algorithms.update(plugin.get_supported_algorithms())
         
         if not algorithms:
-            raise ValueError("No checksum plugins available.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No checksum plugins available.")
+            )
 
         dialog = ChecksumDialog(self.main_window, files_only, sorted(list(algorithms)))
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -322,7 +336,9 @@ class DialogHandler:
     def start_search(self, checked=False):
         current_path = self.ui_state_provider.get_active_panel_path()
         if not current_path:
-            raise ValueError("Cannot determine search path.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "Cannot determine search path.")
+            )
 
         dialog = SearchDialog(self.main_window, current_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -362,7 +378,9 @@ class DialogHandler:
         left_path = self.ui_state_provider.folder_browser.get_left_panel_widget().file_view.get_current_path()
         right_path = self.ui_state_provider.folder_browser.get_right_panel_widget().file_view.get_current_path()
         if not (left_path and right_path):
-            raise ValueError("Both panels must have valid paths for synchronization.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "Both panels must have valid paths for synchronization.")
+            )
             
         dialog = SyncDialog(self.main_window, left_path, right_path)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -397,10 +415,14 @@ class DialogHandler:
     def copy_selected_item(self, checked=False):
         source_paths = self.ui_state_provider.get_selected_paths()
         if not source_paths:
-            raise ValueError("No file/folder selected for copying.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No file/folder selected for copying.")
+            )
         destination_path = self.ui_state_provider.get_inactive_panel_path()
         if not destination_path:
-            raise ValueError("No inactive panel path to copy to.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No inactive panel path to copy to.")
+            )
 
         dialog = CopyDialog(self.main_window, source_paths, destination_path, self.task_queue_manager, self.background_task_manager, self.theme_manager)
         dialog.exec()
@@ -421,10 +443,14 @@ class DialogHandler:
     def move_selected_item(self, checked=False):
         paths_to_move = self.ui_state_provider.get_selected_paths()
         if not paths_to_move:
-            raise ValueError("No file/folder selected for moving.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No file/folder selected for moving.")
+            )
         destination_path = self.ui_state_provider.get_inactive_panel_path()
         if not destination_path:
-            raise ValueError("No inactive panel path to move to.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No inactive panel path to move to.")
+            )
         
         dialog = MoveDialog(self.main_window, paths_to_move, destination_path, self.task_queue_manager, self.background_task_manager, self.theme_manager)
         dialog.exec()
@@ -445,7 +471,9 @@ class DialogHandler:
     def delete_selected_item(self, checked=False):
         selected_paths = self.ui_state_provider.get_selected_paths()
         if not selected_paths:
-            raise ValueError("No file/folder selected for deletion.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No file/folder selected for deletion.")
+            )
         
         dialog = DeleteDialog(self.main_window, selected_paths, self.task_queue_manager, self.background_task_manager, self.theme_manager)
         dialog.exec()
@@ -466,7 +494,9 @@ class DialogHandler:
     def rename_selected_item(self, checked=False):
         selected_path = self.ui_state_provider.get_current_selected_path()
         if not selected_path:
-            raise ValueError("No file/folder selected for renaming.")
+            raise ValueError(
+                translation_manager.translate("DialogHandler", "No file/folder selected for renaming.")
+            )
         old_name = os.path.basename(selected_path)
         new_name, ok = QInputDialog.getText(self.main_window, translation_manager.translate("DialogHandler", "Rename"), translation_manager.translate("DialogHandler", "New name:"), text=old_name)
         if ok and new_name:

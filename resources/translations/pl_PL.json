@@ -616,5 +616,20 @@
     "PropertiesDialog.Modification date": "Data modyfikacji",
     "PropertiesDialog.Creation date": "Data utworzenia",
     "PropertiesDialog.Read-only": "Tylko do odczytu",
-    "PropertiesDialog.Hidden": "Ukryty"
+    "PropertiesDialog.Hidden": "Ukryty",
+    "DialogHandler.Both panels must have valid paths for synchronization.": "Oba panele muszą mieć prawidłowe ścieżki do synchronizacji.",
+    "DialogHandler.Cannot determine search path.": "Nie można określić ścieżki wyszukiwania.",
+    "DialogHandler.Checksum can only be calculated for files.": "Sumę kontrolną można obliczyć tylko dla plików.",
+    "DialogHandler.Could not retrieve properties for: {path}": "Nie można pobrać właściwości dla: {path}",
+    "DialogHandler.No archive file selected.": "Nie wybrano pliku archiwum.",
+    "DialogHandler.No checksum plugins available.": "Brak dostępnych wtyczek sum kontrolnych.",
+    "DialogHandler.No file selected for checksum calculation.": "Nie wybrano pliku do obliczenia sumy kontrolnej.",
+    "DialogHandler.No file/folder selected for archiving.": "Nie wybrano pliku ani katalogu do archiwizacji.",
+    "DialogHandler.No file/folder selected for copying.": "Nie wybrano pliku ani katalogu do skopiowania.",
+    "DialogHandler.No file/folder selected for deletion.": "Nie wybrano pliku ani katalogu do usunięcia.",
+    "DialogHandler.No file/folder selected for moving.": "Nie wybrano pliku ani katalogu do przeniesienia.",
+    "DialogHandler.No file/folder selected for renaming.": "Nie wybrano pliku ani katalogu do zmiany nazwy.",
+    "DialogHandler.No inactive panel path to copy to.": "Brak ścieżki nieaktywnego panelu do skopiowania.",
+    "DialogHandler.No inactive panel path to move to.": "Brak ścieżki nieaktywnego panelu do przeniesienia.",
+    "DirectorySynchronizer.Error during synchronization: {error}": "Błąd podczas synchronizacji: {error}"
 }

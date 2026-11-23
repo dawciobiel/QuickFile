@@ -6,12 +6,13 @@
   messages with runtime values, standard dialog captions/messages and the Properties
   dialog are translated. `tests/unit/test_translations.py` enforces the lookup keys, the
   plugin `.ui` coverage, literal `setText`/`showMessage` arguments, plain
-  `QMessageBox`/`QInputDialog`/`QFileDialog` strings, the editor window title, and that no
-  `translate` key is built from an f-string (such a key never matches JSON). What remains:
-  `ValueError` texts raised in host actions and shown by the error handler (for example
-  `No archive file selected.` in `app/dialog_handler.py`), plugin-provided menu labels
-  (`get_menu_actions()["text"]`), plugin names in the archive format selector and plugin
-  settings title, and the labels Qt adds to standard buttons (the app installs no
+  `QMessageBox`/`QInputDialog`/`QFileDialog` strings, the editor window title, messages
+  raised by host actions, and that no `translate` key is built from an f-string (such a
+  key never matches JSON). What remains: plugin-author validation errors reported by
+  Plugin Management (`app/plugin_installer.py`, `app/plugin_state.py`,
+  `app/plugin_settings.py`, `app/plugin_dependency_manager.py`), plugin-provided menu
+  labels (`get_menu_actions()["text"]`), plugin names in the archive format selector and
+  plugin settings title, and the labels Qt adds to standard buttons (the app installs no
   `QTranslator`, so `Save`/`Cancel` stay English).
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 - **Error message**: During launching application under Garuda occur error message: 

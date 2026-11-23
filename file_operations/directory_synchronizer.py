@@ -7,6 +7,8 @@ import os
 import shutil
 import filecmp
 
+from app.translation_manager import translation_manager
+
 class DirectorySynchronizerError(Exception):
     """Custom exception for DirectorySynchronizer errors."""
     pass
@@ -31,7 +33,11 @@ class DirectorySynchronizer:
             return "Synchronization completed successfully."
         except Exception as e:
             logging.exception(f"Error during synchronization between {dir1} and {dir2}: {e}")
-            raise DirectorySynchronizerError(f"Error during synchronization: {e}")
+            raise DirectorySynchronizerError(
+                translation_manager.translate(
+                    "DirectorySynchronizer", "Error during synchronization: {error}"
+                ).format(error=e)
+            )
 
     def _count_items(self, dir1, dir2, options):
         # This is a simplified counting and might not be perfectly accurate
