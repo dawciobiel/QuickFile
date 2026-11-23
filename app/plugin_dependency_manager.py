@@ -14,6 +14,8 @@ from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import canonicalize_name
 from packaging.version import InvalidVersion
 
+from app.translation_manager import translation_manager
+
 
 class DependencyStatus(NamedTuple):
     """Result of a plugin dependency check."""
@@ -155,9 +157,9 @@ class PluginDependencyManager:
         """
         if status.libs_dir and not metadata.get("sandboxed", False):
             raise ValueError(
-                f"Plugin {metadata.get('id', '<unknown>')} needs dependencies from "
-                "its libs directory but is not sandboxed; isolated dependencies "
-                "require a separate process."
+                translation_manager.translate(
+                    "PluginDependencyManager", "Plugin {plugin} needs dependencies from its libs directory but is not sandboxed; isolated dependencies require a separate process."
+                ).format(plugin=metadata.get('id', '<unknown>'))
             )
 
     # ------------------------------------------------------------------
@@ -190,8 +192,10 @@ class PluginDependencyManager:
                 declared.append(Requirement(dependency))
             except InvalidRequirement as error:
                 raise ValueError(
-                    f"Invalid python dependency {dependency!r} in metadata: {error}"
-                ) from error
+                    translation_manager.translate(
+                        "PluginDependencyManager", "Invalid python dependency {dependency!r} in metadata: {error}"
+                    ).format(dependency=dependency, error=error)
+                )
 
         locked = self._locked_requirements(plugin_path, metadata)
         if locked is None:
@@ -205,8 +209,9 @@ class PluginDependencyManager:
         ]
         if uncovered:
             raise ValueError(
-                "Dependency lock file does not cover every declared dependency: "
-                + ", ".join(uncovered)
+                translation_manager.translate(
+                    "PluginDependencyManager", "Dependency lock file does not cover every declared dependency: {dependencies}"
+                ).format(dependencies=", ".join(uncovered))
             )
 
         return locked
@@ -231,9 +236,10 @@ class PluginDependencyManager:
                     requirement = Requirement(requirement_text)
                 except InvalidRequirement as error:
                     raise ValueError(
-                        f"{lock_path}:{line_number}: invalid requirement "
-                        f"{requirement_text!r}: {error}"
-                    ) from error
+                        translation_manager.translate(
+                            "PluginDependencyManager", "{path}:{line}: invalid requirement {requirement!r}: {error}"
+                        ).format(path=lock_path, line=line_number, requirement=requirement_text, error=error)
+                    )
 
                 if requirement.marker is not None and not requirement.marker.evaluate():
                     continue
@@ -241,7 +247,11 @@ class PluginDependencyManager:
                 requirements.append(requirement)
 
         if not requirements:
-            raise ValueError(f"{lock_path}: lock file contains no requirements")
+            raise ValueError(
+                translation_manager.translate(
+                    "PluginDependencyManager", "{path}: lock file contains no requirements"
+                ).format(path=lock_path)
+            )
 
         return requirements
 
@@ -262,7 +272,9 @@ class PluginDependencyManager:
         resolved = os.path.abspath(os.path.join(root, relative_path))
         if os.path.commonpath([root, resolved]) != root:
             raise ValueError(
-                f"Plugin dependency path {relative_path!r} leaves the plugin directory"
+                translation_manager.translate(
+                    "PluginDependencyManager", "Plugin dependency path {path!r} leaves the plugin directory"
+                ).format(path=relative_path)
             )
         return resolved
 

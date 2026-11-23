@@ -32,6 +32,7 @@ from typing import List, Optional, Tuple
 from app.external_tools import ExternalToolsError, requirements_for
 from app.plugin_dependency_manager import PluginDependencyManager
 from app.plugin_settings import PluginSettingsError, validate_schema
+from app.translation_manager import translation_manager
 
 VERSION_PATTERN = re.compile(r"^\d+(\.\d+)*$")
 IGNORED_DIRECTORIES = {"__pycache__"}
@@ -74,7 +75,11 @@ def install(
     shipped_root = os.path.abspath(install_dir or default_install_dir())
 
     if not os.path.exists(source):
-        raise PluginInstallationError(f"Package not found: {source}")
+        raise PluginInstallationError(
+            translation_manager.translate(
+                "PluginInstaller", "Package not found: {source}"
+            ).format(source=source)
+        )
 
     os.makedirs(destination_root, exist_ok=True)
     staging = tempfile.mkdtemp(prefix=".install-", dir=destination_root)
@@ -129,8 +134,10 @@ def _extract_archive(archive_path: str, target: str) -> None:
         archive = zipfile.ZipFile(archive_path)
     except (zipfile.BadZipFile, OSError) as error:
         raise PluginInstallationError(
-            f"{archive_path} is not a readable zip archive: {error}"
-        ) from error
+            translation_manager.translate(
+                "PluginInstaller", "{archive} is not a readable zip archive: {error}"
+            ).format(archive=archive_path, error=error)
+        )
 
     with archive:
         for info in archive.infolist():
@@ -151,7 +158,9 @@ def _validate_member(info: zipfile.ZipInfo) -> None:
     mode = info.external_attr >> 16
     if mode and stat.S_ISLNK(mode):
         raise PluginInstallationError(
-            f"Package contains a symlink ({info.filename}); symlinks are not allowed."
+            translation_manager.translate(
+                "PluginInstaller", "Package contains a symlink ({name}); symlinks are not allowed."
+            ).format(name=info.filename)
         )
 
 
@@ -159,13 +168,17 @@ def _safe_relative_path(name: str) -> Optional[str]:
     """Reject escaping paths; return ``None`` for entries to skip."""
     if "\\" in name or ":" in name.split("/")[0]:
         raise PluginInstallationError(
-            f"Package contains an invalid path: {name!r}"
+            translation_manager.translate(
+                "PluginInstaller", "Package contains an invalid path: {name!r}"
+            ).format(name=name)
         )
 
     parts = name.split("/")
     if name.startswith("/") or ".." in parts:
         raise PluginInstallationError(
-            f"Package contains a path outside the plugin directory: {name!r}"
+            translation_manager.translate(
+                "PluginInstaller", "Package contains a path outside the plugin directory: {name!r}"
+            ).format(name=name)
         )
 
     parts = [part for part in parts if part not in ("", ".")]
@@ -185,8 +198,9 @@ def _locate_plugin_root(base: str) -> str:
 
     if len(roots) != 1:
         raise PluginInstallationError(
-            "Package must contain exactly one metadata.json, "
-            f"found {len(roots)}."
+            translation_manager.translate(
+                "PluginInstaller", "Package must contain exactly one metadata.json, found {count}."
+            ).format(count=len(roots))
         )
 
     root = roots[0]
@@ -197,15 +211,17 @@ def _locate_plugin_root(base: str) -> str:
     wrapper = relative.split(os.sep)
     if len(wrapper) != 1:
         raise PluginInstallationError(
-            "metadata.json must be at the package root or in a single "
-            "top-level directory."
+            translation_manager.translate(
+                "PluginInstaller", "metadata.json must be at the package root or in a single top-level directory."
+            )
         )
 
     extra = set(os.listdir(base)) - IGNORED_DIRECTORIES - {wrapper[0]}
     if extra:
         raise PluginInstallationError(
-            "Package has entries outside the plugin directory: "
-            + ", ".join(sorted(extra))
+            translation_manager.translate(
+                "PluginInstaller", "Package has entries outside the plugin directory: {entries}"
+            ).format(entries=", ".join(sorted(extra)))
         )
     return root
 
@@ -217,11 +233,17 @@ def _read_metadata(package_root: str) -> dict:
             metadata = json.load(handle)
     except (OSError, json.JSONDecodeError) as error:
         raise PluginInstallationError(
-            f"Cannot read metadata.json: {error}"
-        ) from error
+            translation_manager.translate(
+                "PluginInstaller", "Cannot read metadata.json: {error}"
+            ).format(error=error)
+        )
 
     if not isinstance(metadata, dict):
-        raise PluginInstallationError("metadata.json must contain an object.")
+        raise PluginInstallationError(
+            translation_manager.translate(
+                "PluginInstaller", "metadata.json must contain an object."
+            )
+        )
     return metadata
 
 
@@ -229,13 +251,17 @@ def _validate_metadata(package_root: str, metadata: dict) -> Tuple[str, str]:
     plugin_id = _require_string(metadata, "id")
     if "." not in plugin_id:
         raise PluginInstallationError(
-            f"Plugin id {plugin_id!r} must look like 'org.example.plugin'."
+            translation_manager.translate(
+                "PluginInstaller", "Plugin id {id!r} must look like 'org.example.plugin'."
+            ).format(id=plugin_id)
         )
 
     version = _require_string(metadata, "version")
     if not VERSION_PATTERN.match(version):
         raise PluginInstallationError(
-            f"Invalid plugin version {version!r}; expected digits and dots."
+            translation_manager.translate(
+                "PluginInstaller", "Invalid plugin version {version!r}; expected digits and dots."
+            ).format(version=version)
         )
 
     _require_string(metadata, "type")
@@ -244,23 +270,31 @@ def _validate_metadata(package_root: str, metadata: dict) -> Tuple[str, str]:
     module_name, separator, class_name = entry_point.partition(":")
     if not separator or not module_name or not class_name:
         raise PluginInstallationError(
-            f"Invalid entry_point {entry_point!r}; expected 'module:Class'."
+            translation_manager.translate(
+                "PluginInstaller", "Invalid entry_point {entry_point!r}; expected 'module:Class'."
+            ).format(entry_point=entry_point)
         )
     if not os.path.isfile(os.path.join(package_root, module_name + ".py")):
         raise PluginInstallationError(
-            f"entry_point module {module_name!r} is missing from the package."
+            translation_manager.translate(
+                "PluginInstaller", "entry_point module {module!r} is missing from the package."
+            ).format(module=module_name)
         )
 
     group_id, artifact_id = _split_plugin_id(plugin_id)
     declared_group = metadata.get("group_id")
     if declared_group is not None and declared_group != group_id:
         raise PluginInstallationError(
-            f"group_id {declared_group!r} does not match id {plugin_id!r}."
+            translation_manager.translate(
+                "PluginInstaller", "group_id {declared!r} does not match id {id!r}."
+            ).format(declared=declared_group, id=plugin_id)
         )
     declared_artifact = metadata.get("artifact_id")
     if declared_artifact is not None and declared_artifact != artifact_id:
         raise PluginInstallationError(
-            f"artifact_id {declared_artifact!r} does not match id {plugin_id!r}."
+            translation_manager.translate(
+                "PluginInstaller", "artifact_id {declared!r} does not match id {id!r}."
+            ).format(declared=declared_artifact, id=plugin_id)
         )
 
     schema = (metadata.get("settings") or {}).get("schema")
@@ -269,15 +303,19 @@ def _validate_metadata(package_root: str, metadata: dict) -> Tuple[str, str]:
             validate_schema(schema)
         except PluginSettingsError as error:
             raise PluginInstallationError(
-                f"Invalid settings schema: {error}"
-            ) from error
+                translation_manager.translate(
+                    "PluginInstaller", "Invalid settings schema: {error}"
+                ).format(error=error)
+            )
 
     try:
         requirements_for(metadata)
     except ExternalToolsError as error:
         raise PluginInstallationError(
-            f"Invalid external_tools declaration: {error}"
-        ) from error
+            translation_manager.translate(
+                "PluginInstaller", "Invalid external_tools declaration: {error}"
+            ).format(error=error)
+        )
 
     return plugin_id, version
 
@@ -286,7 +324,9 @@ def _require_string(metadata: dict, field: str) -> str:
     value = metadata.get(field)
     if not isinstance(value, str) or not value.strip():
         raise PluginInstallationError(
-            f"metadata.json must define a non-empty {field}."
+            translation_manager.translate(
+                "PluginInstaller", "metadata.json must define a non-empty {field}."
+            ).format(field=field)
         )
     return value
 
@@ -301,14 +341,16 @@ def _refuse_collisions(target: str, plugin_id: str, shipped_root: str) -> None:
     shipped_path = os.path.join(shipped_root, group_id, artifact_id)
     if os.path.isdir(shipped_path):
         raise PluginInstallationError(
-            f"Plugin {plugin_id} is shipped with QuickFile; an installed copy "
-            "would be ignored. Remove it from the release first."
+            translation_manager.translate(
+                "PluginInstaller", "Plugin {id} is shipped with QuickFile; an installed copy would be ignored. Remove it from the release first."
+            ).format(id=plugin_id)
         )
 
     if os.path.exists(target):
         raise PluginInstallationError(
-            f"Version {os.path.basename(target)} of {plugin_id} is already "
-            f"installed at {target}; refusing to overwrite."
+            translation_manager.translate(
+                "PluginInstaller", "Version {version} of {id} is already installed at {path}; refusing to overwrite."
+            ).format(version=os.path.basename(target), id=plugin_id, path=target)
         )
 
 
@@ -328,9 +370,11 @@ def _dependency_warnings(
     if status.satisfied:
         return []
     return [
-        "missing Python dependencies: "
-        + ", ".join(status.missing)
-        + ". Install them explicitly with the plugin's offline wheels."
+        translation_manager.translate(
+            "PluginInstaller",
+            "missing Python dependencies: {dependencies}. "
+            "Install them explicitly with the plugin's offline wheels.",
+        ).format(dependencies=", ".join(status.missing))
     ]
 
 
