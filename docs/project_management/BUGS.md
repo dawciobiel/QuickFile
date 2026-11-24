@@ -7,10 +7,12 @@
   dialog are translated. `tests/unit/test_translations.py` enforces the lookup keys, the
   plugin `.ui` coverage, literal `setText`/`showMessage` arguments, plain
   `QMessageBox`/`QInputDialog`/`QFileDialog` strings, the editor window title, messages
-  raised by host actions, plugin menu labels, plugin names, Plugin Management and plugin
-  update errors, and that no `translate` key is built from an f-string (such a key never
-  matches JSON). What remains: the labels Qt adds to standard buttons (the app installs no
-  `QTranslator`, so `Save`/`Cancel` stay English).
+  raised by host actions, plugin menu labels and plugin names, and the Plugin Management
+  and plugin update errors. Qt's own standard button labels come from
+  `install_qt_translations`. The test also rejects a `translate` key built from an f-string
+  (such a key never matches JSON). What remains: settings field titles, descriptions and
+  choice labels declared in plugin `metadata.json` (currently only the bundled ZIP
+  archiver).
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 - **Error message**: During launching application under Garuda occur error message: 
   `/run/media/dawciobiel/4cb3e6fb-e74b-4ce8-b6db-d2f6943a2697/home/dawciobiel/PyCharmProjects/QuickFile`

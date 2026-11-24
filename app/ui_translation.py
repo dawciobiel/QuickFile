@@ -16,8 +16,10 @@ Call it right after ``loadUi`` and before setting any text from data.
 Specification: ``docs/developer_guide/translation.md``.
 """
 
+from PyQt6.QtCore import QLibraryInfo, QTranslator
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QGroupBox,
@@ -36,6 +38,29 @@ from PyQt6.QtWidgets import (
 from app.translation_manager import translation_manager
 
 CONTEXT = "Ui"
+
+
+def install_qt_translations(app: QApplication) -> QTranslator | None:
+    """Install Qt's own translation for the current language, when available.
+
+    Qt draws the standard button labels (``OK``, ``Save``, ``Cancel``) and the
+    titles of its own dialogs from ``qtbase_<language>.qm``. Without this
+    translator those labels stay English in every locale. Returns the installed
+    translator so the caller can keep a reference, or ``None`` for English or
+    when Qt ships no catalogue for the language.
+    """
+    locale = translation_manager.current_locale
+    base = locale.split("_")[0]
+    if base == "en":
+        return None
+
+    directory = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+    for candidate in (locale, base):
+        translator = QTranslator(app)
+        if translator.load(f"qtbase_{candidate}", directory):
+            app.installTranslator(translator)
+            return translator
+    return None
 
 
 def translate_widgets(root: QWidget) -> None:
