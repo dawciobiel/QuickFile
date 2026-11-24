@@ -36,7 +36,7 @@ class PluginSettingsDialog(QDialog):
 
         self.setWindowTitle(
             f"{translation_manager.translate('PluginSettings', 'Plugin settings')}: "
-            f"{plugin_name}"
+            f"{translation_manager.translate('PluginName', plugin_name)}"
         )
 
         layout = QVBoxLayout(self)

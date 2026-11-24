@@ -293,7 +293,7 @@ class DialogHandler:
 
         return "\n\n".join(
             template.format(
-                plugin=plugin_name,
+                plugin=translation_manager.translate("PluginName", plugin_name),
                 tool=status.requirement.name,
                 executables=", ".join(status.requirement.executables),
             )

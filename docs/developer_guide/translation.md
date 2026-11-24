@@ -143,3 +143,11 @@ A label without a key keeps its original value. `test_bundled_plugin_menu_action
 requires a `PluginAction.<label>` key in both language files for every literal `"text"`
 a bundled plugin returns, so a new plugin action means two new keys in the host language
 files, not a change to the plugin.
+
+### Plugin names
+
+`plugin.get_name()` comes from `metadata.json`. The host translates it as
+`PluginName.<name>` wherever a name is displayed: the archive format selector, the plugin
+settings title and the missing-tool message. `test_bundled_plugin_names_are_translated`
+requires a key for every bundled plugin's `name`; an external plugin without one keeps the
+name it declares.

@@ -78,7 +78,9 @@ class CreateArchiveDialog(QDialog):
         for plugin in self.plugins:
             # Use the first supported extension as the label, or plugin name
             exts = plugin.get_supported_extensions()
-            plugin_name = plugin.get_name()
+            plugin_name = translation_manager.translate(
+                "PluginName", plugin.get_name()
+            )
             label = f"{plugin_name} ({', '.join(exts)})"
             # noinspection PyTypeChecker
             self.type_combo.addItem(label, plugin)
