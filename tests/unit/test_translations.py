@@ -45,6 +45,7 @@ from app.enums import TaskType
 from app.plugin_installer import PluginInstallationError, install
 from app.plugin_settings import PluginSettingsError, validate_schema
 from app.plugin_state import PluginStateError, disable_plugin
+from app.plugin_updater import UpdateError, load_feed
 from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
@@ -86,7 +87,6 @@ HOST_SOURCE_ROOTS = (
 INTERNAL_ERROR_MODULES = {
     "app/action_replayer.py",
     "app/external_tools.py",
-    "app/plugin_updater.py",
     "app/plugin_system/api.py",
     "app/plugin_system/host.py",
     "app/plugin_system/protocol.py",
@@ -551,6 +551,16 @@ def test_plugin_state_error_uses_the_current_language(polish_translations, tmp_p
 
     assert str(error.value) == (
         f"Wtyczka org.example.plugin nie jest zainstalowana w {tmp_path}."
+    )
+
+
+def test_plugin_updater_error_uses_the_current_language(polish_translations):
+    with pytest.raises(UpdateError) as error:
+        load_feed("ftp://example.com/plugin-index.json")
+
+    assert str(error.value) == (
+        "Nieobsługiwany schemat adresu URL 'ftp' w "
+        "ftp://example.com/plugin-index.json; użyj https lub file."
     )
 
 
