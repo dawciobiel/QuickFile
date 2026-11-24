@@ -67,10 +67,10 @@ Four tests fail when code hands a widget a plain literal instead of a translatio
 *   `test_host_error_messages_are_translated` checks the message of a `raise` in host code,
     because the error handler shows it in a dialog. `INTERNAL_ERROR_MODULES` lists the
     internal modules whose exceptions never reach a dialog (`action_replayer`,
-    `plugin_updater`, `external_tools`, `plugin_system/*`, `plugin_task_interface`).
-    Plugin Management shows installer, state, settings and dependency errors in its page,
-    so those messages use `PluginInstaller`, `PluginState`, `PluginSettings` and
-    `PluginDependencyManager` keys and are checked by the same test.
+    `external_tools`, `plugin_system/*`, `plugin_task_interface`). Plugin Management shows
+    installer, state, settings, dependency and update errors in its page, so those messages
+    use `PluginInstaller`, `PluginState`, `PluginSettings`, `PluginDependencyManager` and
+    `PluginUpdater` keys and are checked by the same test.
 
 A fifth test, `test_translation_keys_are_not_built_at_runtime`, rejects a `translate` key
 built from an f-string with placeholders. The lookup uses the whole string, so such a key
