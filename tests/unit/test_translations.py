@@ -23,6 +23,7 @@ import importlib.util
 import json
 import os
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from unittest.mock import MagicMock
@@ -562,6 +563,33 @@ def test_plugin_updater_error_uses_the_current_language(polish_translations):
         "Nieobsługiwany schemat adresu URL 'ftp' w "
         "ftp://example.com/plugin-index.json; użyj https lub file."
     )
+
+
+def test_translation_manager_imports_without_qt(tmp_path):
+    """The package builder imports the translation manager without PyQt6."""
+    stub = tmp_path / "PyQt6"
+    stub.mkdir()
+    (stub / "__init__.py").write_text(
+        "raise ImportError('PyQt6 is not installed')\n", encoding="utf-8"
+    )
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = str(tmp_path)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from app.translation_manager import translation_manager;"
+            "print(translation_manager.current_locale)",
+        ],
+        cwd=PROJECT_ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip()
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
