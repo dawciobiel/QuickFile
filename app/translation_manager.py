@@ -6,7 +6,6 @@ import json
 import os
 import locale
 import logging
-from app.settings_manager import SettingsManager # Import SettingsManager
 from utils.resource_path import get_resource_path
 
 class TranslationManager:
@@ -20,14 +19,33 @@ class TranslationManager:
 
     def _initialize(self):
         self.translations = {}
-        self.settings_manager = SettingsManager() # Get an instance of SettingsManager
+        self.settings_manager = None
         self.current_locale = self._determine_effective_locale()
         self._load_translations(self.current_locale)
 
+    def _settings(self):
+        """Return the settings manager, importing Qt only when it is available.
+
+        Command-line helpers such as ``scripts/build_plugin_package.py`` import
+        this module without PyQt6; they fall back to the system locale.
+        """
+        if self.settings_manager is None:
+            from app.settings_manager import SettingsManager
+
+            self.settings_manager = SettingsManager()
+        return self.settings_manager
+
     def _determine_effective_locale(self):
-        language_mode = self.settings_manager.get_setting("language_mode", "auto")
+        try:
+            settings = self._settings()
+        except ImportError:
+            settings = None
+
+        language_mode = (
+            settings.get_setting("language_mode", "auto") if settings else "auto"
+        )
         if language_mode == "manual":
-            return self.settings_manager.get_setting("manual_language", "en_US")
+            return settings.get_setting("manual_language", "en_US")
         else: # auto
             lang_code = None
             try:

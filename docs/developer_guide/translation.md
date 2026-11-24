@@ -8,6 +8,10 @@ Translations are flat JSON dictionaries in `resources/translations/`:
 Both files must contain the same keys. There is no compilation step and no `.ts`/`.qm`
 file: `TranslationManager` loads the JSON file for the selected locale at startup.
 
+`SettingsManager` is imported only when the manager needs the language setting, so
+command-line tools without PyQt6 (the plugin package builder) can still import the
+translation manager; they fall back to the system locale.
+
 ### Adding a string
 
 Use `translation_manager.translate` with a context and the English text:
