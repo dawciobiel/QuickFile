@@ -53,8 +53,10 @@ from app.translation_manager import translation_manager
 from app.ui_translation import translate_widgets
 from file_operations.properties_manager import get_file_properties
 from panels.menu_panel import MenuPanel
-from tests.plugin_helpers import iter_plugin_version_paths
+from tests.plugin_helpers import iter_plugin_metadata, iter_plugin_version_paths
+from utils.create_archive_dialog import CreateArchiveDialog
 from utils.plugin_management_page import STATUS_LABELS
+from utils.plugin_settings_dialog import PluginSettingsDialog
 from utils.properties_dialog import PropertiesDialog
 
 PROJECT_ROOT = os.path.dirname(
@@ -640,6 +642,32 @@ def test_bundled_plugin_menu_actions_are_translated(language):
         assert wrong == []
 
 
+def plugin_names():
+    """Return the display names of every bundled plugin."""
+    return {
+        metadata["name"]
+        for _path, metadata in iter_plugin_metadata()
+        if metadata.get("name")
+    }
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_bundled_plugin_names_are_translated(language):
+    translations = load_translations(language)
+    names = plugin_names()
+
+    missing = sorted(
+        name for name in names if f"PluginName.{name}" not in translations
+    )
+    assert missing == []
+
+    if language == "en_US.json":
+        wrong = sorted(
+            name for name in names if translations[f"PluginName.{name}"] != name
+        )
+        assert wrong == []
+
+
 @pytest.fixture
 def polish_translations():
     previous = translation_manager.translations
@@ -721,6 +749,47 @@ def test_plugin_menu_label_uses_the_current_language(qapp, polish_translations):
     labels = {action.text() for action in panel.file_menu.actions()}
     assert "Podziel plik..." in labels
     panel.main_window.deleteLater()
+
+
+def test_plugin_settings_title_uses_the_current_language(qapp, polish_translations):
+    dialog = PluginSettingsDialog(
+        None,
+        "Standard ZIP Archiver",
+        {"enabled": {"type": "boolean", "title": "Enabled", "default": True}},
+    )
+    try:
+        assert (
+            dialog.windowTitle()
+            == "Ustawienia pluginu: Standardowy archiwizator ZIP"
+        )
+    finally:
+        dialog.deleteLater()
+
+
+def test_archive_plugin_label_uses_the_current_language(qapp, polish_translations):
+    class Plugin:
+        metadata = {"id": "org.example.creator"}
+
+        def get_name(self):
+            return "Standard ZIP Archiver"
+
+        def get_supported_extensions(self):
+            return ["zip"]
+
+    class Settings:
+        def get_plugin_settings(self, plugin_id):
+            return {}
+
+        def set_plugin_settings(self, plugin_id, options):
+            pass
+
+    manager = MagicMock()
+    manager.get_archivers.return_value = [Plugin()]
+    dialog = CreateArchiveDialog(None, manager, "/tmp", settings_manager=Settings())
+    try:
+        assert dialog.type_combo.itemText(0) == "Standardowy archiwizator ZIP (zip)"
+    finally:
+        dialog.deleteLater()
 
 
 def load_plugin_module(plugin_name, module_name):

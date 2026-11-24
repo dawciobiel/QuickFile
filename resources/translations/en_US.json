@@ -720,5 +720,22 @@
     "PluginUpdater.Missing path in feed URL {url}.": "Missing path in feed URL {url}.",
     "PluginUpdater.Cannot read {url}: {error}": "Cannot read {url}: {error}",
     "PluginUpdater.{label} {url} is larger than {limit} bytes.": "{label} {url} is larger than {limit} bytes.",
-    "PluginUpdater.Feed": "Feed"
+    "PluginUpdater.Feed": "Feed",
+    "PluginName.Standard Checksum Calculator": "Standard Checksum Calculator",
+    "PluginName.Standard Copy Operation": "Standard Copy Operation",
+    "PluginName.Standard Delete Operation": "Standard Delete Operation",
+    "PluginName.Directory Size": "Directory Size",
+    "PluginName.Standard Disk Utils": "Standard Disk Utils",
+    "PluginName.Feedback System": "Feedback System",
+    "PluginName.File Splitter": "File Splitter",
+    "PluginName.Flat View": "Flat View",
+    "PluginName.Linux Attribute Editor": "Linux Attribute Editor",
+    "PluginName.Standard Move Operation": "Standard Move Operation",
+    "PluginName.Standard File Search": "Standard File Search",
+    "PluginName.Standard Editor": "Standard Editor",
+    "PluginName.Standard File Viewer": "Standard File Viewer",
+    "PluginName.Symlink Manager": "Symlink Manager",
+    "PluginName.Windows File Operations": "Windows File Operations",
+    "PluginName.Standard ZIP Archiver": "Standard ZIP Archiver",
+    "PluginName.RAR Archiver": "RAR Archiver"
 }

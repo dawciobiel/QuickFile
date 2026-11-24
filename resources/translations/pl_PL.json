@@ -720,5 +720,22 @@
     "PluginUpdater.Missing path in feed URL {url}.": "Brak ścieżki w adresie kanału {url}.",
     "PluginUpdater.Cannot read {url}: {error}": "Nie można odczytać {url}: {error}",
     "PluginUpdater.{label} {url} is larger than {limit} bytes.": "{label} {url} jest większy niż {limit} bajtów.",
-    "PluginUpdater.Feed": "Kanał"
+    "PluginUpdater.Feed": "Kanał",
+    "PluginName.Standard Checksum Calculator": "Standardowy kalkulator sum kontrolnych",
+    "PluginName.Standard Copy Operation": "Standardowa operacja kopiowania",
+    "PluginName.Standard Delete Operation": "Standardowa operacja usuwania",
+    "PluginName.Directory Size": "Rozmiar katalogu",
+    "PluginName.Standard Disk Utils": "Standardowe narzędzia dyskowe",
+    "PluginName.Feedback System": "System opinii",
+    "PluginName.File Splitter": "Dzielenie plików",
+    "PluginName.Flat View": "Widok płaski",
+    "PluginName.Linux Attribute Editor": "Edytor atrybutów Linuksa",
+    "PluginName.Standard Move Operation": "Standardowa operacja przenoszenia",
+    "PluginName.Standard File Search": "Standardowe wyszukiwanie plików",
+    "PluginName.Standard Editor": "Standardowy edytor",
+    "PluginName.Standard File Viewer": "Standardowa przeglądarka plików",
+    "PluginName.Symlink Manager": "Menedżer dowiązań symbolicznych",
+    "PluginName.Windows File Operations": "Operacje na plikach Windows",
+    "PluginName.Standard ZIP Archiver": "Standardowy archiwizator ZIP",
+    "PluginName.RAR Archiver": "Archiwizator RAR"
 }
