@@ -14,6 +14,7 @@ from app.task_queue_manager import TaskQueueManager
 from app.notification_manager import NotificationManager
 from app.file_association_manager import FileAssociationManager
 from app.settings_manager import SettingsManager
+from app.ui_translation import install_qt_translations
 from file_operations.directory_synchronizer import DirectorySynchronizer
 from file_operations.file_manager import FileManager
 from ui.main_window import MainWindow
@@ -49,6 +50,7 @@ def main():
 
     try:
         app = QApplication(sys.argv)
+        install_qt_translations(app)
 
         # Initialize core components
         background_task_manager = BackgroundTaskManager()

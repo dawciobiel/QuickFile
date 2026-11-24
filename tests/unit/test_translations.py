@@ -32,6 +32,7 @@ import pytest
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
     QComboBox,
+    QDialogButtonBox,
     QGroupBox,
     QLabel,
     QLineEdit,
@@ -50,7 +51,7 @@ from app.plugin_updater import UpdateError, load_feed
 from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
-from app.ui_translation import translate_widgets
+from app.ui_translation import install_qt_translations, translate_widgets
 from file_operations.properties_manager import get_file_properties
 from panels.menu_panel import MenuPanel
 from tests.plugin_helpers import iter_plugin_metadata, iter_plugin_version_paths
@@ -671,11 +672,28 @@ def test_bundled_plugin_names_are_translated(language):
 @pytest.fixture
 def polish_translations():
     previous = translation_manager.translations
+    previous_locale = translation_manager.current_locale
     translation_manager.translations = load_translations("pl_PL.json")
+    translation_manager.current_locale = "pl_PL"
     try:
         yield translation_manager.translations
     finally:
         translation_manager.translations = previous
+        translation_manager.current_locale = previous_locale
+
+
+def test_qt_standard_buttons_use_the_current_language(qapp, polish_translations):
+    translator = install_qt_translations(qapp)
+    assert translator is not None
+    box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel)
+    try:
+        assert (
+            box.button(QDialogButtonBox.StandardButton.Cancel).text() == "Anuluj"
+        )
+    finally:
+        box.deleteLater()
+        qapp.removeTranslator(translator)
+        translator.deleteLater()
 
 
 def test_translate_widgets_replaces_designer_texts(qapp, polish_translations):

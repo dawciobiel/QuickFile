@@ -151,3 +151,20 @@ files, not a change to the plugin.
 settings title and the missing-tool message. `test_bundled_plugin_names_are_translated`
 requires a key for every bundled plugin's `name`; an external plugin without one keeps the
 name it declares.
+
+### Qt's own strings
+
+Qt draws standard button labels (`OK`, `Save`, `Cancel`) and the titles of its own dialogs
+from `qtbase_<language>.qm`, which is independent of the JSON files. `main()` installs that
+catalogue after creating the application:
+
+```python
+app = QApplication(sys.argv)
+install_qt_translations(app)
+```
+
+`install_qt_translations` (in `app/ui_translation.py`) reads
+`translation_manager.current_locale`, tries the full locale and then the base language
+from `QLibraryInfo`'s translations directory, and returns `None` for English or when Qt
+ships no catalogue. `test_qt_standard_buttons_use_the_current_language` checks the Polish
+`Cancel` label.
