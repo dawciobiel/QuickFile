@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from app.plugin_installer import default_destination, default_install_dir
+from app.translation_manager import translation_manager
 
 DISABLED_SUFFIX = ".disabled"
 VERSION_PATTERN = re.compile(r"^\d+(\.\d+)*$")
@@ -71,8 +72,9 @@ def scan_external_plugins(
                 continue
             if plugin_id in found:
                 raise PluginStateError(
-                    f"Plugin {plugin_id} is installed in more than one "
-                    "directory; resolve the duplicate first."
+                    translation_manager.translate(
+                        "PluginState", "Plugin {id} is installed in more than one directory; resolve the duplicate first."
+                    ).format(id=plugin_id)
                 )
             found[plugin_id] = ExternalPlugin(
                 plugin_id, versions[0], path, enabled, tuple(versions)
@@ -92,22 +94,31 @@ def disable_plugin(
 
     if is_shipped(plugin_id, shipped_root):
         raise PluginStateError(
-            f"Plugin {plugin_id} is shipped with QuickFile and cannot be "
-            "disabled here."
+            translation_manager.translate(
+                "PluginState", "Plugin {id} is shipped with QuickFile and cannot be disabled here."
+            ).format(id=plugin_id)
         )
 
     current = _find_plugin(root, plugin_id)
     if current is None:
         raise PluginStateError(
-            f"Plugin {plugin_id} is not installed in {root}."
+            translation_manager.translate(
+                "PluginState", "Plugin {id} is not installed in {root}."
+            ).format(id=plugin_id, root=root)
         )
     if not current.enabled:
-        raise PluginStateError(f"Plugin {plugin_id} is already disabled.")
+        raise PluginStateError(
+            translation_manager.translate(
+                "PluginState", "Plugin {id} is already disabled."
+            ).format(id=plugin_id)
+        )
 
     target = current.path + DISABLED_SUFFIX
     if os.path.exists(target):
         raise PluginStateError(
-            f"{target} already exists; refusing to overwrite it."
+            translation_manager.translate(
+                "PluginState", "{target} already exists; refusing to overwrite it."
+            ).format(target=target)
         )
 
     os.rename(current.path, target)
@@ -131,22 +142,31 @@ def enable_plugin(
 
     if is_shipped(plugin_id, shipped_root):
         raise PluginStateError(
-            f"Plugin {plugin_id} is shipped with QuickFile and cannot be "
-            "enabled here."
+            translation_manager.translate(
+                "PluginState", "Plugin {id} is shipped with QuickFile and cannot be enabled here."
+            ).format(id=plugin_id)
         )
 
     current = _find_plugin(root, plugin_id)
     if current is None:
         raise PluginStateError(
-            f"Plugin {plugin_id} is not installed in {root}."
+            translation_manager.translate(
+                "PluginState", "Plugin {id} is not installed in {root}."
+            ).format(id=plugin_id, root=root)
         )
     if current.enabled:
-        raise PluginStateError(f"Plugin {plugin_id} is already enabled.")
+        raise PluginStateError(
+            translation_manager.translate(
+                "PluginState", "Plugin {id} is already enabled."
+            ).format(id=plugin_id)
+        )
 
     target = current.path[: -len(DISABLED_SUFFIX)]
     if os.path.exists(target):
         raise PluginStateError(
-            f"{target} already exists; refusing to overwrite it."
+            translation_manager.translate(
+                "PluginState", "{target} already exists; refusing to overwrite it."
+            ).format(target=target)
         )
 
     os.rename(current.path, target)

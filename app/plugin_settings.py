@@ -17,6 +17,8 @@ language hidden inside plugin metadata.
 
 from typing import Any, Dict, Optional
 
+from app.translation_manager import translation_manager
+
 FIELD_TYPES = frozenset({"string", "integer", "boolean", "enum"})
 
 
@@ -41,11 +43,19 @@ def schema_for_plugin(plugin) -> Optional[Dict[str, Any]]:
 def validate_schema(schema: Dict[str, Any]) -> None:
     """Check that ``schema`` only uses the supported field vocabulary."""
     if not isinstance(schema, dict):
-        raise PluginSettingsError("Settings schema must be an object")
+        raise PluginSettingsError(
+            translation_manager.translate(
+                "PluginSettings", "Settings schema must be an object"
+            )
+        )
 
     for name, field in schema.items():
         if not isinstance(name, str) or not name:
-            raise PluginSettingsError("Setting names must be non-empty strings")
+            raise PluginSettingsError(
+                translation_manager.translate(
+                    "PluginSettings", "Setting names must be non-empty strings"
+                )
+            )
         _validate_field(name, field)
 
 
@@ -66,7 +76,11 @@ def normalize_options(
     if options is None:
         options = {}
     if not isinstance(options, dict):
-        raise PluginSettingsError("Plugin options must be an object")
+        raise PluginSettingsError(
+            translation_manager.translate(
+                "PluginSettings", "Plugin options must be an object"
+            )
+        )
 
     normalized = dict(options)
     for name, field in schema.items():
@@ -78,58 +92,83 @@ def normalize_options(
 
 def _validate_field(name: str, field: Any) -> None:
     if not isinstance(field, dict):
-        raise PluginSettingsError(f"Setting {name!r} must be an object")
+        raise PluginSettingsError(
+            translation_manager.translate(
+                "PluginSettings", "Setting {name!r} must be an object"
+            ).format(name=name)
+        )
 
     field_type = field.get("type")
     if field_type not in FIELD_TYPES:
         raise PluginSettingsError(
-            f"Setting {name!r} has unknown type {field_type!r}; "
-            f"expected one of {sorted(FIELD_TYPES)}"
+            translation_manager.translate(
+                "PluginSettings", "Setting {name!r} has unknown type {type!r}; expected one of {types}"
+            ).format(name=name, type=field_type, types=sorted(FIELD_TYPES))
         )
 
     title = field.get("title")
     if not isinstance(title, str) or not title:
-        raise PluginSettingsError(f"Setting {name!r} must have a title")
+        raise PluginSettingsError(
+            translation_manager.translate(
+                "PluginSettings", "Setting {name!r} must have a title"
+            ).format(name=name)
+        )
 
     if "default" not in field:
-        raise PluginSettingsError(f"Setting {name!r} must have a default")
+        raise PluginSettingsError(
+            translation_manager.translate(
+                "PluginSettings", "Setting {name!r} must have a default"
+            ).format(name=name)
+        )
 
     if field_type == "integer":
         for bound in ("minimum", "maximum"):
             if bound in field and not _is_integer(field[bound]):
                 raise PluginSettingsError(
-                    f"Setting {name!r} has a non-integer {bound}"
+                    translation_manager.translate(
+                        "PluginSettings", "Setting {name!r} has a non-integer {bound}"
+                    ).format(name=name, bound=bound)
                 )
         minimum = field.get("minimum")
         maximum = field.get("maximum")
         if minimum is not None and maximum is not None and minimum > maximum:
             raise PluginSettingsError(
-                f"Setting {name!r} has minimum greater than maximum"
+                translation_manager.translate(
+                    "PluginSettings", "Setting {name!r} has minimum greater than maximum"
+                ).format(name=name)
             )
 
     if field_type == "enum":
         choices = field.get("choices")
         if not isinstance(choices, list) or not choices:
             raise PluginSettingsError(
-                f"Setting {name!r} must have a non-empty choices list"
+                translation_manager.translate(
+                    "PluginSettings", "Setting {name!r} must have a non-empty choices list"
+                ).format(name=name)
             )
         values = set()
         for choice in choices:
             if not isinstance(choice, dict):
                 raise PluginSettingsError(
-                    f"Setting {name!r} has a choice that is not an object"
+                    translation_manager.translate(
+                        "PluginSettings", "Setting {name!r} has a choice that is not an object"
+                    ).format(name=name)
                 )
             value = choice.get("value")
             label = choice.get("label")
             if not isinstance(value, str) or not isinstance(label, str) or not label:
                 raise PluginSettingsError(
-                    f"Setting {name!r} choices need string value and label"
+                    translation_manager.translate(
+                        "PluginSettings", "Setting {name!r} choices need string value and label"
+                    ).format(name=name)
                 )
             values.add(value)
         default = field["default"]
         if not isinstance(default, str) or default not in values:
             raise PluginSettingsError(
-                f"Setting {name!r} default is not one of its choices"
+                translation_manager.translate(
+                    "PluginSettings", "Setting {name!r} default is not one of its choices"
+                ).format(name=name)
             )
 
     _validate_value(name, field, field["default"])
@@ -140,33 +179,51 @@ def _validate_value(name: str, field: Dict[str, Any], value: Any) -> None:
 
     if field_type == "string":
         if not isinstance(value, str):
-            raise PluginSettingsError(f"Setting {name!r} must be a string")
+            raise PluginSettingsError(
+                translation_manager.translate(
+                    "PluginSettings", "Setting {name!r} must be a string"
+                ).format(name=name)
+            )
         return
 
     if field_type == "boolean":
         if not isinstance(value, bool):
-            raise PluginSettingsError(f"Setting {name!r} must be a boolean")
+            raise PluginSettingsError(
+                translation_manager.translate(
+                    "PluginSettings", "Setting {name!r} must be a boolean"
+                ).format(name=name)
+            )
         return
 
     if field_type == "integer":
         if not _is_integer(value):
-            raise PluginSettingsError(f"Setting {name!r} must be an integer")
+            raise PluginSettingsError(
+                translation_manager.translate(
+                    "PluginSettings", "Setting {name!r} must be an integer"
+                ).format(name=name)
+            )
         minimum = field.get("minimum")
         maximum = field.get("maximum")
         if minimum is not None and value < minimum:
             raise PluginSettingsError(
-                f"Setting {name!r} must be at least {minimum}"
+                translation_manager.translate(
+                    "PluginSettings", "Setting {name!r} must be at least {minimum}"
+                ).format(name=name, minimum=minimum)
             )
         if maximum is not None and value > maximum:
             raise PluginSettingsError(
-                f"Setting {name!r} must be at most {maximum}"
+                translation_manager.translate(
+                    "PluginSettings", "Setting {name!r} must be at most {maximum}"
+                ).format(name=name, maximum=maximum)
             )
         return
 
     values = {choice["value"] for choice in field["choices"]}
     if not isinstance(value, str) or value not in values:
         raise PluginSettingsError(
-            f"Setting {name!r} must be one of {sorted(values)}"
+            translation_manager.translate(
+                "PluginSettings", "Setting {name!r} must be one of {values}"
+            ).format(name=name, values=sorted(values))
         )
 
 

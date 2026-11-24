@@ -42,6 +42,9 @@ from PyQt6.QtWidgets import (
 
 from app.dialog_handler import DialogHandler
 from app.enums import TaskType
+from app.plugin_installer import PluginInstallationError, install
+from app.plugin_settings import PluginSettingsError, validate_schema
+from app.plugin_state import PluginStateError, disable_plugin
 from app.settings_manager import SettingsManager
 from app.theme_manager import ThemeManager
 from app.translation_manager import translation_manager
@@ -83,10 +86,6 @@ HOST_SOURCE_ROOTS = (
 INTERNAL_ERROR_MODULES = {
     "app/action_replayer.py",
     "app/external_tools.py",
-    "app/plugin_dependency_manager.py",
-    "app/plugin_installer.py",
-    "app/plugin_settings.py",
-    "app/plugin_state.py",
     "app/plugin_updater.py",
     "app/plugin_system/api.py",
     "app/plugin_system/host.py",
@@ -522,6 +521,37 @@ def test_host_action_error_uses_the_current_language(polish_translations):
         handler.create_archive()
 
     assert str(error.value) == "Nie wybrano pliku ani katalogu do archiwizacji."
+
+
+def test_plugin_installer_error_uses_the_current_language(
+    polish_translations, tmp_path
+):
+    missing = tmp_path / "missing.zip"
+
+    with pytest.raises(PluginInstallationError) as error:
+        install(missing)
+
+    assert str(error.value) == f"Nie znaleziono paczki: {missing}"
+
+
+def test_plugin_settings_error_uses_the_current_language(polish_translations):
+    with pytest.raises(PluginSettingsError) as error:
+        validate_schema({"name": "not-a-field"})
+
+    assert str(error.value) == "Ustawienie 'name' musi być obiektem"
+
+
+def test_plugin_state_error_uses_the_current_language(polish_translations, tmp_path):
+    with pytest.raises(PluginStateError) as error:
+        disable_plugin(
+            "org.example.plugin",
+            destination=str(tmp_path),
+            install_dir=str(tmp_path / "shipped"),
+        )
+
+    assert str(error.value) == (
+        f"Wtyczka org.example.plugin nie jest zainstalowana w {tmp_path}."
+    )
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
