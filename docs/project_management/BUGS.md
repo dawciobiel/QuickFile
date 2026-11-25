@@ -6,12 +6,13 @@
   messages with runtime values, standard dialog captions/messages, the Properties dialog,
   plugin menu labels, plugin names and the titles, descriptions and choice labels of
   plugin settings are translated. `tests/unit/test_translations.py` enforces the lookup
-  keys, the plugin `.ui` coverage, literal `setText`/`showMessage` arguments, plain
-  `QMessageBox`/`QInputDialog`/`QFileDialog` strings, the editor window title, messages
-  raised by host actions, plugin menu labels and plugin names, plugin settings texts, and
-  the Plugin Management and plugin update errors. Qt's own standard button labels come
-  from `install_qt_translations`. The test also rejects a `translate` key built from an
-  f-string (such a key never matches JSON). No known untranslated visible string remains.
+  keys, the plugin `.ui` coverage, literal `setText`/`showMessage` and widget-constructor
+  arguments, plain `QMessageBox`/`QInputDialog`/`QFileDialog` strings, the editor window
+  title, messages raised by host actions, plugin menu labels and plugin names, plugin
+  settings texts, and the Plugin Management and plugin update errors. Qt's own standard
+  button labels come from `install_qt_translations`. The test also rejects a `translate`
+  key built from an f-string (such a key never matches JSON). No known untranslated visible
+  string remains.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
 - **Error message**: During launching application under Garuda occur error message: 
   `/run/media/dawciobiel/4cb3e6fb-e74b-4ce8-b6db-d2f6943a2697/home/dawciobiel/PyCharmProjects/QuickFile`

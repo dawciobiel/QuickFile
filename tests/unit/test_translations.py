@@ -211,6 +211,16 @@ def runtime_built_keys():
 
 
 DIALOG_CLASSES = {"QFileDialog", "QInputDialog", "QMessageBox"}
+TEXT_WIDGET_CLASSES = {
+    "QAction",
+    "QCheckBox",
+    "QGroupBox",
+    "QLabel",
+    "QPushButton",
+    "QRadioButton",
+}
+# Viewer radix switches: abbreviations, not sentences.
+UNTRANSLATED_WIDGET_TEXTS = {"HEX", "DEC", "BIN"}
 DIALOG_METHODS = {
     "about",
     "critical",
@@ -259,6 +269,42 @@ def dialog_strings():
                             argument.value,
                         )
                 elif isinstance(argument, ast.JoinedStr):
+                    yield (
+                        os.path.relpath(path, PROJECT_ROOT),
+                        node.lineno,
+                        ast.unparse(argument),
+                    )
+
+
+def widget_constructor_strings():
+    """Yield literal texts passed to a widget constructor."""
+    for path in source_files():
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not isinstance(node.func, ast.Name):
+                continue
+            if node.func.id not in TEXT_WIDGET_CLASSES or not node.args:
+                continue
+            argument = node.args[0]
+            if contains_translate(argument):
+                continue
+            if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+                if argument.value and argument.value not in UNTRANSLATED_WIDGET_TEXTS:
+                    yield (
+                        os.path.relpath(path, PROJECT_ROOT),
+                        node.lineno,
+                        argument.value,
+                    )
+            elif isinstance(argument, ast.JoinedStr):
+                literal = "".join(
+                    value.value
+                    for value in argument.values
+                    if isinstance(value, ast.Constant)
+                )
+                if any(character.isalpha() for character in literal):
                     yield (
                         os.path.relpath(path, PROJECT_ROOT),
                         node.lineno,
@@ -505,6 +551,13 @@ def test_translation_keys_are_not_built_at_runtime():
 def test_dialog_strings_are_translated():
     """A dialog caption or message must not be a plain literal."""
     found = sorted(dialog_strings())
+
+    assert found == []
+
+
+def test_widget_constructor_texts_are_translated():
+    """A label, button or action built with a plain literal stays English."""
+    found = sorted(widget_constructor_strings())
 
     assert found == []
 

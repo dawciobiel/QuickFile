@@ -171,12 +171,18 @@ class PanelWidget(QWidget):
             self.file_view = view_plugin.create_view_widget(self)
         else:
             # Fallback to a simple label if plugin is not found
-            self.file_view = QLabel("Error: 'flat' view mode plugin not found.")
+            self.file_view = QLabel(
+                translation_manager.translate(
+                    "FolderBrowser", "Error: 'flat' view mode plugin not found."
+                )
+            )
             logging.error("'flat' view mode plugin not found.")
         
         self.layout.addWidget(self.file_view)
 
-        self.summary_label = QLabel("Summary")
+        self.summary_label = QLabel(
+            translation_manager.translate("SummaryPanel", "Summary")
+        )
         self.layout.addWidget(self.summary_label)
 
         if isinstance(self.file_view, AbstractFileView):
