@@ -742,5 +742,7 @@
     "PluginSettings.Compression level": "Poziom kompresji",
     "PluginSettings.Ignored when the compression method is Store.": "Ignorowane, gdy metodą kompresji jest Store.",
     "PluginSettings.Deflate": "Deflate",
-    "PluginSettings.Store (no compression)": "Bez kompresji (Store)"
+    "PluginSettings.Store (no compression)": "Bez kompresji (Store)",
+    "FolderBrowser.Error: 'flat' view mode plugin not found.": "Błąd: nie znaleziono wtyczki widoku „flat”.",
+    "SummaryPanel.Summary": "Podsumowanie"
 }

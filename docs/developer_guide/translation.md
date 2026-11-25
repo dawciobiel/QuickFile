@@ -62,10 +62,14 @@ interpolating into the lookup key.
 
 ### Texts set at runtime
 
-Four tests fail when code hands a widget a plain literal instead of a translation:
+Five tests fail when code hands a widget a plain literal instead of a translation:
 
 *   `test_literal_widget_texts_are_translated` checks the first argument of `setText(...)`,
 *   `test_literal_status_bar_messages_are_translated` checks `showMessage(...)`,
+*   `test_widget_constructor_texts_are_translated` checks the text argument of
+    `QLabel`, `QPushButton`, `QCheckBox`, `QRadioButton`, `QGroupBox` and `QAction`
+    constructors; `UNTRANSLATED_WIDGET_TEXTS` allows the viewer's `HEX`/`DEC`/`BIN`
+    abbreviations,
 *   `test_dialog_strings_are_translated` checks every text argument of `QMessageBox`,
     `QInputDialog` and `QFileDialog` (the first argument is the parent widget),
 *   `test_host_error_messages_are_translated` checks the message of a `raise` in host code,
@@ -76,7 +80,7 @@ Four tests fail when code hands a widget a plain literal instead of a translatio
     use `PluginInstaller`, `PluginState`, `PluginSettings`, `PluginDependencyManager` and
     `PluginUpdater` keys and are checked by the same test.
 
-A fifth test, `test_translation_keys_are_not_built_at_runtime`, rejects a `translate` key
+A sixth test, `test_translation_keys_are_not_built_at_runtime`, rejects a `translate` key
 built from an f-string with placeholders. The lookup uses the whole string, so such a key
 never matches the JSON file and the English text always wins:
 
