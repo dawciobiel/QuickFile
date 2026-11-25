@@ -2,7 +2,7 @@
   "id": "org.quickfile.linux_attribute_editor",
   "group_id": "org.quickfile",
   "artifact_id": "linux_attribute_editor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "attribute_editor",
   "name": "Linux Attribute Editor",
   "description": "A plugin to edit file/directory owner and permissions on Linux.",

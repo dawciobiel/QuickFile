@@ -191,6 +191,33 @@ def literal_setters(method):
             yield os.path.relpath(path, PROJECT_ROOT), node.lineno, text
 
 
+def interpolated_setters():
+    """Yield ``(path, line, expression)`` for an f-string handed to a setter."""
+    for path in source_files():
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not isinstance(node.func, ast.Attribute):
+                continue
+            if node.func.attr not in INTERPOLATED_TEXT_METHODS or not node.args:
+                continue
+            text = node.args[0]
+            if not isinstance(text, ast.JoinedStr) or contains_translate(node):
+                continue
+            literal = "".join(
+                value.value
+                for value in text.values
+                if isinstance(value, ast.Constant)
+            )
+            if not any(character.isalpha() for character in literal):
+                continue
+            if literal in UNTRANSLATED_INTERPOLATED_TEXTS:
+                continue
+            yield os.path.relpath(path, PROJECT_ROOT), node.lineno, ast.unparse(text)
+
+
 def runtime_built_keys():
     """Yield ``(path, line, expression)`` for ``translate`` keys with placeholders."""
     for path in source_files():
@@ -211,6 +238,14 @@ def runtime_built_keys():
 
 
 DIALOG_CLASSES = {"QFileDialog", "QInputDialog", "QMessageBox"}
+INTERPOLATED_TEXT_METHODS = {
+    "setPlaceholderText",
+    "setText",
+    "setTitle",
+    "setToolTip",
+    "setWindowTitle",
+    "showMessage",
+}
 TEXT_WIDGET_CLASSES = {
     "QAction",
     "QCheckBox",
@@ -523,6 +558,8 @@ def test_translations_keep_placeholders(language):
 
 # Symbols and empty clears that are not sentences.
 UNTRANSLATED_SET_TEXTS = {"", "~", "/", "..", "="}
+# The window title is the product name and version, identical in every language.
+UNTRANSLATED_INTERPOLATED_TEXTS = {"QuickFile v"}
 
 
 def test_literal_widget_texts_are_translated():
@@ -537,6 +574,13 @@ def test_literal_widget_texts_are_translated():
 
 def test_literal_status_bar_messages_are_translated():
     found = sorted(literal_setters("showMessage"))
+
+    assert found == []
+
+
+def test_interpolated_widget_texts_are_translated():
+    """An f-string with English words in a setter stays English."""
+    found = sorted(interpolated_setters())
 
     assert found == []
 

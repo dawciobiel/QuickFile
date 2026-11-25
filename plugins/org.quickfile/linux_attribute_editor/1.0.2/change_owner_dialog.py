@@ -78,7 +78,11 @@ class ChangeOwnerDialog(QDialog):
 
         except (OSError, KeyError) as e:
             logging.error(f"Could not retrieve file info for {self.path}: {e}")
-            self.value_name_top.setText(f"Error: {e}")
+            self.value_name_top.setText(
+                translation_manager.translate(
+                    "ChangeOwnerDialog", "Error: {error}"
+                ).format(error=e)
+            )
 
     def _populate_combos(self):
         # Populate users

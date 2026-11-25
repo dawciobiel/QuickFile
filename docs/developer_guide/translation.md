@@ -62,10 +62,14 @@ interpolating into the lookup key.
 
 ### Texts set at runtime
 
-Five tests fail when code hands a widget a plain literal instead of a translation:
+Six tests fail when code hands a widget a plain literal instead of a translation:
 
 *   `test_literal_widget_texts_are_translated` checks the first argument of `setText(...)`,
 *   `test_literal_status_bar_messages_are_translated` checks `showMessage(...)`,
+*   `test_interpolated_widget_texts_are_translated` checks the same setters, plus
+    `setWindowTitle`, `setToolTip`, `setPlaceholderText` and `setTitle`, when the argument
+    is an f-string with English words in its literal parts; a format built only from
+    translated variables (for example `f"{label}: {value}"`) passes,
 *   `test_widget_constructor_texts_are_translated` checks the text argument of
     `QLabel`, `QPushButton`, `QCheckBox`, `QRadioButton`, `QGroupBox` and `QAction`
     constructors; `UNTRANSLATED_WIDGET_TEXTS` allows the viewer's `HEX`/`DEC`/`BIN`
@@ -80,7 +84,7 @@ Five tests fail when code hands a widget a plain literal instead of a translatio
     use `PluginInstaller`, `PluginState`, `PluginSettings`, `PluginDependencyManager` and
     `PluginUpdater` keys and are checked by the same test.
 
-A sixth test, `test_translation_keys_are_not_built_at_runtime`, rejects a `translate` key
+A seventh test, `test_translation_keys_are_not_built_at_runtime`, rejects a `translate` key
 built from an f-string with placeholders. The lookup uses the whole string, so such a key
 never matches the JSON file and the English text always wins:
 
@@ -100,7 +104,9 @@ self.statusBar().showMessage(template.format(task=name))
 ```
 
 `UNTRANSLATED_SET_TEXTS` in the test lists the few values that are symbols rather than
-sentences: `""`, `"~"`, `"/"`, `".."` and `"="`.
+sentences: `""`, `"~"`, `"/"`, `".."` and `"="`. `UNTRANSLATED_INTERPOLATED_TEXTS` lists
+f-string prefixes that stay identical in every language; currently only `"QuickFile v"`,
+the window title.
 
 ### Texts from `.ui` files
 
