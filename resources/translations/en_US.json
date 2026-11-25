@@ -744,5 +744,6 @@
     "PluginSettings.Deflate": "Deflate",
     "PluginSettings.Store (no compression)": "Store (no compression)",
     "FolderBrowser.Error: 'flat' view mode plugin not found.": "Error: 'flat' view mode plugin not found.",
-    "SummaryPanel.Summary": "Summary"
+    "SummaryPanel.Summary": "Summary",
+    "ChangeOwnerDialog.Error: {error}": "Error: {error}"
 }
