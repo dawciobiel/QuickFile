@@ -669,6 +669,39 @@ def test_bundled_plugin_names_are_translated(language):
         assert wrong == []
 
 
+def plugin_settings_texts():
+    """Return the titles, descriptions and choice labels in plugin metadata."""
+    texts = set()
+    for _path, metadata in iter_plugin_metadata():
+        schema = (metadata.get("settings") or {}).get("schema") or {}
+        for field in schema.values():
+            if field.get("title"):
+                texts.add(field["title"])
+            if field.get("description"):
+                texts.add(field["description"])
+            for choice in field.get("choices", []):
+                if choice.get("label"):
+                    texts.add(choice["label"])
+    return texts
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_bundled_plugin_settings_texts_are_translated(language):
+    translations = load_translations(language)
+    texts = plugin_settings_texts()
+
+    missing = sorted(
+        text for text in texts if f"PluginSettings.{text}" not in translations
+    )
+    assert missing == []
+
+    if language == "en_US.json":
+        wrong = sorted(
+            text for text in texts if translations[f"PluginSettings.{text}"] != text
+        )
+        assert wrong == []
+
+
 @pytest.fixture
 def polish_translations():
     previous = translation_manager.translations
@@ -779,6 +812,44 @@ def test_plugin_settings_title_uses_the_current_language(qapp, polish_translatio
         assert (
             dialog.windowTitle()
             == "Ustawienia pluginu: Standardowy archiwizator ZIP"
+        )
+    finally:
+        dialog.deleteLater()
+
+
+def test_plugin_settings_fields_use_the_current_language(qapp, polish_translations):
+    schema = {
+        "compression": {
+            "type": "enum",
+            "title": "Compression method",
+            "default": "deflate",
+            "choices": [
+                {"value": "deflate", "label": "Deflate"},
+                {"value": "store", "label": "Store (no compression)"},
+            ],
+        },
+        "compresslevel": {
+            "type": "integer",
+            "title": "Compression level",
+            "description": "Ignored when the compression method is Store.",
+            "default": 6,
+            "minimum": 1,
+            "maximum": 9,
+        },
+    }
+    dialog = PluginSettingsDialog(None, "Standard ZIP Archiver", schema)
+    try:
+        labels = {label.text() for label in dialog.findChildren(QLabel)}
+        assert "Metoda kompresji" in labels
+        assert "Poziom kompresji" in labels
+
+        combo = dialog.findChild(QComboBox)
+        assert [combo.itemText(index) for index in range(combo.count())] == [
+            "Deflate",
+            "Bez kompresji (Store)",
+        ]
+        assert dialog._widgets["compresslevel"].toolTip() == (
+            "Ignorowane, gdy metodą kompresji jest Store."
         )
     finally:
         dialog.deleteLater()

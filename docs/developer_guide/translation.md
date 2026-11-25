@@ -152,6 +152,14 @@ settings title and the missing-tool message. `test_bundled_plugin_names_are_tran
 requires a key for every bundled plugin's `name`; an external plugin without one keeps the
 name it declares.
 
+### Plugin settings text
+
+`PluginSettingsDialog` renders the `settings.schema` from `metadata.json`. Field titles,
+descriptions (shown as tooltips) and enum choice labels are looked up as
+`PluginSettings.<text>`; the stored values are untouched.
+`test_bundled_plugin_settings_texts_are_translated` requires a key for every title,
+description and choice label declared by a bundled plugin.
+
 ### Qt's own strings
 
 Qt draws standard button labels (`OK`, `Save`, `Cancel`) and the titles of its own dialogs
