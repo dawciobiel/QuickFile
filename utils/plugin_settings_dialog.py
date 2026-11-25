@@ -47,8 +47,13 @@ class PluginSettingsDialog(QDialog):
             self._widgets[name] = widget
             description = field.get("description")
             if description:
-                widget.setToolTip(description)
-            form.addRow(field["title"], widget)
+                widget.setToolTip(
+                    translation_manager.translate("PluginSettings", description)
+                )
+            form.addRow(
+                translation_manager.translate("PluginSettings", field["title"]),
+                widget,
+            )
 
         layout.addLayout(form)
 
@@ -80,7 +85,10 @@ class PluginSettingsDialog(QDialog):
         if field_type == "enum":
             widget = QComboBox()
             for choice in field["choices"]:
-                widget.addItem(choice["label"], choice["value"])
+                widget.addItem(
+                    translation_manager.translate("PluginSettings", choice["label"]),
+                    choice["value"],
+                )
             widget.setCurrentIndex(widget.findData(value))
             return widget
 

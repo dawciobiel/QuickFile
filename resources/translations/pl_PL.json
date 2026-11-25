@@ -737,5 +737,10 @@
     "PluginName.Symlink Manager": "Menedżer dowiązań symbolicznych",
     "PluginName.Windows File Operations": "Operacje na plikach Windows",
     "PluginName.Standard ZIP Archiver": "Standardowy archiwizator ZIP",
-    "PluginName.RAR Archiver": "Archiwizator RAR"
+    "PluginName.RAR Archiver": "Archiwizator RAR",
+    "PluginSettings.Compression method": "Metoda kompresji",
+    "PluginSettings.Compression level": "Poziom kompresji",
+    "PluginSettings.Ignored when the compression method is Store.": "Ignorowane, gdy metodą kompresji jest Store.",
+    "PluginSettings.Deflate": "Deflate",
+    "PluginSettings.Store (no compression)": "Bez kompresji (Store)"
 }
