@@ -2,7 +2,7 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-"""The built-in editor opens a non-modal window, not a modal dialog.
+"""The built-in editor opens a non-modal window and handles file encodings.
 
 Specification: ``docs/architecture/plugins/plugins.md``
 ("``org.quickfile.standard_editor``").
@@ -208,3 +208,157 @@ def test_save_button_writes_the_file_and_closes(
 
     assert path.read_text(encoding="utf-8") == "original changed"
     assert str(path) not in plugin.open_editors
+
+
+def test_editor_loads_a_file_in_windows_1250(
+    editor_modules, theme_manager, tmp_path, qapp
+):
+    plugin_module, _editor_window = editor_modules
+    text = "Zażółć gęślą jaźń"
+    path = tmp_path / "cp1250.txt"
+    path.write_bytes(text.encode("windows-1250"))
+
+    _plugin, window = _open_editor(plugin_module, path, theme_manager)
+    qapp.processEvents()
+
+    assert window.editor_widget.encoding == "windows-1250"
+    assert window.editor_widget.editor.toPlainText() == text
+
+    window.close()
+
+
+def test_utf_16_bom_is_detected(
+    editor_modules, theme_manager, tmp_path, qapp
+):
+    plugin_module, _editor_window = editor_modules
+    path = tmp_path / "utf16.txt"
+    path.write_bytes("hello".encode("utf-16"))
+
+    _plugin, window = _open_editor(plugin_module, path, theme_manager)
+    qapp.processEvents()
+
+    assert window.editor_widget.encoding == "utf-16"
+    assert window.editor_widget.editor.toPlainText() == "hello"
+
+    window.close()
+
+
+def test_switching_display_encoding_reloads_without_marking_modified(
+    editor_modules, theme_manager, tmp_path, qapp
+):
+    plugin_module, _editor_window = editor_modules
+    path = tmp_path / "encoded.txt"
+    path.write_bytes(b"\xb9")
+
+    _plugin, window = _open_editor(plugin_module, path, theme_manager)
+    qapp.processEvents()
+    assert window.editor_widget.encoding == "windows-1250"
+    assert window.editor_widget.editor.toPlainText() == "ą"
+
+    assert window.editor_widget.set_display_encoding("iso-8859-2") is True
+
+    assert window.editor_widget.encoding == "iso-8859-2"
+    assert window.editor_widget.editor.toPlainText() == "š"
+    assert not window.editor_widget.has_unsaved_changes()
+
+    window.close()
+
+
+def test_switching_encoding_can_be_cancelled_with_unsaved_changes(
+    editor_modules, theme_manager, tmp_path, qapp, mocker
+):
+    plugin_module, _editor_window = editor_modules
+    mocker.patch.object(
+        _editor_window.QMessageBox,
+        "question",
+        return_value=QMessageBox.StandardButton.Cancel,
+    )
+    path = tmp_path / "note.txt"
+    path.write_text("original", encoding="utf-8")
+
+    _plugin, window = _open_editor(plugin_module, path, theme_manager)
+    qapp.processEvents()
+    _type_at_end(window, " changed")
+
+    assert window.editor_widget.set_display_encoding("windows-1250") is False
+    assert window.editor_widget.encoding == "utf-8"
+    assert window.editor_widget.editor.toPlainText() == "original changed"
+
+    window.editor_widget.editor.document().setModified(False)
+    window.close()
+
+
+def test_reload_with_a_wrong_encoding_keeps_the_current_text(
+    editor_modules, theme_manager, tmp_path, qapp, mocker
+):
+    plugin_module, _editor_window = editor_modules
+    warning = mocker.patch.object(_editor_window.QMessageBox, "warning")
+    path = tmp_path / "encoded.txt"
+    path.write_bytes(b"\xb9")
+
+    _plugin, window = _open_editor(plugin_module, path, theme_manager)
+    qapp.processEvents()
+
+    assert window.editor_widget.set_display_encoding("utf-8") is False
+    assert window.editor_widget.encoding == "windows-1250"
+    assert window.editor_widget.editor.toPlainText() == "ą"
+    warning.assert_called_once()
+
+    window.close()
+
+
+def test_unknown_encoding_is_rejected(
+    editor_modules, theme_manager, tmp_path, qapp, mocker
+):
+    plugin_module, _editor_window = editor_modules
+    warning = mocker.patch.object(_editor_window.QMessageBox, "warning")
+    path = tmp_path / "note.txt"
+    path.write_text("hello", encoding="utf-8")
+
+    _plugin, window = _open_editor(plugin_module, path, theme_manager)
+    qapp.processEvents()
+
+    assert window.editor_widget.set_display_encoding("not-a-codec") is False
+    assert window.editor_widget.encoding == "utf-8"
+    warning.assert_called_once()
+
+    window.close()
+
+
+def test_converting_encoding_marks_modified_and_saves_new_encoding(
+    editor_modules, theme_manager, tmp_path, qapp
+):
+    plugin_module, _editor_window = editor_modules
+    path = tmp_path / "note.txt"
+    path.write_text("Zażółć", encoding="utf-8")
+
+    _plugin, window = _open_editor(plugin_module, path, theme_manager)
+    qapp.processEvents()
+
+    assert window.editor_widget.convert_encoding("windows-1250") is True
+    assert window.editor_widget.encoding == "windows-1250"
+    assert window.editor_widget.has_unsaved_changes()
+
+    assert window.editor_widget.save_file() is True
+    assert path.read_bytes() == "Zażółć".encode("windows-1250")
+
+    window.close()
+
+
+def test_conversion_rejects_unrepresentable_characters(
+    editor_modules, theme_manager, tmp_path, qapp, mocker
+):
+    plugin_module, _editor_window = editor_modules
+    warning = mocker.patch.object(_editor_window.QMessageBox, "warning")
+    path = tmp_path / "note.txt"
+    path.write_text("😀", encoding="utf-8")
+
+    _plugin, window = _open_editor(plugin_module, path, theme_manager)
+    qapp.processEvents()
+
+    assert window.editor_widget.convert_encoding("windows-1250") is False
+    assert window.editor_widget.encoding == "utf-8"
+    assert not window.editor_widget.has_unsaved_changes()
+    warning.assert_called_once()
+
+    window.close()

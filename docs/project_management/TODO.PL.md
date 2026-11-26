@@ -100,14 +100,11 @@
         - Numerację linii.
         - Pasek narzędzi z podstawowymi akcjami (Zapisz, Cofnij/Ponów, Wytnij/Kopiuj/Wklej).
         - Podstawowe wyszukiwanie tekstu (`Ctrl+F`) i znajdowanie następnego (`F3`).
+        - Obsługę kodowań znaków: wykrywanie BOM/UTF-8/kodowania systemowego/Windows-1250/Windows-1252/ISO-8859-2/Latin-1, wybór kodowania wyświetlania oraz konwersję dokumentu z ostrzeżeniem o znakach niereprezentowalnych.
     - **Do zrobienia w przyszłości**:
         - [ ] Funkcja "Zamień" (Replace).
         - [ ] Funkcja "Zapisz jako..." (Save as...).
         - [ ] Bardziej zaawansowany panel wyszukiwania.
-        - [ ] **Kodowanie znaków w edytorze**:
-            - [ ] Sprawdzić i naprawić wczytywanie plików w kodowaniach innych niż UTF-8. Obecnie `editor_widget.py` otwiera i zapisuje pliki wyłącznie jako `utf-8`, więc pliki w np. Windows-1250, ISO-8859-2 lub Latin-1 nie wyświetlają się poprawnie.
-            - [ ] Dodać wybór kodowania wyświetlanego pliku (np. UTF-8, Windows-1250, ISO-8859-2, Latin-1) i pokazywać aktualnie użyte kodowanie, tak aby zmiana wyboru ponownie wczytała tekst bez modyfikowania pliku.
-            - [ ] Dodać konwersję otwartego dokumentu do innego kodowania. Przed implementacją przemyśleć sposób działania: wykrywanie kodowania źródłowego (np. `charset-normalizer`), jawny wybór kodowania docelowego, ostrzeżenie o znakach niereprezentowalnych w kodowaniu docelowym, potwierdzenie przed zapisem i możliwość zapisania kopii zamiast nadpisania oryginału.
 
 - [x] **Feature: Zaawansowany wbudowany podgląd plików (F3)**:
     - Znacząco rozbudowano plugin `standard_viewer`, dodając obsługę:

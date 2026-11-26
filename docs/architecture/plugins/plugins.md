@@ -514,6 +514,22 @@ czyli `QMainWindow` z flagami `WindowMinMaxButtonsHint` i
   `QTextDocument.isModified()`, a udany `save_file()` zeruje tę flagę.
 * Okno jest usuwane po zamknięciu i wyrejestrowywane z listy otwartych
   edytorów wtyczki.
+* **Kodowanie znaków**: plik jest czytany jako bajty i dekodowany według
+  kolejności: BOM (UTF-8/UTF-16/UTF-32), UTF-8, kodowanie systemowe,
+  Windows-1250, Windows-1252, ISO-8859-2, a na końcu Latin-1. Wykryte
+  kodowanie jest pokazywane na pasku narzędzi.
+* Zmiana kodowania w rozwijanej liście **ponownie wczytuje plik** bez
+  konwersji i bez oznaczania dokumentu jako zmodyfikowany. Przy
+  niezapisanych zmianach edytor pyta `Save` / `Discard` / `Cancel`.
+  Pozycja `Inne...` pozwala wpisać dowolną nazwę kodeka Pythona; nazwa jest
+  sprawdzana przez `codecs.lookup`.
+* **Konwersja kodowania** (`Convert Encoding...`) ustawia kodowanie
+  docelowe dla kolejnego zapisu i oznacza dokument jako zmodyfikowany.
+  Zapis fizycznie wykonuje się dopiero przez `Save` (lub pytanie przy
+  zamknięciu). Znaki niereprezentowalne w kodowaniu docelowym przerywają
+  konwersję i zapis z ostrzeżeniem, zamiast cichego podstawiania `?`.
+* Nieudane wczytanie pliku (błąd wejścia/wyjścia lub dekodowania) pokazuje
+  przetłumaczony komunikat i otwiera edytor w trybie tylko do odczytu.
 
 ## Zarządzanie Wtyczkami (`PluginManager`)
 
