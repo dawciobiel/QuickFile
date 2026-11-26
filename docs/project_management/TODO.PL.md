@@ -22,6 +22,12 @@
         - multimedia: audio
         - inne.
     - Grupy typów plików są już zdefiniowane w `config/default_file_associations.json` i są wykorzystywane przez wewnętrzny podgląd (viewer) do wyboru odpowiedniego trybu wyświetlania. Można by rozszerzyć tę konfigurację o definicje ikon dla każdej grupy.
+
+- [ ] **Feature: Otwieranie pliku klawiszem Enter**:
+    - W panelu menedżera plików klawisz `Enter` powinien uruchomić zaznaczony plik programem skojarzonym z jego typem w systemie operacyjnym.
+    - Wykorzystać istniejącą abstrakcję `FileAssociationManager` i akcję `FileAction.SYSTEM_DEFAULT` (Windows: `os.startfile`, macOS: `open`, Linux: `xdg-open`).
+    - Dla katalogów `Enter` powinien nadal wchodzić do katalogu; przy wielu zaznaczonych plikach otworzyć każdy z nich lub ograniczyć akcję do pierwszego zaznaczonego.
+    - Uzupełnić testy skrótów klawiszowych i zachowania dla katalogu, pliku oraz braku skojarzenia.
     
 - [ ] **Feature: System aktualizacji**:
     - Zaprojektowanie odpowiedniego systemu pobierania i instalowania aktualizacji dla aplikacji, motywów, zasobów, tłumaczeń i pluginów.
@@ -98,7 +104,10 @@
         - [ ] Funkcja "Zamień" (Replace).
         - [ ] Funkcja "Zapisz jako..." (Save as...).
         - [ ] Bardziej zaawansowany panel wyszukiwania.
-        - [ ] Wyświetlanie informacji o kodowaniu i możliwość jego zmiany.
+        - [ ] **Kodowanie znaków w edytorze**:
+            - [ ] Sprawdzić i naprawić wczytywanie plików w kodowaniach innych niż UTF-8. Obecnie `editor_widget.py` otwiera i zapisuje pliki wyłącznie jako `utf-8`, więc pliki w np. Windows-1250, ISO-8859-2 lub Latin-1 nie wyświetlają się poprawnie.
+            - [ ] Dodać wybór kodowania wyświetlanego pliku (np. UTF-8, Windows-1250, ISO-8859-2, Latin-1) i pokazywać aktualnie użyte kodowanie, tak aby zmiana wyboru ponownie wczytała tekst bez modyfikowania pliku.
+            - [ ] Dodać konwersję otwartego dokumentu do innego kodowania. Przed implementacją przemyśleć sposób działania: wykrywanie kodowania źródłowego (np. `charset-normalizer`), jawny wybór kodowania docelowego, ostrzeżenie o znakach niereprezentowalnych w kodowaniu docelowym, potwierdzenie przed zapisem i możliwość zapisania kopii zamiast nadpisania oryginału.
 
 - [x] **Feature: Zaawansowany wbudowany podgląd plików (F3)**:
     - Znacząco rozbudowano plugin `standard_viewer`, dodając obsługę:
