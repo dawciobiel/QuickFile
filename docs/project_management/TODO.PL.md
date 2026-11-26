@@ -23,6 +23,10 @@
         - inne.
     - Grupy typów plików są już zdefiniowane w `config/default_file_associations.json` i są wykorzystywane przez wewnętrzny podgląd (viewer) do wyboru odpowiedniego trybu wyświetlania. Można by rozszerzyć tę konfigurację o definicje ikon dla każdej grupy.
 
+- [ ] **Feature: Tło i obramowanie otwartego menu**:
+    - Tło rozwiniętego menu programu powinno mieć inny (jaśniejszy) kolor niż tło głównego okna aplikacji, czyli górne paski (toolbar) oraz tło paneli plików. Dzięki temu zawartość otwartego menu będzie wyraźnie widoczna.
+    - Rozważyć dodanie obramowania rozwiniętego menu, aby jeszcze lepiej oddzielić je od tła aplikacji.
+
 - [ ] **Feature: Otwieranie pliku klawiszem Enter**:
     - W panelu menedżera plików klawisz `Enter` powinien uruchomić zaznaczony plik programem skojarzonym z jego typem w systemie operacyjnym.
     - Wykorzystać istniejącą abstrakcję `FileAssociationManager` i akcję `FileAction.SYSTEM_DEFAULT` (Windows: `os.startfile`, macOS: `open`, Linux: `xdg-open`).
