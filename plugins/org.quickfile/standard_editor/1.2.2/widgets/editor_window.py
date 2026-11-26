@@ -58,16 +58,8 @@ class EditorWindow(QMainWindow):
         self.setCentralWidget(central)
 
     def save_and_close(self):
-        if not self.editor_widget.save_file():
-            QMessageBox.warning(
-                self,
-                translation_manager.translate("StandardEditor", "Save Failed"),
-                translation_manager.translate(
-                    "StandardEditor", "Could not save {name}."
-                ).format(name=os.path.basename(self.file_path)),
-            )
-            return
-        self.close()
+        if self.editor_widget.save_file():
+            self.close()
 
     def closeEvent(self, event):
         if not self.editor_widget.has_unsaved_changes():
