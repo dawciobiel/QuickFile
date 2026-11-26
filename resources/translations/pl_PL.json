@@ -745,5 +745,12 @@
     "PluginSettings.Store (no compression)": "Bez kompresji (Store)",
     "FolderBrowser.Error: 'flat' view mode plugin not found.": "Błąd: nie znaleziono wtyczki widoku „flat”.",
     "SummaryPanel.Summary": "Podsumowanie",
-    "ChangeOwnerDialog.Error: {error}": "Błąd: {error}"
+    "ChangeOwnerDialog.Error: {error}": "Błąd: {error}",
+    "MainWindow.Task Error": "Błąd zadania",
+    "MainWindow.Task '{task}' failed: {details}": "Zadanie „{task}” nie powiodło się: {details}",
+    "ApplicationLogicHandler.Failed to execute command: {error}": "Nie udało się wykonać polecenia: {error}",
+    "ApplicationLogicHandler.Failed to open file: {error}": "Nie udało się otworzyć pliku: {error}",
+    "ApplicationLogicHandler.No command defined for this file type.": "Nie zdefiniowano polecenia dla tego typu pliku.",
+    "TaskQueueManager.Plugin '{plugin}' not found.": "Nie znaleziono wtyczki „{plugin}”.",
+    "TaskQueueManager.Task type '{task}' requires a 'plugin_id' in options.": "Typ zadania „{task}” wymaga opcji „plugin_id”."
 }

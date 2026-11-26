@@ -171,7 +171,17 @@ class MainWindow(QMainWindow):
             elif task.type == TaskType.CHECKSUM:
                 self.dialog_handler.show_checksum_results(task.source_paths, task.result)
         elif task.status == TaskStatus.ERROR:
-            show_error_message(self.notification_manager, "Task Error", f"Task '{task.type.name}' failed: {task.details}")
+            task_name = translation_manager.translate(
+                "TaskType", task.type.name.replace("_", " ").title()
+            )
+            template = translation_manager.translate(
+                "MainWindow", "Task '{task}' failed: {details}"
+            )
+            show_error_message(
+                self.notification_manager,
+                translation_manager.translate("MainWindow", "Task Error"),
+                template.format(task=task_name, details=task.details),
+            )
 
     def switchToSearchResultsTab(self):
         if self.search_tab:

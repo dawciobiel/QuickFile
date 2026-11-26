@@ -7,10 +7,12 @@
   plugin menu labels, plugin names and the titles, descriptions and choice labels of
   plugin settings are translated. `tests/unit/test_translations.py` enforces the lookup
   keys, the plugin `.ui` coverage, literal `setText`/`showMessage`, interpolated setter
-  arguments with English words and widget-constructor arguments, plain
+  arguments with English words, widget-constructor arguments, the texts passed to the
+  `show_error_message`/`show_info_message` helpers, plain
   `QMessageBox`/`QInputDialog`/`QFileDialog` strings, the editor window title, messages
   raised by host actions, plugin menu labels and plugin names, plugin settings texts, and
-  the Plugin Management and plugin update errors. Qt's own standard button labels come from
+  the Plugin Management and plugin update errors. Task failure details and the task error
+  dialog are translated too. Qt's own standard button labels come from
   `install_qt_translations`. The test also rejects a `translate` key built from an f-string
   (such a key never matches JSON). No known untranslated visible string remains.
 - **Windows**: Compatibility issues, especially with file paths and permissions.
