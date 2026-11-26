@@ -238,6 +238,7 @@ def runtime_built_keys():
 
 
 DIALOG_CLASSES = {"QFileDialog", "QInputDialog", "QMessageBox"}
+MESSAGE_HELPER_FUNCTIONS = {"show_error_message", "show_info_message"}
 INTERPOLATED_TEXT_METHODS = {
     "setPlaceholderText",
     "setText",
@@ -309,6 +310,45 @@ def dialog_strings():
                         node.lineno,
                         ast.unparse(argument),
                     )
+
+
+def message_helper_strings():
+    """Yield literal titles and texts passed to a message helper."""
+    for path in source_files():
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not isinstance(node.func, ast.Name):
+                continue
+            if node.func.id not in MESSAGE_HELPER_FUNCTIONS:
+                continue
+            # show_*_message(parent, title, message)
+            for argument in node.args[1:]:
+                if contains_translate(argument):
+                    continue
+                if isinstance(argument, ast.Constant) and isinstance(
+                    argument.value, str
+                ):
+                    if argument.value:
+                        yield (
+                            os.path.relpath(path, PROJECT_ROOT),
+                            node.lineno,
+                            argument.value,
+                        )
+                elif isinstance(argument, ast.JoinedStr):
+                    literal = "".join(
+                        value.value
+                        for value in argument.values
+                        if isinstance(value, ast.Constant)
+                    )
+                    if any(character.isalpha() for character in literal):
+                        yield (
+                            os.path.relpath(path, PROJECT_ROOT),
+                            node.lineno,
+                            ast.unparse(argument),
+                        )
 
 
 def widget_constructor_strings():
@@ -595,6 +635,13 @@ def test_translation_keys_are_not_built_at_runtime():
 def test_dialog_strings_are_translated():
     """A dialog caption or message must not be a plain literal."""
     found = sorted(dialog_strings())
+
+    assert found == []
+
+
+def test_message_helper_texts_are_translated():
+    """The helper that shows a blocking dialog must receive translated text."""
+    found = sorted(message_helper_strings())
 
     assert found == []
 

@@ -115,6 +115,10 @@ class TaskQueueManager(QObject):
     def process_task(self, task: Task):
         task.set_status(TaskStatus.IN_PROGRESS)
 
+        # Local import: translation_manager -> settings_manager ->
+        # task_queue_manager would close an import cycle.
+        from app.translation_manager import translation_manager
+
         if task.type == TaskType.SYNC:
             self.background_task_manager.run_task(
                 task,
@@ -149,13 +153,23 @@ class TaskQueueManager(QObject):
         if plugin is None:
             task.set_status(TaskStatus.ERROR)
             if plugin_id:
-                task.set_details(f"Plugin '{plugin_id}' not found.")
+                task.set_details(
+                    translation_manager.translate(
+                        "TaskQueueManager", "Plugin '{plugin}' not found."
+                    ).format(plugin=plugin_id)
+                )
                 logging.error(
                     "Task %s failed: plugin '%s' not found.", task.id, plugin_id
                 )
             else:
+                task_name = translation_manager.translate(
+                    "TaskType", task.type.name.replace("_", " ").title()
+                )
                 task.set_details(
-                    f"Task type '{task.type.name}' requires a 'plugin_id' in options."
+                    translation_manager.translate(
+                        "TaskQueueManager",
+                        "Task type '{task}' requires a 'plugin_id' in options.",
+                    ).format(task=task_name)
                 )
                 logging.error("Task %s failed: missing plugin_id.", task.id)
             self._on_task_finished_cleanup(task.id)

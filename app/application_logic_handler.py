@@ -94,7 +94,13 @@ class ApplicationLogicHandler(QObject):
             subprocess.Popen(command, shell=True)
         except Exception as e:
             logging.error(f"Failed to execute command '{command_template}' for file {file_path}: {e}")
-            show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), f"Failed to execute command: {e}")
+            show_error_message(
+                self.dialog_handler.main_window.notification_manager,
+                translation_manager.translate("Global", "Error"),
+                translation_manager.translate(
+                    "ApplicationLogicHandler", "Failed to execute command: {error}"
+                ).format(error=e),
+            )
 
     @handle_error
     def open_file(self, file_path):
@@ -130,14 +136,27 @@ class ApplicationLogicHandler(QObject):
                     subprocess.call(('xdg-open', file_path))
             except Exception as e:
                 logging.error(f"Failed to open file with system default: {e}")
-                show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), f"Failed to open file: {e}")
+                show_error_message(
+                    self.dialog_handler.main_window.notification_manager,
+                    translation_manager.translate("Global", "Error"),
+                    translation_manager.translate(
+                        "ApplicationLogicHandler", "Failed to open file: {error}"
+                    ).format(error=e),
+                )
                 
         elif action == FileAction.CUSTOM_COMMAND:
             if command:
                 self._execute_external_command(command, file_path)
             else:
                 logging.warning(f"No command defined for custom action on {file_path}")
-                show_error_message(self.dialog_handler.main_window.notification_manager, translation_manager.translate("Global", "Error"), "No command defined for this file type.")
+                show_error_message(
+                    self.dialog_handler.main_window.notification_manager,
+                    translation_manager.translate("Global", "Error"),
+                    translation_manager.translate(
+                        "ApplicationLogicHandler",
+                        "No command defined for this file type.",
+                    ),
+                )
 
     @handle_error
     def open_terminal_in_path(self, path):

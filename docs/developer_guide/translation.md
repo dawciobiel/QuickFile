@@ -62,7 +62,7 @@ interpolating into the lookup key.
 
 ### Texts set at runtime
 
-Six tests fail when code hands a widget a plain literal instead of a translation:
+Seven tests fail when code hands a widget a plain literal instead of a translation:
 
 *   `test_literal_widget_texts_are_translated` checks the first argument of `setText(...)`,
 *   `test_literal_status_bar_messages_are_translated` checks `showMessage(...)`,
@@ -76,6 +76,9 @@ Six tests fail when code hands a widget a plain literal instead of a translation
     abbreviations,
 *   `test_dialog_strings_are_translated` checks every text argument of `QMessageBox`,
     `QInputDialog` and `QFileDialog` (the first argument is the parent widget),
+*   `test_message_helper_texts_are_translated` checks the title and message passed to
+    `show_error_message`/`show_info_message` (`utils/dialogs.py`), the helpers used where a
+    direct `QMessageBox` would bypass the notification manager,
 *   `test_host_error_messages_are_translated` checks the message of a `raise` in host code,
     because the error handler shows it in a dialog. `INTERNAL_ERROR_MODULES` lists the
     internal modules whose exceptions never reach a dialog (`action_replayer`,
@@ -84,7 +87,7 @@ Six tests fail when code hands a widget a plain literal instead of a translation
     use `PluginInstaller`, `PluginState`, `PluginSettings`, `PluginDependencyManager` and
     `PluginUpdater` keys and are checked by the same test.
 
-A seventh test, `test_translation_keys_are_not_built_at_runtime`, rejects a `translate` key
+An eighth test, `test_translation_keys_are_not_built_at_runtime`, rejects a `translate` key
 built from an f-string with placeholders. The lookup uses the whole string, so such a key
 never matches the JSON file and the English text always wins:
 
