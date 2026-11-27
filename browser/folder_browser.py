@@ -416,6 +416,7 @@ class PanelWidget(QWidget):
 
 class FolderBrowser(QWidget):
     file_selected = pyqtSignal(str)
+    file_open_requested = pyqtSignal(str)
     current_directory_changed = pyqtSignal(str)
     status_message_requested = pyqtSignal(str)
 
@@ -477,6 +478,9 @@ class FolderBrowser(QWidget):
         if isinstance(panel.file_view, AbstractFileView):
             panel.file_view.path_changed.connect(lambda new_path, p=panel: self._update_tab_title(p, new_path))
             panel.file_view.file_selected.connect(self.file_selected.emit)
+            panel.file_view.file_open_requested.connect(
+                self.file_open_requested.emit
+            )
             panel.file_view.path_changed.connect(self.current_directory_changed.emit)
         return panel
 

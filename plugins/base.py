@@ -260,6 +260,8 @@ class StandardOperationsPlugin(FileOperationPlugin):
 class AbstractFileView(QWidget):
     path_changed = pyqtSignal(str)
     file_selected = pyqtSignal(str)
+    # Enter on a file asks the host to open it with the OS association.
+    file_open_requested = pyqtSignal(str)
     insert_selection_changed = pyqtSignal()
 
     def __init__(self, settings_manager, parent=None):
@@ -310,8 +312,15 @@ class AbstractFileView(QWidget):
 
         if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
             if current_index.isValid():
-                # Emit doubleClicked signal to handle navigation or file opening
-                self.view.doubleClicked.emit(current_index)
+                if self.model.isDir(current_index):
+                    # Navigate into the directory (or up via "..").
+                    self.view.doubleClicked.emit(current_index)
+                else:
+                    # Enter opens the file with the operating system's
+                    # association; double-click keeps the internal viewers.
+                    self.file_open_requested.emit(
+                        self.model.filePath(current_index)
+                    )
                 return True
 
         return False
