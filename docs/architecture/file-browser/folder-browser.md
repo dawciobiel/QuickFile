@@ -146,11 +146,19 @@ dwie akcje:
   uruchamiany programem skojarzonym z jego typem w systemie operacyjnym
   (`os.startfile` na Windows, `open` na macOS, `xdg-open` na Linuksie).
 
-Dwuklik pozostaje bez zmian i nadal korzysta z wewnętrznych skojarzeń
-(`FileAssociationManager`, np. wbudowany podgląd). Dzięki temu `Enter` jest
-skrótem do domyślnej aplikacji systemowej, a dwuklik do wewnętrznych widoków.
-Kontrakt pilnuje `tests/unit/test_flat_view_enter.py` oraz
-`tests/unit/test_open_file_system_default.py`.
+Dwuklik i `Enter` otwierają plik programem skojarzonym w systemie
+operacyjnym. Domyślna konfiguracja
+(`resources/config/default_file_associations.json`, wersja 2) kieruje pliki
+tekstowe i obrazy do `system_default`. Konfiguracje w wersji 1 są przy
+starcie migrowane: wpisy `Text Files` i `Images` z akcją `internal_viewer`
+zmieniają akcję na `system_default`, a wpisy niestandardowe pozostają bez
+zmian. Wbudowany podgląd i edytor nadal są dostępne przez `F3`/`F4` oraz menu,
+a w `~/.config/QuickFile/file_associations.json` można przywrócić
+`internal_viewer` lub `internal_editor`.
+
+Kontrakt pilnuje `tests/unit/test_flat_view_enter.py`,
+`tests/unit/test_open_file_system_default.py` oraz
+`tests/unit/test_file_association_manager.py`.
 
 ## Pole ścieżki (`PanelWidget.path_edit`)
 

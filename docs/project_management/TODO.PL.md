@@ -30,7 +30,7 @@
 - [x] **Feature: Otwieranie pliku klawiszem Enter**:
     - W panelu menedżera plików klawisz `Enter` uruchamia zaznaczony plik programem skojarzonym z jego typem w systemie operacyjnym (`os.startfile` na Windows, `open` na macOS, `xdg-open` na Linuksie).
     - Wykorzystano istniejącą abstrakcję `FileAssociationManager` i akcję `FileAction.SYSTEM_DEFAULT` w `ApplicationLogicHandler.open_file_with_system_default`.
-    - Dla katalogów `Enter` nadal wchodzi do katalogu. Dwuklik pozostaje przy wewnętrznych skojarzeniach (podgląd/edytor).
+    - Dla katalogów `Enter` nadal wchodzi do katalogu. Dwuklik również otwiera plik programem systemowym; wbudowany podgląd i edytor pozostają dostępne przez `F3`/`F4` i menu.
     - Testy: `tests/unit/test_flat_view_enter.py`, `tests/unit/test_open_file_system_default.py`.
     
 - [ ] **Feature: System aktualizacji**:
