@@ -27,11 +27,11 @@
     - Tło rozwiniętego menu programu powinno mieć inny (jaśniejszy) kolor niż tło głównego okna aplikacji, czyli górne paski (toolbar) oraz tło paneli plików. Dzięki temu zawartość otwartego menu będzie wyraźnie widoczna.
     - Rozważyć dodanie obramowania rozwiniętego menu, aby jeszcze lepiej oddzielić je od tła aplikacji.
 
-- [ ] **Feature: Otwieranie pliku klawiszem Enter**:
-    - W panelu menedżera plików klawisz `Enter` powinien uruchomić zaznaczony plik programem skojarzonym z jego typem w systemie operacyjnym.
-    - Wykorzystać istniejącą abstrakcję `FileAssociationManager` i akcję `FileAction.SYSTEM_DEFAULT` (Windows: `os.startfile`, macOS: `open`, Linux: `xdg-open`).
-    - Dla katalogów `Enter` powinien nadal wchodzić do katalogu; przy wielu zaznaczonych plikach otworzyć każdy z nich lub ograniczyć akcję do pierwszego zaznaczonego.
-    - Uzupełnić testy skrótów klawiszowych i zachowania dla katalogu, pliku oraz braku skojarzenia.
+- [x] **Feature: Otwieranie pliku klawiszem Enter**:
+    - W panelu menedżera plików klawisz `Enter` uruchamia zaznaczony plik programem skojarzonym z jego typem w systemie operacyjnym (`os.startfile` na Windows, `open` na macOS, `xdg-open` na Linuksie).
+    - Wykorzystano istniejącą abstrakcję `FileAssociationManager` i akcję `FileAction.SYSTEM_DEFAULT` w `ApplicationLogicHandler.open_file_with_system_default`.
+    - Dla katalogów `Enter` nadal wchodzi do katalogu. Dwuklik pozostaje przy wewnętrznych skojarzeniach (podgląd/edytor).
+    - Testy: `tests/unit/test_flat_view_enter.py`, `tests/unit/test_open_file_system_default.py`.
     
 - [ ] **Feature: System aktualizacji**:
     - Zaprojektowanie odpowiedniego systemu pobierania i instalowania aktualizacji dla aplikacji, motywów, zasobów, tłumaczeń i pluginów.

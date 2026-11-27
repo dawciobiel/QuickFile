@@ -134,6 +134,24 @@ liczyły cel od tego samego, jeszcze niezmienionego wiersza. Kursor jechał
 w dół, ale elementy nie zostawały zaznaczone. Kontrakt pilnuje
 `tests/unit/test_flat_view_insert_navigation.py`.
 
+## Otwieranie klawiszem `Enter`
+
+`AbstractFileView._handle_common_key_events` rozdziela `Enter`/`Return` na
+dwie akcje:
+
+* katalog (także wiersz `..`) — jak dotychczas, czyli wejście do katalogu
+  przez `doubleClicked`,
+* plik — sygnał `file_open_requested(path)`, który host podłącza do
+  `ApplicationLogicHandler.open_file_with_system_default`. Plik jest
+  uruchamiany programem skojarzonym z jego typem w systemie operacyjnym
+  (`os.startfile` na Windows, `open` na macOS, `xdg-open` na Linuksie).
+
+Dwuklik pozostaje bez zmian i nadal korzysta z wewnętrznych skojarzeń
+(`FileAssociationManager`, np. wbudowany podgląd). Dzięki temu `Enter` jest
+skrótem do domyślnej aplikacji systemowej, a dwuklik do wewnętrznych widoków.
+Kontrakt pilnuje `tests/unit/test_flat_view_enter.py` oraz
+`tests/unit/test_open_file_system_default.py`.
+
 ## Pole ścieżki (`PanelWidget.path_edit`)
 
 Pole ścieżki to `PathLineEdit`, czyli `QLineEdit` z jednym dodatkowym

@@ -102,6 +102,39 @@ class ApplicationLogicHandler(QObject):
                 ).format(error=e),
             )
 
+    def _open_with_system_default(self, file_path):
+        """Launch ``file_path`` with the program associated by the OS."""
+        if platform.system() == 'Windows':
+            os.startfile(file_path)
+        elif platform.system() == 'Darwin':
+            subprocess.call(('open', file_path))
+        else:
+            subprocess.call(('xdg-open', file_path))
+
+    def _show_system_open_error(self, error):
+        logging.error(f"Failed to open file with system default: {error}")
+        show_error_message(
+            self.dialog_handler.main_window.notification_manager,
+            translation_manager.translate("Global", "Error"),
+            translation_manager.translate(
+                "ApplicationLogicHandler", "Failed to open file: {error}"
+            ).format(error=error),
+        )
+
+    @handle_error
+    def open_file_with_system_default(self, file_path):
+        """Open a file with the program associated with its type in the OS."""
+        if not file_path or not os.path.exists(file_path):
+            return
+
+        if os.path.isdir(file_path):
+            return
+
+        try:
+            self._open_with_system_default(file_path)
+        except Exception as error:
+            self._show_system_open_error(error)
+
     @handle_error
     def open_file(self, file_path):
         """
@@ -128,21 +161,9 @@ class ApplicationLogicHandler(QObject):
             self.dialog_handler.show_file_editor_dialog()
         elif action == FileAction.SYSTEM_DEFAULT:
             try:
-                if platform.system() == 'Windows':
-                    os.startfile(file_path)
-                elif platform.system() == 'Darwin':
-                    subprocess.call(('open', file_path))
-                else:
-                    subprocess.call(('xdg-open', file_path))
+                self._open_with_system_default(file_path)
             except Exception as e:
-                logging.error(f"Failed to open file with system default: {e}")
-                show_error_message(
-                    self.dialog_handler.main_window.notification_manager,
-                    translation_manager.translate("Global", "Error"),
-                    translation_manager.translate(
-                        "ApplicationLogicHandler", "Failed to open file: {error}"
-                    ).format(error=e),
-                )
+                self._show_system_open_error(e)
                 
         elif action == FileAction.CUSTOM_COMMAND:
             if command:
