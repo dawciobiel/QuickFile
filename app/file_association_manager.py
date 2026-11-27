@@ -14,6 +14,10 @@ class FileAction(Enum):
     SYSTEM_DEFAULT = "system_default"
     CUSTOM_COMMAND = "custom_command"
 
+#: Version 2 opens text and image files with the OS association by default.
+CONFIG_VERSION = 2
+
+
 class FileAssociationManager:
     def __init__(self):
         self.config_dir = os.path.join(os.path.expanduser("~"), ".config", "QuickFile")
@@ -33,15 +37,37 @@ class FileAssociationManager:
             logging.error(f"Failed to load default file associations from {default_config_path}: {e}")
             # Fallback hardcoded config just in case
             return {
+                "version": CONFIG_VERSION,
                 "associations": [
                     {
                         "name": "Text Files",
                         "extensions": ["txt", "md", "py", "json", "xml", "log", "ini", "conf", "sh", "bat", "yml", "yaml"],
-                        "action": "internal_viewer"
+                        "action": "system_default"
                     }
                 ],
                 "default_action": "system_default"
             }
+
+    def _migrate_config(self, config):
+        """Upgrade a config written before version 2.
+
+        Version 1 pointed text and image files at the internal viewer. The
+        default is now the operating system association, but custom entries
+        are left untouched.
+        """
+        migrated = dict(config)
+        migrated["version"] = CONFIG_VERSION
+        associations = []
+        for association in config.get("associations", []):
+            association = dict(association)
+            if (
+                association.get("name") in {"Text Files", "Images"}
+                and association.get("action") == "internal_viewer"
+            ):
+                association["action"] = "system_default"
+            associations.append(association)
+        migrated["associations"] = associations
+        return migrated
 
     def _load_config(self):
         if not os.path.exists(self.config_dir):
@@ -55,13 +81,16 @@ class FileAssociationManager:
         try:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
-                self.associations = config.get("associations", [])
-                default_action_str = config.get("default_action", "system_default")
-                try:
-                    self.default_action = FileAction(default_action_str)
-                except ValueError:
-                    logging.warning(f"Invalid default action '{default_action_str}', falling back to SYSTEM_DEFAULT")
-                    self.default_action = FileAction.SYSTEM_DEFAULT
+            if config.get("version") != CONFIG_VERSION:
+                config = self._migrate_config(config)
+                self._save_config(config)
+            self.associations = config.get("associations", [])
+            default_action_str = config.get("default_action", "system_default")
+            try:
+                self.default_action = FileAction(default_action_str)
+            except ValueError:
+                logging.warning(f"Invalid default action '{default_action_str}', falling back to SYSTEM_DEFAULT")
+                self.default_action = FileAction.SYSTEM_DEFAULT
             logging.info("File associations loaded successfully.")
         except Exception as e:
             logging.error(f"Failed to load file associations config: {e}")
