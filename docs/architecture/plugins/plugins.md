@@ -498,6 +498,13 @@ Wbudowana przeglądarka plików, która obsługuje:
 * **Kod Źródłowy**: Kolorowanie składni dla wielu języków programowania (wykorzystuje bibliotekę `Pygments` i styl `monokai`).
 * **Tryby Binarne**: Podgląd w trybach HEX, DEC, BIN.
 
+Kodowanie jest wykrywane automatycznie po wczytaniu bajtów przez
+`utils.encoding.detect_encoding`: BOM (UTF-8/UTF-16/UTF-32), UTF-8, kodowanie
+systemowe, Windows-1250, Windows-1252, ISO-8859-2, a na końcu Latin-1. Wykryte
+kodowanie jest ustawiane w liście wyboru i pokazywane w pasku statusu.
+Ręczna zmiana kodowania ponownie dekoduje te same bajty. Widok Markdown
+korzysta z wykrytego kodowania, a nie wyłącznie z UTF-8.
+
 ### `org.quickfile.standard_editor`
 
 Wbudowany edytor (F4) otwiera plik w **niemieszającym** oknie `EditorWindow`,

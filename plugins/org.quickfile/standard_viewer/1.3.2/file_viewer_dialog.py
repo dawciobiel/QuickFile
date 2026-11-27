@@ -2,7 +2,6 @@
 # This file is part of QuickFile and is licensed under the GPLv3.
 # See LICENSE file for details.
 
-import locale
 import os
 
 from PyQt6 import uic
@@ -25,7 +24,20 @@ except ImportError:
 
 from app.translation_manager import translation_manager
 from app.theme_manager import ThemeManager
+from utils.encoding import COMMON_ENCODINGS, DEFAULT_ENCODING, detect_encoding
 from utils.icon_manager import get_colorized_icon
+
+#: Display label for each codec offered by the encoding selector.
+ENCODING_LABELS = {
+    "utf-8": "UTF-8",
+    "utf-8-sig": "UTF-8 (BOM)",
+    "utf-16": "UTF-16",
+    "utf-32": "UTF-32",
+    "windows-1250": "Windows-1250",
+    "windows-1252": "Windows-1252",
+    "iso-8859-2": "ISO-8859-2",
+    "latin-1": "Latin-1",
+}
 
 
 class LineNumberArea(QWidget):
@@ -97,7 +109,7 @@ class FileViewerWindow(QMainWindow):
         self.theme_manager = theme_manager
         self.raw_bytes = b''
         self.current_view_mode = 'text'
-        self.current_encoding = 'utf-8'
+        self.current_encoding = DEFAULT_ENCODING
         self.original_pixmap = None
         self.lexer = None
         self.icon_color = self.theme_manager.get_current_theme_data().get("foreground", "#000000")
@@ -151,8 +163,13 @@ class FileViewerWindow(QMainWindow):
 
         # Encoding ComboBox
         self.encoding_combo = QComboBox(self)
-        self.encoding_combo.addItems(['UTF-8', 'Windows-1250', 'ISO-8859-2', 'Latin-1'])
-        self.encoding_combo.currentTextChanged.connect(self.change_encoding)
+        for encoding in COMMON_ENCODINGS:
+            self.encoding_combo.addItem(
+                ENCODING_LABELS.get(encoding, encoding), encoding
+            )
+        self.encoding_combo.currentIndexChanged.connect(
+            self._on_encoding_changed
+        )
         self.toolBar.addWidget(self.encoding_combo)
 
         self.toolBar.addSeparator()
@@ -230,6 +247,8 @@ class FileViewerWindow(QMainWindow):
             self.stackedWidget.setCurrentWidget(self.text_page)
             return
 
+        self._auto_detect_encoding()
+
         # Disable all special modes initially
         self.picture_mode_action.setEnabled(False)
         self.markdown_mode_action.setEnabled(False)
@@ -291,22 +310,20 @@ class FileViewerWindow(QMainWindow):
             )
 
     def _auto_detect_encoding(self):
-        try:
-            self.raw_bytes.decode('utf-8')
-            self.current_encoding = 'utf-8'
-        except UnicodeDecodeError:
-            try:
-                system_encoding = locale.getpreferredencoding()
-                self.raw_bytes.decode(system_encoding)
-                self.current_encoding = system_encoding
-            except (UnicodeDecodeError, TypeError):
-                self.current_encoding = 'latin-1'  # Fallback
+        """Pick the encoding from the bytes and reflect it in the selector."""
+        self.current_encoding = detect_encoding(self.raw_bytes)
 
-        index = self.encoding_combo.findText(self.current_encoding, Qt.MatchFlag.MatchFixedString)
-        if index >= 0:
+        index = self.encoding_combo.findData(self.current_encoding)
+        if index < 0:
+            # A system codec such as cp1250 may not be in the fixed list.
             self.encoding_combo.blockSignals(True)
-            self.encoding_combo.setCurrentIndex(index)
-            self.encoding_combo.blockSignals(False)
+            self.encoding_combo.addItem(
+                self.current_encoding, self.current_encoding
+            )
+            index = self.encoding_combo.findData(self.current_encoding)
+        self.encoding_combo.blockSignals(True)
+        self.encoding_combo.setCurrentIndex(index)
+        self.encoding_combo.blockSignals(False)
 
     def update_display(self):
         content = ""
@@ -342,7 +359,7 @@ class FileViewerWindow(QMainWindow):
             # Reset style sheet for markdown to use default theme colors
             self.rich_text_browser.setStyleSheet("")
             try:
-                text = self.raw_bytes.decode('utf-8')
+                text = self.raw_bytes.decode(self.current_encoding)
                 self.rich_text_browser.setMarkdown(text)
                 status_message = translation_manager.translate(
                     "FileViewer", "View Mode: Markdown"
@@ -351,8 +368,8 @@ class FileViewerWindow(QMainWindow):
                 self.rich_text_browser.setPlainText(
                     translation_manager.translate(
                         "FileViewer",
-                        "Error: Markdown file must be UTF-8 encoded.",
-                    )
+                        "Error: Cannot decode file with {encoding}",
+                    ).format(encoding=self.current_encoding)
                 )
                 status_message = translation_manager.translate(
                     "FileViewer", "Error: Invalid encoding for Markdown"
@@ -462,6 +479,12 @@ class FileViewerWindow(QMainWindow):
                 Qt.TransformationMode.SmoothTransformation
             )
             self.image_label.setPixmap(scaled_pixmap)
+
+    def _on_encoding_changed(self, index):
+        encoding = self.encoding_combo.itemData(index)
+        if encoding:
+            self.current_encoding = encoding
+            self.update_display()
 
     def change_encoding(self, encoding_name):
         self.current_encoding = encoding_name.lower()
