@@ -2,7 +2,7 @@
   "id": "org.quickfile.standard_viewer",
   "group_id": "org.quickfile",
   "artifact_id": "standard_viewer",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "type": "viewer",
   "name": "Standard File Viewer",
   "description": "A built-in viewer for text files, images, markdown, and source code.",
