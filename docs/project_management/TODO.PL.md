@@ -23,9 +23,11 @@
         - inne.
     - Grupy typów plików są już zdefiniowane w `config/default_file_associations.json` i są wykorzystywane przez wewnętrzny podgląd (viewer) do wyboru odpowiedniego trybu wyświetlania. Można by rozszerzyć tę konfigurację o definicje ikon dla każdej grupy.
 
-- [ ] **Feature: Tło i obramowanie otwartego menu**:
+- [x] **Feature: Tło i obramowanie otwartego menu**:
     - Tło rozwiniętego menu programu powinno mieć inny (jaśniejszy) kolor niż tło głównego okna aplikacji, czyli górne paski (toolbar) oraz tło paneli plików. Dzięki temu zawartość otwartego menu będzie wyraźnie widoczna.
     - Rozważyć dodanie obramowania rozwiniętego menu, aby jeszcze lepiej oddzielić je od tła aplikacji.
+    - Zaimplementowano `menu_background` i `menu_border` w `resources/themes/*/palette.json` oraz reguły `QMenu`, `QMenu::item`, `QMenu::item:selected` i `QMenu::item:disabled` w `style.qss` każdego motywu.
+    - Testy: `tests/unit/test_theme_menu_style.py`; specyfikacja: `docs/architecture/themes.md`.
 
 - [x] **Feature: Otwieranie pliku klawiszem Enter**:
     - W panelu menedżera plików klawisz `Enter` uruchamia zaznaczony plik programem skojarzonym z jego typem w systemie operacyjnym (`os.startfile` na Windows, `open` na macOS, `xdg-open` na Linuksie).
