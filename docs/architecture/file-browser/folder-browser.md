@@ -154,7 +154,9 @@ starcie migrowane: wpisy `Text Files` i `Images` z akcją `internal_viewer`
 zmieniają akcję na `system_default`, a wpisy niestandardowe pozostają bez
 zmian. Wbudowany podgląd i edytor nadal są dostępne przez `F3`/`F4` oraz menu,
 a w `~/.config/QuickFile/file_associations.json` można przywrócić
-`internal_viewer` lub `internal_editor`.
+`internal_viewer` lub `internal_editor`. Pliki spoza listy skojarzeń (np.
+wideo, audio, archiwa) trafiają do `default_action`, czyli również do programu
+skojarzonego w systemie — film zostanie otwarty systemowym odtwarzaczem.
 
 Kontrakt pilnuje `tests/unit/test_flat_view_enter.py`,
 `tests/unit/test_open_file_system_default.py` oraz
