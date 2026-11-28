@@ -43,6 +43,18 @@ def test_new_install_uses_system_default(tmp_path, monkeypatch):
     )
 
 
+def test_unlisted_types_use_the_system_default(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+
+    manager = FileAssociationManager()
+
+    for name in ("movie.mp4", "clip.mkv", "song.mp3", "archive.zip"):
+        assert manager.get_action_for_file(str(tmp_path / name)) == (
+            FileAction.SYSTEM_DEFAULT,
+            None,
+        )
+
+
 def test_version_1_default_config_is_migrated(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     write_config(
