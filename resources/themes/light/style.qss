@@ -129,6 +129,27 @@ QDialog {
     color: @@foreground@@;
 }
 
+QMenu {
+    background-color: @@menu_background@@;
+    color: @@foreground@@;
+    border: 1px solid @@menu_border@@;
+    padding: 4px;
+}
+
+QMenu::item {
+    background-color: transparent;
+    padding: 6px 24px 6px 20px;
+}
+
+QMenu::item:selected {
+    background-color: @@selection_background@@;
+    color: @@selection_foreground@@;
+}
+
+QMenu::item:disabled {
+    color: @@disabled_foreground@@;
+}
+
 QMenu::separator {
     height: 1px;
     background-color: @@icon_color@@;

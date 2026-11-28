@@ -8,6 +8,8 @@
   "icon_color": "#F8F8F2",
   "accent": "#AE81FF",
   "border": "#272822",
+  "menu_background": "#45443a",
+  "menu_border": "#5f5e52",
   "selection_foreground": "#272822",
   "selection_background": "#AE81FF",
   "active_panel_border": "#A9A9A9",

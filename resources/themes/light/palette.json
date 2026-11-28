@@ -8,6 +8,8 @@
     "secondary_background": "#FFFFFF",
     "alternate_background": "#E8E8E8",
     "border": "#D0D0D0",
+    "menu_background": "#FFFFFF",
+    "menu_border": "#B0B0B0",
     "accent": "#3498db",
     "selection_background": "#3498db",
     "selection_foreground": "#FFFFFF",
