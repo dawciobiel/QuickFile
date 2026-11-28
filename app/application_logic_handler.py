@@ -104,12 +104,22 @@ class ApplicationLogicHandler(QObject):
 
     def _open_with_system_default(self, file_path):
         """Launch ``file_path`` with the program associated by the OS."""
-        if platform.system() == 'Windows':
+        system = platform.system()
+        if system == 'Windows':
             os.startfile(file_path)
-        elif platform.system() == 'Darwin':
-            subprocess.call(('open', file_path))
-        else:
-            subprocess.call(('xdg-open', file_path))
+            return
+
+        command = ('open', file_path) if system == 'Darwin' else ('xdg-open', file_path)
+        status = subprocess.call(command)
+        if status != 0:
+            raise RuntimeError(
+                translation_manager.translate(
+                    "ApplicationLogicHandler",
+                    "{command} exited with status {status} for {path}",
+                ).format(
+                    command=command[0], status=status, path=file_path
+                )
+            )
 
     def _show_system_open_error(self, error):
         logging.error(f"Failed to open file with system default: {error}")

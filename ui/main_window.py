@@ -151,7 +151,11 @@ class MainWindow(QMainWindow):
         )
 
     def _connect_signals(self):
+        self.folder_browser.file_selected.connect(self.app_handler.open_file)
         self.folder_browser.file_selected.connect(self.app_handler.update_status_bar_path)
+        self.folder_browser.file_open_requested.connect(
+            self.app_handler.open_file_with_system_default
+        )
         self.folder_browser.status_message_requested.connect(self.statusBar().showMessage)
         self.task_queue_manager.task_completed.connect(self.on_task_completed)
         self.task_queue_manager.task_finished.connect(self.folder_browser.handle_task_completion)

@@ -768,6 +768,7 @@
     "ApplicationLogicHandler.Failed to execute command: {error}": "Nie udało się wykonać polecenia: {error}",
     "ApplicationLogicHandler.Failed to open file: {error}": "Nie udało się otworzyć pliku: {error}",
     "ApplicationLogicHandler.No command defined for this file type.": "Nie zdefiniowano polecenia dla tego typu pliku.",
+    "ApplicationLogicHandler.{command} exited with status {status} for {path}": "Polecenie {command} zakończyło się kodem {status} dla {path}",
     "TaskQueueManager.Plugin '{plugin}' not found.": "Nie znaleziono wtyczki „{plugin}”.",
     "TaskQueueManager.Task type '{task}' requires a 'plugin_id' in options.": "Typ zadania „{task}” wymaga opcji „plugin_id”."
 }

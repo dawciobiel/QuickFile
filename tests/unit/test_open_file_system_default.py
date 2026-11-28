@@ -39,7 +39,7 @@ def test_file_is_opened_with_xdg_open_on_linux(handler, tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(module.platform, "system", lambda: "Linux")
     monkeypatch.setattr(
-        module.subprocess, "call", lambda args: calls.append(args)
+        module.subprocess, "call", lambda args: calls.append(args) or 0
     )
 
     handler.open_file_with_system_default(str(target))
@@ -53,7 +53,7 @@ def test_macos_uses_open(handler, tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(module.platform, "system", lambda: "Darwin")
     monkeypatch.setattr(
-        module.subprocess, "call", lambda args: calls.append(args)
+        module.subprocess, "call", lambda args: calls.append(args) or 0
     )
 
     handler.open_file_with_system_default(str(target))
@@ -79,7 +79,7 @@ def test_directories_are_ignored(handler, tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(module.platform, "system", lambda: "Linux")
     monkeypatch.setattr(
-        module.subprocess, "call", lambda args: calls.append(args)
+        module.subprocess, "call", lambda args: calls.append(args) or 0
     )
 
     handler.open_file_with_system_default(str(tmp_path))
@@ -91,9 +91,21 @@ def test_missing_files_are_ignored(handler, tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(module.platform, "system", lambda: "Linux")
     monkeypatch.setattr(
-        module.subprocess, "call", lambda args: calls.append(args)
+        module.subprocess, "call", lambda args: calls.append(args) or 0
     )
 
     handler.open_file_with_system_default(str(tmp_path / "missing.txt"))
 
     assert calls == []
+
+
+def test_failed_launch_is_reported(handler, tmp_path, monkeypatch):
+    target = tmp_path / "note.txt"
+    target.write_text("hello", encoding="utf-8")
+    monkeypatch.setattr(module.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(module.subprocess, "call", lambda args: 4)
+    handler._show_system_open_error = MagicMock()
+
+    handler.open_file_with_system_default(str(target))
+
+    handler._show_system_open_error.assert_called_once()
