@@ -768,6 +768,7 @@
     "ApplicationLogicHandler.Failed to execute command: {error}": "Failed to execute command: {error}",
     "ApplicationLogicHandler.Failed to open file: {error}": "Failed to open file: {error}",
     "ApplicationLogicHandler.No command defined for this file type.": "No command defined for this file type.",
+    "ApplicationLogicHandler.{command} exited with status {status} for {path}": "{command} exited with status {status} for {path}",
     "TaskQueueManager.Plugin '{plugin}' not found.": "Plugin '{plugin}' not found.",
     "TaskQueueManager.Task type '{task}' requires a 'plugin_id' in options.": "Task type '{task}' requires a 'plugin_id' in options."
 }
